@@ -25,12 +25,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Token Resizer Tool**: Adds a new control icon to the Token tools menu (visible to GMs only) to quickly resize selected tokens to standard 5e dimensions (Tiny, Small, Large, Huge, etc.).
 * **Auto-Clear Movement History**: Automatically clears token movement history at the start of each combat turn. Includes sub-settings to determine when exactly to clear the history (e.g. at the start of a turn, on combat start).
 
-### Group 3: Automation & QOL Tasks
-
-* **Auto-Remove Dropped Items (World Containers)**: Automatically deletes the original source item when it is dragged from a world container onto an actor.
-* **Auto-Remove Dropped Items (Actors)**: Automatically deletes the original source item when it is dragged from an actor's inventory onto another sheet.
-
-### Group 4: Restrictions & Rules
+### Group 3: Restrictions & Rules
 
 * **Force Compendium Browser**: Forces players (non-GMs) to open the DnD5e Compendium Browser when clicking the Compendium tab instead of the default pack list.
 * **Prevent Chat Deletion**: Removes the delete button from chat messages and prevents non-GM users from deleting their own chat messages.
