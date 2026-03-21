@@ -28,4 +28,3 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 3: Restrictions & Rules
 
 * **Force Compendium Browser**: Forces players (non-GMs) to open the DnD5e Compendium Browser when clicking the Compendium tab instead of the default pack list.
-* **Prevent Chat Deletion**: Removes the delete button from chat messages and prevents non-GM users from deleting their own chat messages.
