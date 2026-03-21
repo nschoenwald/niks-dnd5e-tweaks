@@ -1,0 +1,70 @@
+#nd5t-cursor-hint {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 10000;
+    /* High z-index to be above tooltips */
+    display: flex;
+    flex-direction: row;
+    /* Stack horizontally or vertically? */
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.1s ease-out;
+
+    /* Visual flair */
+    font-size: 24px;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+#nd5t-cursor-hint i {
+    display: block;
+}
+
+/* Dialog Button Tweaks - Used by token-resizer.js */
+.nd5t-dialog-button.tiny,
+.nd5t-dialog-button.Tiny {
+    margin: 0 5px !important;
+}
+
+.nd5t-dialog-button.unit,
+.nd5t-dialog-button.An.Absolute.Unit {
+    margin: 5px;
+}
+
+/* Disposition Dot - Used by actor-disposition-colors.js */
+.nd5t-disposition-dot {
+    display: inline-block;
+    margin-right: 3px;
+    margin-left: 3px;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    vertical-align: middle;
+    flex-grow: 0.01;
+}
+
+/* Item Rarity Colors - Used by item-rarity-colors.js */
+.item.nd5t-rarity-color-common {
+    background-color: rgba(255, 255, 225, 0.25);
+}
+
+.item.nd5t-rarity-color-uncommon {
+    background-color: rgba(0, 255, 0, 0.15);
+}
+
+.item.nd5t-rarity-color-rare {
+    background-color: rgba(0, 128, 255, 0.15);
+}
+
+.item.nd5t-rarity-color-veryrare {
+    background-color: rgba(153, 51, 255, 0.15);
+}
+
+.item.nd5t-rarity-color-legendary {
+    background-color: rgba(255, 128, 0, 0.15);
+}
+
+.item.nd5t-rarity-color-artifact {
+    background-color: rgba(255, 225, 0, 0.3);
+}
