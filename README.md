@@ -13,7 +13,6 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 ### Group 1: User Interface & Visuals
 
-* **Auto-Open Right Sidebar**: Automatically expands the right sidebar when a client connects to the game.
 * **Sync Browser Tab Title**: Keeps the browser tab name dynamically in sync with the scene the client is currently viewing.
 * **Show Cursor Keyboard Hints**: Displays visual floating icons near the mouse cursor when DnD5e configured macro keys (Skip, Advantage, Disadvantage) are pressed.
 * **Colorize Item Rarity**: Colors item names in the character sheet's inventory list according to their rarity (e.g. Uncommon, Rare, Legendary) for easier quick-glance identification.
