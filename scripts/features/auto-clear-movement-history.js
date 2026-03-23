@@ -1,5 +1,4 @@
-import { debug } from "../main.js";
-const MODULE_ID = "niks-dnd5e-tweaks";
+import { MODULE_ID, debug } from "../main.js";
 const SETTING_PREFIX = "nd5t_";
 
 const STATE = {
@@ -63,8 +62,7 @@ class AutoClearController {
   static updateFromSettings() {
     if (!game.settings.settings.has(MODULE_ID + ".enableAutoClearMovementHistory")) return;
     
-    // Safety check - settings might not be available right away in some early init steps
-    if (!game.settings.get.length) return;
+    // removed dead safety check
 
     STATE.mode = this.modeSetting;
     STATE.clearOnStart = this.clearOnStartSetting;

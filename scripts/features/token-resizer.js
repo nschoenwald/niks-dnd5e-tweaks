@@ -1,8 +1,8 @@
-import { debug } from "../main.js";
+import { MODULE_ID, debug } from "../main.js";
 
 let sizeData = {
   "tiny": { label: "Tiny", tokenSize: 0.25, minScale: 1 },
-  "sm": { label: "Small", tokenSize: 1, scale: 0.5 },
+  "sm": { label: "Small", tokenSize: 1, scale: 0.5, minScale: 0.5 },
   "med": { label: "Medium", tokenSize: 1, minScale: 1 },
   "lg": { label: "Large", tokenSize: 2, minScale: 1 },
   "huge": { label: "Huge", tokenSize: 3, minScale: 1 },
@@ -16,7 +16,7 @@ export function initTokenResizer() {
   foundry.utils.setProperty(globalThis, "nd5t.api.doResizeTokens", doResizeTokens);
 
   Hooks.on("getSceneControlButtons", (buttons) => {
-    if (!game.settings.get("niks-dnd5e-tweaks", "enableTokenResizer")) return;
+    if (!game.settings.get(MODULE_ID, "enableTokenResizer")) return;
     
     // Exact logic from scriptlets: buttons["tokens"]
     // We also include fallback for standard array find
@@ -64,13 +64,15 @@ export async function doResizeTokens(tokens, size, sizeDataToUse = globalThis.nd
       update["texture"] = { scaleX: sizeEntry.scale, scaleY: sizeEntry.scale }
     }
     await token.document.update(update, { method: "teleport" });
-    await token.actor.update({ "system.traits.size": sizeEntry.dndSize ?? size })
+    if (token.actor) {
+      await token.actor.update({ "system.traits.size": sizeEntry.dndSize ?? size });
+    }
   }
 }
 
 export async function queryResizeTokens(tokens, sizeDataToUse = globalThis.nd5t.api.tokenResizeData) {
   let size;
-  const buttonData = Object.keys(sizeData).map((key) => {
+  const buttonData = Object.keys(sizeDataToUse).map((key) => {
     return {
       action: key,
       label: sizeDataToUse[key].label,
@@ -92,3 +94,4 @@ export async function queryResizeTokens(tokens, sizeDataToUse = globalThis.nd5t.
 
   if (size) return await doResizeTokens(tokens, size, sizeDataToUse);
 }
+

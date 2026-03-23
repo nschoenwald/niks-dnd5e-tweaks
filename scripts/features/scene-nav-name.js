@@ -1,17 +1,8 @@
-import { debug } from "../main.js";
+import { MODULE_ID, debug } from "../main.js";
 
 let baseTitle = document.title;
 let initialized = false;
 
-// Store the hook IDs so we can remove them
-const hookIds = {
-    canvasReady: null,
-    canvasTearDown: null,
-    updateUser: null,
-    updateScene: null,
-    deleteScene: null,
-    renderApplicationV2: null
-};
 
 export function initSceneNavName() {
     if (initialized) return;
@@ -25,13 +16,13 @@ export function initSceneNavName() {
 
     Hooks.on("nd5t.updateTabTitle", () => applyTabTitle());
 
-    hookIds.canvasReady = Hooks.on("canvasReady", () => applyTabTitle());
-    hookIds.canvasTearDown = Hooks.on("canvasTearDown", () => applyTabTitle());
-    hookIds.updateUser = Hooks.on("updateUser", (user, changes) => {
+    Hooks.on("canvasReady", () => applyTabTitle());
+    Hooks.on("canvasTearDown", () => applyTabTitle());
+    Hooks.on("updateUser", (user, changes) => {
         if (user.id !== game.user.id) return;
         if (hasOwn(changes, "viewedScene")) applyTabTitle();
     });
-    hookIds.updateScene = Hooks.on("updateScene", (scene, changes) => {
+    Hooks.on("updateScene", (scene, changes) => {
         const candidates = new Set([
             game.user?.viewedScene,
             canvas?.scene?.id,
@@ -41,7 +32,7 @@ export function initSceneNavName() {
 
         if (hasOwn(changes, "navName") || hasOwn(changes, "name")) applyTabTitle();
     });
-    hookIds.deleteScene = Hooks.on("deleteScene", (scene) => {
+    Hooks.on("deleteScene", (scene) => {
         const candidates = new Set([
             game.user?.viewedScene,
             canvas?.scene?.id,
@@ -49,7 +40,7 @@ export function initSceneNavName() {
         ].filter(Boolean));
         if (candidates.has(scene.id)) applyTabTitle();
     });
-    hookIds.renderApplicationV2 = Hooks.on("renderApplicationV2", (app) => {
+    Hooks.on("renderApplicationV2", (app) => {
         if (app instanceof foundry.applications.ui.SceneNavigation) applyTabTitle();
     });
 }
@@ -82,7 +73,7 @@ const applyTabTitle = (() => {
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
       raf = null;
-      if (!game.settings.get("niks-dnd5e-tweaks", "enableSceneNavName")) {
+      if (!game.settings.get(MODULE_ID, "enableSceneNavName")) {
           if (document.title !== baseTitle) document.title = baseTitle;
           return;
       }

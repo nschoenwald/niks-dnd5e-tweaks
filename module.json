@@ -1,12 +1,11 @@
 {
   "id": "niks-dnd5e-tweaks",
-  "socket": true,
   "title": "Nik's DnD5e Tweaks",
   "description": "A consolidated collection of small quality-of-life tweaks for DnD5e.",
-  "version": "13.0.1",
+  "version": "14.1",
   "compatibility": {
     "minimum": "13",
-    "verified": "13"
+    "verified": "14"
   },
   "relationships": {
     "systems": [
@@ -14,14 +13,8 @@
         "id": "dnd5e",
         "type": "system",
         "compatibility": {
-          "minimum": "4.0.0"
+          "minimum": "5.2.0"
         }
-      }
-    ],
-    "requires": [
-      {
-        "id": "socketlib",
-        "type": "module"
       }
     ]
   },

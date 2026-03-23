@@ -68,3 +68,21 @@
 .item.nd5t-rarity-color-artifact {
     background-color: rgba(255, 225, 0, 0.3);
 }
+
+/* Sidebar Name Wrap Feature */
+body.nd5t-sidebar-name-wrap .directory .directory-item {
+    height: auto;
+}
+
+body.nd5t-sidebar-name-wrap .directory .directory-item .document-name,
+body.nd5t-sidebar-name-wrap .directory .directory-item .compendium-name,
+body.nd5t-sidebar-name-wrap .directory .directory-item .entry-name,
+body.nd5t-sidebar-name-wrap .directory .directory-item h4,
+body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    overflow: visible;
+}

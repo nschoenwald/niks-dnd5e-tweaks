@@ -5,13 +5,14 @@ import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.j
 import { enableProneRotation, disableProneRotation } from "./features/prone-rotation.js";
 import { initTokenResizer } from "./features/token-resizer.js";
 import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
-import { setupSocket } from "./features/gm-action.js";
-import { initContainerHelpers } from "./features/container-helpers.js";
+
 import { initItemRarityColors } from "./features/item-rarity-colors.js";
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
+import { initBloodDropIcon } from "./features/blood-drop-icon.js";
+import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
 
 
-const MODULE_ID = "niks-dnd5e-tweaks";
+export const MODULE_ID = "niks-dnd5e-tweaks";
 
 /**
  * Global logging helpers
@@ -36,9 +37,6 @@ Hooks.once("init", () => {
     // GROUP 1: User Interface & Visuals
     // ==========================================
 
-
-
-
     game.settings.register(MODULE_ID, "enableSceneNavName", {
         name: "Sync Browser Tab Title",
         hint: "Keeps the browser tab name in sync with the scene the client is currently viewing.",
@@ -46,10 +44,11 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: (value) => {
             // Scene Nav Name keeps its own internal initialized state and handles title reset.
-             if (value) Hooks.callAll("nd5t.updateTabTitle");
-             else document.title = game.world.title; 
+            if (value) Hooks.callAll("nd5t.updateTabTitle");
+            else document.title = game.world.title;
         }
     });
 
@@ -60,6 +59,7 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: (value) => {
             if (value) enableCursorHints();
             else disableCursorHints();
@@ -73,6 +73,7 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: () => {
             ui.actors.render();
         }
@@ -85,10 +86,43 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: () => {
-             Object.values(ui.windows).forEach(app => {
-                 if (app.document?.documentName === "Actor") app.render();
-             });
+            // Re-render AppV1 actor sheets
+            Object.values(ui.windows).forEach(app => {
+                if (app.document?.documentName === "Actor") app.render();
+            });
+            // Re-render AppV2 actor sheets (V13+)
+            if (foundry.applications?.instances) {
+                for (const app of foundry.applications.instances.values()) {
+                    if (app.document?.documentName === "Actor") app.render();
+                }
+            }
+        }
+    });
+
+    game.settings.register(MODULE_ID, "enableBloodDropIcon", {
+        name: "Blood Drop Bloodied Icon",
+        hint: "Replaces the default DnD5e bloodied condition icon with a red blood drop.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSidebarNameWrap", {
+        name: "Sidebar Multi-line Names",
+        hint: "Enables text wrapping for long document names in the right sidebar (Actors, Items, Scenes, etc.) to prevent them from being cut off.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) enableSidebarNameWrap();
+            else disableSidebarNameWrap();
         }
     });
 
@@ -103,6 +137,7 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: (value) => {
             if (value) enableProneRotation();
             else disableProneRotation();
@@ -116,8 +151,9 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: () => {
-             ui.controls.initialize();
+            ui.controls.initialize();
         }
     });
 
@@ -128,6 +164,7 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true,
         onChange: (value) => {
             if (value) enableAutoClearMovementHistory();
             else disableAutoClearMovementHistory();
@@ -141,37 +178,40 @@ Hooks.once("init", () => {
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
 
-    game.settings.register(MODULE_ID, "autoRemoveItemsFromContainer", {
-        name: "Auto-Remove Dropped Items (World Containers)",
-        hint: "Automatically deletes the original source item when it is dragged from a world container onto an actor.",
-        scope: "world",
-        config: true,
-        type: String,
-        choices: {
-            "none": "Do not auto remove",
-            "removeWorld": "Auto remove from world containers",
-        },
-        default: "removeWorld"
-    });
+    // Container helpers settings — disabled while the feature is disabled
+    // game.settings.register(MODULE_ID, "autoRemoveItemsFromContainer", {
+    //     name: "Auto-Remove Dropped Items (World Containers)",
+    //     hint: "Automatically deletes the original source item when it is dragged from a world container onto an actor.",
+    //     scope: "world",
+    //     config: true,
+    //     type: String,
+    //     choices: {
+    //         "none": "Do not auto remove",
+    //         "removeWorld": "Auto remove from world containers",
+    //     },
+    //     default: "removeWorld",
+    //     restricted: true
+    // });
 
-    game.settings.register(MODULE_ID, "autoRemoveItemsFromActor", {
-        name: "Auto-Remove Dropped Items (Actors)",
-        hint: "Automatically deletes the original source item when it is dragged from an actor's inventory onto another sheet.",
-        scope: "world",
-        config: true,
-        type: String,
-        choices: {
-            "none": "Do not auto remove",
-            "removeAll": "Auto remove from any actor",
-            "removeCharacter": "Auto remove from characters",
-            "removeNPC": "Auto remove from npcs",
-            "removeGroup": "Auto remove from group actors",
-            "removeCharacterGroup": "Auto remove from characters & groups",
-            "removeNPCGroup": "Auto remove from npcs & groups",
-            "removeCharacterNPC": "Auto remove from characters & npcs",
-        },
-        default: "removeAll"
-    });
+    // game.settings.register(MODULE_ID, "autoRemoveItemsFromActor", {
+    //     name: "Auto-Remove Dropped Items (Actors)",
+    //     hint: "Automatically deletes the original source item when it is dragged from an actor's inventory onto another sheet.",
+    //     scope: "world",
+    //     config: true,
+    //     type: String,
+    //     choices: {
+    //         "none": "Do not auto remove",
+    //         "removeAll": "Auto remove from any actor",
+    //         "removeCharacter": "Auto remove from characters",
+    //         "removeNPC": "Auto remove from npcs",
+    //         "removeGroup": "Auto remove from group actors",
+    //         "removeCharacterGroup": "Auto remove from characters & groups",
+    //         "removeNPCGroup": "Auto remove from npcs & groups",
+    //         "removeCharacterNPC": "Auto remove from characters & npcs",
+    //     },
+    //     default: "removeAll",
+    //     restricted: true
+    // });
 
     game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
         name: "Prompt for Death Saves",
@@ -179,7 +219,8 @@ Hooks.once("init", () => {
         scope: "world",
         config: true,
         type: Boolean,
-        default: true
+        default: true,
+        restricted: true
     });
 
     // ==========================================
@@ -192,7 +233,8 @@ Hooks.once("init", () => {
         scope: "world",
         config: true,
         type: Boolean,
-        default: true
+        default: true,
+        restricted: true
     });
 
     game.settings.register(MODULE_ID, "debugMode", {
@@ -202,12 +244,14 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: false,
+        restricted: true,
         onChange: (value) => {
             log(`Debug mode ${value ? "enabled" : "disabled"}`);
         }
     });
 
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
+    initBloodDropIcon();
     initTokenResizer();
 });
 
@@ -217,18 +261,16 @@ Hooks.once("setup", () => {
     initSceneNavName();
     initActorDispositionColors();
     initItemRarityColors();
-    // initContainerHelpers(); // Disabled for now
-    
+
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
     initDeathSavePrompt();
 });
 
 Hooks.once("ready", () => {
-    // Requires SocketLib
-    setupSocket();
 
     // Features that can run at ready or need the game to be fully loaded
-    enableCursorHints();
-    enableProneRotation();
+    if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
+    if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
+    if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
 });

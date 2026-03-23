@@ -1,4 +1,4 @@
-import { debug } from "../main.js";
+import { MODULE_ID, debug } from "../main.js";
 
 export class ProneRotation {
     constructor() {
@@ -21,14 +21,14 @@ export class ProneRotation {
     }
 
     async _onCreateActiveEffect(effect, options, userId) {
-        if (!game.settings.get("niks-dnd5e-tweaks", "enableProneRotation")) return;
+        if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return; 
         if (!this._isProneEffect(effect) || effect.disabled) return;
         this._handleRotation(effect.parent, true);
     }
 
     async _onUpdateActiveEffect(effect, changes, options, userId) {
-        if (!game.settings.get("niks-dnd5e-tweaks", "enableProneRotation")) return;
+        if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return;
         if (!this._isProneEffect(effect)) return;
         if (changes.disabled !== undefined) {
@@ -37,7 +37,7 @@ export class ProneRotation {
     }
 
     async _onDeleteActiveEffect(effect, options, userId) {
-        if (!game.settings.get("niks-dnd5e-tweaks", "enableProneRotation")) return;
+        if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return;
         if (!this._isProneEffect(effect)) return;
         this._handleRotation(effect.parent, false);
@@ -53,8 +53,8 @@ export class ProneRotation {
             if (isProne) {
                 // Store original rotation
                 const currentRotation = token.document.rotation;
-                if (typeof token.document.getFlag("niks-dnd5e-tweaks", "originalRotation") === "undefined") {
-                    await token.document.setFlag("niks-dnd5e-tweaks", "originalRotation", currentRotation);
+                if (token.document.getFlag(MODULE_ID, "originalRotation") === undefined) {
+                    await token.document.setFlag(MODULE_ID, "originalRotation", currentRotation);
                 }
                 
                 // Rotate to 90
@@ -63,11 +63,11 @@ export class ProneRotation {
                     await token.document.update({ rotation: 90 });
                 }
             } else {
-                const originalRotation = token.document.getFlag("niks-dnd5e-tweaks", "originalRotation");
-                if (typeof originalRotation === "undefined") continue;
+                const originalRotation = token.document.getFlag(MODULE_ID, "originalRotation");
+                if (originalRotation === undefined) continue;
 
                 await token.document.update({ rotation: originalRotation });
-                await token.document.unsetFlag("niks-dnd5e-tweaks", "originalRotation");
+                await token.document.unsetFlag(MODULE_ID, "originalRotation");
             }
         }
     }
@@ -80,7 +80,7 @@ export class ProneRotation {
 let proneRotation = null;
 
 export function enableProneRotation() {
-    if (!proneRotation && game.settings.get("niks-dnd5e-tweaks", "enableProneRotation")) {
+    if (!proneRotation && game.settings.get(MODULE_ID, "enableProneRotation")) {
         proneRotation = new ProneRotation();
     }
 }

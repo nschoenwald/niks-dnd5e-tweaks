@@ -1,6 +1,4 @@
-import { debug } from "../main.js";
-
-const MODULE_ID = "niks-dnd5e-tweaks";
+import { MODULE_ID, debug } from "../main.js";
 
 /**
  * Initialize the Death Save Prompt feature.
@@ -38,6 +36,8 @@ export function initDeathSavePrompt() {
     });
 }
 
+let lastPromptKey = null;
+
 /**
  * Handle checking if a death save prompt should be sent.
  * @param {Combat} combat - The current combat.
@@ -58,6 +58,10 @@ async function handleDeathSavePrompt(combat) {
 
     // Check if at 0 HP and hasn't yet stabilized or died (3 successes or 3 failures)
     if (hp === 0 && death.success < 3 && death.failure < 3) {
+        const key = `${combatant.id}-${combat.round}`;
+        if (lastPromptKey === key) return;
+        lastPromptKey = key;
+
         debug(`Prompting for death save for ${actor.name}`);
         await sendDeathSavePrompt(actor);
     }
@@ -99,6 +103,7 @@ async function sendDeathSavePrompt(actor) {
         content: content,
         speaker: ChatMessage.getSpeaker({ actor: actor }),
         whisper: whisperUsers,
-        type: CONST.CHAT_MESSAGE_STYLES?.WHISPER || CONST.CHAT_MESSAGE_TYPES.WHISPER
+        type: CONST.CHAT_MESSAGE_STYLES?.WHISPER ?? CONST.CHAT_MESSAGE_TYPES?.WHISPER,
+        style: CONST.CHAT_MESSAGE_STYLES?.WHISPER ?? CONST.CHAT_MESSAGE_TYPES?.WHISPER
     });
 }

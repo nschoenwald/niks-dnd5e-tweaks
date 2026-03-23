@@ -1,4 +1,4 @@
-import { debug } from "../main.js";
+import { MODULE_ID, debug } from "../main.js";
 
 export class CursorHints {
     constructor() {
@@ -96,7 +96,7 @@ let onKeyDownBound = null;
 let onKeyUpBound = null;
 
 export function enableCursorHints() {
-    if (!cursorHints && game.settings.get("niks-dnd5e-tweaks", "enableCursorHints")) {
+    if (!cursorHints && game.settings.get(MODULE_ID, "enableCursorHints")) {
         cursorHints = new CursorHints();
         _addKeyListeners();
     }
@@ -111,8 +111,8 @@ export function disableCursorHints() {
 }
 
 function _addKeyListeners() {
-    onKeyDownBound = _handleKeyDown.bind(this);
-    onKeyUpBound = _handleKeyUp.bind(this);
+    onKeyDownBound = _handleKeyDown;
+    onKeyUpBound = _handleKeyUp;
 
     window.addEventListener("keydown", onKeyDownBound);
     window.addEventListener("keyup", onKeyUpBound);
@@ -124,7 +124,7 @@ function _removeKeyListeners() {
 }
 
 function _handleKeyDown(event) {
-    if (!cursorHints || !game.settings.get("niks-dnd5e-tweaks", "enableCursorHints")) return;
+    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
     // Don't trigger if user is typing in a text box
     if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.isContentEditable) return;
 
@@ -134,7 +134,7 @@ function _handleKeyDown(event) {
 }
 
 function _handleKeyUp(event) {
-    if (!cursorHints || !game.settings.get("niks-dnd5e-tweaks", "enableCursorHints")) return;
+    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
     
     if (_matchesAction(DND5E_ACTIONS.SKIP, event)) cursorHints.setModifierState("hintSkip", false);
     if (_matchesAction(DND5E_ACTIONS.ADVANTAGE, event)) cursorHints.setModifierState("hintAdvantage", false);
@@ -163,6 +163,8 @@ function _matchesAction(actionId, event) {
                 return false;
             });
             if (!modifiersMatch) return false;
+        } else {
+            if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return false;
         }
 
         return true;
