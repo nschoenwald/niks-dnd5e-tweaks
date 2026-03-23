@@ -10,6 +10,7 @@ import { initItemRarityColors } from "./features/item-rarity-colors.js";
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
+import { registerItemDeleteCheckSettings, initItemDeleteCheck } from "./features/item-delete-check.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -223,6 +224,20 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableItemDeleteCheck", {
+        name: "Item Delete Check & Tracking",
+        hint: "Adds confirmation dialogs before deleting items from sheets, and tracks currency, spell slot, and HP changes in chat or journal.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
+    // Register its sub-settings 
+    registerItemDeleteCheckSettings();
+
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================
@@ -273,4 +288,5 @@ Hooks.once("ready", () => {
     if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
+    if (game.settings.get(MODULE_ID, "enableItemDeleteCheck")) initItemDeleteCheck();
 });
