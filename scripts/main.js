@@ -6,11 +6,10 @@ import { enableProneRotation, disableProneRotation } from "./features/prone-rota
 import { initTokenResizer } from "./features/token-resizer.js";
 import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
 
-import { initItemRarityColors } from "./features/item-rarity-colors.js";
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
-import { registerItemDeleteCheckSettings, initItemDeleteCheck } from "./features/item-delete-check.js";
+import { initItemDeleteCheck } from "./features/item-delete-check.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -80,27 +79,7 @@ Hooks.once("init", () => {
         }
     });
 
-    game.settings.register(MODULE_ID, "enableItemRarityColors", {
-        name: "Item Rarity Colors",
-        hint: "Colors item backgrounds in actor sheets and inventory lists based on their rarity (Common, Uncommon, Rare, etc.).",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => {
-            // Re-render AppV1 actor sheets
-            Object.values(ui.windows).forEach(app => {
-                if (app.document?.documentName === "Actor") app.render();
-            });
-            // Re-render AppV2 actor sheets (V13+)
-            if (foundry.applications?.instances) {
-                for (const app of foundry.applications.instances.values()) {
-                    if (app.document?.documentName === "Actor") app.render();
-                }
-            }
-        }
-    });
+
 
     game.settings.register(MODULE_ID, "enableBloodDropIcon", {
         name: "Blood Drop Bloodied Icon",
@@ -179,40 +158,7 @@ Hooks.once("init", () => {
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
 
-    // Container helpers settings — disabled while the feature is disabled
-    // game.settings.register(MODULE_ID, "autoRemoveItemsFromContainer", {
-    //     name: "Auto-Remove Dropped Items (World Containers)",
-    //     hint: "Automatically deletes the original source item when it is dragged from a world container onto an actor.",
-    //     scope: "world",
-    //     config: true,
-    //     type: String,
-    //     choices: {
-    //         "none": "Do not auto remove",
-    //         "removeWorld": "Auto remove from world containers",
-    //     },
-    //     default: "removeWorld",
-    //     restricted: true
-    // });
-
-    // game.settings.register(MODULE_ID, "autoRemoveItemsFromActor", {
-    //     name: "Auto-Remove Dropped Items (Actors)",
-    //     hint: "Automatically deletes the original source item when it is dragged from an actor's inventory onto another sheet.",
-    //     scope: "world",
-    //     config: true,
-    //     type: String,
-    //     choices: {
-    //         "none": "Do not auto remove",
-    //         "removeAll": "Auto remove from any actor",
-    //         "removeCharacter": "Auto remove from characters",
-    //         "removeNPC": "Auto remove from npcs",
-    //         "removeGroup": "Auto remove from group actors",
-    //         "removeCharacterGroup": "Auto remove from characters & groups",
-    //         "removeNPCGroup": "Auto remove from npcs & groups",
-    //         "removeCharacterNPC": "Auto remove from characters & npcs",
-    //     },
-    //     default: "removeAll",
-    //     restricted: true
-    // });
+    // Container helpers settings were removed to avoid bloat.
 
     game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
         name: "Prompt for Death Saves",
@@ -225,8 +171,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "enableItemDeleteCheck", {
-        name: "Item Delete Check & Tracking",
-        hint: "Adds confirmation dialogs before deleting items from sheets, and tracks currency, spell slot, and HP changes in chat or journal.",
+        name: "Item Deletion Check",
+        hint: "Adds confirmation dialogs before deleting items from sheets to prevent accidental deletions.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -235,9 +181,7 @@ Hooks.once("init", () => {
         requiresReload: true
     });
 
-    // Register its sub-settings 
-    registerItemDeleteCheckSettings();
-
+    // End Settings
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================
@@ -275,7 +219,6 @@ Hooks.once("setup", () => {
     initForceCompendiumBrowser();
     initSceneNavName();
     initActorDispositionColors();
-    initItemRarityColors();
 
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();

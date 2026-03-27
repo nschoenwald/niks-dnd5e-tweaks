@@ -11,7 +11,6 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 1: User Interface & Visuals
 * **Sync Browser Tab Title**: Keeps the browser tab name dynamically in sync with the scene the client is currently viewing.
 * **Show Cursor Keyboard Hints**: Displays visual floating icons near the mouse cursor when DnD5e configured macro keys (Skip, Advantage, Disadvantage) are pressed.
-* **Colorize Item Rarity**: Colors item names in the character sheet's inventory list according to their rarity (e.g. Uncommon, Rare, Legendary) for easier quick-glance identification.
 * **Actor Directory Disposition Dots**: Adds a colored dot next to the actor name in the Actors directory sidebar based on their default token disposition (Friendly, Hostile, Secret, Neutral).
 * **Blood Drop Bloodied Icon**: Replaces the default DnD5e bloodied condition icon with a red blood drop.
 
@@ -24,6 +23,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 3: Automation & QOL Tasks
 
 * **Prompt for Death Saves**: Automatically whispers a chat message with a Death Saving Throw button to the player and GM when their character starts a turn with 0 HP.
+* **Item Deletion Check**: Adds a safety confirmation dialog when attempting to delete an item from a character sheet, preventing accidental deletions.
 
 ### Group 4: Restrictions & Rules
 

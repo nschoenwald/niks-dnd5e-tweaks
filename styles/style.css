@@ -44,30 +44,7 @@
     flex-grow: 0.01;
 }
 
-/* Item Rarity Colors - Used by item-rarity-colors.js */
-.item.nd5t-rarity-color-common {
-    background-color: rgba(255, 255, 225, 0.25);
-}
 
-.item.nd5t-rarity-color-uncommon {
-    background-color: rgba(0, 255, 0, 0.15);
-}
-
-.item.nd5t-rarity-color-rare {
-    background-color: rgba(0, 128, 255, 0.15);
-}
-
-.item.nd5t-rarity-color-veryrare {
-    background-color: rgba(153, 51, 255, 0.15);
-}
-
-.item.nd5t-rarity-color-legendary {
-    background-color: rgba(255, 128, 0, 0.15);
-}
-
-.item.nd5t-rarity-color-artifact {
-    background-color: rgba(255, 225, 0, 0.3);
-}
 
 /* Sidebar Name Wrap Feature */
 body.nd5t-sidebar-name-wrap .directory .directory-item {
