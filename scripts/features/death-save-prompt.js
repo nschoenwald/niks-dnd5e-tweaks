@@ -14,29 +14,45 @@ export function initDeathSavePrompt() {
         handleDeathSavePrompt(combat);
     });
 
+    // V13 compat — renderChatMessage passes jQuery or HTMLElement
     Hooks.on("renderChatMessage", (message, html) => {
         const element = html[0] || html;
-        const prompt = element.querySelector(".nd5t-death-save-prompt");
-        if (!prompt) return;
+        _bindDeathSaveButton(message, element);
+    });
 
-        const button = prompt.querySelector('button[data-action="nd5t-death-save"]');
-        if (button) {
-            button.addEventListener("click", async (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                const speaker = message.speaker;
-                const actor = ChatMessage.getSpeakerActor(speaker);
-                if (actor) {
-                    await actor.rollDeathSave({ event: event });
-                } else {
-                    ui.notifications.warn("Could not find actor for death save roll.");
-                }
-            });
-        }
+    // V14 — renderChatMessageHTML passes a plain HTMLElement
+    Hooks.on("renderChatMessageHTML", (message, html) => {
+        _bindDeathSaveButton(message, html);
     });
 }
 
 let lastPromptKey = null;
+
+/**
+ * Bind click handler to the death save button inside a chat message.
+ * Shared between the V13 (renderChatMessage) and V14 (renderChatMessageHTML) hooks.
+ * @param {ChatMessage} message
+ * @param {HTMLElement} element
+ */
+function _bindDeathSaveButton(message, element) {
+    const prompt = element.querySelector(".nd5t-death-save-prompt");
+    if (!prompt) return;
+
+    const button = prompt.querySelector('button[data-action="nd5t-death-save"]');
+    if (button) {
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const speaker = message.speaker;
+            const actor = ChatMessage.getSpeakerActor(speaker);
+            if (actor) {
+                await actor.rollDeathSave({ event: event });
+            } else {
+                ui.notifications.warn("Could not find actor for death save roll.");
+            }
+        });
+    }
+}
 
 /**
  * Handle checking if a death save prompt should be sent.
@@ -102,8 +118,6 @@ async function sendDeathSavePrompt(actor) {
     await ChatMessage.create({
         content: content,
         speaker: ChatMessage.getSpeaker({ actor: actor }),
-        whisper: whisperUsers,
-        type: CONST.CHAT_MESSAGE_STYLES?.WHISPER ?? CONST.CHAT_MESSAGE_TYPES?.WHISPER,
-        style: CONST.CHAT_MESSAGE_STYLES?.WHISPER ?? CONST.CHAT_MESSAGE_TYPES?.WHISPER
+        whisper: whisperUsers
     });
 }

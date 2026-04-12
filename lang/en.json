@@ -1,6 +1,3 @@
 {
-    "item-delete-check.reallyDelete": "Really delete this item",
-    "item-delete-check.sure": "Are you sure?",
-    "item-delete-check.CheckDelete.Name": "Confirm item deletions?",
-    "item-delete-check.CheckDelete.Hint": "When an item is deleted from an actor's inventory post a confirm dialog before deleting. Changing this settings requires a reload"
+  "ND5T.LegendaryActionPlaceholder": "Legendary Action"
 }

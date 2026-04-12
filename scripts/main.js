@@ -9,7 +9,7 @@ import { initActorDispositionColors } from "./features/actor-disposition-colors.
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
-import { initItemDeleteCheck } from "./features/item-delete-check.js";
+import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -133,7 +133,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: () => {
-            ui.controls.initialize();
+            ui.controls.render();
         }
     });
 
@@ -170,16 +170,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableItemDeleteCheck", {
-        name: "Item Deletion Check",
-        hint: "Adds confirmation dialogs before deleting items from sheets to prevent accidental deletions.",
+    game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
+        name: "Legendary Action Placeholders",
+        hint: "When starting a combat that includes an actor with legendary actions, inserts placeholder combatants directly after each player character's and friendly creature's turn to help track legendary actions.",
         scope: "world",
         config: true,
         type: Boolean,
         default: true,
-        restricted: true,
-        requiresReload: true
+        restricted: true
     });
+
 
     // End Settings
     // ==========================================
@@ -223,6 +223,7 @@ Hooks.once("setup", () => {
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
     initDeathSavePrompt();
+    initLegendaryActionPlaceholders();
 });
 
 Hooks.once("ready", () => {
@@ -231,5 +232,5 @@ Hooks.once("ready", () => {
     if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
-    if (game.settings.get(MODULE_ID, "enableItemDeleteCheck")) initItemDeleteCheck();
+
 });

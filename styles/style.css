@@ -44,11 +44,14 @@
     flex-grow: 0.01;
 }
 
-
-
 /* Sidebar Name Wrap Feature */
 body.nd5t-sidebar-name-wrap .directory .directory-item {
     height: auto;
+}
+
+/* Scene documents have tall thumbnail rows — preserve that height even without a thumbnail */
+body.nd5t-sidebar-name-wrap #scenes .directory-item:not(.folder) {
+    min-height: 100px;
 }
 
 body.nd5t-sidebar-name-wrap .directory .directory-item .document-name,

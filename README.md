@@ -23,7 +23,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 3: Automation & QOL Tasks
 
 * **Prompt for Death Saves**: Automatically whispers a chat message with a Death Saving Throw button to the player and GM when their character starts a turn with 0 HP.
-* **Item Deletion Check**: Adds a safety confirmation dialog when attempting to delete an item from a character sheet, preventing accidental deletions.
+* **Legendary Action Placeholders**: When starting a combat that includes an actor with legendary actions, inserts placeholder combatants directly after each player character's and friendly creature's turn to help track legendary actions.
 
 ### Group 4: Restrictions & Rules
 
