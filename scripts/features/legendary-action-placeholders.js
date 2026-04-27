@@ -26,7 +26,7 @@ export function initLegendaryActionPlaceholders() {
         const newCombatants = playerCombatants.map(pc => {
             return {
                 name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
-                hidden: false,
+                hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
                 img: "icons/svg/combat.svg",
                 initiative: (pc.initiative || 0) - 0.01,
 

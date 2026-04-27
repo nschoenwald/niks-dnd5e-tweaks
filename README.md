@@ -18,6 +18,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 * **Auto-Rotate Prone Tokens**: Automatically rotates tokens 90 degrees when they are given the Prone status effect.
 * **Token Resizer Tool**: Adds a new control icon to the Token tools menu (visible to GMs only) to quickly resize selected tokens to standard 5e dimensions (Tiny, Small, Large, Huge, etc.).
+* **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during both preview and final placement. Cones and rays are not affected. Compatible with both Foundry V13 (MeasuredTemplates) and V14 (Regions).
 * **Auto-Clear Movement History**: Automatically clears token movement history at the start of each combat turn. Includes sub-settings to determine when exactly to clear the history (e.g. at the start of a turn, on combat start).
 
 ### Group 3: Automation & QOL Tasks

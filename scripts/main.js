@@ -5,6 +5,7 @@ import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.j
 import { enableProneRotation, disableProneRotation } from "./features/prone-rotation.js";
 import { initTokenResizer } from "./features/token-resizer.js";
 import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
+import { initTemplateGridSnap } from "./features/template-grid-snap.js";
 
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
@@ -137,6 +138,16 @@ Hooks.once("init", () => {
         }
     });
 
+    game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
+        name: "Snap Templates to Grid Intersections",
+        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers. Cones and rays are not affected.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
         name: "Auto-Clear Movement History",
         hint: "When enabled, the GM client will automatically clear token movement history at the start of each combat turn.",
@@ -180,6 +191,15 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
+        name: "Make Legendary Action Placeholders Visible",
+        hint: "By default, legendary action placeholders are hidden in the initiative tracker. Enable this to make them visible to players.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
 
     // End Settings
     // ==========================================
@@ -224,6 +244,7 @@ Hooks.once("setup", () => {
     initAutoClearMovementHistory();
     initDeathSavePrompt();
     initLegendaryActionPlaceholders();
+    initTemplateGridSnap();
 });
 
 Hooks.once("ready", () => {
