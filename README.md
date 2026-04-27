@@ -39,3 +39,9 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 * **Force Compendium Browser**: Forces players (non-GMs) to open the DnD5e Compendium Browser when clicking the Compendium tab instead of the default pack list.
 * **Debug Mode**: Enables detailed debug logging in the console for troubleshooting.
+
+---
+
+## Licensing
+
+* The blood drop icon (`assets/bloodDrop.svg`) is sourced from [game-icons.net](https://game-icons.net/) and is licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
