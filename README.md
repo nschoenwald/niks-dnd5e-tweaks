@@ -4,6 +4,15 @@ A consolidated collection of small quality-of-life tweaks for Foundry VTT and th
 
 ---
 
+## Compatibility
+
+| | Minimum | Verified |
+|---|---|---|
+| **Foundry VTT** | V13 | V14 |
+| **DnD5e System** | 5.2.0 | 5.3.x |
+
+---
+
 ## Features
 
 All features can be toggled on or off individually within the Foundry VTT Module Settings menu. 
