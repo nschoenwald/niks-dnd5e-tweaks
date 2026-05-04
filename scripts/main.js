@@ -142,7 +142,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections",
-        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
+        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
         scope: "world",
         config: true,
         type: Boolean,

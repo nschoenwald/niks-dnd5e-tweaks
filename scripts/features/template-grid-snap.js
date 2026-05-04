@@ -5,6 +5,8 @@ import { MODULE_ID, debug, log } from "../main.js";
  * instead of grid cell centers. Cones, rays, and emanations (radius templates placed on tokens)
  * are not affected.
  *
+ * Hold Shift while placing to temporarily override the snap and place freely.
+ *
  * This feature affects both the live preview (while dragging to place) and the final placement.
  *
  * Foundry V13: Uses MeasuredTemplate documents — wraps getSnappedPosition on AbilityTemplate
@@ -13,6 +15,15 @@ import { MODULE_ID, debug, log } from "../main.js";
  * Foundry V14: Measured templates are replaced by Regions — hooks preCreateRegion.
  *              Preview snapping is handled the same way via dnd5e.createActivityTemplate.
  */
+
+/**
+ * Check whether the Shift key is currently held, which overrides snap behaviour
+ * and allows free placement.
+ * @returns {boolean}
+ */
+function _isShiftHeld() {
+    return game.keyboard.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT);
+}
 
 /**
  * Initialize the template grid snap feature by registering the appropriate hooks
@@ -47,6 +58,8 @@ export function initTemplateGridSnap() {
  * constructs the template objects but before drawPreview() is called, making it the
  * ideal place to override per-instance snapping behavior.
  *
+ * Holding Shift while dragging bypasses the snap and allows free placement.
+ *
  * @param {Activity} activity              The Activity for which templates are being placed.
  * @param {AbilityTemplate[]} templates    The template instances being placed.
  */
@@ -64,10 +77,19 @@ function _onCreateActivityTemplate(activity, templates) {
 
         debug(`Wrapping getSnappedPosition for ${type} template preview`);
 
+        // Store the original method so Shift can fall back to default behaviour
+        const originalGetSnappedPosition = template.getSnappedPosition.bind(template);
+
         // Override getSnappedPosition to snap to grid vertices (intersections)
         // instead of the default center-of-cell snapping.
         // The original method is called by _onMovePlacement on every mouse move.
         template.getSnappedPosition = function(position) {
+            // Shift held → bypass intersection snap, use default snapping
+            if (_isShiftHeld()) {
+                debug("Shift held — using default snap behaviour");
+                return originalGetSnappedPosition(position);
+            }
+
             return canvas.grid.getSnappedPoint(position, {
                 mode: CONST.GRID_SNAPPING_MODES.VERTEX
             });
@@ -85,6 +107,8 @@ function _onCreateActivityTemplate(activity, templates) {
  * dnd5e.createActivityTemplate handles most cases, but this ensures
  * correctness even if templates are created via other code paths.
  *
+ * Holding Shift at the moment of placement bypasses the snap.
+ *
  * @param {MeasuredTemplateDocument} document  The template document being created.
  * @param {object} data                        The initial data object provided to the document creation request.
  * @param {object} options                     Additional options which modify the creation request.
@@ -100,6 +124,12 @@ function _onPreCreateMeasuredTemplate(document, data, options, userId) {
 
     // Skip emanation (radius) templates — these need free placement on tokens
     if (document.flags?.dnd5e?.dimensions?.adjustedSize) return;
+
+    // Shift held at moment of confirmation → skip snapping
+    if (_isShiftHeld()) {
+        debug(`Shift held — skipping ${type} template snap on creation`);
+        return;
+    }
 
     debug(`Snapping ${type} template to grid intersection (final)`);
 
@@ -119,6 +149,8 @@ function _onPreCreateMeasuredTemplate(document, data, options, userId) {
  * Snap dnd5e activity-created circle and rectangle region shapes to grid intersections.
  * In V14, dnd5e spell templates are created as Region documents instead of MeasuredTemplates.
  *
+ * Holding Shift at the moment of placement bypasses the snap.
+ *
  * @param {RegionDocument} document  The region document being created.
  * @param {object} data              The initial data object provided to the document creation request.
  * @param {object} options           Additional options which modify the creation request.
@@ -133,6 +165,12 @@ function _onPreCreateRegion(document, data, options, userId) {
 
     // Skip emanation (radius) templates — these need free placement on tokens
     if (dnd5eFlags?.dimensions?.adjustedSize) return;
+
+    // Shift held at moment of confirmation → skip snapping
+    if (_isShiftHeld()) {
+        debug("Shift held — skipping region shape snap on creation");
+        return;
+    }
 
     const shapes = document.shapes;
     if (!shapes?.length) return;
