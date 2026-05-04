@@ -15,7 +15,7 @@ A consolidated collection of small quality-of-life tweaks for Foundry VTT and th
 
 ## Module Compatibility
 
-This module includes automatic compatibility checks for other popular modules. No manual configuration is needed — conflicting features are detected and disabled at startup.
+This module includes automatic compatibility checks for other popular modules. No manual configuration is needed. Conflicting features are detected and disabled at startup.
 
 ### midi-qol
 
