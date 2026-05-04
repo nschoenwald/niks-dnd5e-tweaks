@@ -11,21 +11,7 @@ A consolidated collection of small quality-of-life tweaks for Foundry VTT and th
 | **Foundry VTT** | V13 | V14 |
 | **DnD5e System** | 5.2.0 | 5.3.x |
 
----
-
-## Module Compatibility
-
-This module includes automatic compatibility checks for other popular modules. No manual configuration is needed. Conflicting features are detected and disabled at startup.
-
-### midi-qol
-
-[midi-qol](https://gitlab.com/tposney/midi-qol) provides its own comprehensive combat automation workflow, including auto-rolling damage and applying saves. The following features are **automatically disabled** when midi-qol is active to avoid duplicate rolls or conflicting behaviour:
-
-| Feature | Reason |
-|---|---|
-| **Auto-Open Damage Dialog for Saves** | midi-qol manages the entire activity workflow and auto-rolls damage itself. Running both would produce duplicate damage dialogs. |
-
-Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, etc.) coexist safely with midi-qol — they either use idempotent checks to avoid duplicating effects, or provide purely additive UI enhancements that don't interfere with midi-qol's workflow.
+See below for compatibility with other modules (especially midi-qol).
 
 ---
 
@@ -67,6 +53,22 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Utilities
 
 * **Debug Mode**: Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.
+
+---
+
+## Module Compatibility
+
+This module includes automatic compatibility checks for other popular modules. No manual configuration is needed. Conflicting features are detected and disabled at startup.
+
+### midi-qol
+
+[midi-qol](https://gitlab.com/tposney/midi-qol) provides its own comprehensive combat automation workflow, including auto-rolling damage and applying saves. The following features are **automatically disabled** when midi-qol is active to avoid duplicate rolls or conflicting behaviour:
+
+| Feature | Reason |
+|---|---|
+| **Auto-Open Damage Dialog for Saves** | midi-qol manages the entire activity workflow and auto-rolls damage itself. Running both would produce duplicate damage dialogs. |
+
+Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, etc.) coexist safely with midi-qol — they either use idempotent checks to avoid duplicating effects, or provide purely additive UI enhancements that don't interfere with midi-qol's workflow.
 
 ---
 
