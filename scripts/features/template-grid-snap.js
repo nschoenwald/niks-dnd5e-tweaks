@@ -2,7 +2,8 @@ import { MODULE_ID, debug, log } from "../main.js";
 
 /**
  * Enforces placing circle and square/rectangle measured templates on grid intersections (vertices)
- * instead of grid cell centers. Cones and rays are not affected.
+ * instead of grid cell centers. Cones, rays, and emanations (radius templates placed on tokens)
+ * are not affected.
  *
  * This feature affects both the live preview (while dragging to place) and the final placement.
  *
@@ -58,6 +59,9 @@ function _onCreateActivityTemplate(activity, templates) {
         // Only override snapping for circle and rect (square/cube) templates
         if (type !== "circle" && type !== "rect") continue;
 
+        // Skip emanation (radius) templates — these need free placement on tokens
+        if (template.document.flags?.dnd5e?.dimensions?.adjustedSize) continue;
+
         debug(`Wrapping getSnappedPosition for ${type} template preview`);
 
         // Override getSnappedPosition to snap to grid vertices (intersections)
@@ -94,6 +98,9 @@ function _onPreCreateMeasuredTemplate(document, data, options, userId) {
     // Only snap circle and rect (square/cube) templates
     if (type !== "circle" && type !== "rect") return;
 
+    // Skip emanation (radius) templates — these need free placement on tokens
+    if (document.flags?.dnd5e?.dimensions?.adjustedSize) return;
+
     debug(`Snapping ${type} template to grid intersection (final)`);
 
     const snapped = canvas.grid.getSnappedPoint(
@@ -123,6 +130,9 @@ function _onPreCreateRegion(document, data, options, userId) {
     // Only process regions created by dnd5e activities (spell templates)
     const dnd5eFlags = document.flags?.dnd5e;
     if (!dnd5eFlags?.origin) return;
+
+    // Skip emanation (radius) templates — these need free placement on tokens
+    if (dnd5eFlags?.dimensions?.adjustedSize) return;
 
     const shapes = document.shapes;
     if (!shapes?.length) return;

@@ -6,11 +6,14 @@ import { enableProneRotation, disableProneRotation } from "./features/prone-rota
 import { initTokenResizer } from "./features/token-resizer.js";
 import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
 import { initTemplateGridSnap } from "./features/template-grid-snap.js";
+import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
+import { initBloodDropIcon } from "./features/blood-drop-icon.js";
 
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
-import { initBloodDropIcon } from "./features/blood-drop-icon.js";
-import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
+import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
 import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
+import { initHealingContextMenu } from "./features/healing-context-menu.js";
+import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -40,7 +43,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableSceneNavName", {
         name: "Sync Browser Tab Title",
-        hint: "Keeps the browser tab name in sync with the scene the client is currently viewing.",
+        hint: "Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -53,9 +56,10 @@ Hooks.once("init", () => {
         }
     });
 
+
     game.settings.register(MODULE_ID, "enableCursorHints", {
-        name: "Show Cursor Keyboard Hints",
-        hint: "Displays visual floating icons near the mouse cursor when dnd5e configured keys (Skip, Advantage, Disadvantage) are pressed.",
+        name: "Cursor Keyboard Hints",
+        hint: "Displays small floating icons near the mouse cursor when modifier keys configured in the DnD5e system (such as Skip Dialog, Advantage, or Disadvantage) are held down.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -69,7 +73,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableActorDispositionColors", {
         name: "Actor Directory Disposition Dots",
-        hint: "Adds a colored dot next to the actor name in the Actors directory sidebar based on their default token disposition (Friendly, Hostile, Secret, Neutral).",
+        hint: "Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).",
         scope: "world",
         config: true,
         type: Boolean,
@@ -80,11 +84,9 @@ Hooks.once("init", () => {
         }
     });
 
-
-
     game.settings.register(MODULE_ID, "enableBloodDropIcon", {
         name: "Blood Drop Bloodied Icon",
-        hint: "Replaces the default DnD5e bloodied condition icon with a red blood drop.",
+        hint: "Replaces the default DnD5e \"bloodied\" condition icon with a red blood drop icon. Requires a reload to take effect.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -95,7 +97,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableSidebarNameWrap", {
         name: "Sidebar Multi-line Names",
-        hint: "Enables text wrapping for long document names in the right sidebar (Actors, Items, Scenes, etc.) to prevent them from being cut off.",
+        hint: "Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -113,7 +115,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableProneRotation", {
         name: "Auto-Rotate Prone Tokens",
-        hint: "Automatically rotates tokens 90 degrees when they are given the Prone status effect.",
+        hint: "Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when it is removed.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -127,7 +129,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableTokenResizer", {
         name: "Token Resizer Tool",
-        hint: "Adds a new control icon to the Token tools menu (GMs only) to quickly resize selected tokens to standard 5e dimensions.",
+        hint: "Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan).",
         scope: "world",
         config: true,
         type: Boolean,
@@ -140,7 +142,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections",
-        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers. Cones and rays are not affected.",
+        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
         scope: "world",
         config: true,
         type: Boolean,
@@ -150,7 +152,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
         name: "Auto-Clear Movement History",
-        hint: "When enabled, the GM client will automatically clear token movement history at the start of each combat turn.",
+        hint: "Automatically clears token movement history trails at the start of each combat turn (GM client only). Sub-settings below control exactly when clearing occurs.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -169,11 +171,9 @@ Hooks.once("init", () => {
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
 
-    // Container helpers settings were removed to avoid bloat.
-
-    game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
-        name: "Prompt for Death Saves",
-        hint: "Automatically whispers a chat message with a Death Saving Throw button to the player and GM when their character starts a turn with 0 HP.",
+    game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
+        name: "Auto-Apply Status at 0 HP",
+        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -181,9 +181,100 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerStatus", {
+        name: "↳ Player Token Status at 0 HP",
+        hint: "Which overlay status condition to apply to player-owned tokens when they drop to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "unconscious",
+        choices: {
+            unconscious: "Unconscious",
+            dead: "Dead",
+            none: "None (disabled)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcStatus", {
+        name: "↳ NPC Token Status at 0 HP",
+        hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "dead",
+        choices: {
+            unconscious: "Unconscious",
+            dead: "Dead",
+            none: "None (disabled)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerCombat", {
+        name: "↳ Player Token Combat Action at 0 HP",
+        hint: "What to do in the combat tracker when a player-owned token drops to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "none",
+        choices: {
+            defeated: "Mark Defeated",
+            remove: "Remove from Combat",
+            none: "None (do nothing)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcCombat", {
+        name: "↳ NPC Token Combat Action at 0 HP",
+        hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "defeated",
+        choices: {
+            defeated: "Mark Defeated",
+            remove: "Remove from Combat",
+            none: "None (do nothing)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
+        name: "Prompt for Death Saves",
+        hint: "When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableAutoRollSaveDamage", {
+        name: "Auto-Open Damage Dialog for Saves",
+        hint: "Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used. This mirrors the built-in behaviour of Attack activities, which already auto-open their attack roll dialog. Automatically disabled when midi-qol is active.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableHealingContextMenu", {
+        name: "Healing Roll Context Menu",
+        hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default. Requires a reload to take effect.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
     game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
         name: "Legendary Action Placeholders",
-        hint: "When starting a combat that includes an actor with legendary actions, inserts placeholder combatants directly after each player character's and friendly creature's turn to help track legendary actions.",
+        hint: "When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -192,8 +283,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
-        name: "Make Legendary Action Placeholders Visible",
-        hint: "By default, legendary action placeholders are hidden in the initiative tracker. Enable this to make them visible to players.",
+        name: "↳ Show Placeholders to Players",
+        hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -201,14 +292,13 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    // End Settings
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================
 
     game.settings.register(MODULE_ID, "enableForceCompendiumBrowser", {
         name: "Force Compendium Browser",
-        hint: "Forces players (non-GMs) to open the DnD5e Compendium Browser when clicking the Compendium tab instead of the default pack list.",
+        hint: "Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -216,9 +306,13 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    // ==========================================
+    // Utilities
+    // ==========================================
+
     game.settings.register(MODULE_ID, "debugMode", {
         name: "Debug Mode",
-        hint: "Enables detailed debug logging in the console for troubleshooting.",
+        hint: "Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -243,8 +337,11 @@ Hooks.once("setup", () => {
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
     initDeathSavePrompt();
+    initAutoStatusZeroHP();
     initLegendaryActionPlaceholders();
     initTemplateGridSnap();
+    initHealingContextMenu();
+    initAutoRollSaveDamage();
 });
 
 Hooks.once("ready", () => {
