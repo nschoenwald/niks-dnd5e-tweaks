@@ -55,17 +55,57 @@ export async function doResizeTokens(tokens, size, sizeDataToUse = globalThis.nd
   const sizeEntry = sizeDataToUse[size];
   if (!sizeEntry) return;
   for (let token of tokens) {
-    const update = { height: sizeEntry.height ?? sizeEntry.tokenSize, width: sizeEntry.width ?? sizeEntry.tokenSize };
-    const scaleX = token.document.texture?.scaleX;
-    const scaleY = token.document.texture?.scaleY;
-    if (scaleX < (sizeEntry.minScaleX ?? sizeEntry.minScale) || scaleY < (sizeEntry.minScaleY ?? sizeEntry.minScale)) {
-      update["texture"] = { scaleX: Math.max(scaleX, sizeEntry.minScaleX ?? sizeEntry.minScale ?? 1), scaleY: Math.max(scaleY, sizeEntry.minScaleY ?? sizeEntry.minScale ?? 1) }
-    } else if (sizeEntry.scale) {
-      update["texture"] = { scaleX: sizeEntry.scale, scaleY: sizeEntry.scale }
-    }
-    await token.document.update(update, { method: "teleport" });
-    if (token.actor) {
-      await token.actor.update({ "system.traits.size": sizeEntry.dndSize ?? size });
+    const isV14 = game.release.generation >= 14;
+
+    if (isV14) {
+      if (!token.actor) continue;
+
+      const existingEffects = token.actor.effects.filter(e => e.flags?.[MODULE_ID]?.isTokenResize);
+      for (let e of existingEffects) {
+        await e.delete();
+      }
+
+      const targetWidth = sizeEntry.width ?? sizeEntry.tokenSize;
+      const targetHeight = sizeEntry.height ?? sizeEntry.tokenSize;
+      const targetSize = sizeEntry.dndSize ?? size;
+
+      const changes = [
+        { key: "system.traits.size", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: targetSize },
+        { key: "tokenOverrides.width", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: targetWidth },
+        { key: "tokenOverrides.height", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: targetHeight }
+      ];
+
+      const scaleX = token.document.texture?.scaleX;
+      const scaleY = token.document.texture?.scaleY;
+
+      if (scaleX < (sizeEntry.minScaleX ?? sizeEntry.minScale) || scaleY < (sizeEntry.minScaleY ?? sizeEntry.minScale)) {
+        changes.push({ key: "tokenOverrides.texture.scaleX", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: Math.max(scaleX, sizeEntry.minScaleX ?? sizeEntry.minScale ?? 1) });
+        changes.push({ key: "tokenOverrides.texture.scaleY", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: Math.max(scaleY, sizeEntry.minScaleY ?? sizeEntry.minScale ?? 1) });
+      } else if (sizeEntry.scale) {
+        changes.push({ key: "tokenOverrides.texture.scaleX", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: sizeEntry.scale });
+        changes.push({ key: "tokenOverrides.texture.scaleY", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: sizeEntry.scale });
+      }
+
+      await ActiveEffect.create({
+        name: `Resized: ${sizeEntry.label}`,
+        icon: "icons/magic/control/silhouette-grow-shrink-blue.webp",
+        changes: changes,
+        flags: { [MODULE_ID]: { isTokenResize: true } }
+      }, { parent: token.actor });
+
+    } else {
+      const update = { height: sizeEntry.height ?? sizeEntry.tokenSize, width: sizeEntry.width ?? sizeEntry.tokenSize };
+      const scaleX = token.document.texture?.scaleX;
+      const scaleY = token.document.texture?.scaleY;
+      if (scaleX < (sizeEntry.minScaleX ?? sizeEntry.minScale) || scaleY < (sizeEntry.minScaleY ?? sizeEntry.minScale)) {
+        update["texture"] = { scaleX: Math.max(scaleX, sizeEntry.minScaleX ?? sizeEntry.minScale ?? 1), scaleY: Math.max(scaleY, sizeEntry.minScaleY ?? sizeEntry.minScale ?? 1) }
+      } else if (sizeEntry.scale) {
+        update["texture"] = { scaleX: sizeEntry.scale, scaleY: sizeEntry.scale }
+      }
+      await token.document.update(update, { method: "teleport" });
+      if (token.actor) {
+        await token.actor.update({ "system.traits.size": sizeEntry.dndSize ?? size });
+      }
     }
   }
 }

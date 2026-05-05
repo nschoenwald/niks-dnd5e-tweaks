@@ -29,7 +29,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 2: Canvas & Tokens
 
 * **Auto-Rotate Prone Tokens**: Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when it is removed.
-* **Token Resizer Tool**: Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan).
+* **Token Resizer Tool**: Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan). In Foundry V13, this modifies the token dimensions directly. In Foundry V14+, this applies an Active Effect using the new V14 `tokenOverrides` framework, allowing sizes to be dynamically toggled and managed alongside other effects.
 * **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold **Shift** while placing to temporarily override and place freely. Cones and rays are not affected. Compatible with both Foundry V13 (MeasuredTemplates) and V14 (Regions).
 * **Auto-Clear Movement History**: Automatically clears token movement history trails at the start of each combat turn (GM client only). Includes sub-settings to control exactly when clearing occurs (e.g. at the start of a turn, on combat start).
 
