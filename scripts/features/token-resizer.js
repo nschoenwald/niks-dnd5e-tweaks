@@ -41,7 +41,9 @@ export function initTokenResizer() {
       };
 
       // Exact logic from scriptlets: tokenButtons.tools["tokenResizer"] = ...
-      if (Array.isArray(tokenButtons.tools)) {
+      if (!tokenButtons.tools) {
+         tokenButtons.tools = [tool];
+      } else if (Array.isArray(tokenButtons.tools)) {
          if (!tokenButtons.tools.find(t => t.name === "tokenResizer")) tokenButtons.tools.push(tool);
       } else {
          tokenButtons.tools["tokenResizer"] = tool;
