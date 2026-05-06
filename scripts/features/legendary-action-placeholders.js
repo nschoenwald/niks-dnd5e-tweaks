@@ -12,7 +12,7 @@ export function initLegendaryActionPlaceholders() {
 
         // Check if there is at least one combatant with legendary actions
         const hasLegendary = combat.combatants.some(c => c.actor?.system?.resources?.legact?.max > 0);
-        
+
         if (!hasLegendary) {
             debug(`No actors with legendary actions found in combat ${combat.id}.`);
             return;
@@ -28,7 +28,7 @@ export function initLegendaryActionPlaceholders() {
                 name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
                 hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
                 img: "icons/svg/combat.svg",
-                initiative: (pc.initiative || 0) - 0.01,
+                initiative: (pc.initiative || 0) - 0.001,
 
                 flags: {
                     [MODULE_ID]: {

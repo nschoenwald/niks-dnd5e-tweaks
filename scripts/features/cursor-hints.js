@@ -153,7 +153,14 @@ function _matchesAction(actionId, event) {
     if (!bindings || bindings.length === 0) return false;
 
     return bindings.some(binding => {
-        if (binding.key !== event.code) return false;
+        // Foundry bindings usually use code (e.g., 'ShiftLeft', 'KeyA'), but check key as fallback
+        if (binding.key !== event.code && binding.key !== event.key) return false;
+
+        const isShiftKey = event.code.startsWith("Shift");
+        const isCtrlKey = event.code.startsWith("Control");
+        const isAltKey = event.code.startsWith("Alt");
+        const isMetaKey = event.code.startsWith("Meta");
+
         if (binding.modifiers && binding.modifiers.length > 0) {
             const modifiersMatch = binding.modifiers.every(mod => {
                 if (mod === "Control") return event.ctrlKey;
@@ -164,7 +171,12 @@ function _matchesAction(actionId, event) {
             });
             if (!modifiersMatch) return false;
         } else {
-            if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return false;
+            // If no modifiers are required, ensure no extra modifiers are pressed.
+            // We ignore the modifier flag if the pressed key itself IS that modifier.
+            if (event.ctrlKey && !isCtrlKey) return false;
+            if (event.shiftKey && !isShiftKey) return false;
+            if (event.altKey && !isAltKey) return false;
+            if (event.metaKey && !isMetaKey) return false;
         }
 
         return true;
