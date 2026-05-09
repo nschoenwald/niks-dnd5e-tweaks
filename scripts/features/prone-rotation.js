@@ -23,14 +23,14 @@ export class ProneRotation {
     async _onCreateActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return; 
-        if (!this._isProneEffect(effect) || effect.disabled) return;
+        if (!this._isRotationEffect(effect) || effect.disabled) return;
         this._handleRotation(effect.parent, true);
     }
 
     async _onUpdateActiveEffect(effect, changes, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return;
-        if (!this._isProneEffect(effect)) return;
+        if (!this._isRotationEffect(effect)) return;
         if (changes.disabled !== undefined) {
              this._handleRotation(effect.parent, !changes.disabled);
         }
@@ -39,7 +39,7 @@ export class ProneRotation {
     async _onDeleteActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (userId !== game.user.id) return;
-        if (!this._isProneEffect(effect)) return;
+        if (!this._isRotationEffect(effect)) return;
         this._handleRotation(effect.parent, false);
     }
 
@@ -63,6 +63,9 @@ export class ProneRotation {
                     await token.document.update({ rotation: 90 });
                 }
             } else {
+                // Don't un-rotate if the actor still has another rotation-triggering status
+                if (actor.statuses.has("prone") || actor.statuses.has("unconscious") || actor.statuses.has("dead")) continue;
+
                 const originalRotation = token.document.getFlag(MODULE_ID, "originalRotation");
                 if (originalRotation === undefined) continue;
 
@@ -72,8 +75,13 @@ export class ProneRotation {
         }
     }
 
-    _isProneEffect(effect) {
-        return effect.statuses && effect.statuses.has("prone");
+    /**
+     * Check whether the effect is one that should trigger rotation.
+     * Matches prone, unconscious, and dead statuses.
+     */
+    _isRotationEffect(effect) {
+        if (!effect.statuses) return false;
+        return effect.statuses.has("prone") || effect.statuses.has("unconscious") || effect.statuses.has("dead");
     }
 }
 

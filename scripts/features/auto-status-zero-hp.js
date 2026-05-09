@@ -33,8 +33,6 @@ function _ownershipType(actor) {
 
 /**
  * Apply (or skip) the configured status condition for a token at 0 HP.
- * Also applies the "prone" condition since unconscious and dead creatures
- * are prone per D&D 5e rules.
  *
  * Wrapped in try-catch because the DnD5e system (and other modules like
  * monks-combat-details) may also apply the same fixed-ID status effect
@@ -57,21 +55,11 @@ async function _applyZeroHPStatus(actor, statusId) {
         debug(`Auto-Status | ${actor.name} already has "${statusId}" — skipping`);
     }
 
-    // Also apply prone (unconscious/dead creatures are prone per 5e rules)
-    if (!actor.statuses.has("prone")) {
-        debug(`Auto-Status | Applying "prone" to ${actor.name}`);
-        try {
-            await actor.toggleStatusEffect("prone", { active: true });
-        } catch (e) {
-            debug(`Auto-Status | Could not apply "prone" to ${actor.name}: ${e.message}`);
-        }
-    }
 }
 
 /**
  * Remove dead and unconscious status effects from an actor that has
- * regained HP.  Prone is intentionally kept — creatures must spend
- * movement to stand up on their turn per 5e rules.
+ * regained HP.
  * @param {Actor} actor
  */
 async function _removeZeroHPStatuses(actor) {
