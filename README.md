@@ -25,6 +25,8 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Actor Directory Disposition Dots**: Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).
 * **Blood Drop Bloodied Icon**: Replaces the default DnD5e "bloodied" condition icon with a red blood drop icon.
 * **Sidebar Multi-line Names**: Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.
+* **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Especially useful when detaching windows in V14, where the prefix otherwise consumes all visible space in the OS taskbar.
+  * *↳ Sheet Title Format* — controls how titles are displayed (choices: **Name Only** (default), Type: Name, Name (Type)).
 
 ### Group 2: Canvas & Tokens
 

@@ -8,6 +8,7 @@ import { initActorDispositionColors } from "./features/actor-disposition-colors.
 import { initTemplateGridSnap } from "./features/template-grid-snap.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
+import { initCleanSheetTitles } from "./features/clean-sheet-titles.js";
 
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
@@ -107,6 +108,32 @@ Hooks.once("init", () => {
             if (value) enableSidebarNameWrap();
             else disableSidebarNameWrap();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableCleanSheetTitles", {
+        name: "Clean Sheet Window Titles",
+        hint: "Removes the verbose type prefix (e.g. \"Non Player Character:\") from document sheet window titles, showing just the document name. Especially useful when detaching windows in V14, where the prefix otherwise consumes all visible space in the taskbar. Requires a reload to take effect.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
+    game.settings.register(MODULE_ID, "cleanSheetTitles_format", {
+        name: "↳ Sheet Title Format",
+        hint: "How to display document sheet window titles. \"Name Only\" shows just the name (e.g. \"Goblin\"). \"Type: Name\" adds a prefix (e.g. \"Non Player Character: Goblin\"). \"Name (Type)\" adds a suffix (e.g. \"Goblin (Non Player Character)\").",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "name",
+        choices: {
+            name: "Name Only",
+            prefix: "Type: Name",
+            suffix: "Name (Type)"
+        },
+        restricted: true
     });
 
     // ==========================================
@@ -333,6 +360,7 @@ Hooks.once("setup", () => {
     initForceCompendiumBrowser();
     initSceneNavName();
     initActorDispositionColors();
+    initCleanSheetTitles();
 
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
