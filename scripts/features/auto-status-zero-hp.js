@@ -144,6 +144,27 @@ async function _undefeatCombatant(actor) {
 }
 
 /**
+ * Capture the old HP state before it gets updated.
+ *
+ * @param {Actor}  actor
+ * @param {object} change
+ * @param {object} options
+ * @param {string} userId
+ */
+function _onPreUpdateActor(actor, change, options, userId) {
+    if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
+
+    // Only the GM client should process this.
+    if (!game.user.isGM) return;
+
+    // Only react when HP actually changed.
+    if (!foundry.utils.hasProperty(change, "system.attributes.hp.value")) return;
+
+    // Record whether the actor was at 0 HP before this update
+    options.autoStatusWasZeroHP = actor.system.attributes.hp.value <= 0;
+}
+
+/**
  * Core handler — called from the updateActor hook.
  *
  * Processing is deferred by a short timeout so that the dnd5e system and
@@ -154,8 +175,10 @@ async function _undefeatCombatant(actor) {
  *
  * @param {Actor}  actor
  * @param {object} change
+ * @param {object} options
+ * @param {string} userId
  */
-function _onUpdateActor(actor, change) {
+function _onUpdateActor(actor, change, options, userId) {
     if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
     // Only the GM client should process this to avoid duplicate updates.
@@ -167,8 +190,9 @@ function _onUpdateActor(actor, change) {
     // Capture values now; defer processing to avoid race conditions.
     const newHP = actor.system.attributes.hp.value;
     const type = _ownershipType(actor);
+    const wasZeroHP = options.autoStatusWasZeroHP;
 
-    setTimeout(() => _processHPChange(actor, newHP, type), 250);
+    setTimeout(() => _processHPChange(actor, newHP, type, wasZeroHP), 250);
 }
 
 /**
@@ -178,8 +202,9 @@ function _onUpdateActor(actor, change) {
  * @param {Actor}  actor
  * @param {number} newHP
  * @param {"player"|"npc"} type
+ * @param {boolean} wasZeroHP
  */
-async function _processHPChange(actor, newHP, type) {
+async function _processHPChange(actor, newHP, type, wasZeroHP) {
     if (newHP <= 0) {
         // ── Status overlay ──
         const statusKey = type === "player"
@@ -195,9 +220,12 @@ async function _processHPChange(actor, newHP, type) {
         const combatAction = game.settings.get(MODULE_ID, combatKey);
         await _handleCombatActionZeroHP(actor, combatAction);
     } else {
-        // HP is above 0 — remove any auto-applied statuses and un-defeat.
-        await _removeZeroHPStatuses(actor);
-        await _undefeatCombatant(actor);
+        // HP is above 0 — remove any auto-applied statuses and un-defeat,
+        // but ONLY if the token was at 0 HP before.
+        if (wasZeroHP) {
+            await _removeZeroHPStatuses(actor);
+            await _undefeatCombatant(actor);
+        }
     }
 }
 
@@ -206,5 +234,6 @@ async function _processHPChange(actor, newHP, type) {
  * Called once during the "setup" phase from main.js.
  */
 export function initAutoStatusZeroHP() {
+    Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("updateActor", _onUpdateActor);
 }
