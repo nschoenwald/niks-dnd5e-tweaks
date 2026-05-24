@@ -15,7 +15,6 @@ import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
 import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
 import { initHealingContextMenu } from "./features/healing-context-menu.js";
 import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
-import { initAutoFlyMode } from "./features/auto-fly-mode.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -171,16 +170,6 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections",
         hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableAutoFlyMode", {
-        name: "Auto-Fly NPC Tokens",
-        hint: "When dragging an NPC token onto the canvas, automatically sets its movement mode to flying if the actor's fly speed is at least as large as its walk speed.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -381,7 +370,6 @@ Hooks.once("setup", () => {
     initTemplateGridSnap();
     initHealingContextMenu();
     initAutoRollSaveDamage();
-    initAutoFlyMode();
 });
 
 Hooks.once("ready", () => {

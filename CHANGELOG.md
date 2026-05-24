@@ -2,10 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.10.0] - 2026-05-24
-### Added
-- **Auto-Fly NPC Tokens**: When dragging an NPC token onto the canvas, automatically sets its movement mode to flying if the actor's fly speed is at least as large as its walk speed.
-
 ## [14.9.0] - 2026-05-23
 ### Added
 - **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Features a sub-setting to control format (Name Only, Type: Name, Name (Type)). 
