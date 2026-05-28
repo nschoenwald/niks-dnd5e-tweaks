@@ -350,6 +350,14 @@ Hooks.once("init", () => {
         }
     });
 
+    // Hidden setting to track migration version (not shown in config UI)
+    game.settings.register(MODULE_ID, "migrationVersion", {
+        scope: "world",
+        config: false,
+        type: Number,
+        default: 0
+    });
+
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
     initTokenResizer();
@@ -372,7 +380,10 @@ Hooks.once("setup", () => {
     initAutoRollSaveDamage();
 });
 
-Hooks.once("ready", () => {
+Hooks.once("ready", async () => {
+
+    // One-time migrations (GM only)
+    if (game.user.isGM) await runMigrations();
 
     // Features that can run at ready or need the game to be fully loaded
     if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
@@ -380,3 +391,29 @@ Hooks.once("ready", () => {
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
 
 });
+
+/**
+ * Run one-time data migrations, gated by a stored version number.
+ */
+async function runMigrations() {
+    const currentVersion = game.settings.get(MODULE_ID, "migrationVersion");
+
+    // Migration 1: Remove stale "originalRotation" flags from token documents
+    if (currentVersion < 1) {
+        log("Running migration 1: clearing stale originalRotation flags...");
+        for (const scene of game.scenes) {
+            const updates = [];
+            for (const token of scene.tokens) {
+                if (token.getFlag(MODULE_ID, "originalRotation") !== undefined) {
+                    updates.push({ _id: token.id, [`flags.${MODULE_ID}.-=originalRotation`]: null });
+                }
+            }
+            if (updates.length) {
+                await scene.updateEmbeddedDocuments("Token", updates);
+                log(`  Cleared flags from ${updates.length} token(s) in scene "${scene.name}"`);
+            }
+        }
+        await game.settings.set(MODULE_ID, "migrationVersion", 1);
+        log("Migration 1 complete.");
+    }
+}

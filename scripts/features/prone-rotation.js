@@ -46,32 +46,31 @@ export class ProneRotation {
     async _handleRotation(actor, isProne) {
         if (!actor) return;
         const tokens = actor.getActiveTokens();
+        debug(`_handleRotation: actor=${actor.name}, isProne=${isProne}, tokens found=${tokens.length}`);
 
+        const updates = [];
         for (const token of tokens) {
             if (!token.document.canUserModify(game.user, "update")) continue;
 
-            if (isProne) {
-                // Store original rotation
-                const currentRotation = token.document.rotation;
-                if (token.document.getFlag(MODULE_ID, "originalRotation") === undefined) {
-                    await token.document.setFlag(MODULE_ID, "originalRotation", currentRotation);
-                }
-                
-                // Rotate to 90
-                if (token.document.rotation !== 90) {
-                    debug(`Rotating token ${token.name} (${token.id}) to 90 degrees (Prone)`);
-                    await token.document.update({ rotation: 90 });
-                }
-            } else {
+            const targetRotation = isProne ? 90 : 0;
+            if (token.document.rotation === targetRotation) continue;
+
+            if (!isProne) {
                 // Don't un-rotate if the actor still has another rotation-triggering status
                 if (actor.statuses.has("prone") || actor.statuses.has("unconscious") || actor.statuses.has("dead")) continue;
-
-                const originalRotation = token.document.getFlag(MODULE_ID, "originalRotation");
-                if (originalRotation === undefined) continue;
-
-                await token.document.update({ rotation: originalRotation });
-                await token.document.unsetFlag(MODULE_ID, "originalRotation");
             }
+
+            debug(`  ${token.name} (${token.id}): ${token.document.rotation}° → ${targetRotation}°`);
+            const update = { _id: token.document.id, rotation: targetRotation };
+            if (isProne && token.document.lockRotation) {
+                update.lockRotation = false;
+            }
+            updates.push(update);
+        }
+
+        if (updates.length) {
+            debug(`  Batch updating ${updates.length} token(s)`);
+            await canvas.scene.updateEmbeddedDocuments("Token", updates);
         }
     }
 

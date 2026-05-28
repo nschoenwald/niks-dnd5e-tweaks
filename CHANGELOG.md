@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.1] - 2026-05-28
+### Fixed
+- **Auto-Rotate Prone Tokens**: Fixed tokens not visually rotating when prone. The module now disables `lockRotation` when applying prone rotation.
+
+### Changed
+- **Auto-Rotate Prone Tokens**: Simplified rotation logic — tokens are now set to an absolute 90° when prone and 0° when un-proned, replacing the previous approach of storing and restoring original rotation values.
+- **Auto-Rotate Prone Tokens**: Token rotation updates are now batched via `scene.updateEmbeddedDocuments` instead of sequential per-token updates for improved reliability.
+- Added a one-time migration to clean up stale `originalRotation` flags from token documents left by the previous implementation.
+
 ## [14.9.0] - 2026-05-23
 ### Added
 - **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Features a sub-setting to control format (Name Only, Type: Name, Name (Type)). 
