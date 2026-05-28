@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.10.1] - 2026-05-28
+## [14.9.1] - 2026-05-28
 ### Fixed
 - **Auto-Rotate Prone Tokens**: Fixed tokens not visually rotating when prone. The module now disables `lockRotation` when applying prone rotation.
 
