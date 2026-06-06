@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.0] (unreleased)
+### Added
+- **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved in the combat. Includes a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.
+- **Player Damage Prompt**: When an attack hits a targeted token, whispers a chat message with the damage breakdown (accounting for damage reductions, resistances, vulnerabilities, and immunities per the 2024 rules order), the effective damage total, and a one-click button to apply the damage. Critical hits are shown as "CRITICALLY HIT" (without the attack roll total). The button state syncs across all clients via socket. Disabled by default.
+  - Sub-setting: **Damage Prompt Whisper Visibility** — controls whether the whisper is sent to both GM & Player or Player Only.
+  - Sub-setting: **GM Damage Prompt for Player Attacks** — when enabled, also whispers a damage prompt to the GM when a player's attack hits an NPC. Disabled by default.
+- **Spell Add Button Override**: Overrides the "+" button on character and NPC sheet spell sections. Instead of always creating a blank spell, the button behavior is configurable via a dropdown setting (Create New Spell, Open Compendium Browser, Show Choice Dialog). Applies to both V13 and V14 sheets.
+
 ## [14.9.1] - 2026-05-28
 ### Fixed
 - **Auto-Rotate Prone Tokens**: Fixed tokens not visually rotating when prone. The module now disables `lockRotation` when applying prone rotation.

@@ -66,3 +66,98 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     padding-bottom: 4px;
     overflow: visible;
 }
+
+/* Player Damage Prompt - Used by player-damage-prompt.js */
+.nd5t-damage-prompt .card-content p {
+    margin: 0.4em 0;
+    line-height: 1.4;
+}
+
+.nd5t-crit-text {
+    color: #c00;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.nd5t-damage-prompt .nd5t-trait-info {
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.nd5t-damage-prompt button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Combat Experience Tracker - Used by combat-exp-tracker.js */
+.nd5t-exp-summary .card-content {
+    padding: 0.4em 0;
+}
+
+.nd5t-exp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+}
+
+.nd5t-exp-table th,
+.nd5t-exp-table td {
+    padding: 0.25em 0.4em;
+    text-align: left;
+}
+
+.nd5t-exp-table thead th {
+    border-bottom: 2px solid var(--dnd5e-color-card-border, rgba(0, 0, 0, 0.2));
+    font-weight: bold;
+    opacity: 0.8;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.nd5t-exp-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.nd5t-exp-xp-cell {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.nd5t-exp-total-row td {
+    border-top: 2px solid var(--dnd5e-color-card-border, rgba(0, 0, 0, 0.2));
+    padding-top: 0.35em;
+}
+
+.nd5t-exp-share {
+    margin: 0.6em 0 0.4em;
+    line-height: 1.4;
+}
+
+.nd5t-exp-pc-details {
+    margin: 0.3em 0;
+    font-size: 0.9em;
+}
+
+.nd5t-exp-pc-details summary {
+    cursor: pointer;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.nd5t-exp-pc-list {
+    margin: 0.2em 0 0 1.2em;
+    padding: 0;
+}
+
+.nd5t-exp-pc-list li {
+    margin: 0.15em 0;
+}
+
+.nd5t-exp-summary button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}

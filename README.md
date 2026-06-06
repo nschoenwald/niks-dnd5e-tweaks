@@ -45,12 +45,18 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Prompt for Death Saves**: When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.
 * **Auto-Open Damage Dialog for Saves**: Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used. This mirrors the built-in behaviour of Attack activities, which already auto-open their attack roll dialog. Automatically disabled when midi-qol is active to avoid duplicate rolls.
 * **Healing Roll Context Menu**: Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default.
+* **Player Damage Prompt**: When an attack hits a targeted token, whispers a chat message with the damage breakdown (accounting for damage reductions, resistances, vulnerabilities, and immunities per the 2024 rules order), the effective damage total, and a button to apply the damage. The button state syncs across all clients. Critical hits are indicated with "CRITICALLY HIT" in the message. Disabled by default.
+  * *↳ Damage Prompt Whisper Visibility* — controls who receives the whisper when a player token is hit (choices: **GM & Player** (default), Player Only).
+  * *↳ GM Damage Prompt for Player Attacks* — when a player rolls attack damage against an NPC token that was hit, whispers a damage prompt to the GM. Disabled by default.
 * **Legendary Action Placeholders**: When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.
   * *↳ Show Placeholders to Players* — by default, placeholder turns are hidden from players. Enable this to make them visible.
+* **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved, with a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.
 
 ### Group 4: Restrictions & Rules
 
 * **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
+* **Spell Add Button Override**: Overrides the "+" button on character and NPC sheet spell sections. Instead of always creating a blank spell, you can configure it to open the DnD5e Compendium Browser to the Spells tab, or show a dialog letting you choose.
+  * *↳ Spell Add Button Override* — defaults to **Open Compendium Browser** (choices: Create New Spell (System Default), Open Compendium Browser, Show Choice Dialog).
 
 ### Utilities
 

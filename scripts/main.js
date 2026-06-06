@@ -1,4 +1,5 @@
 import { initForceCompendiumBrowser } from "./features/force-compendium-browser.js";
+import { initSpellAddButtonOverride } from "./features/spell-add-button-override.js";
 import { registerAutoClearMovementSettings, initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/auto-clear-movement-history.js";
 import { initSceneNavName } from "./features/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.js";
@@ -15,6 +16,8 @@ import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
 import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
 import { initHealingContextMenu } from "./features/healing-context-menu.js";
 import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
+import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
+import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -288,6 +291,40 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enablePlayerDamagePrompt", {
+        name: "Player Damage Prompt",
+        hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damagePromptVisibility", {
+        name: "↳ Damage Prompt Whisper Visibility",
+        hint: "Controls who receives the damage prompt whisper when a player token is hit. 'GM & Player' sends to both the owning player and all GMs. 'Player Only' sends only to the owning player.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "gmAndPlayer",
+        choices: {
+            gmAndPlayer: "GM & Player",
+            playerOnly: "Player Only"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableGmDamagePrompt", {
+        name: "↳ GM Damage Prompt for Player Attacks",
+        hint: "When a player rolls attack damage against an NPC token that was hit, whispers a damage prompt to the GM with the damage breakdown and an Apply Damage button. Requires the Player Damage Prompt feature to be enabled.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableHealingContextMenu", {
         name: "Healing Roll Context Menu",
         hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default. Requires a reload to take effect.",
@@ -306,6 +343,16 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableCombatExpTracker", {
+        name: "Combat Experience Tracker",
+        hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
         restricted: true
     });
 
@@ -330,6 +377,21 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "spellAddButtonMode", {
+        name: "Spell Add Button Override",
+        hint: "Controls what happens when you click the '+' button to add a spell on a character or NPC sheet. 'Open Compendium Browser' opens the DnD5e spell browser directly. 'Show Choice Dialog' presents a dialog with both options.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "compendium",
+        choices: {
+            default: "Create New Spell (System Default)",
+            compendium: "Open Compendium Browser",
+            dialog: "Show Choice Dialog"
+        },
         restricted: true
     });
 
@@ -378,6 +440,9 @@ Hooks.once("setup", () => {
     initTemplateGridSnap();
     initHealingContextMenu();
     initAutoRollSaveDamage();
+    initPlayerDamagePrompt();
+    initSpellAddButtonOverride();
+    initCombatExpTracker();
 });
 
 Hooks.once("ready", async () => {
