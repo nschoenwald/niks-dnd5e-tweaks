@@ -5,6 +5,7 @@ import { initSceneNavName } from "./features/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.js";
 import { enableProneRotation, disableProneRotation } from "./features/prone-rotation.js";
 import { initTokenResizer } from "./features/token-resizer.js";
+import { initDisableUndergroundTokenHiding } from "./features/disable-underground-token-hiding.js";
 import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
 import { initTemplateGridSnap } from "./features/template-grid-snap.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
@@ -197,6 +198,17 @@ Hooks.once("init", () => {
     // Register its sub-settings (these belong to movement history logically)
     registerAutoClearMovementSettings();
 
+    game.settings.register(MODULE_ID, "disableUndergroundTokenHiding", {
+        name: "Disable Underground Token Hiding",
+        hint: "Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Requires a reload to take effect.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true,
+        requiresReload: true
+    });
+
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
@@ -325,6 +337,15 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "suppressDamagePrompt", {
+        name: "↳ Suppress Damage Prompts (Player)",
+        hint: "Hide damage prompt whispers in chat. This is a per-user setting — each player can choose independently whether to see damage prompts.",
+        scope: "user",
+        config: true,
+        type: Boolean,
+        default: false
+    });
+
     game.settings.register(MODULE_ID, "enableHealingContextMenu", {
         name: "Healing Roll Context Menu",
         hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default. Requires a reload to take effect.",
@@ -346,9 +367,9 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableCombatExpTracker", {
-        name: "Combat Experience Tracker",
-        hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
+    game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
+        name: "↳ Show Placeholders to Players",
+        hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -356,9 +377,9 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
-        name: "↳ Show Placeholders to Players",
-        hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
+    game.settings.register(MODULE_ID, "enableCombatExpTracker", {
+        name: "Combat Experience Tracker",
+        hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -423,6 +444,7 @@ Hooks.once("init", () => {
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
     initTokenResizer();
+    initDisableUndergroundTokenHiding();
 });
 
 Hooks.once("setup", () => {

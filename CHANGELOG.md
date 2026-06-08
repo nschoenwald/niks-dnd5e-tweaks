@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
   - Sub-setting: **Damage Prompt Whisper Visibility** — controls whether the whisper is sent to both GM & Player or Player Only.
   - Sub-setting: **GM Damage Prompt for Player Attacks** — when enabled, also whispers a damage prompt to the GM when a player's attack hits an NPC. Disabled by default.
 - **Spell Add Button Override**: Overrides the "+" button on character and NPC sheet spell sections. Instead of always creating a blank spell, the button behavior is configurable via a dropdown setting (Create New Spell, Open Compendium Browser, Show Choice Dialog). Applies to both V13 and V14 sheets.
+- **Disable Underground Token Hiding**: Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Compatible with Foundry V14 native Scene Levels. Disabled by default.
 
 ## [14.9.1] - 2026-05-28
 ### Fixed

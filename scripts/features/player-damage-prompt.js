@@ -580,6 +580,12 @@ function _bindApplyDamageButton(message, element) {
     const prompt = element.querySelector(".nd5t-damage-prompt");
     if (!prompt) return;
 
+    // Allow individual players to suppress damage prompts
+    if (!game.user.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
+        prompt.style.display = "none";
+        return;
+    }
+
     const button = prompt.querySelector('button[data-action="nd5t-apply-damage"]');
     if (!button) return;
 
