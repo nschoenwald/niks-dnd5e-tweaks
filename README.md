@@ -56,8 +56,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 4: Restrictions & Rules
 
 * **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
-* **Spell Add Button Override**: Overrides the "+" button on character and NPC sheet spell sections. Instead of always creating a blank spell, you can configure it to open the DnD5e Compendium Browser to the Spells tab, or show a dialog letting you choose.
-  * *↳ Spell Add Button Override* — defaults to **Open Compendium Browser** (choices: Create New Spell (System Default), Open Compendium Browser, Show Choice Dialog).
+
 
 ### Utilities
 

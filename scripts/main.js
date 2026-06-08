@@ -1,5 +1,4 @@
 import { initForceCompendiumBrowser } from "./features/force-compendium-browser.js";
-import { initSpellAddButtonOverride } from "./features/spell-add-button-override.js";
 import { registerAutoClearMovementSettings, initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/auto-clear-movement-history.js";
 import { initSceneNavName } from "./features/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.js";
@@ -401,20 +400,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "spellAddButtonMode", {
-        name: "Spell Add Button Override",
-        hint: "Controls what happens when you click the '+' button to add a spell on a character or NPC sheet. 'Open Compendium Browser' opens the DnD5e spell browser directly. 'Show Choice Dialog' presents a dialog with both options.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "compendium",
-        choices: {
-            default: "Create New Spell (System Default)",
-            compendium: "Open Compendium Browser",
-            dialog: "Show Choice Dialog"
-        },
-        restricted: true
-    });
 
     // ==========================================
     // Utilities
@@ -463,7 +448,7 @@ Hooks.once("setup", () => {
     initHealingContextMenu();
     initAutoRollSaveDamage();
     initPlayerDamagePrompt();
-    initSpellAddButtonOverride();
+
     initCombatExpTracker();
 });
 
