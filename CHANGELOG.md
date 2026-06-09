@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.1] - 2026-06-09
+### Fixed
+- **Player Damage Prompt**: Fixed attacks with split damage types (e.g. a Flame Tongue sword dealing both slashing and fire damage) being incorrectly attributed to a single damage type. The prompt now correctly splits damage by type using term-level flavor annotations — matching the DnD5e system's own `aggregateDamageRolls` logic — so that resistances, immunities, and vulnerabilities are applied to the correct damage portions.
+- **Player Damage Prompt**: Fixed the damage type resolver prioritising the unordered `types` Set over the resolved singular `type`, which could report the wrong damage type for weapons with multiple selectable types.
+
 ## [14.10.0] 2026-06-08
 ### Added
 - **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved in the combat. Includes a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.

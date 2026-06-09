@@ -190,18 +190,24 @@ function _getAttackD20Roll(attackMessage) {
 // ── Damage helpers ───────────────────────────────────────────────────
 
 /**
- * Read the damage type from a DamageRoll.
- * Handles both Set (live) and Array (deserialised JSON) forms.
+ * Read the primary damage type from a DamageRoll.
+ * Prefers the resolved singular `type` (what the system uses for
+ * aggregation and damage application) over the `types` Set (which
+ * may contain multiple selectable types from the DamageData schema
+ * in an undefined iteration order).
  * @param {Roll} roll
  * @returns {string}
  */
 function _getDamageType(roll) {
+    // Prefer the resolved singular type (set by the system when rolling)
+    if (roll.options?.type) return roll.options.type;
+    // Fall back to the types Set (from the DamageData schema)
     const types = roll.options?.types;
     if (types) {
         if (types instanceof Set) return [...types][0] ?? "untyped";
         if (Array.isArray(types)) return types[0] ?? "untyped";
     }
-    return roll.options?.type || "untyped";
+    return "untyped";
 }
 
 /**
@@ -218,38 +224,136 @@ function _getDamageProperties(roll) {
 }
 
 /**
+ * Split a single damage roll into per-type value chunks by inspecting
+ * term-level flavor annotations (e.g. "1d8[slashing] + 2d6[fire]").
+ * Falls back to the roll's overall type when terms have no flavor.
+ *
+ * This mirrors the DnD5e system's internal `chunkTerms` logic used by
+ * `aggregateDamageRolls`, ensuring split damage types are handled
+ * correctly for resistance/immunity/vulnerability calculations.
+ *
+ * @param {Roll} roll
+ * @returns {Array<{value: number, type: string, properties: string[]}>}
+ */
+function _splitRollByType(roll) {
+    const defaultType = _getDamageType(roll);
+    const properties = _getDamageProperties(roll);
+    const OperatorTerm = foundry.dice.terms.OperatorTerm;
+    const isValidType = (t) => !!(CONFIG.DND5E?.damageTypes?.[t] || CONFIG.DND5E?.healingTypes?.[t]);
+
+    // If the roll has no terms, fall back to the simple path
+    if (!roll.terms?.length) {
+        return [{ value: roll.total, type: defaultType, properties }];
+    }
+
+    // Quick check: are there any flavor-annotated terms with a type
+    // different from the default?  If not, skip the expensive chunking.
+    let hasMultipleTypes = false;
+    for (const term of roll.terms) {
+        if (term instanceof OperatorTerm) continue;
+        const flavor = term.flavor?.toLowerCase().trim();
+        if (flavor && isValidType(flavor) && flavor !== defaultType) {
+            hasMultipleTypes = true;
+            break;
+        }
+    }
+
+    if (!hasMultipleTypes) {
+        return [{ value: roll.total, type: defaultType, properties }];
+    }
+
+    // ── Term-level chunking ──────────────────────────────────────
+    // Split on + / − operators; keep × / ÷ within chunks.
+    // For each chunk, detect the damage type from term flavors.
+    debug("Player Damage Prompt | Splitting multi-type roll:",
+        roll.formula, "| Default type:", defaultType);
+
+    const chunks = [];
+    let currentTerms = [];
+    let currentType = null;
+    let negative = false;
+
+    const pushChunk = () => {
+        if (currentTerms.length === 0) return;
+        const type = currentType ?? defaultType;
+
+        // Compute the chunk total from its already-evaluated term totals.
+        // Terms within a chunk are connected by * / operators, so we
+        // reconstruct the expression string and safeEval it.
+        const expression = currentTerms.map(t => t.total).join(" ");
+        let value;
+        try {
+            value = Roll.safeEval(expression);
+        } catch {
+            // Fallback: sum non-operator term totals
+            value = currentTerms.reduce((sum, t) =>
+                (t instanceof OperatorTerm) ? sum : sum + (t.total ?? 0), 0);
+        }
+        if (negative) value = -value;
+
+        chunks.push({ value, type, properties: [...properties] });
+        currentTerms = [];
+        currentType = null;
+        negative = false;
+    };
+
+    for (const term of roll.terms) {
+        if ((term instanceof OperatorTerm) && ["+", "-"].includes(term.operator)) {
+            pushChunk();
+            if (term.operator === "-") negative = !negative;
+            continue;
+        }
+
+        currentTerms.push(term);
+        const flavor = term.flavor?.toLowerCase().trim();
+        if (flavor && isValidType(flavor)) {
+            currentType = currentType ?? flavor;
+        }
+    }
+    pushChunk();
+
+    debug("Player Damage Prompt | Split result:",
+        chunks.map(c => `${c.value} ${c.type}`).join(", "),
+        "| Original total:", roll.total);
+
+    return chunks;
+}
+
+/**
  * Aggregate damage across all rolls, grouping by damage type.
+ * Handles rolls with split damage types (multiple types within a
+ * single roll via term-level flavor annotations).
  * @param {Roll[]} rolls
  * @returns {Record<string, number>}  Map of type → total damage.
  */
 function _aggregateDamage(rolls) {
     const byType = {};
     for (const roll of rolls) {
-        const type = _getDamageType(roll);
-        // Skip healing types
-        if (CONFIG.DND5E?.healingTypes?.[type]) continue;
-        byType[type] = (byType[type] || 0) + roll.total;
+        for (const chunk of _splitRollByType(roll)) {
+            // Skip healing types
+            if (CONFIG.DND5E?.healingTypes?.[chunk.type]) continue;
+            byType[chunk.type] = (byType[chunk.type] || 0) + chunk.value;
+        }
     }
     return byType;
 }
 
 /**
  * Build an array of DamageDescription objects from the raw rolls,
- * preserving per-roll type and properties so that `applyDamage` can
+ * preserving per-chunk type and properties so that `applyDamage` can
  * correctly evaluate bypasses, etc.
+ * Handles rolls with split damage types by creating one
+ * DamageDescription per type chunk rather than per roll.
  * @param {Roll[]} rolls
  * @returns {Array<{value: number, type: string, properties: string[]}>}
  */
 function _buildDamageDescriptions(rolls) {
     const descriptions = [];
     for (const roll of rolls) {
-        const type = _getDamageType(roll);
-        if (CONFIG.DND5E?.healingTypes?.[type]) continue;
-        descriptions.push({
-            value: roll.total,
-            type,
-            properties: _getDamageProperties(roll)
-        });
+        for (const chunk of _splitRollByType(roll)) {
+            if (CONFIG.DND5E?.healingTypes?.[chunk.type]) continue;
+            descriptions.push(chunk);
+        }
     }
     return descriptions;
 }
