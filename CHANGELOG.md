@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.2] - 2026-06-20
+### Fixed
+- **Combat Experience Tracker**: Fixed tracking state being lost if the GM reloads their browser tab mid-combat. Combatant data is now persisted to the Combat document via flags, so the XP summary is correctly posted when the combat ends even after a reload.
+
 ## [14.10.1] - 2026-06-09
 ### Fixed
 - **Player Damage Prompt**: Fixed attacks with split damage types (e.g. a Flame Tongue sword dealing both slashing and fire damage) being incorrectly attributed to a single damage type. The prompt now correctly splits damage by type using term-level flavor annotations — matching the DnD5e system's own `aggregateDamageRolls` logic — so that resistances, immunities, and vulnerabilities are applied to the correct damage portions.

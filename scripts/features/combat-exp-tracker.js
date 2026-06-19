@@ -10,28 +10,15 @@ import { MODULE_ID, debug } from "../main.js";
  * GM listing every hostile NPC with its XP value, the total XP, the per-PC
  * share (rounded down), and a one-click "Distribute XP" button.
  *
+ * All tracking state is persisted to the Combat document via flags, so the
+ * feature survives mid-combat browser reloads.
+ *
  * The feature is gated by the `enableCombatExpTracker` setting.
  */
 
-// ── Tracking state ───────────────────────────────────────────────────
+// ── Flag key ─────────────────────────────────────────────────────────
 
-/**
- * Map of actor UUID → { name, xp } for hostile NPCs involved in combat.
- * @type {Map<string, {name: string, xp: number}>}
- */
-const trackedNPCs = new Map();
-
-/**
- * Map of actor UUID → { name } for player characters involved in combat.
- * @type {Map<string, {name: string}>}
- */
-const trackedPCs = new Map();
-
-/**
- * The ID of the combat we are currently tracking, to avoid cross-contamination.
- * @type {string|null}
- */
-let trackedCombatId = null;
+const FLAG_KEY = "xpTracker";
 
 // ── Initialisation ───────────────────────────────────────────────────
 
@@ -58,38 +45,71 @@ export function initCombatExpTracker() {
     debug("Combat Exp Tracker | Initialized");
 }
 
+// ── Flag helpers ─────────────────────────────────────────────────────
+
+/**
+ * Read the xpTracker flag from a combat document.
+ * @param {Combat} combat
+ * @returns {{ npcs: Object<string, {name: string, xp: number}>, pcs: Object<string, {name: string}> } | undefined}
+ */
+function _getFlag(combat) {
+    return combat.getFlag(MODULE_ID, FLAG_KEY);
+}
+
+/**
+ * Write the xpTracker flag to a combat document.
+ * @param {Combat} combat
+ * @param {Object} data   { npcs: {...}, pcs: {...} }
+ */
+async function _setFlag(combat, data) {
+    await combat.setFlag(MODULE_ID, FLAG_KEY, data);
+}
+
 // ── Combat lifecycle hooks ───────────────────────────────────────────
 
 /**
  * Snapshot all combatants at the start of combat.
  * @param {Combat} combat    The combat that just started.
  */
-function _onCombatStart(combat) {
+async function _onCombatStart(combat) {
     if (!game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
-    _clearState();
-    trackedCombatId = combat.id;
+    const npcs = {};
+    const pcs = {};
 
     for (const combatant of combat.combatants) {
-        _trackCombatant(combatant);
+        _classifyCombatant(combatant, npcs, pcs);
     }
 
+    await _setFlag(combat, { npcs, pcs });
+
     debug("Combat Exp Tracker | Combat started — tracked",
-        trackedNPCs.size, "hostile NPC(s) and",
-        trackedPCs.size, "PC(s)");
+        Object.keys(npcs).length, "hostile NPC(s) and",
+        Object.keys(pcs).length, "PC(s)");
 }
 
 /**
  * Track a combatant added mid-combat.
  * @param {Combatant} combatant   The newly created combatant.
  */
-function _onCreateCombatant(combatant) {
+async function _onCreateCombatant(combatant) {
     if (!game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
-    if (!trackedCombatId || combatant.combat?.id !== trackedCombatId) return;
 
-    _trackCombatant(combatant);
+    const combat = combatant.combat;
+    if (!combat) return;
+
+    const flag = _getFlag(combat);
+    if (!flag) return; // No tracker running on this combat
+
+    const npcs = { ...flag.npcs };
+    const pcs = { ...flag.pcs };
+
+    _classifyCombatant(combatant, npcs, pcs);
+
+    await _setFlag(combat, { npcs, pcs });
+
     debug("Combat Exp Tracker | Combatant added mid-combat:",
         combatant.actor?.name ?? "(unknown)");
 }
@@ -101,38 +121,43 @@ function _onCreateCombatant(combatant) {
 async function _onDeleteCombat(combat) {
     if (!game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
-    if (combat.id !== trackedCombatId) return;
+
+    const flag = _getFlag(combat);
+    if (!flag) return; // No tracker was running on this combat
 
     debug("Combat Exp Tracker | Combat ended — building XP summary");
 
+    const npcCount = Object.keys(flag.npcs).length;
+    const pcCount = Object.keys(flag.pcs).length;
+
     // Only post if there are both NPCs and PCs
-    if (trackedNPCs.size === 0 || trackedPCs.size === 0) {
+    if (npcCount === 0 || pcCount === 0) {
         debug("Combat Exp Tracker | Skipping summary: no hostile NPCs or no PCs tracked");
-        _clearState();
         return;
     }
 
-    await _sendExpSummary();
-    _clearState();
+    await _sendExpSummary(flag.npcs, flag.pcs);
 }
 
 // ── Combatant classification ─────────────────────────────────────────
 
 /**
- * Classify a combatant and add it to the appropriate tracking map.
- * - Hostile NPCs (disposition HOSTILE, actor type "npc") → trackedNPCs
- * - Player characters (actor type "character") → trackedPCs
+ * Classify a combatant and add it to the appropriate tracking object.
+ * - Hostile NPCs (disposition HOSTILE, actor type "npc") → npcs
+ * - Player characters (actor type "character") → pcs
  * @param {Combatant} combatant
+ * @param {Object<string, {name: string, xp: number}>} npcs   Mutated in-place
+ * @param {Object<string, {name: string}>}              pcs    Mutated in-place
  */
-function _trackCombatant(combatant) {
+function _classifyCombatant(combatant, npcs, pcs) {
     const actor = combatant.actor;
     if (!actor) return;
 
     const uuid = actor.uuid;
 
     if (actor.type === "character") {
-        if (!trackedPCs.has(uuid)) {
-            trackedPCs.set(uuid, { name: actor.name });
+        if (!pcs[uuid]) {
+            pcs[uuid] = { name: actor.name };
             debug("Combat Exp Tracker |   PC:", actor.name, `(${uuid})`);
         }
     } else if (actor.type === "npc") {
@@ -142,9 +167,9 @@ function _trackCombatant(combatant) {
             ?? CONST.TOKEN_DISPOSITIONS.HOSTILE;
 
         if (disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE) {
-            if (!trackedNPCs.has(uuid)) {
+            if (!npcs[uuid]) {
                 const xp = actor.system.details?.xp?.value ?? 0;
-                trackedNPCs.set(uuid, { name: actor.name, xp });
+                npcs[uuid] = { name: actor.name, xp };
                 debug("Combat Exp Tracker |   Hostile NPC:", actor.name,
                     `| XP: ${xp}`, `(${uuid})`);
             }
@@ -152,27 +177,23 @@ function _trackCombatant(combatant) {
     }
 }
 
-/**
- * Reset all tracking state.
- */
-function _clearState() {
-    trackedNPCs.clear();
-    trackedPCs.clear();
-    trackedCombatId = null;
-}
-
 // ── XP summary message ──────────────────────────────────────────────
 
 /**
  * Build and send the GM-whispered XP summary chat message.
+ * @param {Object<string, {name: string, xp: number}>} npcs
+ * @param {Object<string, {name: string}>}              pcs
  */
-async function _sendExpSummary() {
-    const totalXP = [...trackedNPCs.values()].reduce((sum, npc) => sum + npc.xp, 0);
-    const pcCount = trackedPCs.size;
+async function _sendExpSummary(npcs, pcs) {
+    const npcEntries = Object.values(npcs);
+    const pcEntries = Object.entries(pcs);
+
+    const totalXP = npcEntries.reduce((sum, npc) => sum + npc.xp, 0);
+    const pcCount = pcEntries.length;
     const perPC = Math.floor(totalXP / pcCount);
 
     // Build NPC table rows
-    const npcRows = [...trackedNPCs.values()]
+    const npcRows = npcEntries
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(npc => `
             <tr>
@@ -182,13 +203,14 @@ async function _sendExpSummary() {
         `).join("");
 
     // Build PC list
-    const pcList = [...trackedPCs.values()]
+    const pcList = pcEntries
+        .map(([, pc]) => pc)
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(pc => `<li>${pc.name}</li>`)
         .join("");
 
     // Serialise PC UUIDs for the button
-    const pcUuids = JSON.stringify([...trackedPCs.keys()]);
+    const pcUuids = JSON.stringify(pcEntries.map(([uuid]) => uuid));
 
     const content = `
         <div class="dnd5e chat-card nd5t-exp-summary">
