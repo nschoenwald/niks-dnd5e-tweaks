@@ -79,6 +79,12 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     letter-spacing: 0.03em;
 }
 
+.nd5t-graze-text {
+    color: #b87a00;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .nd5t-damage-prompt .nd5t-trait-info {
     font-style: italic;
     opacity: 0.9;

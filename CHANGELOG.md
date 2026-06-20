@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.3] - 2026-06-20
+### Added
+- **Player Damage Prompt**: Added support for the **Graze** weapon mastery. When an attack misses a target, the module now checks if the weapon has the Graze mastery and if the attacker has mastered that weapon. If both conditions are met, a damage prompt is sent for the Graze damage (ability modifier only, same damage type as the weapon). Resistances, immunities, and vulnerabilities are correctly applied to the Graze damage. Works for both player and NPC attackers, but requires the full mastery check (weapon must have `graze` mastery and the actor must have the weapon in their mastered weapons list).
+
 ## [14.10.2] - 2026-06-20
 ### Fixed
 - **Combat Experience Tracker**: Fixed tracking state being lost if the GM reloads their browser tab mid-combat. Combatant data is now persisted to the Combat document via flags, so the XP summary is correctly posted when the combat ends even after a reload.

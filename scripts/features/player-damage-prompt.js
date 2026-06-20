@@ -140,7 +140,7 @@ async function _onCreateChatMessage(message) {
     // Process each target
     debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
     for (const target of targets) {
-        await _processTarget(target, attackRoll, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled);
+        await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled);
     }
 }
 
@@ -405,16 +405,20 @@ function _getWhisperTargets(actor) {
 
 /**
  * Process a single target: resolve the token/actor, check hit, calculate
- * effective damage, and send the whisper prompt.
+ * effective damage, and send the whisper prompt.  On a miss, checks for
+ * Graze weapon mastery and sends a graze damage prompt if applicable.
  * @param {object}  target              Target descriptor from message flags.
  * @param {Roll}    attackRoll           The D20Roll for the attack.
+ * @param {ChatMessage} attackMessage    The attack roll chat message.
+ * @param {ChatMessage} damageMessage    The damage roll chat message.
+ * @param {ChatMessage|null} originatingMessage  The originating usage message.
  * @param {Record<string, number>} damageByType  Aggregated damage map.
  * @param {Array}   rawDamages           Per-roll DamageDescriptions for applyDamage.
  * @param {boolean} isPlayerAttack       Whether the attacker is a player (non-GM).
  * @param {boolean} playerPromptEnabled  Whether the player damage prompt setting is on.
  * @param {boolean} gmPromptEnabled      Whether the GM damage prompt setting is on.
  */
-async function _processTarget(target, attackRoll, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled) {
+async function _processTarget(target, attackRoll, attackMessage, damageMessage, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled) {
     debug(`Player Damage Prompt | ── Processing target: ${target.name || target.uuid} (AC ${target.ac})`);
 
     const tokenDoc = fromUuidSync(target.uuid);
@@ -463,7 +467,9 @@ async function _processTarget(target, attackRoll, damageByType, rawDamages, isPl
         `| Result: ${isCritical ? "CRITICAL HIT" : (attackTotal >= targetAC ? "HIT" : "MISS")}`);
 
     if (!isCritical && attackTotal < targetAC) {
-        debug(`Player Damage Prompt |    ✗ Attack missed, skipping`);
+        // Attack missed — check for Graze weapon mastery
+        debug(`Player Damage Prompt |    Attack missed, checking for Graze mastery...`);
+        await _handleGrazeMastery(actor, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets);
         return;
     }
 
@@ -489,7 +495,7 @@ async function _processTarget(target, attackRoll, damageByType, rawDamages, isPl
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    await _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets);
+    await _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -620,6 +626,177 @@ function _formatDamageBreakdown(damageByType) {
     return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
 }
 
+// ── Graze weapon mastery ─────────────────────────────────────────────
+
+/**
+ * Resolve the weapon Item from a damage or originating message.
+ * The DnD5e system stores `use.itemUuid` in the message flags.
+ * @param {ChatMessage}      damageMessage       The damage roll message.
+ * @param {ChatMessage|null} originatingMessage   The originating usage message.
+ * @returns {Item|null}
+ */
+function _resolveWeaponItem(damageMessage, originatingMessage) {
+    // Try the damage message first, then fall back to the originating message
+    const itemUuid = damageMessage.getFlag("dnd5e", "use.itemUuid")
+        || originatingMessage?.getFlag("dnd5e", "use.itemUuid");
+    if (!itemUuid) return null;
+    try {
+        return fromUuidSync(itemUuid);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Check whether a weapon has the Graze mastery and the attacker actor
+ * has mastered that weapon.  The actor's `traits.weaponMastery` Set
+ * contains weapon identifiers (e.g. "greatsword"), and the weapon's
+ * `system.mastery` is the mastery type key (e.g. "graze").
+ * @param {Item}  item           The weapon Item.
+ * @param {Actor} attackerActor  The actor who made the attack.
+ * @returns {boolean}
+ */
+function _hasGrazeMastery(item, attackerActor) {
+    if (!item || !attackerActor) return false;
+    if (item.system?.mastery !== "graze") return false;
+
+    const identifier = item.system?.identifier;
+    if (!identifier) return false;
+
+    const masteredWeapons = attackerActor.system?.traits?.weaponMastery;
+    if (!masteredWeapons) return false;
+
+    // masteredWeapons may be a Set or an array-like
+    const has = masteredWeapons instanceof Set
+        ? masteredWeapons.has(identifier)
+        : Array.isArray(masteredWeapons)
+            ? masteredWeapons.includes(identifier)
+            : false;
+
+    debug(`Player Damage Prompt |    Graze mastery check:`,
+        `weapon="${item.name}" identifier="${identifier}" mastery="${item.system?.mastery}"`,
+        `| actor mastered=[${masteredWeapons instanceof Set ? [...masteredWeapons].join(", ") : masteredWeapons}]`,
+        `| result=${has}`);
+    return has;
+}
+
+/**
+ * Compute the Graze damage: the ability modifier used for the attack,
+ * using the weapon's primary damage type.
+ * @param {Roll}        attackRoll     The D20Roll for the attack.
+ * @param {ChatMessage} attackMessage  The attack roll chat message.
+ * @param {Item}        item           The weapon Item.
+ * @returns {{ value: number, type: string, properties: string[] }|null}
+ *          Null if the modifier is ≤ 0 (no damage to deal).
+ */
+function _getGrazeDamage(attackRoll, attackMessage, item) {
+    // Determine which ability was used for the attack
+    const ability = attackRoll.options?.ability || attackRoll.data?.mod?.ability || "str";
+
+    // Resolve the attacker actor from the attack message speaker
+    const attackerActor = ChatMessage.getSpeakerActor(attackMessage.speaker);
+    if (!attackerActor) {
+        debug(`Player Damage Prompt |    ✗ Could not resolve attacker actor from speaker`);
+        return null;
+    }
+
+    const mod = attackerActor.system?.abilities?.[ability]?.mod;
+    if (mod == null || mod <= 0) {
+        debug(`Player Damage Prompt |    Graze: ability modifier for ${ability} is ${mod}, skipping`);
+        return null;
+    }
+
+    // Determine the damage type from the weapon
+    // Try the activity's damage parts first, then the item's base damage
+    let damageType = "bludgeoning"; // fallback
+    const activityId = attackMessage.getFlag("dnd5e", "activity.id");
+    if (activityId && item.system?.activities) {
+        const activity = item.system.activities.get?.(activityId) ?? item.system.activities[activityId];
+        const firstPart = activity?.damage?.parts?.[0];
+        if (firstPart) {
+            // The types field is a Set in DnD5e 5.2+
+            const types = firstPart.types;
+            if (types instanceof Set) damageType = [...types][0] ?? damageType;
+            else if (Array.isArray(types)) damageType = types[0] ?? damageType;
+            else if (typeof firstPart.type === "string") damageType = firstPart.type;
+        }
+    }
+    // Fallback: check item-level damage
+    if (damageType === "bludgeoning" && item.system?.damage?.base) {
+        const baseTypes = item.system.damage.base.types;
+        if (baseTypes instanceof Set) damageType = [...baseTypes][0] ?? damageType;
+        else if (Array.isArray(baseTypes)) damageType = baseTypes[0] ?? damageType;
+    }
+
+    // Get damage properties from the item (e.g. "magical")
+    const properties = [];
+    const itemProps = item.system?.properties;
+    if (itemProps instanceof Set) {
+        if (itemProps.has("mgc")) properties.push("mgc");
+    }
+
+    debug(`Player Damage Prompt |    Graze damage: ${mod} ${damageType}`,
+        `| ability=${ability} mod=${mod}`,
+        `| damageType=${damageType}`,
+        `| properties=[${properties.join(", ")}]`);
+
+    return { value: mod, type: damageType, properties };
+}
+
+/**
+ * Handle the Graze weapon mastery when an attack misses.  Resolves the
+ * weapon, checks mastery, computes graze damage, and sends the prompt.
+ * @param {Actor}           targetActor         The target actor.
+ * @param {Roll}            attackRoll          The D20Roll for the attack.
+ * @param {ChatMessage}     attackMessage       The attack roll message.
+ * @param {ChatMessage}     damageMessage       The damage roll message.
+ * @param {ChatMessage|null} originatingMessage The originating usage message.
+ * @param {string[]}        whisperTargets      User IDs to whisper to.
+ */
+async function _handleGrazeMastery(targetActor, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets) {
+    // Resolve the weapon item from message flags
+    const weaponItem = _resolveWeaponItem(damageMessage, originatingMessage);
+    if (!weaponItem) {
+        debug(`Player Damage Prompt |    ✗ Graze: could not resolve weapon item from message flags`);
+        return;
+    }
+    debug(`Player Damage Prompt |    Resolved weapon: ${weaponItem.name} (mastery: ${weaponItem.system?.mastery || "none"})`);
+
+    // Resolve the attacker actor
+    const attackerActor = ChatMessage.getSpeakerActor(attackMessage.speaker);
+    if (!attackerActor) {
+        debug(`Player Damage Prompt |    ✗ Graze: could not resolve attacker actor`);
+        return;
+    }
+
+    // Check if the weapon has graze mastery AND the actor has mastered it
+    if (!_hasGrazeMastery(weaponItem, attackerActor)) {
+        debug(`Player Damage Prompt |    ✗ Graze: mastery check failed, skipping`);
+        return;
+    }
+
+    // Compute graze damage (ability modifier only)
+    const grazeDamage = _getGrazeDamage(attackRoll, attackMessage, weaponItem);
+    if (!grazeDamage) {
+        debug(`Player Damage Prompt |    ✗ Graze: no positive damage to deal, skipping`);
+        return;
+    }
+
+    // Build graze damage structures for the prompt
+    const grazeDamageByType = { [grazeDamage.type]: grazeDamage.value };
+    const grazeRawDamages = [grazeDamage];
+
+    // Calculate effective graze damage accounting for target traits
+    const { effectiveDamage, traitText } = _calculateEffectiveDamage(targetActor, grazeDamageByType);
+
+    debug(`Player Damage Prompt |    Graze: effective damage ${effectiveDamage}`,
+        traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
+
+    // Send the graze damage prompt
+    await _sendDamagePrompt(targetActor, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
+    debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
+}
+
 // ── Whisper creation ─────────────────────────────────────────────────
 
 /**
@@ -632,17 +809,21 @@ function _formatDamageBreakdown(damageByType) {
  * @param {string}   traitText        Human-readable trait summary HTML.
  * @param {Array}    rawDamages       Per-roll DamageDescriptions for applyDamage.
  * @param {string[]} whisperUsers     User IDs to whisper to.
+ * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  */
-async function _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers) {
+async function _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
     // Hit description
     let hitText;
-    if (isCritical) {
+    if (grazeMode) {
+        hitText = `<strong>${actor.name}</strong> was <strong class="nd5t-graze-text">GRAZED</strong> (attack missed)`;
+    } else if (isCritical) {
         hitText = `<strong>${actor.name}</strong> was <strong class="nd5t-crit-text">CRITICALLY HIT</strong>`;
     } else {
         hitText = `<strong>${actor.name}</strong> was hit with an Attack Roll of <strong>${attackTotal}</strong>`;
     }
 
     const damageText = _formatDamageBreakdown(damageByType);
+    const buttonLabel = grazeMode ? `Apply ${effectiveDamage} Damage (Graze)` : `Apply ${effectiveDamage} Damage`;
 
     // Serialise damage descriptions for the button (properties as arrays)
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
@@ -658,7 +839,7 @@ async function _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, e
                         data-actor-uuid="${actor.uuid}"
                         data-damages='${damagesJson}'>
                     <i class="fas fa-heart-crack"></i>
-                    Apply ${effectiveDamage} Damage
+                    ${buttonLabel}
                 </button>
             </div>
         </div>
