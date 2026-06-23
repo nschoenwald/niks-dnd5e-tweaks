@@ -444,10 +444,10 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         // Player-owned target → whisper to player (+ maybe GM per visibility setting)
         whisperTargets = _getWhisperTargets(actor);
         debug(`Player Damage Prompt |    Player-owned target, using player prompt mode`);
-    } else if (!playerOwned && gmPromptEnabled && isPlayerAttack) {
-        // NPC target hit by a player → whisper to GM only
+    } else if (!playerOwned && gmPromptEnabled) {
+        // NPC target hit → whisper to GM only
         whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
-        debug(`Player Damage Prompt |    NPC target hit by player, using GM prompt mode`);
+        debug(`Player Damage Prompt |    NPC target hit, using GM prompt mode`);
     } else {
         debug(`Player Damage Prompt |    ✗ ${actor.name}: no matching prompt mode`,
             `| playerOwned=${playerOwned}`,

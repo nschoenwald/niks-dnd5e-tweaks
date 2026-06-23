@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.10.4] - 2026-06-23
+### Changed
+- **Player Damage Prompt**: Removed the filter that prevented GM damage prompts from appearing when one NPC hits another NPC. GMs will now receive damage prompts for NPC vs NPC attacks if the GM Damage Prompt setting is enabled.
+
 ## [14.10.3] - 2026-06-20
 ### Added
 - **Player Damage Prompt**: Added support for the **Graze** weapon mastery. When an attack misses a target, the module now checks if the weapon has the Graze mastery and if the attacker has mastered that weapon. If both conditions are met, a damage prompt is sent for the Graze damage (ability modifier only, same damage type as the weapon). Resistances, immunities, and vulnerabilities are correctly applied to the Graze damage. Works for both player and NPC attackers, but requires the full mastery check (weapon must have `graze` mastery and the actor must have the weapon in their mastered weapons list).
