@@ -18,6 +18,7 @@ import { initHealingContextMenu } from "./features/healing-context-menu.js";
 import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
 import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
+import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -386,6 +387,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
+        name: "Auto-End Concentration",
+        hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================
@@ -448,6 +459,7 @@ Hooks.once("setup", () => {
     initHealingContextMenu();
     initAutoRollSaveDamage();
     initPlayerDamagePrompt();
+    initAutoEndConcentration();
 
     initCombatExpTracker();
 });

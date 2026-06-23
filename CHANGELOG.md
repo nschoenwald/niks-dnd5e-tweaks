@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.0] - 2026-06-23
+### Added
+- **Auto-End Concentration**: Added a new feature that automatically ends all concentration effects from a token when it receives the incapacitated, unconscious, dead, paralyzed, petrified, or stunned condition.
+
 ## [14.10.4] - 2026-06-23
 ### Changed
 - **Player Damage Prompt**: Removed the filter that prevented GM damage prompts from appearing when one NPC hits another NPC. GMs will now receive damage prompts for NPC vs NPC attacks if the GM Damage Prompt setting is enabled.

@@ -1,0 +1,63 @@
+import { MODULE_ID, debug, log } from "../main.js";
+
+const BREAK_CONCENTRATION_STATUSES = new Set([
+    "incapacitated",
+    "unconscious",
+    "dead",
+    "paralyzed",
+    "petrified",
+    "stunned"
+]);
+
+/**
+ * Auto-End Concentration
+ * Automatically ends all concentration effects from a token when it
+ * receives conditions that break concentration.
+ */
+export function initAutoEndConcentration() {
+    Hooks.on("createActiveEffect", _onActiveEffectChanged);
+    Hooks.on("updateActiveEffect", _onActiveEffectChanged);
+    debug("Auto-End Concentration | Initialized");
+}
+
+async function _onActiveEffectChanged(effect, changes, context, userId) {
+    if (game.user.id !== userId) return;
+    if (!game.settings.get(MODULE_ID, "enableAutoEndConcentration")) return;
+
+    const actor = effect.parent;
+    if (!actor || !(actor instanceof Actor)) return;
+
+    // Defer slightly to ensure actor statuses are fully updated
+    setTimeout(async () => {
+        let breaksConcentration = false;
+        for (const status of BREAK_CONCENTRATION_STATUSES) {
+            if (actor.statuses.has(status)) {
+                breaksConcentration = true;
+                break;
+            }
+        }
+
+        if (breaksConcentration) {
+            // Check if the actor has any concentration effect
+            const hasConc = actor.effects.some(e => e.statuses.has("concentrating") || e.getFlag("dnd5e", "type") === "concentration");
+            
+            if (hasConc) {
+                if (typeof actor.endConcentration === "function") {
+                    try {
+                        debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Ending concentration.`);
+                        await actor.endConcentration();
+                    } catch (e) {
+                        console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, e);
+                    }
+                } else {
+                    // Fallback for older versions: manually delete concentration effects
+                    const concEffects = actor.effects.filter(e => e.statuses.has("concentrating") || e.getFlag("dnd5e", "type") === "concentration");
+                    if (concEffects.length > 0) {
+                        debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Deleting concentration effects.`);
+                        await actor.deleteEmbeddedDocuments("ActiveEffect", concEffects.map(e => e.id));
+                    }
+                }
+            }
+        }
+    }, 100);
+}
