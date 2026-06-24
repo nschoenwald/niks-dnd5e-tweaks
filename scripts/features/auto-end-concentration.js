@@ -55,10 +55,12 @@ async function _onActiveEffectChanged(...args) {
             }
             
             if (hasConc) {
+                let success = false;
                 if (typeof actor.endConcentration === "function") {
                     try {
                         debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Ending concentration.`);
                         await actor.endConcentration();
+                        success = true;
                     } catch (e) {
                         console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, e);
                     }
@@ -68,7 +70,15 @@ async function _onActiveEffectChanged(...args) {
                     if (concEffects.length > 0) {
                         debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Deleting concentration effects.`);
                         await actor.deleteEmbeddedDocuments("ActiveEffect", concEffects.map(e => e.id));
+                        success = true;
                     }
+                }
+
+                if (success) {
+                    ChatMessage.create({
+                        speaker: ChatMessage.getSpeaker({ actor: actor }),
+                        content: `<p><strong>${actor.name}</strong> lost concentration due to <strong>${effect.name}</strong>.</p>`
+                    });
                 }
             }
         }

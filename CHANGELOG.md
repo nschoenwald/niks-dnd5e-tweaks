@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.2] - 2026-06-24
+### Added
+- **Auto-End Concentration**: The module now posts a chat message informing everyone when an actor's concentration is automatically broken, including the name of the effect that caused it.
+
 ## [14.11.1] - 2026-06-24
 ### Fixed
 - **Auto-End Concentration**: Fixed an issue where the feature would fail silently and not end concentration when applying new conditions (like Incapacitated) due to a hook argument mismatch.
