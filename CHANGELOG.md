@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.1] - 2026-06-24
+### Fixed
+- **Auto-End Concentration**: Fixed an issue where the feature would fail silently and not end concentration when applying new conditions (like Incapacitated) due to a hook argument mismatch.
+
 ## [14.11.0] - 2026-06-23
 ### Added
 - **Auto-End Concentration**: Added a new feature that automatically ends all concentration effects from a token when it receives the incapacitated, unconscious, dead, paralyzed, petrified, or stunned condition.

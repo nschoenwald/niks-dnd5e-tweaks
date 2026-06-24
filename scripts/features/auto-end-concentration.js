@@ -20,9 +20,14 @@ export function initAutoEndConcentration() {
     debug("Auto-End Concentration | Initialized");
 }
 
-async function _onActiveEffectChanged(effect, changes, context, userId) {
+async function _onActiveEffectChanged(...args) {
+    const effect = args[0];
+    const userId = args[args.length - 1];
+
     if (game.user.id !== userId) return;
     if (!game.settings.get(MODULE_ID, "enableAutoEndConcentration")) return;
+    
+    debug(`Auto-End Concentration | _onActiveEffectChanged triggered for effect: ${effect.name}`);
 
     const actor = effect.parent;
     if (!actor || !(actor instanceof Actor)) return;
@@ -37,9 +42,17 @@ async function _onActiveEffectChanged(effect, changes, context, userId) {
             }
         }
 
+        debug(`Auto-End Concentration | Breaks Concentration: ${breaksConcentration} | Actor Statuses: ${Array.from(actor.statuses).join(", ")}`);
+
         if (breaksConcentration) {
             // Check if the actor has any concentration effect
             const hasConc = actor.effects.some(e => e.statuses.has("concentrating") || e.getFlag("dnd5e", "type") === "concentration");
+            
+            debug(`Auto-End Concentration | Has Concentration: ${hasConc}`);
+            if (!hasConc) {
+                // Log all effects to see what we're missing
+                debug(`Auto-End Concentration | Actor Effects: ${JSON.stringify(actor.effects.map(e => ({ name: e.name, statuses: Array.from(e.statuses), flags: e.flags })))}`);
+            }
             
             if (hasConc) {
                 if (typeof actor.endConcentration === "function") {
