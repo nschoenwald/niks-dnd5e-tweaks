@@ -397,6 +397,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableAutoEndRage", {
+        name: "Auto-End Rage",
+        hint: "Automatically ends a Barbarian's Rage effect when the token becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned. Identifies rage by the source item's identifier or by effect name (\"Rage\" / \"Raging\").",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================

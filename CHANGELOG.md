@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.4] - 2026-06-25
+### Added
+- **Auto-End Rage**: Added a new feature that automatically ends a Barbarian's Rage effect when the token becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned. Identifies rage by the source item's identifier (`system.identifier === "rage"`) or by effect name (case-insensitive match on "Rage" / "Raging"). Posts a chat notification when rage is ended. Enabled by default; can be toggled independently from Auto-End Concentration.
+
 ## [14.11.3] - 2026-06-25
 ### Fixed
 - **Auto-End Concentration**: Removed dead code path that called the non-existent `actor.endConcentration()` API method. Concentration effects are now identified and removed using the official `actor.concentration.effects` getter (dnd5e 5.2+).
