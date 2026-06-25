@@ -1,3 +1,4 @@
 {
-  "ND5T.LegendaryActionPlaceholder": "Legendary Action"
+  "ND5T.LegendaryActionPlaceholder": "Legendary Action",
+  "ND5T.AutoEndConcentration.ChatMessage": "{name} lost concentration due to {effect}."
 }

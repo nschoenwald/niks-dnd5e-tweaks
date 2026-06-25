@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.3] - 2026-06-25
+### Fixed
+- **Auto-End Concentration**: Removed dead code path that called the non-existent `actor.endConcentration()` API method. Concentration effects are now identified and removed using the official `actor.concentration.effects` getter (dnd5e 5.2+).
+- **Auto-End Concentration**: Fixed missing `disabled` check — a disabled ActiveEffect no longer incorrectly triggers concentration removal.
+- **Auto-End Concentration**: Fixed potential race condition when multiple concentration-breaking statuses are applied simultaneously (e.g. both stunned and incapacitated). The feature now debounces per actor to avoid duplicate processing.
+- **Auto-End Concentration**: Fixed potential XSS vector in the chat notification by escaping actor and effect names.
+- **Auto-End Concentration**: The `updateActiveEffect` hook now only triggers when an effect transitions from disabled to active, instead of on every update.
+
+### Changed
+- **Auto-End Concentration**: Chat notification is now localized via `lang/en.json` instead of using hardcoded English text.
+- **Auto-End Concentration**: Increased processing delay from 100ms to 250ms for consistency with other module features and better reliability on slower systems.
+- **Auto-End Concentration**: Removed leftover debug logging that serialized all actor effects on every non-concentrating status change.
+
 ## [14.11.2] - 2026-06-24
 ### Added
 - **Auto-End Concentration**: The module now posts a chat message informing everyone when an actor's concentration is automatically broken, including the name of the effect that caused it.

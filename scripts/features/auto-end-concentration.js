@@ -1,4 +1,4 @@
-import { MODULE_ID, debug, log } from "../main.js";
+import { MODULE_ID, debug } from "../main.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
     "incapacitated",
@@ -10,77 +10,129 @@ const BREAK_CONCENTRATION_STATUSES = new Set([
 ]);
 
 /**
+ * Per-actor debounce timers to prevent duplicate processing when multiple
+ * concentration-breaking statuses are applied simultaneously.
+ * @type {Map<string, number>}
+ */
+const _debounceTimers = new Map();
+
+/**
  * Auto-End Concentration
  * Automatically ends all concentration effects from a token when it
  * receives conditions that break concentration.
+ *
+ * Uses the official `actor.concentration.effects` API (dnd5e 5.2+) to
+ * identify active concentration effects and deletes them directly.
+ *
+ * NOTE: This feature interacts with Auto-Status at 0 HP — when that
+ * feature applies "unconscious" or "dead" at 0 HP (after its own 250ms
+ * delay), the resulting createActiveEffect hook will trigger this feature.
+ * The timing works because the hooks fire sequentially after the status
+ * is actually created.
  */
 export function initAutoEndConcentration() {
-    Hooks.on("createActiveEffect", _onActiveEffectChanged);
-    Hooks.on("updateActiveEffect", _onActiveEffectChanged);
+    Hooks.on("createActiveEffect", _onCreateActiveEffect);
+    Hooks.on("updateActiveEffect", _onUpdateActiveEffect);
     debug("Auto-End Concentration | Initialized");
 }
 
-async function _onActiveEffectChanged(...args) {
-    const effect = args[0];
-    const userId = args[args.length - 1];
+/**
+ * Handler for newly created active effects.
+ * @param {ActiveEffect} effect
+ * @param {object} options
+ * @param {string} userId
+ */
+function _onCreateActiveEffect(effect, options, userId) {
+    if (effect.disabled) return;
+    _processEffect(effect, userId);
+}
 
+/**
+ * Handler for updated active effects.
+ * Only processes when an effect is being enabled (disabled → active).
+ * @param {ActiveEffect} effect
+ * @param {object} changes
+ * @param {object} options
+ * @param {string} userId
+ */
+function _onUpdateActiveEffect(effect, changes, options, userId) {
+    // Only react when an effect is being enabled
+    if (changes.disabled === false) {
+        _processEffect(effect, userId);
+    }
+}
+
+/**
+ * Shared processing for both create and update hooks.
+ * Defers the actual check by 250ms to ensure actor statuses are fully
+ * updated, and debounces per-actor to avoid duplicate processing when
+ * multiple statuses arrive simultaneously.
+ * @param {ActiveEffect} effect
+ * @param {string} userId
+ */
+function _processEffect(effect, userId) {
     if (game.user.id !== userId) return;
     if (!game.settings.get(MODULE_ID, "enableAutoEndConcentration")) return;
-    
-    debug(`Auto-End Concentration | _onActiveEffectChanged triggered for effect: ${effect.name}`);
+
+    debug(`Auto-End Concentration | Effect changed: ${effect.name}`);
 
     const actor = effect.parent;
     if (!actor || !(actor instanceof Actor)) return;
 
-    // Defer slightly to ensure actor statuses are fully updated
-    setTimeout(async () => {
-        let breaksConcentration = false;
-        for (const status of BREAK_CONCENTRATION_STATUSES) {
-            if (actor.statuses.has(status)) {
-                breaksConcentration = true;
-                break;
-            }
+    // Capture the effect name now, before the deferred check
+    const effectName = effect.name;
+
+    // Debounce per actor — cancel any pending check for this actor
+    const existingTimer = _debounceTimers.get(actor.id);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const timer = setTimeout(() => {
+        _debounceTimers.delete(actor.id);
+        _checkAndEndConcentration(actor, effectName);
+    }, 250);
+    _debounceTimers.set(actor.id, timer);
+}
+
+/**
+ * Check whether the actor has any concentration-breaking status and, if so,
+ * end all active concentration effects.
+ * @param {Actor} actor
+ * @param {string} effectName  The name of the effect that triggered the check
+ */
+async function _checkAndEndConcentration(actor, effectName) {
+    let breaksConcentration = false;
+    for (const status of BREAK_CONCENTRATION_STATUSES) {
+        if (actor.statuses.has(status)) {
+            breaksConcentration = true;
+            break;
         }
+    }
 
-        debug(`Auto-End Concentration | Breaks Concentration: ${breaksConcentration} | Actor Statuses: ${Array.from(actor.statuses).join(", ")}`);
+    debug(`Auto-End Concentration | Breaks Concentration: ${breaksConcentration} | Actor Statuses: ${Array.from(actor.statuses).join(", ")}`);
 
-        if (breaksConcentration) {
-            // Check if the actor has any concentration effect
-            const hasConc = actor.effects.some(e => e.statuses.has("concentrating") || e.getFlag("dnd5e", "type") === "concentration");
-            
-            debug(`Auto-End Concentration | Has Concentration: ${hasConc}`);
-            if (!hasConc) {
-                // Log all effects to see what we're missing
-                debug(`Auto-End Concentration | Actor Effects: ${JSON.stringify(actor.effects.map(e => ({ name: e.name, statuses: Array.from(e.statuses), flags: e.flags })))}`);
-            }
-            
-            if (hasConc) {
-                let success = false;
-                if (typeof actor.endConcentration === "function") {
-                    try {
-                        debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Ending concentration.`);
-                        await actor.endConcentration();
-                        success = true;
-                    } catch (e) {
-                        console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, e);
-                    }
-                } else {
-                    // Fallback for older versions: manually delete concentration effects
-                    const concEffects = actor.effects.filter(e => e.statuses.has("concentrating") || e.getFlag("dnd5e", "type") === "concentration");
-                    if (concEffects.length > 0) {
-                        debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Deleting concentration effects.`);
-                        await actor.deleteEmbeddedDocuments("ActiveEffect", concEffects.map(e => e.id));
-                        success = true;
-                    }
-                }
+    if (!breaksConcentration) return;
 
-                if (success) {
-                    ChatMessage.create({
-                        speaker: ChatMessage.getSpeaker({ actor: actor }),
-                        content: `<p><strong>${actor.name}</strong> lost concentration due to <strong>${effect.name}</strong>.</p>`
-                    });
-                }
-            }
-        }
-    }, 100);
+    // Use the official dnd5e API to find concentration effects
+    const concEffects = Array.from(actor.concentration.effects);
+
+    debug(`Auto-End Concentration | Concentration Effects: ${concEffects.length}`);
+
+    if (!concEffects.length) return;
+
+    debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Ending concentration.`);
+
+    try {
+        await actor.deleteEmbeddedDocuments("ActiveEffect", concEffects.map(e => e.id));
+    } catch (e) {
+        console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, e);
+        return;
+    }
+
+    const safeName = foundry.utils.escapeHTML?.(actor.name) ?? actor.name;
+    const safeEffect = foundry.utils.escapeHTML?.(effectName) ?? effectName;
+
+    ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<p>${game.i18n.format("ND5T.AutoEndConcentration.ChatMessage", { name: `<strong>${safeName}</strong>`, effect: `<strong>${safeEffect}</strong>` })}</p>`
+    });
 }
