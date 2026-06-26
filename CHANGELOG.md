@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.5] - 2026-06-26
+### Changed
+- **Player Damage Prompt**: The damage prompt now uses the token name instead of the actor name, so unlinked tokens with custom names display correctly.
+- **Player Damage Prompt**: Refined bold formatting in the damage prompt. When no trait modifiers apply, the damage breakdown is bolded (e.g. "hit for **10 Bludgeoning damage**"). When resistances, immunities, or vulnerabilities modify the damage, the breakdown is shown in plain text and only the effective damage after calculation is bolded (e.g. "hit for 10 Bludgeoning damage. … effective damage is **5**").
+- **Player Damage Prompt**: Removed bold from the target name and attack roll total in the hit description for a cleaner appearance. GRAZED and CRITICALLY HIT labels retain their colored styling.
+
 ## [14.11.4] - 2026-06-25
 ### Added
 - **Auto-End Rage**: Added a new feature that automatically ends a Barbarian's Rage effect when the token becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned. Identifies rage by the source item's identifier (`system.identifier === "rage"`) or by effect name (case-insensitive match on "Rage" / "Raging"). Posts a chat notification when rage is ended. Enabled by default; can be toggled independently from Auto-End Concentration.

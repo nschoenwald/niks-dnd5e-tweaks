@@ -469,7 +469,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     if (!isCritical && attackTotal < targetAC) {
         // Attack missed — check for Graze weapon mastery
         debug(`Player Damage Prompt |    Attack missed, checking for Graze mastery...`);
-        await _handleGrazeMastery(actor, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets);
+        await _handleGrazeMastery(actor, tokenDoc, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets);
         return;
     }
 
@@ -495,7 +495,8 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    await _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
+    const tokenName = tokenDoc?.name ?? actor.name;
+    await _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -620,7 +621,7 @@ function _formatTypeList(types) {
  */
 function _formatDamageBreakdown(damageByType) {
     const parts = Object.entries(damageByType).map(([type, amount]) =>
-        `<strong>${amount} ${_localizeType(type)}</strong> damage`
+        `${amount} ${_localizeType(type)} damage`
     );
     if (parts.length <= 1) return parts[0] || "";
     return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
@@ -747,13 +748,14 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
  * Handle the Graze weapon mastery when an attack misses.  Resolves the
  * weapon, checks mastery, computes graze damage, and sends the prompt.
  * @param {Actor}           targetActor         The target actor.
+ * @param {TokenDocument}   tokenDoc            The target token document.
  * @param {Roll}            attackRoll          The D20Roll for the attack.
  * @param {ChatMessage}     attackMessage       The attack roll message.
  * @param {ChatMessage}     damageMessage       The damage roll message.
  * @param {ChatMessage|null} originatingMessage The originating usage message.
  * @param {string[]}        whisperTargets      User IDs to whisper to.
  */
-async function _handleGrazeMastery(targetActor, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets) {
+async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets) {
     // Resolve the weapon item from message flags
     const weaponItem = _resolveWeaponItem(damageMessage, originatingMessage);
     if (!weaponItem) {
@@ -793,7 +795,8 @@ async function _handleGrazeMastery(targetActor, attackRoll, attackMessage, damag
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
+    const tokenName = tokenDoc?.name ?? targetActor.name;
+    await _sendDamagePrompt(targetActor, tokenName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -802,6 +805,7 @@ async function _handleGrazeMastery(targetActor, attackRoll, attackMessage, damag
 /**
  * Create and send the whispered damage prompt.
  * @param {Actor}    actor            The target actor.
+ * @param {string}   tokenName        The display name of the target token.
  * @param {number}   attackTotal      The attack roll total.
  * @param {boolean}  isCritical       Whether the attack was a critical hit.
  * @param {Record<string, number>} damageByType  Aggregated damage map.
@@ -811,18 +815,21 @@ async function _handleGrazeMastery(targetActor, attackRoll, attackMessage, damag
  * @param {string[]} whisperUsers     User IDs to whisper to.
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  */
-async function _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
+async function _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
     // Hit description
     let hitText;
     if (grazeMode) {
-        hitText = `<strong>${actor.name}</strong> was <strong class="nd5t-graze-text">GRAZED</strong> (attack missed)`;
+        hitText = `${tokenName} was <span class="nd5t-graze-text">GRAZED</span> (attack missed)`;
     } else if (isCritical) {
-        hitText = `<strong>${actor.name}</strong> was <strong class="nd5t-crit-text">CRITICALLY HIT</strong>`;
+        hitText = `${tokenName} was <span class="nd5t-crit-text">CRITICALLY HIT</span>`;
     } else {
-        hitText = `<strong>${actor.name}</strong> was hit with an Attack Roll of <strong>${attackTotal}</strong>`;
+        hitText = `${tokenName} was hit with an Attack Roll of ${attackTotal}`;
     }
 
     const damageText = _formatDamageBreakdown(damageByType);
+    // Bold the damage breakdown only when no trait modifiers change the value;
+    // when traits apply, the effective damage is already bolded in traitText.
+    const damageDisplay = traitText ? damageText : `<strong>${damageText}</strong>`;
     const buttonLabel = grazeMode ? `Apply ${effectiveDamage} Damage (Graze)` : `Apply ${effectiveDamage} Damage`;
 
     // Serialise damage descriptions for the button (properties as arrays)
@@ -831,7 +838,7 @@ async function _sendDamagePrompt(actor, attackTotal, isCritical, damageByType, e
     const content = `
         <div class="dnd5e chat-card nd5t-damage-prompt">
             <div class="card-content">
-                <p>${hitText} for ${damageText}.</p>
+                <p>${hitText} for ${damageDisplay}.</p>
                 ${traitText ? `<p class="nd5t-trait-info">${traitText}</p>` : ""}
             </div>
             <div class="card-buttons">
