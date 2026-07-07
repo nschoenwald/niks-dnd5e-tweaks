@@ -145,6 +145,11 @@ async function _onDeleteCombat(combat) {
  * Classify a combatant and add it to the appropriate tracking object.
  * - Hostile NPCs (disposition HOSTILE, actor type "npc") → npcs
  * - Player characters (actor type "character") → pcs
+ *
+ * NPCs are keyed by `combatant.id` so that each individual combatant
+ * (even multiple unlinked tokens of the same base actor) is counted
+ * separately for XP.  PCs are keyed by `actor.uuid` so that the same
+ * player character is only counted once even with multiple tokens.
  * @param {Combatant} combatant
  * @param {Object<string, {name: string, xp: number}>} npcs   Mutated in-place
  * @param {Object<string, {name: string}>}              pcs    Mutated in-place
@@ -153,9 +158,8 @@ function _classifyCombatant(combatant, npcs, pcs) {
     const actor = combatant.actor;
     if (!actor) return;
 
-    const uuid = actor.uuid;
-
     if (actor.type === "character") {
+        const uuid = actor.uuid;
         if (!pcs[uuid]) {
             pcs[uuid] = { name: actor.name };
             debug("Combat Exp Tracker |   PC:", actor.name, `(${uuid})`);
@@ -167,11 +171,14 @@ function _classifyCombatant(combatant, npcs, pcs) {
             ?? CONST.TOKEN_DISPOSITIONS.HOSTILE;
 
         if (disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE) {
-            if (!npcs[uuid]) {
+            // Key by combatant ID so unlinked tokens (which share the
+            // same base actor UUID) are each counted individually.
+            const key = combatant.id;
+            if (!npcs[key]) {
                 const xp = actor.system.details?.xp?.value ?? 0;
-                npcs[uuid] = { name: actor.name, xp };
+                npcs[key] = { name: actor.name, xp };
                 debug("Combat Exp Tracker |   Hostile NPC:", actor.name,
-                    `| XP: ${xp}`, `(${uuid})`);
+                    `| XP: ${xp}`, `(combatant ${key})`);
             }
         }
     }
@@ -192,12 +199,15 @@ async function _sendExpSummary(npcs, pcs) {
     const pcCount = pcEntries.length;
     const perPC = Math.floor(totalXP / pcCount);
 
+    // HTML-escape helper (with fallback for pre-V12 compatibility)
+    const esc = (str) => foundry.utils.escapeHTML?.(str) ?? str;
+
     // Build NPC table rows
     const npcRows = npcEntries
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(npc => `
             <tr>
-                <td>${npc.name}</td>
+                <td>${esc(npc.name)}</td>
                 <td class="nd5t-exp-xp-cell">${npc.xp.toLocaleString()} XP</td>
             </tr>
         `).join("");
@@ -206,7 +216,7 @@ async function _sendExpSummary(npcs, pcs) {
     const pcList = pcEntries
         .map(([, pc]) => pc)
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map(pc => `<li>${pc.name}</li>`)
+        .map(pc => `<li>${esc(pc.name)}</li>`)
         .join("");
 
     // Serialise PC UUIDs for the button
@@ -286,6 +296,9 @@ function _bindDistributeButton(message, element) {
     button.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
+
+        // Only GMs should be able to distribute XP
+        if (!game.user.isGM) return;
 
         const xpPerPC = parseInt(button.dataset.xpPerPc, 10);
         const pcUuids = JSON.parse(button.dataset.pcUuids);

@@ -8,10 +8,14 @@ import { MODULE_ID, debug, log } from "../main.js";
  * breakdown (with resistance/vulnerability/immunity adjustments) and a
  * one-click "Apply Damage" button.
  *
- * The feature hooks into `createChatMessage` to detect damage roll messages
- * from attack activities, traces back to the originating usage message for
- * target data, and finds the matching attack roll to determine hit/miss and
- * critical status.
+ * The feature uses two `createChatMessage` hooks:
+ * 1. Damage roll handler — detects damage rolls from attack activities,
+ *    traces back to the originating usage message for target data, and
+ *    finds the matching attack roll to determine hit/crit status.
+ * 2. Attack roll handler — detects attack rolls that missed their target
+ *    and checks for Graze weapon mastery.  This is necessary because on
+ *    a miss the player won't roll damage, so the damage handler never
+ *    fires.
  */
 
 // ── Initialisation ───────────────────────────────────────────────────
@@ -22,6 +26,7 @@ import { MODULE_ID, debug, log } from "../main.js";
  */
 export function initPlayerDamagePrompt() {
     Hooks.on("createChatMessage", _onCreateChatMessage);
+    Hooks.on("createChatMessage", _onCreateChatMessage_Attack);
 
     // V13 compat — renderChatMessage passes jQuery or HTMLElement
     Hooks.on("renderChatMessage", (message, html) => {
@@ -55,7 +60,8 @@ async function _onCreateChatMessage(message) {
     const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
     if (!playerPromptEnabled && !gmPromptEnabled) return;
 
-    // Only process damage rolls from attack activities
+    // Only process damage rolls from attack activities (graze on miss
+    // is handled separately by _onCreateChatMessage_Attack)
     const rollType = message.getFlag("dnd5e", "roll.type");
     const activityType = message.getFlag("dnd5e", "activity.type");
     if (rollType !== "damage") return;
@@ -141,6 +147,108 @@ async function _onCreateChatMessage(message) {
     debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
     for (const target of targets) {
         await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled);
+    }
+}
+
+/**
+ * Handle a newly created chat message to see if it is an attack roll
+ * that missed its target.  On a miss, checks for Graze weapon mastery
+ * and sends a graze damage prompt if applicable.
+ *
+ * This is separated from the damage roll handler because on a miss the
+ * player won't roll damage — so the damage handler never fires.
+ * @param {ChatMessage} message  The message that was just created.
+ */
+async function _onCreateChatMessage_Attack(message) {
+    if (!game.user.isGM) return;
+
+    // Check if at least one damage prompt mode is enabled
+    const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
+    const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
+    if (!playerPromptEnabled && !gmPromptEnabled) return;
+
+    // Only process attack rolls from attack activities
+    const rollType = message.getFlag("dnd5e", "roll.type");
+    const activityType = message.getFlag("dnd5e", "activity.type");
+    if (rollType !== "attack") return;
+    if (activityType !== "attack") return;
+
+    // Only trigger on public rolls — skip private (GM), blind, and self rolls
+    const isPublic = (!message.whisper?.length) && !message.blind;
+    if (!isPublic) {
+        debug("Player Damage Prompt | Graze: Non-public attack roll detected (whisper/blind), skipping");
+        return;
+    }
+
+    debug("Player Damage Prompt | Graze: Attack roll detected",
+        "| Message ID:", message.id,
+        "| Roll type:", rollType,
+        "| Activity type:", activityType);
+
+    // Find the originating (usage) message to get original targets
+    const originatingId = message.getFlag("dnd5e", "originatingMessage");
+    const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
+
+    // Prefer targets from the originating (usage) message, fall back to the attack message
+    const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
+    const attackTargets = message.getFlag("dnd5e", "targets");
+    const targets = originTargets || attackTargets || [];
+    debug("Player Damage Prompt | Graze: Targets:", targets.length,
+        targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
+
+    if (!targets.length) {
+        debug("Player Damage Prompt | Graze: No targets found, skipping");
+        return;
+    }
+
+    // Extract the D20Roll from the attack message
+    const attackRoll = _getAttackD20Roll(message);
+    if (!attackRoll) {
+        debug("Player Damage Prompt | Graze: No valid D20 attack roll found in message", message.id);
+        return;
+    }
+
+    const isCritical = !!attackRoll.isCritical;
+    const attackTotal = attackRoll.total;
+
+    // Process each target — only handle misses (graze candidates)
+    for (const target of targets) {
+        const targetAC = target.ac;
+
+        // Skip hits and crits — those are handled by the damage handler
+        if (isCritical || attackTotal >= targetAC) {
+            debug(`Player Damage Prompt | Graze: Attack hit ${target.name || target.uuid} (${attackTotal} >= AC ${targetAC}), skipping (handled by damage handler)`);
+            continue;
+        }
+
+        debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
+
+        // Resolve the target token/actor
+        const tokenDoc = fromUuidSync(target.uuid);
+        if (!tokenDoc) {
+            debug(`Player Damage Prompt | Graze: Could not resolve token UUID: ${target.uuid}`);
+            continue;
+        }
+        const actor = tokenDoc.actor ?? tokenDoc;
+        if (!actor?.system?.attributes?.hp) {
+            debug(`Player Damage Prompt | Graze: Actor has no HP attribute: ${actor?.name}`);
+            continue;
+        }
+
+        // Determine target ownership and which prompt mode applies
+        const playerOwned = _isPlayerOwned(actor);
+        let whisperTargets;
+
+        if (playerOwned && playerPromptEnabled) {
+            whisperTargets = _getWhisperTargets(actor);
+        } else if (!playerOwned && gmPromptEnabled) {
+            whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
+        } else {
+            debug(`Player Damage Prompt | Graze: No matching prompt mode for ${actor.name}, skipping`);
+            continue;
+        }
+
+        await _handleGrazeMastery(actor, tokenDoc, attackRoll, message, originatingMessage, whisperTargets);
     }
 }
 
@@ -467,9 +575,8 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         `| Result: ${isCritical ? "CRITICAL HIT" : (attackTotal >= targetAC ? "HIT" : "MISS")}`);
 
     if (!isCritical && attackTotal < targetAC) {
-        // Attack missed — check for Graze weapon mastery
-        debug(`Player Damage Prompt |    Attack missed, checking for Graze mastery...`);
-        await _handleGrazeMastery(actor, tokenDoc, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets);
+        // Attack missed — graze is handled by the attack roll handler
+        debug(`Player Damage Prompt |    Attack missed — skipping (graze handled by attack roll handler)`);
         return;
     }
 
@@ -630,22 +737,25 @@ function _formatDamageBreakdown(damageByType) {
 // ── Graze weapon mastery ─────────────────────────────────────────────
 
 /**
- * Resolve the weapon Item from a damage or originating message.
+ * Resolve the weapon Item from one or more chat messages.
  * The DnD5e system stores `use.itemUuid` in the message flags.
- * @param {ChatMessage}      damageMessage       The damage roll message.
- * @param {ChatMessage|null} originatingMessage   The originating usage message.
+ * Checks each provided message in order and returns the first match.
+ * @param {...ChatMessage|null} messages  Messages to search (nulls are skipped).
  * @returns {Item|null}
  */
-function _resolveWeaponItem(damageMessage, originatingMessage) {
-    // Try the damage message first, then fall back to the originating message
-    const itemUuid = damageMessage.getFlag("dnd5e", "use.itemUuid")
-        || originatingMessage?.getFlag("dnd5e", "use.itemUuid");
-    if (!itemUuid) return null;
-    try {
-        return fromUuidSync(itemUuid);
-    } catch {
-        return null;
+function _resolveWeaponItem(...messages) {
+    for (const msg of messages) {
+        if (!msg) continue;
+        const itemUuid = msg.getFlag("dnd5e", "use.itemUuid");
+        if (itemUuid) {
+            try {
+                return fromUuidSync(itemUuid);
+            } catch {
+                continue;
+            }
+        }
     }
+    return null;
 }
 
 /**
@@ -751,13 +861,12 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
  * @param {TokenDocument}   tokenDoc            The target token document.
  * @param {Roll}            attackRoll          The D20Roll for the attack.
  * @param {ChatMessage}     attackMessage       The attack roll message.
- * @param {ChatMessage}     damageMessage       The damage roll message.
  * @param {ChatMessage|null} originatingMessage The originating usage message.
  * @param {string[]}        whisperTargets      User IDs to whisper to.
  */
-async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMessage, damageMessage, originatingMessage, whisperTargets) {
+async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMessage, originatingMessage, whisperTargets) {
     // Resolve the weapon item from message flags
-    const weaponItem = _resolveWeaponItem(damageMessage, originatingMessage);
+    const weaponItem = _resolveWeaponItem(attackMessage, originatingMessage);
     if (!weaponItem) {
         debug(`Player Damage Prompt |    ✗ Graze: could not resolve weapon item from message flags`);
         return;

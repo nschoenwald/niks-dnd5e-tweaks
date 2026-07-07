@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.6] - 2026-07-07
+### Fixed
+- **Player Damage Prompt**: Fixed Graze weapon mastery prompts not triggering on missed attacks. The Graze check was previously nested inside the damage roll handler, but on a miss no damage is rolled, so the handler never fired. Graze is now detected via a separate attack roll handler that triggers independently when an attack misses its target.
+- **Combat Experience Tracker**: Fixed XP being undercounted when multiple unlinked tokens of the same NPC actor are in combat. Previously, NPCs were deduplicated by `actor.uuid`, which is shared across all unlinked tokens of the same base actor. NPCs are now keyed by combatant ID so each individual combatant is counted separately (e.g. 4 Goblins now correctly contribute 4× their XP).
+- **Combat Experience Tracker**: Fixed potential XSS vulnerability — NPC and PC names in the XP summary chat message are now HTML-escaped via `foundry.utils.escapeHTML`.
+- **Combat Experience Tracker**: Added a defensive GM permission check to the "Distribute XP" button click handler.
+
 ## [14.11.5] - 2026-06-26
 ### Changed
 - **Player Damage Prompt**: The damage prompt now uses the token name instead of the actor name, so unlinked tokens with custom names display correctly.
