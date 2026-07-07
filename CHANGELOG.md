@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.7] - 2026-07-07
+### Fixed
+- **Player Damage Prompt**: Fixed Graze weapon mastery prompts still not triggering on missed attacks. The weapon item resolution was looking for the deprecated flag path `flags.dnd5e.use.itemUuid`, which does not exist in DnD5e 5.2+. The system stores the item UUID in `flags.dnd5e.item.uuid` (via the Activity `messageFlags` getter). This caused the weapon to never be resolved, silently aborting the Graze mastery check.
+
 ## [14.11.6] - 2026-07-07
 ### Fixed
 - **Player Damage Prompt**: Fixed Graze weapon mastery prompts not triggering on missed attacks. The Graze check was previously nested inside the damage roll handler, but on a miss no damage is rolled, so the handler never fired. Graze is now detected via a separate attack roll handler that triggers independently when an attack misses its target.

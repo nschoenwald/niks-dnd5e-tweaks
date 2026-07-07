@@ -738,21 +738,23 @@ function _formatDamageBreakdown(damageByType) {
 
 /**
  * Resolve the weapon Item from one or more chat messages.
- * The DnD5e system stores `use.itemUuid` in the message flags.
- * Checks each provided message in order and returns the first match.
+ * In DnD5e 5.2+, the system stores item info in `flags.dnd5e.item`
+ * (via the Activity `messageFlags` getter).  Both the attack roll
+ * and damage roll messages carry this flag.
  * @param {...ChatMessage|null} messages  Messages to search (nulls are skipped).
  * @returns {Item|null}
  */
 function _resolveWeaponItem(...messages) {
     for (const msg of messages) {
         if (!msg) continue;
-        const itemUuid = msg.getFlag("dnd5e", "use.itemUuid");
+
+        // DnD5e 5.2+ stores item UUID in flags.dnd5e.item.uuid
+        const itemUuid = msg.getFlag("dnd5e", "item.uuid");
         if (itemUuid) {
             try {
-                return fromUuidSync(itemUuid);
-            } catch {
-                continue;
-            }
+                const item = fromUuidSync(itemUuid);
+                if (item) return item;
+            } catch { /* continue to next message */ }
         }
     }
     return null;
