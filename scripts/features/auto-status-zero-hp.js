@@ -32,7 +32,11 @@ function _ownershipType(actor) {
 // ── Status condition helpers ──────────────────────────────────────────
 
 /**
- * Apply (or skip) the configured status condition for a token at 0 HP.
+ * Apply (or upgrade) the configured status condition for a token at 0 HP.
+ *
+ * If the status already exists (e.g. applied by the DnD5e system or another
+ * module) but lacks the `flags.core.overlay` flag, upgrade it to an overlay
+ * so the big icon displays on the token.
  *
  * Wrapped in try-catch because the DnD5e system (and other modules like
  * monks-combat-details) may also apply the same fixed-ID status effect
@@ -43,8 +47,8 @@ function _ownershipType(actor) {
 async function _applyZeroHPStatus(actor, statusId) {
     if (statusId === "none") return;
 
-    // Apply the main status condition as an overlay
     if (!actor.statuses.has(statusId)) {
+        // Status not yet present — apply it fresh as an overlay
         debug(`Auto-Status | Applying "${statusId}" overlay to ${actor.name}`);
         try {
             await actor.toggleStatusEffect(statusId, { active: true, overlay: true });
@@ -52,9 +56,19 @@ async function _applyZeroHPStatus(actor, statusId) {
             debug(`Auto-Status | Could not apply "${statusId}" to ${actor.name}: ${e.message}`);
         }
     } else {
-        debug(`Auto-Status | ${actor.name} already has "${statusId}" — skipping`);
+        // Status already exists — ensure it's displayed as an overlay
+        const effect = actor.effects.find(e => e.statuses?.has(statusId));
+        if (effect && !effect.getFlag("core", "overlay")) {
+            debug(`Auto-Status | "${statusId}" exists on ${actor.name} but is not an overlay — upgrading`);
+            try {
+                await effect.update({ "flags.core.overlay": true });
+            } catch (e) {
+                debug(`Auto-Status | Could not upgrade "${statusId}" overlay on ${actor.name}: ${e.message}`);
+            }
+        } else {
+            debug(`Auto-Status | ${actor.name} already has "${statusId}" as overlay — skipping`);
+        }
     }
-
 }
 
 /**

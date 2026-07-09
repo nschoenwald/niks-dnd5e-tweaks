@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.9] - 2026-07-09
+### Fixed
+- **Auto Status at 0 HP**: Fixed status conditions not displaying as a big overlay icon on tokens. When the DnD5e system (or another module) applies the status effect first — without the `flags.core.overlay` flag — the module previously saw "already has status" and skipped it. It now detects the missing overlay flag and upgrades the existing ActiveEffect so the big icon correctly appears on the token.
+
+## [14.11.8] - 2026-07-08
+### Added
+- **Player Damage Prompt**: Stale damage prompt cleanup — whenever a new damage prompt is posted, any damage prompt chat messages older than 10 minutes that were whispered to the same recipient(s) are automatically deleted. This prevents chat clutter from accumulating during long combat sessions.
+
 ## [14.11.7] - 2026-07-07
 ### Fixed
-- **Player Damage Prompt**: Fixed Graze weapon mastery prompts still not triggering on missed attacks. The weapon item resolution was looking for the deprecated flag path `flags.dnd5e.use.itemUuid`, which does not exist in DnD5e 5.2+. The system stores the item UUID in `flags.dnd5e.item.uuid` (via the Activity `messageFlags` getter). This caused the weapon to never be resolved, silently aborting the Graze mastery check.
+- **Player Damage Prompt**: Fixed Graze weapon mastery prompts still not triggering on missed attacks. Two issues were resolved: (1) the weapon item resolution was looking for the non-existent flag path `flags.dnd5e.use.itemUuid` instead of the correct `flags.dnd5e.item.uuid`, and (2) the mastery eligibility check was manually looking up `actor.system.traits.weaponMastery` — a path that doesn't exist in DnD5e 5.2+. The Graze check now reads `flags.dnd5e.roll.mastery` from the attack roll message, which the DnD5e system already sets authoritatively when the actor has mastered the weapon.
 
 ## [14.11.6] - 2026-07-07
 ### Fixed

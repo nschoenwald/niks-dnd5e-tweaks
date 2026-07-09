@@ -180,10 +180,16 @@ async function _onCreateChatMessage_Attack(message) {
         return;
     }
 
-    debug("Player Damage Prompt | Graze: Attack roll detected",
+    // The DnD5e system stores the chosen mastery in flags.dnd5e.roll.mastery.
+    // Only proceed if this attack used the Graze mastery.
+    const rollMastery = message.getFlag("dnd5e", "roll.mastery");
+    if (rollMastery !== "graze") return;
+
+    debug("Player Damage Prompt | Graze: Attack roll with Graze mastery detected",
         "| Message ID:", message.id,
         "| Roll type:", rollType,
-        "| Activity type:", activityType);
+        "| Activity type:", activityType,
+        "| Mastery:", rollMastery);
 
     // Find the originating (usage) message to get original targets
     const originatingId = message.getFlag("dnd5e", "originatingMessage");
@@ -760,38 +766,6 @@ function _resolveWeaponItem(...messages) {
     return null;
 }
 
-/**
- * Check whether a weapon has the Graze mastery and the attacker actor
- * has mastered that weapon.  The actor's `traits.weaponMastery` Set
- * contains weapon identifiers (e.g. "greatsword"), and the weapon's
- * `system.mastery` is the mastery type key (e.g. "graze").
- * @param {Item}  item           The weapon Item.
- * @param {Actor} attackerActor  The actor who made the attack.
- * @returns {boolean}
- */
-function _hasGrazeMastery(item, attackerActor) {
-    if (!item || !attackerActor) return false;
-    if (item.system?.mastery !== "graze") return false;
-
-    const identifier = item.system?.identifier;
-    if (!identifier) return false;
-
-    const masteredWeapons = attackerActor.system?.traits?.weaponMastery;
-    if (!masteredWeapons) return false;
-
-    // masteredWeapons may be a Set or an array-like
-    const has = masteredWeapons instanceof Set
-        ? masteredWeapons.has(identifier)
-        : Array.isArray(masteredWeapons)
-            ? masteredWeapons.includes(identifier)
-            : false;
-
-    debug(`Player Damage Prompt |    Graze mastery check:`,
-        `weapon="${item.name}" identifier="${identifier}" mastery="${item.system?.mastery}"`,
-        `| actor mastered=[${masteredWeapons instanceof Set ? [...masteredWeapons].join(", ") : masteredWeapons}]`,
-        `| result=${has}`);
-    return has;
-}
 
 /**
  * Compute the Graze damage: the ability modifier used for the attack,
@@ -867,7 +841,7 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
  * @param {string[]}        whisperTargets      User IDs to whisper to.
  */
 async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMessage, originatingMessage, whisperTargets) {
-    // Resolve the weapon item from message flags
+    // Resolve the weapon item from message flags (needed for damage type)
     const weaponItem = _resolveWeaponItem(attackMessage, originatingMessage);
     if (!weaponItem) {
         debug(`Player Damage Prompt |    ✗ Graze: could not resolve weapon item from message flags`);
@@ -875,18 +849,9 @@ async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMess
     }
     debug(`Player Damage Prompt |    Resolved weapon: ${weaponItem.name} (mastery: ${weaponItem.system?.mastery || "none"})`);
 
-    // Resolve the attacker actor
-    const attackerActor = ChatMessage.getSpeakerActor(attackMessage.speaker);
-    if (!attackerActor) {
-        debug(`Player Damage Prompt |    ✗ Graze: could not resolve attacker actor`);
-        return;
-    }
-
-    // Check if the weapon has graze mastery AND the actor has mastered it
-    if (!_hasGrazeMastery(weaponItem, attackerActor)) {
-        debug(`Player Damage Prompt |    ✗ Graze: mastery check failed, skipping`);
-        return;
-    }
+    // Note: mastery eligibility was already verified via flags.dnd5e.roll.mastery
+    // in _onCreateChatMessage_Attack — the DnD5e system only sets this flag when
+    // the actor has actually mastered the weapon.
 
     // Compute graze damage (ability modifier only)
     const grazeDamage = _getGrazeDamage(attackRoll, attackMessage, weaponItem);
@@ -963,10 +928,55 @@ async function _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, dama
         </div>
     `;
 
-    await ChatMessage.create({
+    const newMessage = await ChatMessage.create({
         content,
         whisper: whisperUsers,
-        speaker: ChatMessage.getSpeaker({ actor })
+        speaker: ChatMessage.getSpeaker({ actor }),
+        flags: {
+            [MODULE_ID]: { damagePrompt: true }
+        }
+    });
+
+    // Clean up stale damage prompts (>10 min old) for the same recipients
+    if (newMessage) _cleanupStaleDamagePrompts(newMessage);
+}
+
+// ── Stale prompt cleanup ─────────────────────────────────────────────
+
+/**
+ * Delete damage prompt chat messages older than 10 minutes that were
+ * whispered to any of the same recipients as `newMessage`.  Only runs
+ * on the GM client (the message author) to avoid duplicate deletions.
+ * @param {ChatMessage} newMessage  The newly created damage prompt.
+ */
+function _cleanupStaleDamagePrompts(newMessage) {
+    if (!game.user.isGM) return;
+
+    const STALE_MS = 10 * 60 * 1000; // 10 minutes
+    const cutoff = Date.now() - STALE_MS;
+
+    // Build a Set of recipient user IDs from the new message
+    const recipients = new Set(newMessage.whisper ?? []);
+    if (!recipients.size) return; // public messages — nothing to clean
+
+    const stale = game.messages.filter(m => {
+        if (m.id === newMessage.id) return false; // don't delete ourselves
+        if (!m.getFlag(MODULE_ID, "damagePrompt")) return false; // not a damage prompt
+        if (m.timestamp * 1000 >= cutoff) return false; // too recent
+
+        // Check if the old prompt shares at least one whisper recipient
+        const oldRecipients = m.whisper ?? [];
+        return oldRecipients.some(uid => recipients.has(uid));
+    });
+
+    if (!stale.length) return;
+
+    debug(`Player Damage Prompt | Cleaning up ${stale.length} stale damage prompt(s) (>10 min old)`);
+
+    // Use documentClass.deleteDocuments for batch deletion
+    const ids = stale.map(m => m.id);
+    ChatMessage.deleteDocuments(ids).catch(err => {
+        console.error("Nik's DnD5e Tweaks | Failed to delete stale damage prompts:", err);
     });
 }
 
