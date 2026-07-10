@@ -2,12 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.11.11] - 2026-07-11
-### Fixed
-- **Player Damage Prompt**: Fixed the chat message text and speaker erroneously using the actor's name instead of the token's name. Unlinked tokens with custom names now correctly display their token name in the damage prompt.
-
 ## [14.11.10] - 2026-07-10
 ### Fixed
+- **Player Damage Prompt**: Fixed the chat message text and speaker erroneously using the actor's name instead of the token's name. Unlinked tokens with custom names now correctly display their token name in the damage prompt.
 - **Player Damage Prompt**: Fixed the "Apply Damage" button not being marked as inactive on the other client after one side applied the damage. The previous approach persisted the `disabled` HTML attribute in the chat message content, but Foundry's HTML sanitiser strips it during rendering, causing the button to reappear as active on re-render. The button state is now tracked via a chat message flag (`damageApplied`) which survives sanitisation and reliably disables the button on all clients.
 
 ### Changed

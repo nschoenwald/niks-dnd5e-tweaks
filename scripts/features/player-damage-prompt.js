@@ -254,7 +254,8 @@ async function _onCreateChatMessage_Attack(message) {
             continue;
         }
 
-        await _handleGrazeMastery(actor, tokenDoc, attackRoll, message, originatingMessage, whisperTargets);
+        const tokenName = target.name || tokenDoc?.name || actor.name;
+        await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
     }
 }
 
@@ -608,7 +609,8 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    await _sendDamagePrompt(actor, tokenDoc, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
+    const tokenName = target.name || tokenDoc?.name || actor.name;
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -839,7 +841,7 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
  * @param {ChatMessage|null} originatingMessage The originating usage message.
  * @param {string[]}        whisperTargets      User IDs to whisper to.
  */
-async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMessage, originatingMessage, whisperTargets) {
+async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll, attackMessage, originatingMessage, whisperTargets) {
     // Resolve the weapon item from message flags (needed for damage type)
     const weaponItem = _resolveWeaponItem(attackMessage, originatingMessage);
     if (!weaponItem) {
@@ -870,7 +872,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMess
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, tokenDoc, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
+    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -889,10 +891,9 @@ async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMess
  * @param {string[]} whisperUsers     User IDs to whisper to.
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  */
-async function _sendDamagePrompt(actor, tokenDoc, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
-    const tokenName = isToken ? tokenDoc.name : (actor.prototypeToken?.name ?? actor.name);
 
     // Hit description
     let hitText;
@@ -933,7 +934,7 @@ async function _sendDamagePrompt(actor, tokenDoc, attackTotal, isCritical, damag
     const newMessage = await ChatMessage.create({
         content,
         whisper: whisperUsers,
-        speaker: ChatMessage.getSpeaker({ actor, token: speakerToken }),
+        speaker: ChatMessage.getSpeaker({ actor, token: speakerToken, alias: tokenName }),
         flags: {
             [MODULE_ID]: { damagePrompt: true }
         }
