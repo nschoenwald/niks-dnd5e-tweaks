@@ -608,8 +608,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    const tokenName = tokenDoc?.name ?? actor.name;
-    await _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
+    await _sendDamagePrompt(actor, tokenDoc, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -871,8 +870,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMess
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    const tokenName = tokenDoc?.name ?? targetActor.name;
-    await _sendDamagePrompt(targetActor, tokenName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
+    await _sendDamagePrompt(targetActor, tokenDoc, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -891,7 +889,11 @@ async function _handleGrazeMastery(targetActor, tokenDoc, attackRoll, attackMess
  * @param {string[]} whisperUsers     User IDs to whisper to.
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  */
-async function _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
+async function _sendDamagePrompt(actor, tokenDoc, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
+    const isToken = tokenDoc?.documentName === "Token";
+    const speakerToken = isToken ? tokenDoc : null;
+    const tokenName = isToken ? tokenDoc.name : (actor.prototypeToken?.name ?? actor.name);
+
     // Hit description
     let hitText;
     if (grazeMode) {
@@ -931,7 +933,7 @@ async function _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, dama
     const newMessage = await ChatMessage.create({
         content,
         whisper: whisperUsers,
-        speaker: ChatMessage.getSpeaker({ actor }),
+        speaker: ChatMessage.getSpeaker({ actor, token: speakerToken }),
         flags: {
             [MODULE_ID]: { damagePrompt: true }
         }
@@ -944,9 +946,9 @@ async function _sendDamagePrompt(actor, tokenName, attackTotal, isCritical, dama
 // ── Stale prompt cleanup ─────────────────────────────────────────────
 
 /**
- * Delete damage prompt chat messages older than 10 minutes that were
- * whispered to any of the same recipients as `newMessage`.  Only runs
- * on the GM client (the message author) to avoid duplicate deletions.
+ * Delete damage prompt chat messages older than 10 minutes.
+ * Only runs on the GM client (the message author) to avoid duplicate
+ * deletions.
  * @param {ChatMessage} newMessage  The newly created damage prompt.
  */
 function _cleanupStaleDamagePrompts(newMessage) {
@@ -955,25 +957,17 @@ function _cleanupStaleDamagePrompts(newMessage) {
     const STALE_MS = 10 * 60 * 1000; // 10 minutes
     const cutoff = Date.now() - STALE_MS;
 
-    // Build a Set of recipient user IDs from the new message
-    const recipients = new Set(newMessage.whisper ?? []);
-    if (!recipients.size) return; // public messages — nothing to clean
-
     const stale = game.messages.filter(m => {
         if (m.id === newMessage.id) return false; // don't delete ourselves
         if (!m.getFlag(MODULE_ID, "damagePrompt")) return false; // not a damage prompt
         if (m.timestamp * 1000 >= cutoff) return false; // too recent
-
-        // Check if the old prompt shares at least one whisper recipient
-        const oldRecipients = m.whisper ?? [];
-        return oldRecipients.some(uid => recipients.has(uid));
+        return true;
     });
 
     if (!stale.length) return;
 
     debug(`Player Damage Prompt | Cleaning up ${stale.length} stale damage prompt(s) (>10 min old)`);
 
-    // Use documentClass.deleteDocuments for batch deletion
     const ids = stale.map(m => m.id);
     ChatMessage.deleteDocuments(ids).catch(err => {
         console.error("Nik's DnD5e Tweaks | Failed to delete stale damage prompts:", err);
@@ -1002,8 +996,15 @@ function _bindApplyDamageButton(message, element) {
     const button = prompt.querySelector('button[data-action="nd5t-apply-damage"]');
     if (!button) return;
 
-    // If the button is already disabled in the stored content, nothing to do
-    if (button.disabled) return;
+    // If damage was already applied (flag set by _markMessageApplied),
+    // disable the button in the DOM.  We cannot rely on the HTML `disabled`
+    // attribute persisting in the stored content because Foundry's HTML
+    // sanitiser strips it during rendering.
+    if (message.getFlag(MODULE_ID, "damageApplied")) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
+        return;
+    }
 
     button.addEventListener("click", async (event) => {
         event.preventDefault();
@@ -1057,9 +1058,10 @@ function _bindApplyDamageButton(message, element) {
 // ── Socket sync ──────────────────────────────────────────────────────
 
 /**
- * Request that the message content be updated to show the button as
- * disabled.  If the current user is the GM (message author), update
- * directly; otherwise emit a socket event so the GM's client does it.
+ * Request that the message be flagged as applied so the button appears
+ * disabled on all clients.  If the current user is the GM (message
+ * author), set the flag directly; otherwise emit a socket event so
+ * the GM's client does it.
  * @param {string} messageId
  */
 function _requestMarkApplied(messageId) {
@@ -1086,9 +1088,13 @@ function _onSocketMessage(data) {
 }
 
 /**
- * Update a chat message's content to replace the Apply Damage button
- * with a disabled "Damage Applied" button.  Must be called on the GM's
- * client (the message author).
+ * Mark a damage prompt chat message as applied by setting a flag.
+ * The flag is read by `_bindApplyDamageButton` during the subsequent
+ * re-render to disable the button in the DOM.  We use a flag rather
+ * than persisting the `disabled` HTML attribute in the message content
+ * because Foundry's HTML sanitiser strips `disabled` during rendering.
+ *
+ * Must be called on the GM's client (the message author).
  * @param {string} messageId
  */
 async function _markMessageApplied(messageId) {
@@ -1098,19 +1104,12 @@ async function _markMessageApplied(messageId) {
         return;
     }
 
-    // Replace the active button with a disabled one in the stored content.
-    // The button tag spans multiple lines (attributes on separate lines),
-    // so we use [\s\S] to match across newlines.
-    const updatedContent = message.content.replace(
-        /<button\s+data-action="nd5t-apply-damage"[\s\S]*?<\/button>/,
-        '<button data-action="nd5t-apply-damage" disabled><i class="fas fa-check"></i> Damage Applied</button>'
-    );
-
-    if (updatedContent === message.content) {
+    // Check if already marked
+    if (message.getFlag(MODULE_ID, "damageApplied")) {
         debug("Player Damage Prompt | Button already marked as applied in message", messageId);
         return;
     }
 
-    await message.update({ content: updatedContent });
-    debug("Player Damage Prompt | ✓ Message content updated with disabled button:", messageId);
+    await message.setFlag(MODULE_ID, "damageApplied", true);
+    debug("Player Damage Prompt | ✓ Message flagged as damage applied:", messageId);
 }
