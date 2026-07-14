@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.11] - 2026-07-14
+### Added
+- **Player Damage Prompt**: Expanded player damage prompts to also trigger for damage rolls from non-attack activities (like saving throws). For damage rolls from save activities, the prompt now includes two buttons: "Apply Full Damage" and "Apply Half Damage". This behavior is enabled by default and controlled by the new "Non-Attack Damage Prompts" setting.
+
 ## [14.11.10] - 2026-07-10
 ### Fixed
 - **Player Damage Prompt**: Fixed the chat message text and speaker erroneously using the actor's name instead of the token's name. Unlinked tokens with custom names now correctly display their token name in the damage prompt.

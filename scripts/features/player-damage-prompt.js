@@ -60,12 +60,14 @@ async function _onCreateChatMessage(message) {
     const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
     if (!playerPromptEnabled && !gmPromptEnabled) return;
 
-    // Only process damage rolls from attack activities (graze on miss
-    // is handled separately by _onCreateChatMessage_Attack)
+    // Only process damage rolls from attack activities by default,
+    // unless non-attack damage prompts are enabled.
     const rollType = message.getFlag("dnd5e", "roll.type");
     const activityType = message.getFlag("dnd5e", "activity.type");
     if (rollType !== "damage") return;
-    if (activityType !== "attack") return;
+
+    const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
+    if (activityType !== "attack" && !nonAttackPromptEnabled) return;
 
     // Only trigger on public rolls — skip private (GM), blind, and self rolls
     const isPublic = (!message.whisper?.length) && !message.blind;
@@ -108,25 +110,32 @@ async function _onCreateChatMessage(message) {
     }
 
     // Find the attack roll message (shares the same originatingMessage)
-    const attackMessage = _findAttackMessage(originatingId);
-    if (!attackMessage) {
-        debug("Player Damage Prompt | No attack roll message found in last 30 messages for originatingId:", originatingId);
-        return;
+    let attackMessage = null;
+    let attackRoll = null;
+    
+    if (activityType === "attack") {
+        attackMessage = _findAttackMessage(originatingId);
+        if (!attackMessage) {
+            debug("Player Damage Prompt | No attack roll message found in last 30 messages for originatingId:", originatingId);
+            return;
+        }
+        debug("Player Damage Prompt | Found attack roll message:", attackMessage.id,
+            "| Rolls count:", attackMessage.rolls.length);
     }
-    debug("Player Damage Prompt | Found attack roll message:", attackMessage.id,
-        "| Rolls count:", attackMessage.rolls.length);
 
-    // Extract the D20Roll from the attack message
-    const attackRoll = _getAttackD20Roll(attackMessage);
-    if (!attackRoll) {
-        debug("Player Damage Prompt | No valid D20 attack roll found in message", attackMessage.id);
-        return;
+    if (activityType === "attack") {
+        // Extract the D20Roll from the attack message
+        attackRoll = _getAttackD20Roll(attackMessage);
+        if (!attackRoll) {
+            debug("Player Damage Prompt | No valid D20 attack roll found in message", attackMessage.id);
+            return;
+        }
+        debug("Player Damage Prompt | Attack roll:",
+            "total =", attackRoll.total,
+            "| isCritical =", !!attackRoll.isCritical,
+            "| isFumble =", !!attackRoll.isFumble,
+            "| formula =", attackRoll.formula);
     }
-    debug("Player Damage Prompt | Attack roll:",
-        "total =", attackRoll.total,
-        "| isCritical =", !!attackRoll.isCritical,
-        "| isFumble =", !!attackRoll.isFumble,
-        "| formula =", attackRoll.formula);
 
     // Aggregate damage by type from the damage rolls
     const damageByType = _aggregateDamage(message.rolls);
@@ -146,7 +155,7 @@ async function _onCreateChatMessage(message) {
     // Process each target
     debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
     for (const target of targets) {
-        await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled);
+        await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType);
     }
 }
 
@@ -530,10 +539,10 @@ function _getWhisperTargets(actor) {
  * @param {Record<string, number>} damageByType  Aggregated damage map.
  * @param {Array}   rawDamages           Per-roll DamageDescriptions for applyDamage.
  * @param {boolean} isPlayerAttack       Whether the attacker is a player (non-GM).
- * @param {boolean} playerPromptEnabled  Whether the player damage prompt setting is on.
  * @param {boolean} gmPromptEnabled      Whether the GM damage prompt setting is on.
+ * @param {string}  activityType         The activity type (e.g. "attack", "save").
  */
-async function _processTarget(target, attackRoll, attackMessage, damageMessage, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled) {
+async function _processTarget(target, attackRoll, attackMessage, damageMessage, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType) {
     debug(`Player Damage Prompt | ── Processing target: ${target.name || target.uuid} (AC ${target.ac})`);
 
     const tokenDoc = fromUuidSync(target.uuid);
@@ -573,18 +582,26 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     }
 
     // Determine hit / crit
-    const isCritical = !!attackRoll.isCritical;
-    const attackTotal = attackRoll.total;
-    const targetAC = target.ac;
+    let isCritical = false;
+    let attackTotal = 0;
+    
+    if (activityType === "attack") {
+        isCritical = !!attackRoll.isCritical;
+        attackTotal = attackRoll.total;
+        const targetAC = target.ac;
 
-    debug(`Player Damage Prompt |    Hit check: roll ${attackTotal} vs AC ${targetAC}`,
-        `| Critical: ${isCritical}`,
-        `| Result: ${isCritical ? "CRITICAL HIT" : (attackTotal >= targetAC ? "HIT" : "MISS")}`);
+        debug(`Player Damage Prompt |    Hit check: roll ${attackTotal} vs AC ${targetAC}`,
+            `| Critical: ${isCritical}`,
+            `| Result: ${isCritical ? "CRITICAL HIT" : (attackTotal >= targetAC ? "HIT" : "MISS")}`);
 
-    if (!isCritical && attackTotal < targetAC) {
-        // Attack missed — graze is handled by the attack roll handler
-        debug(`Player Damage Prompt |    Attack missed — skipping (graze handled by attack roll handler)`);
-        return;
+        if (!isCritical && attackTotal < targetAC) {
+            // Attack missed — graze is handled by the attack roll handler
+            debug(`Player Damage Prompt |    Attack missed — skipping (graze handled by attack roll handler)`);
+            return;
+        }
+    } else {
+        // Non-attack activity. Assume it affects the target.
+        debug(`Player Damage Prompt |    Non-attack activity (${activityType}) — assuming target is affected`);
     }
 
     // Log actor traits for damage calculation
@@ -610,7 +627,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
     const tokenName = target.name || tokenDoc?.name || actor.name;
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false);
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -872,7 +889,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true);
+    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack");
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -890,8 +907,9 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {Array}    rawDamages       Per-roll DamageDescriptions for applyDamage.
  * @param {string[]} whisperUsers     User IDs to whisper to.
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
+ * @param {string}   [activityType="attack"]  The type of activity.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack") {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
@@ -899,20 +917,57 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     let hitText;
     if (grazeMode) {
         hitText = `${tokenName} was <span class="nd5t-graze-text">GRAZED</span> (attack missed)`;
-    } else if (isCritical) {
-        hitText = `${tokenName} was <span class="nd5t-crit-text">CRITICALLY HIT</span>`;
+    } else if (activityType === "attack") {
+        if (isCritical) {
+            hitText = `${tokenName} was <span class="nd5t-crit-text">CRITICALLY HIT</span>`;
+        } else {
+            hitText = `${tokenName} was hit with an Attack Roll of ${attackTotal}`;
+        }
+    } else if (activityType === "save") {
+        hitText = `${tokenName} must make a Saving Throw`;
     } else {
-        hitText = `${tokenName} was hit with an Attack Roll of ${attackTotal}`;
+        hitText = `${tokenName} is affected by an ability`;
     }
 
     const damageText = _formatDamageBreakdown(damageByType);
     // Bold the damage breakdown only when no trait modifiers change the value;
     // when traits apply, the effective damage is already bolded in traitText.
     const damageDisplay = traitText ? damageText : `<strong>${damageText}</strong>`;
-    const buttonLabel = grazeMode ? `Apply ${effectiveDamage} Damage (Graze)` : `Apply ${effectiveDamage} Damage`;
-
+    
     // Serialise damage descriptions for the button (properties as arrays)
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
+
+    let buttonsHtml = '';
+    if (activityType === "save") {
+        const halfEffective = Math.floor(effectiveDamage / 2);
+        buttonsHtml = `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="1">
+                <i class="fas fa-heart-crack"></i>
+                Apply ${effectiveDamage} Damage (Full)
+            </button>
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="0.5">
+                <i class="fas fa-heart-broken"></i>
+                Apply ${halfEffective} Damage (Half)
+            </button>
+        `;
+    } else {
+        const buttonLabel = grazeMode ? `Apply ${effectiveDamage} Damage (Graze)` : `Apply ${effectiveDamage} Damage`;
+        buttonsHtml = `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="1">
+                <i class="fas fa-heart-crack"></i>
+                ${buttonLabel}
+            </button>
+        `;
+    }
 
     const content = `
         <div class="dnd5e chat-card nd5t-damage-prompt">
@@ -920,13 +975,8 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
                 <p>${hitText} for ${damageDisplay}.</p>
                 ${traitText ? `<p class="nd5t-trait-info">${traitText}</p>` : ""}
             </div>
-            <div class="card-buttons">
-                <button data-action="nd5t-apply-damage"
-                        data-actor-uuid="${actor.uuid}"
-                        data-damages='${damagesJson}'>
-                    <i class="fas fa-heart-crack"></i>
-                    ${buttonLabel}
-                </button>
+            <div class="card-buttons" style="display: flex; flex-direction: column; gap: 4px;">
+                ${buttonsHtml}
             </div>
         </div>
     `;
@@ -994,65 +1044,84 @@ function _bindApplyDamageButton(message, element) {
         return;
     }
 
-    const button = prompt.querySelector('button[data-action="nd5t-apply-damage"]');
-    if (!button) return;
+    const buttons = prompt.querySelectorAll('button[data-action="nd5t-apply-damage"]');
+    if (!buttons.length) return;
 
     // If damage was already applied (flag set by _markMessageApplied),
-    // disable the button in the DOM.  We cannot rely on the HTML `disabled`
+    // disable the buttons in the DOM. We cannot rely on the HTML `disabled`
     // attribute persisting in the stored content because Foundry's HTML
     // sanitiser strips it during rendering.
     if (message.getFlag(MODULE_ID, "damageApplied")) {
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
+        buttons.forEach(button => {
+            button.disabled = true;
+            if (button.dataset.multiplier === "1" || buttons.length === 1) {
+                button.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
+            } else {
+                button.style.display = "none";
+            }
+        });
         return;
     }
 
-    button.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+    buttons.forEach(button => {
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
 
-        const actorUuid = button.dataset.actorUuid;
-        const damages = JSON.parse(button.dataset.damages);
+            const actorUuid = button.dataset.actorUuid;
+            const damages = JSON.parse(button.dataset.damages);
+            const multiplier = parseFloat(button.dataset.multiplier || "1");
 
-        debug("Player Damage Prompt | Button clicked",
-            "| Message ID:", message.id,
-            "| Actor UUID:", actorUuid,
-            "| Damages:", damages);
+            debug("Player Damage Prompt | Button clicked",
+                "| Message ID:", message.id,
+                "| Actor UUID:", actorUuid,
+                "| Multiplier:", multiplier,
+                "| Damages:", damages);
 
-        // Reconstruct property Sets for applyDamage
-        for (const d of damages) {
-            if (d.properties) d.properties = new Set(d.properties);
-        }
+            // Reconstruct property Sets for applyDamage
+            for (const d of damages) {
+                if (d.properties) d.properties = new Set(d.properties);
+                if (multiplier !== 1) {
+                    d.value = Math.max(0, Math.floor(d.value * multiplier));
+                }
+            }
 
-        const actor = fromUuidSync(actorUuid);
-        if (!actor) {
-            debug("Player Damage Prompt | ✗ Could not resolve actor UUID:", actorUuid);
-            ui.notifications.warn("Could not find the actor to apply damage to.");
-            return;
-        }
+            const actor = fromUuidSync(actorUuid);
+            if (!actor) {
+                debug("Player Damage Prompt | ✗ Could not resolve actor UUID:", actorUuid);
+                ui.notifications.warn("Could not find the actor to apply damage to.");
+                return;
+            }
 
-        debug(`Player Damage Prompt | Applying damage to ${actor.name}`,
-            `| HP before: ${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
-            `| Temp HP: ${actor.system.attributes.hp.temp || 0}`);
-
-        try {
-            await actor.applyDamage(damages);
-
-            debug(`Player Damage Prompt | ✓ Damage applied to ${actor.name}`,
-                `| HP after: ${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
+            debug(`Player Damage Prompt | Applying damage to ${actor.name}`,
+                `| HP before: ${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
                 `| Temp HP: ${actor.system.attributes.hp.temp || 0}`);
 
-            // Immediately disable the button in the DOM
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
+            try {
+                await actor.applyDamage(damages);
 
-            // Ask the GM to persist the disabled state in the message content
-            _requestMarkApplied(message.id);
-        } catch (err) {
-            console.error("Nik's DnD5e Tweaks | Failed to apply damage:", err);
-            debug("Player Damage Prompt | ✗ applyDamage failed:", err.message);
-            ui.notifications.error("Failed to apply damage. See the console for details.");
-        }
+                debug(`Player Damage Prompt | ✓ Damage applied to ${actor.name}`,
+                    `| HP after: ${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
+                    `| Temp HP: ${actor.system.attributes.hp.temp || 0}`);
+
+                // Immediately disable the buttons in the DOM
+                buttons.forEach(b => {
+                    b.disabled = true;
+                    if (b === button || buttons.length === 1) {
+                        b.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
+                    } else {
+                        b.style.display = "none";
+                    }
+                });
+
+                // Ask the GM to persist the disabled state in the message content
+                _requestMarkApplied(message.id);
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Failed to apply damage:", err);
+                debug("Player Damage Prompt | ✗ applyDamage failed:", err.message);
+                ui.notifications.error("Failed to apply damage. See the console for details.");
+            }
+        });
     });
 }
 

@@ -337,6 +337,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableNonAttackDamagePrompt", {
+        name: "↳ Non-Attack Damage Prompts",
+        hint: "When enabled, damage prompts are also sent for damage rolls originating from non-attack activities (like saving throws or utility abilities). For save activities, the prompt includes both Full and Half damage buttons.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "suppressDamagePrompt", {
         name: "↳ Suppress Damage Prompts (Player)",
         hint: "Hide damage prompt whispers in chat. This is a per-user setting — each player can choose independently whether to see damage prompts.",
