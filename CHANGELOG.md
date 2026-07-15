@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.12] - 2026-07-15
+### Changed
+- **Player Damage Prompt**: The newly added Non-Attack Damage Prompts feature now explicitly supports healing and temporary hit points. Prompts for these rolls will correctly skip resistance calculations and display dynamically updated wording (e.g. "Apply Healing" or "Apply Temp HP") and icons instead of generic damage text.
+
 ## [14.11.11] - 2026-07-14
 ### Added
 - **Player Damage Prompt**: Expanded player damage prompts to also trigger for damage rolls from non-attack activities (like saving throws). For damage rolls from save activities, the prompt now includes two buttons: "Apply Full Damage" and "Apply Half Damage". This behavior is enabled by default and controlled by the new "Non-Attack Damage Prompts" setting.

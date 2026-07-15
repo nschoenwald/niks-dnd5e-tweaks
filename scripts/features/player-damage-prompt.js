@@ -454,8 +454,6 @@ function _aggregateDamage(rolls) {
     const byType = {};
     for (const roll of rolls) {
         for (const chunk of _splitRollByType(roll)) {
-            // Skip healing types
-            if (CONFIG.DND5E?.healingTypes?.[chunk.type]) continue;
             byType[chunk.type] = (byType[chunk.type] || 0) + chunk.value;
         }
     }
@@ -475,7 +473,6 @@ function _buildDamageDescriptions(rolls) {
     const descriptions = [];
     for (const roll of rolls) {
         for (const chunk of _splitRollByType(roll)) {
-            if (CONFIG.DND5E?.healingTypes?.[chunk.type]) continue;
             descriptions.push(chunk);
         }
     }
@@ -660,6 +657,11 @@ function _calculateEffectiveDamage(actor, damageByType) {
     for (const [type, amount] of Object.entries(damageByType)) {
         totalRaw += amount;
 
+        if (CONFIG.DND5E?.healingTypes?.[type]) {
+            effectiveDamage += amount;
+            continue;
+        }
+
         const isImmune = di.has(type);
         const isResistant = dr.has(type);
         const isVulnerable = dv.has(type);
@@ -727,7 +729,7 @@ function _calculateEffectiveDamage(actor, damageByType) {
  * @returns {string}     Localised label (e.g. "Fire").
  */
 function _localizeType(type) {
-    const cfg = CONFIG.DND5E?.damageTypes?.[type];
+    const cfg = CONFIG.DND5E?.damageTypes?.[type] || CONFIG.DND5E?.healingTypes?.[type];
     if (cfg?.label) return game.i18n.localize(cfg.label);
     return type.charAt(0).toUpperCase() + type.slice(1);
 }
@@ -751,9 +753,12 @@ function _formatTypeList(types) {
  * @returns {string}  HTML string.
  */
 function _formatDamageBreakdown(damageByType) {
-    const parts = Object.entries(damageByType).map(([type, amount]) =>
-        `${amount} ${_localizeType(type)} damage`
-    );
+    const parts = Object.entries(damageByType).map(([type, amount]) => {
+        if (CONFIG.DND5E?.healingTypes?.[type]) {
+            return `${amount} ${_localizeType(type)}`;
+        }
+        return `${amount} ${_localizeType(type)} damage`;
+    });
     if (parts.length <= 1) return parts[0] || "";
     return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
 }
@@ -937,6 +942,24 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     // Serialise damage descriptions for the button (properties as arrays)
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
 
+    const allHealing = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => CONFIG.DND5E?.healingTypes?.[t]);
+    const allTempHP = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => t === "temphp");
+    
+    let actionWord = "Damage";
+    let iconFull = "fa-heart-crack";
+    let iconHalf = "fa-heart-broken";
+    if (allTempHP) {
+        actionWord = "Temp HP";
+        iconFull = "fa-shield-halved";
+        iconHalf = "fa-shield-halved";
+    } else if (allHealing) {
+        actionWord = "Healing";
+        iconFull = "fa-heart";
+        iconHalf = "fa-heart";
+    } else if (Object.keys(damageByType).some(t => CONFIG.DND5E?.healingTypes?.[t])) {
+        actionWord = "Points";
+    }
+
     let buttonsHtml = '';
     if (activityType === "save") {
         const halfEffective = Math.floor(effectiveDamage / 2);
@@ -945,25 +968,25 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
                     data-actor-uuid="${actor.uuid}"
                     data-damages='${damagesJson}'
                     data-multiplier="1">
-                <i class="fas fa-heart-crack"></i>
-                Apply ${effectiveDamage} Damage (Full)
+                <i class="fas ${iconFull}"></i>
+                Apply ${effectiveDamage} ${actionWord} (Full)
             </button>
             <button data-action="nd5t-apply-damage"
                     data-actor-uuid="${actor.uuid}"
                     data-damages='${damagesJson}'
                     data-multiplier="0.5">
-                <i class="fas fa-heart-broken"></i>
-                Apply ${halfEffective} Damage (Half)
+                <i class="fas ${iconHalf}"></i>
+                Apply ${halfEffective} ${actionWord} (Half)
             </button>
         `;
     } else {
-        const buttonLabel = grazeMode ? `Apply ${effectiveDamage} Damage (Graze)` : `Apply ${effectiveDamage} Damage`;
+        const buttonLabel = grazeMode ? `Apply ${effectiveDamage} ${actionWord} (Graze)` : `Apply ${effectiveDamage} ${actionWord}`;
         buttonsHtml = `
             <button data-action="nd5t-apply-damage"
                     data-actor-uuid="${actor.uuid}"
                     data-damages='${damagesJson}'
                     data-multiplier="1">
-                <i class="fas fa-heart-crack"></i>
+                <i class="fas ${iconFull}"></i>
                 ${buttonLabel}
             </button>
         `;
