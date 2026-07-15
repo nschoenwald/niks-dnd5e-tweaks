@@ -64,7 +64,7 @@ async function _onCreateChatMessage(message) {
     // unless non-attack damage prompts are enabled.
     const rollType = message.getFlag("dnd5e", "roll.type");
     const activityType = message.getFlag("dnd5e", "activity.type");
-    if (rollType !== "damage") return;
+    if (rollType !== "damage" && rollType !== "healing") return;
 
     const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
     if (activityType !== "attack" && !nonAttackPromptEnabled) return;
