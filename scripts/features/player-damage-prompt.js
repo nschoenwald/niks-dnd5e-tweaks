@@ -624,7 +624,9 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
     const tokenName = target.name || tokenDoc?.name || actor.name;
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType);
+    const itemUuid = damageMessage.getFlag("dnd5e", "item.uuid");
+    const sourceItem = itemUuid ? fromUuidSync(itemUuid) : null;
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -894,7 +896,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack");
+    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack", weaponItem);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -914,37 +916,54 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  * @param {string}   [activityType="attack"]  The type of activity.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack") {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null) {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
-    // Hit description
-    let hitText;
-    if (grazeMode) {
-        hitText = `${tokenName} was <span class="nd5t-graze-text">GRAZED</span> (attack missed)`;
-    } else if (activityType === "attack") {
-        if (isCritical) {
-            hitText = `${tokenName} was <span class="nd5t-crit-text">CRITICALLY HIT</span>`;
-        } else {
-            hitText = `${tokenName} was hit with an Attack Roll of ${attackTotal}`;
-        }
-    } else if (activityType === "save") {
-        hitText = `${tokenName} must make a Saving Throw`;
-    } else {
-        hitText = `${tokenName} is affected by an ability`;
+    const allHealing = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => CONFIG.DND5E?.healingTypes?.[t]);
+    const allTempHP = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => t === "temphp");
+    const isPureHealing = allHealing && !allTempHP;
+
+    let damageText = _formatDamageBreakdown(damageByType);
+    if (isPureHealing) {
+        damageText = damageText.replace(/Healing/gi, "Hit Points");
     }
 
-    const damageText = _formatDamageBreakdown(damageByType);
     // Bold the damage breakdown only when no trait modifiers change the value;
     // when traits apply, the effective damage is already bolded in traitText.
     const damageDisplay = traitText ? damageText : `<strong>${damageText}</strong>`;
     
+    // Hit description
+    let descriptionHtml = "";
+    if (grazeMode) {
+        descriptionHtml = `<strong>${tokenName}</strong> was <span class="nd5t-graze-text">GRAZED</span> (attack missed) for ${damageDisplay}.`;
+    } else if (activityType === "attack") {
+        if (isCritical) {
+            descriptionHtml = `<strong>${tokenName}</strong> was <span class="nd5t-crit-text">CRITICALLY HIT</span> by an Attack Roll of ${attackTotal} for ${damageDisplay}.`;
+        } else {
+            descriptionHtml = `<strong>${tokenName}</strong> was hit with an Attack Roll of ${attackTotal} for ${damageDisplay}.`;
+        }
+    } else if (activityType === "save") {
+        descriptionHtml = `<strong>${tokenName}</strong> must make a Saving Throw for ${damageDisplay}.`;
+    } else {
+        if (sourceItem && sourceItem.parent) {
+            if (isPureHealing) {
+                descriptionHtml = `<strong>${tokenName}</strong> recovers ${damageDisplay} from <strong>${sourceItem.parent.name}'s</strong> <strong>${sourceItem.name}</strong>.`;
+            } else {
+                descriptionHtml = `<strong>${tokenName}</strong> receives ${damageDisplay} from <strong>${sourceItem.parent.name}'s</strong> <strong>${sourceItem.name}</strong>.`;
+            }
+        } else {
+            if (isPureHealing) {
+                descriptionHtml = `<strong>${tokenName}</strong> recovers ${damageDisplay} from an ability.`;
+            } else {
+                descriptionHtml = `<strong>${tokenName}</strong> is affected by an ability for ${damageDisplay}.`;
+            }
+        }
+    }
+    
     // Serialise damage descriptions for the button (properties as arrays)
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
 
-    const allHealing = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => CONFIG.DND5E?.healingTypes?.[t]);
-    const allTempHP = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => t === "temphp");
-    
     let actionWord = "Damage";
     let iconFull = "fa-heart-crack";
     let iconHalf = "fa-heart-broken";
@@ -994,9 +1013,9 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
 
     const content = `
         <div class="dnd5e chat-card nd5t-damage-prompt">
-            <div class="card-content">
-                <p>${hitText} for ${damageDisplay}.</p>
-                ${traitText ? `<p class="nd5t-trait-info">${traitText}</p>` : ""}
+            <div class="card-content" style="margin-bottom: 8px; font-size: 13px;">
+                ${descriptionHtml}
+                ${traitText ? `<div style="margin-top: 4px; font-style: italic; color: var(--color-text-dark-secondary);">${traitText}</div>` : ""}
             </div>
             <div class="card-buttons" style="display: flex; flex-direction: column; gap: 4px;">
                 ${buttonsHtml}
