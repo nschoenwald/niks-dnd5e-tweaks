@@ -53,7 +53,13 @@ export function initPlayerDamagePrompt() {
  * @param {ChatMessage} message  The message that was just created.
  */
 async function _onCreateChatMessage(message) {
-    if (!game.user.isGM) return;
+    const activeGM = game.users.activeGM;
+    if (activeGM) {
+        if (game.user.id !== activeGM.id) return;
+    } else {
+        const authorId = message.author?.id ?? message.user?.id;
+        if (game.user.id !== authorId) return;
+    }
 
     // Check if at least one damage prompt mode is enabled
     const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
@@ -169,7 +175,13 @@ async function _onCreateChatMessage(message) {
  * @param {ChatMessage} message  The message that was just created.
  */
 async function _onCreateChatMessage_Attack(message) {
-    if (!game.user.isGM) return;
+    const activeGM = game.users.activeGM;
+    if (activeGM) {
+        if (game.user.id !== activeGM.id) return;
+    } else {
+        const authorId = message.author?.id ?? message.user?.id;
+        if (game.user.id !== authorId) return;
+    }
 
     // Check if at least one damage prompt mode is enabled
     const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
@@ -263,7 +275,7 @@ async function _onCreateChatMessage_Attack(message) {
             continue;
         }
 
-        const tokenName = target.name || tokenDoc?.name || actor.name;
+        const tokenName = tokenDoc?.name || target.name || actor.name;
         await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
     }
 }
@@ -623,10 +635,22 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    const tokenName = target.name || tokenDoc?.name || actor.name;
+    const tokenName = tokenDoc?.name || target.name || actor.name;
     const itemUuid = damageMessage.getFlag("dnd5e", "item.uuid");
     const sourceItem = itemUuid ? fromUuidSync(itemUuid) : null;
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem);
+    
+    let hasHalfDamage = false;
+    if (activityType === "save" && sourceItem) {
+        const activityId = damageMessage.getFlag("dnd5e", "activity.id");
+        if (activityId && sourceItem.system?.activities) {
+            const activity = sourceItem.system.activities.get?.(activityId) ?? sourceItem.system.activities[activityId];
+            if (activity?.damage?.onSave === "half") {
+                hasHalfDamage = true;
+            }
+        }
+    }
+    
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -915,8 +939,10 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {string[]} whisperUsers     User IDs to whisper to.
  * @param {boolean}  [grazeMode=false]  If true, format as a Graze damage prompt.
  * @param {string}   [activityType="attack"]  The type of activity.
+ * @param {Item|null} [sourceItem=null]       The source item of the damage.
+ * @param {boolean}  [hasHalfDamage=false]    Whether the activity does half damage on save.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false) {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
@@ -981,7 +1007,6 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
 
     let buttonsHtml = '';
     if (activityType === "save") {
-        const halfEffective = Math.floor(effectiveDamage / 2);
         buttonsHtml = `
             <button data-action="nd5t-apply-damage"
                     data-actor-uuid="${actor.uuid}"
@@ -990,6 +1015,11 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
                 <i class="fas ${iconFull}"></i>
                 Apply ${effectiveDamage} ${actionWord} (Full)
             </button>
+        `;
+        
+        if (hasHalfDamage) {
+            const halfEffective = Math.floor(effectiveDamage / 2);
+            buttonsHtml += `
             <button data-action="nd5t-apply-damage"
                     data-actor-uuid="${actor.uuid}"
                     data-damages='${damagesJson}'
@@ -997,7 +1027,8 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
                 <i class="fas ${iconHalf}"></i>
                 Apply ${halfEffective} ${actionWord} (Half)
             </button>
-        `;
+            `;
+        }
     } else {
         const buttonLabel = grazeMode ? `Apply ${effectiveDamage} ${actionWord} (Graze)` : `Apply ${effectiveDamage} ${actionWord}`;
         buttonsHtml = `
@@ -1015,7 +1046,7 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
         <div class="dnd5e chat-card nd5t-damage-prompt">
             <div class="card-content" style="margin-bottom: 8px; font-size: 13px;">
                 ${descriptionHtml}
-                ${traitText ? `<div style="margin-top: 4px; font-style: italic; color: var(--color-text-dark-secondary);">${traitText}</div>` : ""}
+                ${traitText ? `<div class="nd5t-trait-info">${traitText}</div>` : ""}
             </div>
             <div class="card-buttons" style="display: flex; flex-direction: column; gap: 4px;">
                 ${buttonsHtml}
@@ -1026,7 +1057,7 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     const newMessage = await ChatMessage.create({
         content,
         whisper: whisperUsers,
-        speaker: ChatMessage.getSpeaker({ actor, token: speakerToken, alias: tokenName }),
+        speaker: Object.assign(ChatMessage.getSpeaker({ actor, token: speakerToken }), { alias: tokenName }),
         flags: {
             [MODULE_ID]: { damagePrompt: true }
         }
@@ -1045,7 +1076,13 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
  * @param {ChatMessage} newMessage  The newly created damage prompt.
  */
 function _cleanupStaleDamagePrompts(newMessage) {
-    if (!game.user.isGM) return;
+    const activeGM = game.users.activeGM;
+    if (activeGM) {
+        if (game.user.id !== activeGM.id) return;
+    } else {
+        const authorId = newMessage.author?.id ?? newMessage.user?.id;
+        if (game.user.id !== authorId) return;
+    }
 
     const STALE_MS = 10 * 60 * 1000; // 10 minutes
     const cutoff = Date.now() - STALE_MS;
@@ -1177,7 +1214,11 @@ function _bindApplyDamageButton(message, element) {
  * @param {string} messageId
  */
 function _requestMarkApplied(messageId) {
-    if (game.user.isGM) {
+    const msg = game.messages.get(messageId);
+    if (!msg) return;
+    const authorId = msg.author?.id ?? msg.user?.id;
+
+    if (game.user.id === authorId || game.user.isGM) {
         _markMessageApplied(messageId);
     } else {
         debug("Player Damage Prompt | Emitting socket to mark message applied:", messageId);
@@ -1194,7 +1235,13 @@ function _requestMarkApplied(messageId) {
  */
 function _onSocketMessage(data) {
     if (data?.type !== "damagePromptApplied") return;
-    if (!game.user.isGM) return; // Only the GM should update the message
+    
+    // The client who authored the prompt must update it (or a GM)
+    const msg = game.messages.get(data.messageId);
+    if (!msg) return;
+    const authorId = msg.author?.id ?? msg.user?.id;
+    if (game.user.id !== authorId && !game.user.isGM) return;
+
     debug("Player Damage Prompt | Socket received: damagePromptApplied for message", data.messageId);
     _markMessageApplied(data.messageId);
 }

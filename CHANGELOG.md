@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.14] - 2026-07-16
+### Fixed
+- **Auto Status at 0 HP**: Added per-actor debounce to prevent conflicting status changes when HP changes rapidly (e.g. damage followed by instant healing within the 250ms deferral window). Only the latest HP state is now processed, matching the debounce pattern already used in Auto-End Concentration.
+- **Auto Status at 0 HP**: Added a guard against actors that are deleted during the 250ms deferral window. Previously, if a token was removed from the scene between the `updateActor` hook and the deferred callback, the module could throw errors trying to operate on a destroyed document.
+- **Auto Status at 0 HP**: Added a guard to skip actors with 0 max HP (vehicles, objects, or constructs with no HP pool). These actors were falsely triggering the 0 HP status condition on every HP update.
+
+### Changed
+- **Player Damage Prompt**: Damage prompt chat messages are now always authored by the first active GM if one is connected. If no GM is connected, the module falls back to allowing the player who triggered the roll to author the chat message.
+- **Player Damage Prompt**: Non-attack damage prompts (e.g. Saving Throws) are now smarter and will only display the "Apply Half Damage" button if the activity actually specifies that it does half damage on a save.
+- **Cursor Keyboard Hints**: Optimized the `mousemove` handler to skip updating the cursor hint element's position when no modifier hints are visible. Since `mousemove` fires at 60+ Hz but modifiers are only held briefly, this eliminates the vast majority of unnecessary style writes.
+
+## [14.11.13] - 2026-07-16
+### Fixed
+- **Player Damage Prompt**: Fixed resistance/vulnerability/immunity trait text appearing as bright/unreadable text in Foundry V14 dark mode. The inline style used `--color-text-dark-secondary`, which resolves to a light color in dark themes. Reverted to the theme-agnostic `.nd5t-trait-info` CSS class which uses opacity for subdued text that works in both light and dark modes.
+- **Player Damage Prompt**: Fixed the chat message speaker and body text sometimes displaying the actor name instead of the token name. The token document's name now takes priority over the target name from DnD5e flags, and the speaker alias is explicitly overridden after `getSpeaker` to always use the token name.
+
 ## [14.11.12] - 2026-07-15
 ### Changed
 - **Player Damage Prompt**: The newly added Non-Attack Damage Prompts feature now explicitly supports healing and temporary hit points. Prompts for these rolls will correctly skip resistance calculations and display dynamically updated wording (e.g. "Apply Healing" or "Apply Temp HP") and icons instead of generic damage text.

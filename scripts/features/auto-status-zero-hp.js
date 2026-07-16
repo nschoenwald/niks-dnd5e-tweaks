@@ -14,6 +14,14 @@ import { MODULE_ID, debug } from "../main.js";
  */
 
 /**
+ * Per-actor debounce timers to prevent conflicting processing when
+ * HP changes rapidly (e.g. damage + instant healing in < 250ms).
+ * Only the latest HP change within the debounce window is processed.
+ * @type {Map<string, number>}
+ */
+const _debounceTimers = new Map();
+
+/**
  * Determine whether an actor is "player-owned" (has at least one non-GM
  * user with OWNER permission) or "NPC" (only GM owners).
  * @param {Actor} actor
@@ -202,11 +210,23 @@ function _onUpdateActor(actor, change, options, userId) {
     if (!foundry.utils.hasProperty(change, "system.attributes.hp.value")) return;
 
     // Capture values now; defer processing to avoid race conditions.
+    // The actor reference is passed live intentionally — by the time the
+    // deferred callback runs, we *want* to see the latest statuses/effects
+    // so our checks reflect what other modules have already applied.
     const newHP = actor.system.attributes.hp.value;
     const type = _ownershipType(actor);
     const wasZeroHP = options.autoStatusWasZeroHP;
 
-    setTimeout(() => _processHPChange(actor, newHP, type, wasZeroHP), 250);
+    // Debounce per actor — if HP changes again within 250ms, cancel the
+    // previous callback and only process the latest state.
+    const existingTimer = _debounceTimers.get(actor.id);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const timer = setTimeout(() => {
+        _debounceTimers.delete(actor.id);
+        _processHPChange(actor, newHP, type, wasZeroHP);
+    }, 250);
+    _debounceTimers.set(actor.id, timer);
 }
 
 /**
@@ -219,6 +239,14 @@ function _onUpdateActor(actor, change, options, userId) {
  * @param {boolean} wasZeroHP
  */
 async function _processHPChange(actor, newHP, type, wasZeroHP) {
+    // Guard: actor may have been deleted during the debounce window
+    if (!actor.id || (!actor.parent && !actor.isToken)) return;
+    if (actor.isToken && !actor.token?.object) return;
+
+    // Skip actors with no max HP (vehicles, objects, etc.) to avoid
+    // false triggers — they are always at "0 HP" if max is 0.
+    if (actor.system.attributes.hp.max <= 0) return;
+
     if (newHP <= 0) {
         // ── Status overlay ──
         const statusKey = type === "player"

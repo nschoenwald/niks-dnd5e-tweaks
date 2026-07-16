@@ -51,6 +51,11 @@ export class CursorHints {
     _onMouseMoveHandler(event) {
         if (!this.element) return;
 
+        // Skip transform updates when no hints are visible — mousemove fires
+        // at 60+ Hz but modifiers are only held briefly, so this eliminates
+        // the vast majority of unnecessary style writes.
+        if (this.element.style.opacity === "0") return;
+
         // Offset slightly from cursor to not block visibility
         const offsetX = 16;
         const offsetY = 16;

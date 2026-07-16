@@ -86,6 +86,7 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
 }
 
 .nd5t-damage-prompt .nd5t-trait-info {
+    margin-top: 4px;
     font-style: italic;
     opacity: 0.9;
 }
