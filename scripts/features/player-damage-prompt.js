@@ -691,9 +691,49 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
 // ── Damage calculation ───────────────────────────────────────────────
 
 /**
+ * Resolve all dm.amount formula strings to numeric values.
+ * The DnD5e system stores damage modifications as formula strings
+ * (e.g. "-3", "@prof", "1d4") — not numbers.  This mirrors the
+ * system's own resolution via `simplifyBonus` in `calculateDamage`.
+ * @param {Record<string, string>} dmAmount  Raw dm.amount from actor data.
+ * @param {Actor} actor                       The actor (for roll data).
+ * @returns {Record<string, number>}          Map of type → numeric modifier.
+ */
+function _resolveModifications(dmAmount, actor) {
+    const rollData = actor.getRollData({ deterministic: true });
+    const resolved = {};
+    for (const [type, formula] of Object.entries(dmAmount)) {
+        if (!formula) continue;
+        // Use the system's simplifyBonus if available, otherwise parse manually
+        if (typeof dnd5e?.utils?.simplifyBonus === "function") {
+            resolved[type] = dnd5e.utils.simplifyBonus(formula, rollData);
+        } else {
+            // Fallback: try evaluating as a deterministic roll
+            if (Number.isNumeric(formula)) {
+                resolved[type] = Number(formula);
+            } else {
+                try {
+                    const roll = new Roll(formula, rollData);
+                    resolved[type] = roll.isDeterministic ? roll.evaluateSync().total : 0;
+                } catch {
+                    resolved[type] = 0;
+                }
+            }
+        }
+    }
+    return resolved;
+}
+
+/**
  * Preview effective damage accounting for resistances, immunities,
  * vulnerabilities, and flat damage modifications (e.g. Heavy Armor Master).
  * The actual `applyDamage` call uses the full system calculation.
+ *
+ * Mirrors the system's `calculateDamage` logic for modifications:
+ * - dm.amount values are formula strings that must be resolved to numbers
+ * - Modifications apply to healing types too (e.g. dm.amount.healing)
+ * - An "ALL" modification applies to all non-healing damage types
+ * - Modifications cannot flip the sign of a damage value (clamped to 0)
  * @param {Actor} actor
  * @param {Record<string, number>} damageByType
  * @returns {{effectiveDamage: number, traitText: string}}
@@ -703,29 +743,24 @@ function _calculateEffectiveDamage(actor, damageByType) {
     const di = actor.system.traits?.di?.value ?? new Set();
     const dv = actor.system.traits?.dv?.value ?? new Set();
 
-    // Damage modifications — flat per-type adjustments (negative = reduction)
-    // Structure: { bludgeoning: -3, piercing: -3, slashing: -3 }
-    const dm = actor.system.traits?.dm?.amount ?? {};
+    // Resolve damage modification formulas to numbers
+    const dmRaw = actor.system.traits?.dm?.amount ?? {};
+    const modifications = _resolveModifications(dmRaw, actor);
 
     let effectiveDamage = 0;
     let totalRaw = 0;
     const resistant = [];
     const immune = [];
     const vulnerable = [];
-    const reduced = []; // types with flat damage reduction
+    const modified = []; // types with flat damage modifications (positive or negative)
 
     for (const [type, amount] of Object.entries(damageByType)) {
         totalRaw += amount;
 
-        if (CONFIG.DND5E?.healingTypes?.[type]) {
-            effectiveDamage += amount;
-            continue;
-        }
-
-        const isImmune = di.has(type);
-        const isResistant = dr.has(type);
-        const isVulnerable = dv.has(type);
-        const flatMod = dm[type] ?? 0; // negative = reduction
+        const isHealingType = !!CONFIG.DND5E?.healingTypes?.[type];
+        const isImmune = !isHealingType && di.has(type);
+        const isResistant = !isHealingType && dr.has(type);
+        const isVulnerable = !isHealingType && dv.has(type);
 
         if (isImmune) {
             immune.push(type);
@@ -733,13 +768,26 @@ function _calculateEffectiveDamage(actor, damageByType) {
             continue;
         }
 
+        let effective = amount;
+
         // 2024 Rules order: (1) Adjustments, (2) Resistance, (3) Vulnerability
 
         // 1. Flat adjustments (bonuses/penalties like Heavy Armor Master)
-        let effective = amount;
-        if (flatMod < 0) {
-            reduced.push(type);
-            effective = Math.max(0, effective + flatMod); // flatMod is negative
+        //    Apply per-type modification, then "ALL" for non-healing types.
+        //    Mirrors the system's applyModification which prevents sign flips.
+        const typeMod = modifications[type] ?? 0;
+        const allMod = (!isHealingType && modifications["ALL"]) ? modifications["ALL"] : 0;
+        const totalMod = typeMod + allMod;
+
+        if (totalMod !== 0) {
+            // Prevent sign flip: if adding the modification would change
+            // the sign of the value, clamp to 0 instead.
+            if (Math.sign(effective) !== Math.sign(effective + totalMod)) {
+                effective = 0;
+            } else {
+                effective += totalMod;
+            }
+            modified.push({ type, mod: totalMod });
         }
 
         // 2. Resistance (halve, rounded down)
@@ -765,12 +813,13 @@ function _calculateEffectiveDamage(actor, damageByType) {
     if (resistant.length) parts.push(`resistant to ${_formatTypeList(resistant)} damage`);
     if (immune.length) parts.push(`immune to ${_formatTypeList(immune)} damage`);
     if (vulnerable.length) parts.push(`vulnerable to ${_formatTypeList(vulnerable)} damage`);
-    if (reduced.length) {
-        const reductions = reduced.map(type => {
-            const mod = dm[type];
-            return `${_localizeType(type)} (${mod})`;
+    if (modified.length) {
+        const descriptions = modified.map(({ type, mod }) => {
+            const sign = mod > 0 ? "+" : "";
+            const label = _localizeType(type);
+            return `${label} (${sign}${mod})`;
         });
-        parts.push(`reducing ${reductions.join(", ")} damage`);
+        parts.push(`reducing ${descriptions.join(", ")} damage`);
     }
 
     let traitText = "";

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.16] - 2026-07-17
+### Fixed
+- **Player Damage Prompt**: Fixed NaN damage displayed in the prompt when the target has active effects that modify damage by type (e.g. Lightning resistance -1 from an active effect). The DnD5e system stores `dm.amount` values as formula strings (not numbers), and the module was performing string concatenation instead of arithmetic. The module now resolves these formulas using the system's `simplifyBonus` utility, matching the system's own `calculateDamage` logic.
+- **Player Damage Prompt**: Fixed healing modifications from active effects (e.g. `dm.amount.healing = -2`) being ignored in the damage preview. Healing types were previously skipped entirely during trait calculations, causing the preview to show the unmodified healing amount even though `applyDamage` correctly applied the modification.
+- **Player Damage Prompt**: Added support for the "ALL" damage modification that applies to all non-healing damage types, and for positive damage modifications (bonuses), both of which were previously ignored. The preview calculation now correctly mirrors the system's modification order and sign-flip prevention logic.
+
 ## [14.11.15] - 2026-07-17
 ### Fixed
 - **Player Damage Prompt**: Fixed damage prompts for unlinked tokens displaying the base actor name (e.g. "Wormcaller") instead of the token's custom name (e.g. "Wormcaller B") in both the message body text and the chat speaker header. The DnD5e system stores target UUIDs pointing to synthetic actors (`Scene.x.Token.y.Actor.z`), which `fromUuidSync` resolves to the Actor rather than the TokenDocument. A new `_resolveTarget` helper now extracts the Token UUID prefix to correctly resolve the TokenDocument and its name.
