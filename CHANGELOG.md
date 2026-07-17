@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.15] - 2026-07-17
+### Fixed
+- **Player Damage Prompt**: Fixed damage prompts for unlinked tokens displaying the base actor name (e.g. "Wormcaller") instead of the token's custom name (e.g. "Wormcaller B") in both the message body text and the chat speaker header. The DnD5e system stores target UUIDs pointing to synthetic actors (`Scene.x.Token.y.Actor.z`), which `fromUuidSync` resolves to the Actor rather than the TokenDocument. A new `_resolveTarget` helper now extracts the Token UUID prefix to correctly resolve the TokenDocument and its name.
+
+### Changed
+- **Player Damage Prompt**: The "Apply Damage (Full)" button text will now dynamically omit the "(Full)" suffix if there is no accompanying "(Half)" damage button, matching the cleaner aesthetic of regular attack damage prompts.
+
 ## [14.11.14] - 2026-07-16
 ### Fixed
 - **Auto Status at 0 HP**: Added per-actor debounce to prevent conflicting status changes when HP changes rapidly (e.g. damage followed by instant healing within the 250ms deferral window). Only the latest HP state is now processed, matching the debounce pattern already used in Auto-End Concentration.

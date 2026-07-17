@@ -251,14 +251,13 @@ async function _onCreateChatMessage_Attack(message) {
         debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
 
         // Resolve the target token/actor
-        const tokenDoc = fromUuidSync(target.uuid);
-        if (!tokenDoc) {
+        const { tokenDoc, actor } = _resolveTarget(target.uuid);
+        if (!actor) {
             debug(`Player Damage Prompt | Graze: Could not resolve token UUID: ${target.uuid}`);
             continue;
         }
-        const actor = tokenDoc.actor ?? tokenDoc;
-        if (!actor?.system?.attributes?.hp) {
-            debug(`Player Damage Prompt | Graze: Actor has no HP attribute: ${actor?.name}`);
+        if (!actor.system?.attributes?.hp) {
+            debug(`Player Damage Prompt | Graze: Actor has no HP attribute: ${actor.name}`);
             continue;
         }
 
@@ -491,6 +490,41 @@ function _buildDamageDescriptions(rolls) {
     return descriptions;
 }
 
+// ── Target resolution ────────────────────────────────────────────────
+
+/**
+ * Resolve a target UUID to a TokenDocument and Actor.  The DnD5e system
+ * stores target UUIDs that point to synthetic actors on unlinked tokens
+ * (e.g. `Scene.x.Token.y.Actor.z`).  `fromUuidSync` on such a UUID
+ * returns the Actor — not the TokenDocument — so the token's custom
+ * name (e.g. "Goblin B") is lost.  This helper extracts the Token UUID
+ * prefix and resolves both documents.
+ * @param {string} uuid  The target UUID from DnD5e flags.
+ * @returns {{tokenDoc: TokenDocument|null, actor: Actor|null}}
+ */
+function _resolveTarget(uuid) {
+    const resolved = fromUuidSync(uuid);
+    if (!resolved) return { tokenDoc: null, actor: null };
+
+    // If fromUuidSync already returned a TokenDocument, we're done
+    if (resolved.documentName === "Token") {
+        return { tokenDoc: resolved, actor: resolved.actor ?? resolved };
+    }
+
+    // The UUID points to a synthetic Actor — extract the Token UUID
+    // from the prefix (Scene.x.Token.y) and resolve the TokenDocument
+    const tokenUuidMatch = uuid.match(/^(Scene\.[^.]+\.Token\.[^.]+)/);
+    if (tokenUuidMatch) {
+        const tokenDoc = fromUuidSync(tokenUuidMatch[1]);
+        if (tokenDoc?.documentName === "Token") {
+            return { tokenDoc, actor: tokenDoc.actor ?? resolved };
+        }
+    }
+
+    // Fallback: resolved is the Actor itself (linked token or direct Actor UUID)
+    return { tokenDoc: null, actor: resolved };
+}
+
 // ── Per-target processing ────────────────────────────────────────────
 
 /**
@@ -554,18 +588,18 @@ function _getWhisperTargets(actor) {
 async function _processTarget(target, attackRoll, attackMessage, damageMessage, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType) {
     debug(`Player Damage Prompt | ── Processing target: ${target.name || target.uuid} (AC ${target.ac})`);
 
-    const tokenDoc = fromUuidSync(target.uuid);
-    if (!tokenDoc) {
+    const { tokenDoc, actor } = _resolveTarget(target.uuid);
+    if (!actor) {
         debug(`Player Damage Prompt |    ✗ Could not resolve token UUID: ${target.uuid}`);
         return;
     }
-    const actor = tokenDoc.actor ?? tokenDoc; // tokenDoc might itself be an Actor
-    if (!actor?.system?.attributes?.hp) {
-        debug(`Player Damage Prompt |    ✗ Actor has no HP attribute (possibly a group actor): ${actor?.name}`);
+    if (!actor.system?.attributes?.hp) {
+        debug(`Player Damage Prompt |    ✗ Actor has no HP attribute (possibly a group actor): ${actor.name}`);
         return;
     }
 
     debug(`Player Damage Prompt |    Resolved actor: ${actor.name} (${actor.uuid})`,
+        "| Token doc:", tokenDoc ? `${tokenDoc.name} (${tokenDoc.uuid})` : "(none)",
         "| HP:", `${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
         "| Temp HP:", actor.system.attributes.hp.temp || 0);
 
@@ -1007,13 +1041,14 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
 
     let buttonsHtml = '';
     if (activityType === "save") {
+        const fullSuffix = hasHalfDamage ? " (Full)" : "";
         buttonsHtml = `
             <button data-action="nd5t-apply-damage"
                     data-actor-uuid="${actor.uuid}"
                     data-damages='${damagesJson}'
                     data-multiplier="1">
                 <i class="fas ${iconFull}"></i>
-                Apply ${effectiveDamage} ${actionWord} (Full)
+                Apply ${effectiveDamage} ${actionWord}${fullSuffix}
             </button>
         `;
         
