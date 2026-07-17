@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.18] - 2026-07-17
+### Changed
+- **Player Damage Prompt**: Optimized stale damage prompt cleanup loop by using direct flag property access instead of `getFlag()`, and capping the scan to the most recent 1000 chat messages. This significantly reduces CPU overhead per chat message in worlds with extremely large chat logs.
+
 ## [14.11.17] - 2026-07-17
 ### Added
 - **Player Damage Prompt**: Added a new "Wait for Dice So Nice" setting (disabled by default). When enabled alongside the Dice So Nice module, damage prompt whispers are delayed until the 3D dice animation finishes, ensuring the prompt doesn't spoil the outcome before the dice have landed.

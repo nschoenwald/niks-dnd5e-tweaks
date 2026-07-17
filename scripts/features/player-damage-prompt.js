@@ -1233,12 +1233,21 @@ function _cleanupStaleDamagePrompts(newMessage) {
     const STALE_MS = 10 * 60 * 1000; // 10 minutes
     const cutoff = Date.now() - STALE_MS;
 
-    const stale = game.messages.filter(m => {
-        if (m.id === newMessage.id) return false; // don't delete ourselves
-        if (!m.getFlag(MODULE_ID, "damagePrompt")) return false; // not a damage prompt
-        if (m.timestamp * 1000 >= cutoff) return false; // too recent
-        return true;
-    });
+    const stale = [];
+    const maxMessagesToScan = 1000;
+    const contents = game.messages.contents;
+    const startIndex = Math.max(0, contents.length - maxMessagesToScan);
+
+    // Iterate backwards from newest to oldest, up to the max messages cap
+    for (let i = contents.length - 1; i >= startIndex; i--) {
+        const m = contents[i];
+        if (m.id === newMessage.id) continue;
+        
+        // Direct property access is much faster than getFlag for large collections
+        if (m.flags?.[MODULE_ID]?.damagePrompt && (m.timestamp * 1000 < cutoff)) {
+            stale.push(m);
+        }
+    }
 
     if (!stale.length) return;
 
