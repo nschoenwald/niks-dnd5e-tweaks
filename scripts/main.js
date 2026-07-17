@@ -356,6 +356,16 @@ Hooks.once("init", () => {
         default: false
     });
 
+    game.settings.register(MODULE_ID, "waitForDiceSoNice", {
+        name: "↳ Wait for Dice So Nice",
+        hint: "When enabled, damage prompt whispers are delayed until Dice So Nice finishes its 3D dice animation for the roll. This prevents the prompt from appearing before the dice have landed. Has no effect if Dice So Nice is not installed.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableHealingContextMenu", {
         name: "Healing Roll Context Menu",
         hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default. Requires a reload to take effect.",

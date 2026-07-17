@@ -45,6 +45,62 @@ export function initPlayerDamagePrompt() {
     debug("Player Damage Prompt | Initialized (socket listener registered)");
 }
 
+// ── Dice So Nice integration ─────────────────────────────────────────
+
+/**
+ * If the "Wait for Dice So Nice" setting is enabled and the Dice So Nice
+ * module is active, return a Promise that resolves when the dice
+ * animation for the given message has finished.  Otherwise resolves
+ * immediately.
+ *
+ * Uses the `diceSoNiceRollComplete` hook fired by DSN after each roll
+ * animation completes.  Includes a safety timeout to avoid hanging
+ * indefinitely if the hook never fires (e.g. DSN disabled for a
+ * particular roll, or the message has no 3D dice).
+ *
+ * @param {string} messageId  The chat message ID to wait for.
+ * @returns {Promise<void>}
+ */
+function _waitForDiceSoNice(messageId) {
+    // Check if the setting is enabled
+    if (!game.settings.get(MODULE_ID, "waitForDiceSoNice")) return Promise.resolve();
+
+    // Check if Dice So Nice is active
+    if (!game.modules.get("dice-so-nice")?.active) return Promise.resolve();
+
+    // Check if the message is actually animating 3D dice
+    const msg = game.messages.get(messageId);
+    if (!msg?._dice3danimating) {
+        debug("Player Damage Prompt | DSN: message", messageId, "is not animating, skipping wait");
+        return Promise.resolve();
+    }
+
+    debug("Player Damage Prompt | DSN: waiting for dice animation to complete for message", messageId);
+
+    return new Promise(resolve => {
+        const TIMEOUT_MS = 15000; // Safety timeout: 15 seconds max
+        let resolved = false;
+
+        const hookId = Hooks.on("diceSoNiceRollComplete", (completedId) => {
+            if (completedId !== messageId) return;
+            if (resolved) return;
+            resolved = true;
+            Hooks.off("diceSoNiceRollComplete", hookId);
+            clearTimeout(timer);
+            debug("Player Damage Prompt | DSN: dice animation completed for message", messageId);
+            resolve();
+        });
+
+        const timer = setTimeout(() => {
+            if (resolved) return;
+            resolved = true;
+            Hooks.off("diceSoNiceRollComplete", hookId);
+            debug("Player Damage Prompt | DSN: timeout waiting for dice animation on message", messageId, "- proceeding anyway");
+            resolve();
+        }, TIMEOUT_MS);
+    });
+}
+
 // ── Core handler ─────────────────────────────────────────────────────
 
 /**
@@ -158,6 +214,9 @@ async function _onCreateChatMessage(message) {
     debug("Player Damage Prompt | Built", rawDamages.length, "DamageDescriptions:",
         rawDamages.map(d => `${d.value} ${d.type} [${d.properties.join(",") || "no props"}]`));
 
+    // Wait for Dice So Nice animation to finish (if enabled)
+    await _waitForDiceSoNice(message.id);
+
     // Process each target
     debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
     for (const target of targets) {
@@ -237,6 +296,9 @@ async function _onCreateChatMessage_Attack(message) {
 
     const isCritical = !!attackRoll.isCritical;
     const attackTotal = attackRoll.total;
+
+    // Wait for Dice So Nice animation to finish (if enabled)
+    await _waitForDiceSoNice(message.id);
 
     // Process each target — only handle misses (graze candidates)
     for (const target of targets) {

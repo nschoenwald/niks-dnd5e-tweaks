@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.17] - 2026-07-17
+### Added
+- **Player Damage Prompt**: Added a new "Wait for Dice So Nice" setting (disabled by default). When enabled alongside the Dice So Nice module, damage prompt whispers are delayed until the 3D dice animation finishes, ensuring the prompt doesn't spoil the outcome before the dice have landed.
+
 ## [14.11.16] - 2026-07-17
 ### Fixed
 - **Player Damage Prompt**: Fixed NaN damage displayed in the prompt when the target has active effects that modify damage by type (e.g. Lightning resistance -1 from an active effect). The DnD5e system stores `dm.amount` values as formula strings (not numbers), and the module was performing string concatenation instead of arithmetic. The module now resolves these formulas using the system's `simplifyBonus` utility, matching the system's own `calculateDamage` logic.
