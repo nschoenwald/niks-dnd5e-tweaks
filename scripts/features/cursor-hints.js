@@ -119,13 +119,13 @@ function _addKeyListeners() {
     onKeyDownBound = _handleKeyDown;
     onKeyUpBound = _handleKeyUp;
 
-    window.addEventListener("keydown", onKeyDownBound);
-    window.addEventListener("keyup", onKeyUpBound);
+    window.addEventListener("keydown", onKeyDownBound, { capture: true });
+    window.addEventListener("keyup", onKeyUpBound, { capture: true });
 }
 
 function _removeKeyListeners() {
-    if (onKeyDownBound) window.removeEventListener("keydown", onKeyDownBound);
-    if (onKeyUpBound) window.removeEventListener("keyup", onKeyUpBound);
+    if (onKeyDownBound) window.removeEventListener("keydown", onKeyDownBound, { capture: true });
+    if (onKeyUpBound) window.removeEventListener("keyup", onKeyUpBound, { capture: true });
 }
 
 function _handleKeyDown(event) {
@@ -157,15 +157,30 @@ function _matchesAction(actionId, event) {
     
     if (!bindings || bindings.length === 0) return false;
 
-    return bindings.some(binding => {
-        // Foundry bindings usually use code (e.g., 'ShiftLeft', 'KeyA'), but check key as fallback
-        if (binding.key !== event.code && binding.key !== event.key) return false;
+    const isKeyup = event.type === "keyup";
 
+    return bindings.some(binding => {
         const isShiftKey = event.code.startsWith("Shift");
         const isCtrlKey = event.code.startsWith("Control");
         const isAltKey = event.code.startsWith("Alt");
         const isMetaKey = event.code.startsWith("Meta");
 
+        // On keyup, if they released a required modifier, the binding is broken.
+        if (isKeyup && binding.modifiers && binding.modifiers.length > 0) {
+            if (isShiftKey && binding.modifiers.includes("Shift")) return true;
+            if (isCtrlKey && binding.modifiers.includes("Control")) return true;
+            if (isAltKey && binding.modifiers.includes("Alt")) return true;
+            if (isMetaKey && binding.modifiers.includes("Meta")) return true;
+        }
+
+        // If it's not the primary key, it doesn't match
+        if (binding.key !== event.code && binding.key !== event.key) return false;
+
+        // If it's a keyup, we know they released the primary key, so the binding is broken
+        // regardless of what other modifiers are currently held.
+        if (isKeyup) return true;
+
+        // For keydown, we must strictly check modifiers
         if (binding.modifiers && binding.modifiers.length > 0) {
             const modifiersMatch = binding.modifiers.every(mod => {
                 if (mod === "Control") return event.ctrlKey;

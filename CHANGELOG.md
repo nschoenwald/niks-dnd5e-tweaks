@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.20] - 2026-07-20
+### Fixed
+- **Cursor Hints**: Fixed an issue where cursor hints could get permanently "stuck" on the screen. This happened when releasing a modifier key while simultaneously holding another modifier key (causing the keyup event to be ignored due to strict modifier matching), or when another module intercepted the keyup event. The module now intercepts keyboard events during the capture phase and bypasses strict modifier matching for key releases.
+
 ## [14.11.19] - 2026-07-20
 ### Added
 - **Player Damage Prompt**: New "Structured" layout option (now the default) that displays damage as a per-type breakdown table with columns for raw damage, trait modifiers (Resist ½, Immune, Vuln ×2, flat adjustments), and effective damage. The original text-based layout is preserved as "Classic" and selectable via the new "Damage Prompt Layout" setting.
