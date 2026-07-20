@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - **Player Damage Prompt**: Refactored CSS — extracted shared properties from `.nd5t-crit-text` and `.nd5t-graze-text` into a common `.nd5t-status-badge` base class, and added hover/active transition states to the Apply Damage buttons.
 
 ### Fixed
-- **Player Damage Prompt**: Fixed the "Damage Applied" button state not syncing across clients. When a player clicked Apply Damage, the GM's copy of the chat card stayed active (and vice versa). This happened because Foundry's `renderChatMessage` hook does not re-fire when a message flag is updated via `setFlag`. Added an `updateChatMessage` hook that detects the `damageApplied` flag change and directly updates the button DOM on all clients.
+- **Player Damage Prompt**: Fixed the "Damage Applied" button state not syncing across clients. When a player clicked Apply Damage, the GM's copy of the chat card stayed active (and vice versa).
 
 ## [14.11.18] - 2026-07-17
 ### Changed
