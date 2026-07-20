@@ -67,28 +67,56 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     overflow: visible;
 }
 
-/* Player Damage Prompt - Used by player-damage-prompt.js */
-.nd5t-damage-prompt .card-content p {
+/* ── Player Damage Prompt ─────────────────────────────────────────── */
+
+/* Card content & buttons (replaces inline styles) */
+.nd5t-damage-prompt .nd5t-prompt-content {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.nd5t-damage-prompt .nd5t-prompt-content p {
     margin: 0.4em 0;
     line-height: 1.4;
 }
 
-.nd5t-crit-text {
-    color: #c00;
+.nd5t-damage-prompt .nd5t-prompt-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Shared status badge base (CRITICAL HIT, GRAZED) */
+.nd5t-status-badge {
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    font-weight: bold;
+}
+
+.nd5t-crit-text {
+    color: #c00;
 }
 
 .nd5t-graze-text {
     color: #b87a00;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
 }
 
+/* Trait info line */
 .nd5t-damage-prompt .nd5t-trait-info {
     margin-top: 4px;
     font-style: italic;
     opacity: 0.9;
+}
+
+/* Button states */
+.nd5t-damage-prompt button:not([disabled]):hover {
+    filter: brightness(1.15);
+    transition: filter 0.15s ease;
+}
+
+.nd5t-damage-prompt button:not([disabled]):active {
+    filter: brightness(0.92);
+    transition: filter 0.05s ease;
 }
 
 .nd5t-damage-prompt button[disabled] {
@@ -97,7 +125,87 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     pointer-events: none;
 }
 
-/* Combat Experience Tracker - Used by combat-exp-tracker.js */
+/* ── Structured Damage Layout ─────────────────────────────────────── */
+
+.nd5t-damage-prompt .nd5t-structured-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.nd5t-damage-prompt .nd5t-structured-header .nd5t-hit-type {
+    font-weight: bold;
+}
+
+.nd5t-damage-prompt .nd5t-structured-header .nd5t-hit-detail {
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.nd5t-damage-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.nd5t-damage-table th,
+.nd5t-damage-table td {
+    padding: 3px 6px;
+    text-align: left;
+}
+
+.nd5t-damage-table thead th {
+    border-bottom: 2px solid var(--dnd5e-color-card-border, rgba(0, 0, 0, 0.2));
+    font-weight: bold;
+    opacity: 0.8;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.nd5t-damage-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.nd5t-damage-table .nd5t-num-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.nd5t-damage-table .nd5t-mod-cell {
+    text-align: center;
+    font-size: 0.9em;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+.nd5t-damage-table .nd5t-mod-immune {
+    color: #888;
+}
+
+.nd5t-damage-table .nd5t-mod-resist {
+    color: #2a7ab5;
+}
+
+.nd5t-damage-table .nd5t-mod-vulnerable {
+    color: #c00;
+}
+
+.nd5t-damage-table .nd5t-mod-flat {
+    opacity: 0.9;
+}
+
+.nd5t-damage-total-row td {
+    border-top: 2px solid var(--dnd5e-color-card-border, rgba(0, 0, 0, 0.2));
+    font-weight: bold;
+    padding-top: 4px;
+}
+
+/* ── Combat Experience Tracker ────────────────────────────────────── */
+
 .nd5t-exp-summary .card-content {
     padding: 0.4em 0;
 }

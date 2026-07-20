@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.19] - 2026-07-20
+### Added
+- **Player Damage Prompt**: New "Structured" layout option (now the default) that displays damage as a per-type breakdown table with columns for raw damage, trait modifiers (Resist ½, Immune, Vuln ×2, flat adjustments), and effective damage. The original text-based layout is preserved as "Classic" and selectable via the new "Damage Prompt Layout" setting.
+- **Player Damage Prompt**: All user-facing strings are now localized via `lang/en.json`, enabling community translations for non-English groups.
+- **Player Damage Prompt**: Added an "Undo" button that appears alongside the "Damage Applied" button after applying damage or healing. Clicking it restores the exact amount of hit points and temporary hit points that were lost or gained, and resets the prompt so it can be applied again.
+
+### Changed
+- **Player Damage Prompt**: Moved all inline styles from the HTML template to CSS classes (`.nd5t-prompt-content`, `.nd5t-prompt-buttons`) for better themability and maintainability.
+- **Player Damage Prompt**: Refactored CSS — extracted shared properties from `.nd5t-crit-text` and `.nd5t-graze-text` into a common `.nd5t-status-badge` base class, and added hover/active transition states to the Apply Damage buttons.
+
+### Fixed
+- **Player Damage Prompt**: Fixed the "Damage Applied" button state not syncing across clients. When a player clicked Apply Damage, the GM's copy of the chat card stayed active (and vice versa). This happened because Foundry's `renderChatMessage` hook does not re-fire when a message flag is updated via `setFlag`. Added an `updateChatMessage` hook that detects the `damageApplied` flag change and directly updates the button DOM on all clients.
+
 ## [14.11.18] - 2026-07-17
 ### Changed
 - **Player Damage Prompt**: Optimized stale damage prompt cleanup loop by using direct flag property access instead of `getFlag()`, and capping the scan to the most recent 1000 chat messages. This significantly reduces CPU overhead per chat message in worlds with extremely large chat logs.

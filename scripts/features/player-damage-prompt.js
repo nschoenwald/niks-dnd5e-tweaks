@@ -39,10 +39,20 @@ export function initPlayerDamagePrompt() {
         _bindApplyDamageButton(message, html);
     });
 
-    // Socket listener — any client can ask the GM to mark a message as applied
-    game.socket.on(`module.${MODULE_ID}`, _onSocketMessage);
+    // When a message's flags are updated (e.g. damageApplied is set by the
+    // GM after a player clicks Apply), Foundry does NOT re-fire the
+    // renderChatMessage hook.  We must listen for updateChatMessage and
+    // manually update the button DOM on all clients.
+    Hooks.on("updateChatMessage", _onUpdateDamageApplied);
 
-    debug("Player Damage Prompt | Initialized (socket listener registered)");
+    // Socket listener — any client can ask the GM to mark a message as applied.
+    // We register this in 'ready' to ensure the listener isn't dropped during startup.
+    Hooks.once("ready", () => {
+        game.socket.on(`module.${MODULE_ID}`, _onSocketMessage);
+        debug("Player Damage Prompt | Socket listener registered");
+    });
+
+    debug("Player Damage Prompt | Initialized hooks");
 }
 
 // ── Dice So Nice integration ─────────────────────────────────────────
@@ -722,7 +732,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         `| Damage Mods: [${dmEntries.length ? dmEntries.map(([t, v]) => `${t}: ${v}`).join(", ") : "none"}]`);
 
     // Calculate effective damage and trait summary
-    const { effectiveDamage, traitText } = _calculateEffectiveDamage(actor, damageByType);
+    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(actor, damageByType);
     const totalRaw = Object.values(damageByType).reduce((sum, v) => sum + v, 0);
     debug(`Player Damage Prompt |    Effective damage: ${effectiveDamage} (raw: ${totalRaw})`,
         traitText ? `| Trait text: ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
@@ -746,7 +756,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         }
     }
     
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage);
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -815,6 +825,7 @@ function _calculateEffectiveDamage(actor, damageByType) {
     const immune = [];
     const vulnerable = [];
     const modified = []; // types with flat damage modifications (positive or negative)
+    const details = [];  // per-type breakdown for structured layout
 
     for (const [type, amount] of Object.entries(damageByType)) {
         totalRaw += amount;
@@ -826,11 +837,13 @@ function _calculateEffectiveDamage(actor, damageByType) {
 
         if (isImmune) {
             immune.push(type);
+            details.push({ type, raw: amount, effective: 0, modifier: "immune" });
             effectiveDamage += 0;
             continue;
         }
 
         let effective = amount;
+        let modifier = ""; // annotation for the structured table
 
         // 2024 Rules order: (1) Adjustments, (2) Resistance, (3) Vulnerability
 
@@ -850,46 +863,60 @@ function _calculateEffectiveDamage(actor, damageByType) {
                 effective += totalMod;
             }
             modified.push({ type, mod: totalMod });
+            const sign = totalMod > 0 ? "+" : "";
+            modifier = `${sign}${totalMod}`;
         }
 
         // 2. Resistance (halve, rounded down)
         if (isResistant && !isVulnerable) {
             resistant.push(type);
             effective = Math.floor(effective / 2);
+            modifier = modifier ? `${modifier}, resist` : "resist";
         }
 
         // 3. Vulnerability (double)
         if (isVulnerable && !isResistant) {
             vulnerable.push(type);
             effective = effective * 2;
+            modifier = modifier ? `${modifier}, vuln` : "vuln";
         }
 
         // If both resistant and vulnerable, they cancel out — no modification
         // (flat adjustment still applies)
 
+        details.push({ type, raw: amount, effective, modifier });
         effectiveDamage += effective;
     }
 
-    // Build human-readable trait summary
+    // Build human-readable trait summary (localized)
     const parts = [];
-    if (resistant.length) parts.push(`resistant to ${_formatTypeList(resistant)} damage`);
-    if (immune.length) parts.push(`immune to ${_formatTypeList(immune)} damage`);
-    if (vulnerable.length) parts.push(`vulnerable to ${_formatTypeList(vulnerable)} damage`);
+    if (resistant.length) {
+        parts.push(game.i18n.format("ND5T.DamagePrompt.TraitResistant", { types: _formatTypeList(resistant) }));
+    }
+    if (immune.length) {
+        parts.push(game.i18n.format("ND5T.DamagePrompt.TraitImmune", { types: _formatTypeList(immune) }));
+    }
+    if (vulnerable.length) {
+        parts.push(game.i18n.format("ND5T.DamagePrompt.TraitVulnerable", { types: _formatTypeList(vulnerable) }));
+    }
     if (modified.length) {
         const descriptions = modified.map(({ type, mod }) => {
             const sign = mod > 0 ? "+" : "";
             const label = _localizeType(type);
             return `${label} (${sign}${mod})`;
         });
-        parts.push(`reducing ${descriptions.join(", ")} damage`);
+        parts.push(game.i18n.format("ND5T.DamagePrompt.TraitReducing", { descriptions: descriptions.join(", ") }));
     }
 
     let traitText = "";
     if (parts.length && effectiveDamage !== totalRaw) {
-        traitText = `You are ${parts.join(" and ")}, so the effective damage is <strong>${effectiveDamage}</strong>.`;
+        traitText = game.i18n.format("ND5T.DamagePrompt.TraitSummary", {
+            traits: parts.join(` ${game.i18n.localize("ND5T.DamagePrompt.And")} `),
+            effective: String(effectiveDamage)
+        });
     }
 
-    return { effectiveDamage, traitText };
+    return { effectiveDamage, traitText, details };
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────
@@ -1059,13 +1086,13 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
     const grazeRawDamages = [grazeDamage];
 
     // Calculate effective graze damage accounting for target traits
-    const { effectiveDamage, traitText } = _calculateEffectiveDamage(targetActor, grazeDamageByType);
+    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(targetActor, grazeDamageByType);
 
     debug(`Player Damage Prompt |    Graze: effective damage ${effectiveDamage}`,
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack", weaponItem);
+    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack", weaponItem, false, details);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -1087,7 +1114,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {Item|null} [sourceItem=null]       The source item of the damage.
  * @param {boolean}  [hasHalfDamage=false]    Whether the activity does half damage on save.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = []) {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
@@ -1095,106 +1122,30 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     const allTempHP = Object.keys(damageByType).length > 0 && Object.keys(damageByType).every(t => t === "temphp");
     const isPureHealing = allHealing && !allTempHP;
 
-    let damageText = _formatDamageBreakdown(damageByType);
-    if (isPureHealing) {
-        damageText = damageText.replace(/Healing/gi, "Hit Points");
-    }
+    // Determine action word and icons based on damage/healing type
+    const { actionWord, actionKey, iconFull, iconHalf } = _getActionInfo(damageByType, allHealing, allTempHP);
 
-    // Bold the damage breakdown only when no trait modifiers change the value;
-    // when traits apply, the effective damage is already bolded in traitText.
-    const damageDisplay = traitText ? damageText : `<strong>${damageText}</strong>`;
-    
-    // Hit description
-    let descriptionHtml = "";
-    if (grazeMode) {
-        descriptionHtml = `<strong>${tokenName}</strong> was <span class="nd5t-graze-text">GRAZED</span> (attack missed) for ${damageDisplay}.`;
-    } else if (activityType === "attack") {
-        if (isCritical) {
-            descriptionHtml = `<strong>${tokenName}</strong> was <span class="nd5t-crit-text">CRITICALLY HIT</span> by an Attack Roll of ${attackTotal} for ${damageDisplay}.`;
-        } else {
-            descriptionHtml = `<strong>${tokenName}</strong> was hit with an Attack Roll of ${attackTotal} for ${damageDisplay}.`;
-        }
-    } else if (activityType === "save") {
-        descriptionHtml = `<strong>${tokenName}</strong> must make a Saving Throw for ${damageDisplay}.`;
-    } else {
-        if (sourceItem && sourceItem.parent) {
-            if (isPureHealing) {
-                descriptionHtml = `<strong>${tokenName}</strong> recovers ${damageDisplay} from <strong>${sourceItem.parent.name}'s</strong> <strong>${sourceItem.name}</strong>.`;
-            } else {
-                descriptionHtml = `<strong>${tokenName}</strong> receives ${damageDisplay} from <strong>${sourceItem.parent.name}'s</strong> <strong>${sourceItem.name}</strong>.`;
-            }
-        } else {
-            if (isPureHealing) {
-                descriptionHtml = `<strong>${tokenName}</strong> recovers ${damageDisplay} from an ability.`;
-            } else {
-                descriptionHtml = `<strong>${tokenName}</strong> is affected by an ability for ${damageDisplay}.`;
-            }
-        }
-    }
-    
     // Serialise damage descriptions for the button (properties as arrays)
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
 
-    let actionWord = "Damage";
-    let iconFull = "fa-heart-crack";
-    let iconHalf = "fa-heart-broken";
-    if (allTempHP) {
-        actionWord = "Temp HP";
-        iconFull = "fa-shield-halved";
-        iconHalf = "fa-shield-halved";
-    } else if (allHealing) {
-        actionWord = "Healing";
-        iconFull = "fa-heart";
-        iconHalf = "fa-heart";
-    } else if (Object.keys(damageByType).some(t => CONFIG.DND5E?.healingTypes?.[t])) {
-        actionWord = "Points";
-    }
+    // Build buttons HTML (shared between both layouts)
+    const buttonsHtml = _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode);
 
-    let buttonsHtml = '';
-    if (activityType === "save") {
-        const fullSuffix = hasHalfDamage ? " (Full)" : "";
-        buttonsHtml = `
-            <button data-action="nd5t-apply-damage"
-                    data-actor-uuid="${actor.uuid}"
-                    data-damages='${damagesJson}'
-                    data-multiplier="1">
-                <i class="fas ${iconFull}"></i>
-                Apply ${effectiveDamage} ${actionWord}${fullSuffix}
-            </button>
-        `;
-        
-        if (hasHalfDamage) {
-            const halfEffective = Math.floor(effectiveDamage / 2);
-            buttonsHtml += `
-            <button data-action="nd5t-apply-damage"
-                    data-actor-uuid="${actor.uuid}"
-                    data-damages='${damagesJson}'
-                    data-multiplier="0.5">
-                <i class="fas ${iconHalf}"></i>
-                Apply ${halfEffective} ${actionWord} (Half)
-            </button>
-            `;
-        }
+    // Choose layout based on setting
+    const layout = game.settings.get(MODULE_ID, "damagePromptLayout");
+    let bodyHtml;
+    if (layout === "structured") {
+        bodyHtml = _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, details, effectiveDamage, traitText);
     } else {
-        const buttonLabel = grazeMode ? `Apply ${effectiveDamage} ${actionWord} (Graze)` : `Apply ${effectiveDamage} ${actionWord}`;
-        buttonsHtml = `
-            <button data-action="nd5t-apply-damage"
-                    data-actor-uuid="${actor.uuid}"
-                    data-damages='${damagesJson}'
-                    data-multiplier="1">
-                <i class="fas ${iconFull}"></i>
-                ${buttonLabel}
-            </button>
-        `;
+        bodyHtml = _buildClassicLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, damageByType, traitText);
     }
 
     const content = `
         <div class="dnd5e chat-card nd5t-damage-prompt">
-            <div class="card-content" style="margin-bottom: 8px; font-size: 13px;">
-                ${descriptionHtml}
-                ${traitText ? `<div class="nd5t-trait-info">${traitText}</div>` : ""}
+            <div class="card-content nd5t-prompt-content">
+                ${bodyHtml}
             </div>
-            <div class="card-buttons" style="display: flex; flex-direction: column; gap: 4px;">
+            <div class="card-buttons nd5t-prompt-buttons">
                 ${buttonsHtml}
             </div>
         </div>
@@ -1211,6 +1162,300 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
 
     // Clean up stale damage prompts (>10 min old) for the same recipients
     if (newMessage) _cleanupStaleDamagePrompts(newMessage);
+}
+
+/**
+ * Determine the action word, i18n key, and icons based on damage/healing type.
+ * @returns {{actionWord: string, actionKey: string, iconFull: string, iconHalf: string}}
+ */
+function _getActionInfo(damageByType, allHealing, allTempHP) {
+    let actionKey = "ND5T.DamagePrompt.ApplyDamage";
+    let iconFull = "fa-heart-crack";
+    let iconHalf = "fa-heart-broken";
+    if (allTempHP) {
+        actionKey = "ND5T.DamagePrompt.ApplyTempHP";
+        iconFull = "fa-shield-halved";
+        iconHalf = "fa-shield-halved";
+    } else if (allHealing) {
+        actionKey = "ND5T.DamagePrompt.ApplyHealing";
+        iconFull = "fa-heart";
+        iconHalf = "fa-heart";
+    } else if (Object.keys(damageByType).some(t => CONFIG.DND5E?.healingTypes?.[t])) {
+        actionKey = "ND5T.DamagePrompt.ApplyPoints";
+    }
+    // Resolve the action word from the key (used for suffix-based labels)
+    const actionWord = game.i18n.format(actionKey, { amount: "" }).replace(/^Apply\s*/, "").trim();
+    return { actionWord, actionKey, iconFull, iconHalf };
+}
+
+/**
+ * Build the buttons HTML shared between both layouts.
+ * @returns {string} HTML string for the buttons.
+ */
+function _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode) {
+    let buttonsHtml = '';
+    if (activityType === "save") {
+        const fullLabel = game.i18n.format(actionKey, { amount: effectiveDamage });
+        const fullSuffix = hasHalfDamage ? game.i18n.localize("ND5T.DamagePrompt.ApplyFullSuffix") : "";
+        buttonsHtml = `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="1">
+                <i class="fas ${iconFull}"></i>
+                ${fullLabel}${fullSuffix}
+            </button>
+        `;
+
+        if (hasHalfDamage) {
+            const halfEffective = Math.floor(effectiveDamage / 2);
+            const halfLabel = game.i18n.format(actionKey, { amount: halfEffective });
+            const halfSuffix = game.i18n.localize("ND5T.DamagePrompt.ApplyHalfSuffix");
+            buttonsHtml += `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="0.5">
+                <i class="fas ${iconHalf}"></i>
+                ${halfLabel}${halfSuffix}
+            </button>
+            `;
+        }
+    } else {
+        const baseLabel = game.i18n.format(actionKey, { amount: effectiveDamage });
+        const grazeSuffix = grazeMode ? game.i18n.localize("ND5T.DamagePrompt.ApplyGrazeSuffix") : "";
+        buttonsHtml = `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="1">
+                <i class="fas ${iconFull}"></i>
+                ${baseLabel}${grazeSuffix}
+            </button>
+        `;
+    }
+    return buttonsHtml;
+}
+
+/**
+ * Build the classic (text-based) layout body HTML.
+ * This preserves the original damage prompt format.
+ * @returns {string} HTML string for the card content body.
+ */
+function _buildClassicLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, damageByType, traitText) {
+    let damageText = _formatDamageBreakdown(damageByType);
+    if (isPureHealing) {
+        damageText = damageText.replace(/Healing/gi, "Hit Points");
+    }
+
+    // Bold the damage breakdown only when no trait modifiers change the value;
+    // when traits apply, the effective damage is already bolded in traitText.
+    const damageDisplay = traitText ? damageText : `<strong>${damageText}</strong>`;
+
+    // Hit description
+    let descriptionHtml = "";
+    if (grazeMode) {
+        descriptionHtml = game.i18n.format("ND5T.DamagePrompt.Grazed", {
+            tokenName, damage: damageDisplay,
+            grazeBadge: game.i18n.localize("ND5T.DamagePrompt.GrazeBadge")
+        });
+    } else if (activityType === "attack") {
+        if (isCritical) {
+            descriptionHtml = game.i18n.format("ND5T.DamagePrompt.CriticalHit", {
+                tokenName, attackTotal, damage: damageDisplay,
+                critBadge: game.i18n.localize("ND5T.DamagePrompt.CritBadge")
+            });
+        } else {
+            descriptionHtml = game.i18n.format("ND5T.DamagePrompt.HitBy", {
+                tokenName, attackTotal, damage: damageDisplay
+            });
+        }
+    } else if (activityType === "save") {
+        descriptionHtml = game.i18n.format("ND5T.DamagePrompt.SavingThrow", {
+            tokenName, damage: damageDisplay
+        });
+    } else {
+        descriptionHtml = _buildGenericDescription(tokenName, damageDisplay, sourceItem, isPureHealing);
+    }
+
+    let html = descriptionHtml;
+    if (traitText) {
+        html += `<div class="nd5t-trait-info">${traitText}</div>`;
+    }
+    return html;
+}
+
+/**
+ * Build the structured (table-based) layout body HTML.
+ * Shows a per-type damage breakdown table with raw, modifier, and effective columns.
+ * @returns {string} HTML string for the card content body.
+ */
+function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, details, effectiveDamage, traitText) {
+    // Header line: "TokenName — Hit Type"
+    let hitType = "";
+    let hitDetail = "";
+    let hitTypeClass = "";
+
+    if (grazeMode) {
+        hitType = game.i18n.localize("ND5T.DamagePrompt.GrazeBadge");
+        hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.GrazeDescription");
+        hitTypeClass = "nd5t-status-badge nd5t-graze-text";
+    } else if (activityType === "attack") {
+        if (isCritical) {
+            hitType = game.i18n.localize("ND5T.DamagePrompt.CritBadge");
+            hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.CritDescription", { attackTotal });
+            hitTypeClass = "nd5t-status-badge nd5t-crit-text";
+        } else {
+            hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.HitDescription", { attackTotal });
+        }
+    } else if (activityType === "save") {
+        hitDetail = game.i18n.localize("ND5T.DamagePrompt.Structured.SaveDescription");
+    } else {
+        // Generic / non-attack: show source item if available
+        if (sourceItem && sourceItem.parent) {
+            hitDetail = `${sourceItem.parent.name} — ${sourceItem.name}`;
+        }
+    }
+
+    // Determine the section header
+    let sectionHeader;
+    if (isPureHealing) {
+        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.HeaderHealing");
+    } else if (Object.keys(details).length > 0 && details.every(d => d.type === "temphp")) {
+        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.HeaderTempHP");
+    } else {
+        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.Header");
+    }
+
+    // Build header HTML
+    let headerHtml = `<div class="nd5t-structured-header">`;
+    headerHtml += `<strong>${tokenName}</strong>`;
+    if (hitType) {
+        headerHtml += ` — <span class="${hitTypeClass}">${hitType}</span>`;
+    }
+    if (hitDetail && !hitType) {
+        headerHtml += ` — <span class="nd5t-hit-detail">${hitDetail}</span>`;
+    } else if (hitDetail && hitType) {
+        headerHtml += ` <span class="nd5t-hit-detail">(${hitDetail})</span>`;
+    }
+    headerHtml += `</div>`;
+
+    // Column headers
+    const colType = game.i18n.localize("ND5T.DamagePrompt.Structured.ColType");
+    const colRaw = game.i18n.localize("ND5T.DamagePrompt.Structured.ColRaw");
+    const colMod = game.i18n.localize("ND5T.DamagePrompt.Structured.ColModifier");
+    const colEff = game.i18n.localize("ND5T.DamagePrompt.Structured.ColEffective");
+    const totalLabel = game.i18n.localize("ND5T.DamagePrompt.Structured.Total");
+
+    // Determine if we need the full breakdown (raw / modifier / effective)
+    // or a simple two-column layout (type / damage)
+    const hasModifiers = details.some(d => d.modifier);
+
+    // Build table rows
+    let rowsHtml = "";
+    for (const d of details) {
+        const typeLabel = _localizeType(d.type);
+        rowsHtml += `<tr>`;
+        rowsHtml += `<td>${typeLabel}</td>`;
+        if (hasModifiers) {
+            const modHtml = _getModifierCellHtml(d.modifier);
+            rowsHtml += `<td class="nd5t-num-cell">${d.raw}</td>`;
+            rowsHtml += `<td class="nd5t-mod-cell ${modHtml.cssClass}">${modHtml.text}</td>`;
+            rowsHtml += `<td class="nd5t-num-cell">${d.effective}</td>`;
+        } else {
+            rowsHtml += `<td class="nd5t-num-cell">${d.raw}</td>`;
+        }
+        rowsHtml += `</tr>`;
+    }
+
+    // Build the table header
+    let tableHtml = `<table class="nd5t-damage-table">`;
+    tableHtml += `<thead><tr>`;
+    tableHtml += `<th>${colType}</th>`;
+    if (hasModifiers) {
+        tableHtml += `<th class="nd5t-num-cell">${colRaw}</th>`;
+        tableHtml += `<th class="nd5t-mod-cell">${colMod}</th>`;
+        tableHtml += `<th class="nd5t-num-cell">${colEff}</th>`;
+    } else {
+        const colDamage = game.i18n.localize("ND5T.DamagePrompt.Structured.ColDamage");
+        tableHtml += `<th class="nd5t-num-cell">${colDamage}</th>`;
+    }
+    tableHtml += `</tr></thead>`;
+    tableHtml += `<tbody>${rowsHtml}</tbody>`;
+
+    // Total row (only if multiple types)
+    if (details.length > 1) {
+        const totalRaw = details.reduce((sum, d) => sum + d.raw, 0);
+        tableHtml += `<tfoot><tr class="nd5t-damage-total-row">`;
+        tableHtml += `<td>${totalLabel}</td>`;
+        if (hasModifiers) {
+            tableHtml += `<td class="nd5t-num-cell" colspan="2">${totalRaw}</td>`;
+            tableHtml += `<td class="nd5t-num-cell">${effectiveDamage}</td>`;
+        } else {
+            tableHtml += `<td class="nd5t-num-cell">${totalRaw}</td>`;
+        }
+        tableHtml += `</tr></tfoot>`;
+    }
+
+    tableHtml += `</table>`;
+
+    return headerHtml + tableHtml;
+}
+
+/**
+ * Build a generic (non-attack, non-save) description for the classic layout.
+ * @returns {string} HTML string.
+ */
+function _buildGenericDescription(tokenName, damageDisplay, sourceItem, isPureHealing) {
+    if (sourceItem && sourceItem.parent) {
+        if (isPureHealing) {
+            return game.i18n.format("ND5T.DamagePrompt.RecoversHP", {
+                tokenName, damage: damageDisplay,
+                sourceName: sourceItem.parent.name,
+                itemName: sourceItem.name
+            });
+        }
+        return game.i18n.format("ND5T.DamagePrompt.ReceivesDamage", {
+            tokenName, damage: damageDisplay,
+            sourceName: sourceItem.parent.name,
+            itemName: sourceItem.name
+        });
+    }
+    if (isPureHealing) {
+        return game.i18n.format("ND5T.DamagePrompt.RecoversHPGeneric", {
+            tokenName, damage: damageDisplay
+        });
+    }
+    return game.i18n.format("ND5T.DamagePrompt.ReceivesDamageGeneric", {
+        tokenName, damage: damageDisplay
+    });
+}
+
+/**
+ * Get the display text and CSS class for a modifier cell in the structured table.
+ * @param {string} modifier  The modifier annotation (e.g. "immune", "resist", "vuln", "+3", "-3, resist").
+ * @returns {{text: string, cssClass: string}}
+ */
+function _getModifierCellHtml(modifier) {
+    if (!modifier) return { text: "—", cssClass: "" };
+    if (modifier === "immune") {
+        return { text: game.i18n.localize("ND5T.DamagePrompt.Structured.Immune"), cssClass: "nd5t-mod-immune" };
+    }
+    if (modifier === "resist") {
+        return { text: game.i18n.localize("ND5T.DamagePrompt.Structured.Resist"), cssClass: "nd5t-mod-resist" };
+    }
+    if (modifier === "vuln") {
+        return { text: game.i18n.localize("ND5T.DamagePrompt.Structured.Vulnerable"), cssClass: "nd5t-mod-vulnerable" };
+    }
+    // Combined modifiers (e.g. "-3, resist")
+    if (modifier.includes("resist")) {
+        return { text: modifier, cssClass: "nd5t-mod-resist" };
+    }
+    if (modifier.includes("vuln")) {
+        return { text: modifier, cssClass: "nd5t-mod-vulnerable" };
+    }
+    // Flat modifier only
+    return { text: modifier, cssClass: "nd5t-mod-flat" };
 }
 
 // ── Stale prompt cleanup ─────────────────────────────────────────────
@@ -1262,6 +1507,128 @@ function _cleanupStaleDamagePrompts(newMessage) {
 // ── Button handling ──────────────────────────────────────────────────
 
 /**
+ * Handle updateChatMessage to sync the "Damage Applied" button state
+ * across all clients when the damageApplied flag is set.  Foundry does
+ * not re-fire renderChatMessage on flag changes, so we must manually
+ * update the DOM.
+ * @param {ChatMessage} message    The updated message document.
+ * @param {object}      updateData The differential update data.
+ */
+function _onUpdateDamageApplied(message, updateData) {
+    const updateFlags = updateData?.flags?.[MODULE_ID];
+    if (!updateFlags) return;
+
+    // Check if the flag was unset (undo)
+    if (updateFlags.hasOwnProperty("-=damageApplied") || updateFlags.damageApplied === null) {
+        debug("Player Damage Prompt | updateChatMessage: damageApplied flag unset for message", message.id);
+        const li = _getChatMessageElement(message.id);
+        if (li) {
+            const prompt = li.querySelector(".nd5t-damage-prompt");
+            if (prompt) _setPromptStateUnapplied(prompt);
+        }
+        return;
+    }
+
+    // Check if the flag was set (applied)
+    const flagValue = updateFlags.damageApplied;
+    if (flagValue) {
+        debug("Player Damage Prompt | updateChatMessage: damageApplied flag set for message", message.id);
+        const li = _getChatMessageElement(message.id);
+        if (li) {
+            const prompt = li.querySelector(".nd5t-damage-prompt");
+            if (prompt) _setPromptStateApplied(message, prompt, flagValue);
+        }
+    }
+}
+
+/**
+ * Helper to safely find a chat message element in the DOM.
+ */
+function _getChatMessageElement(id) {
+    return document.querySelector(`.message[data-message-id="${id}"]`)
+        ?? document.querySelector(`li[data-message-id="${id}"]`);
+}
+
+/**
+ * Transition the buttons into the "Applied" state, adding an Undo button.
+ */
+function _setPromptStateApplied(message, prompt, flagData) {
+    const buttons = prompt.querySelectorAll('button[data-action="nd5t-apply-damage"]');
+    if (!buttons.length) return;
+
+    // If already in applied state (has undo button), return
+    if (prompt.querySelector('.nd5t-undo-btn')) return;
+
+    const appliedText = game.i18n.localize("ND5T.DamagePrompt.Applied");
+    const canUndo = flagData && typeof flagData.hp === "number";
+
+    buttons.forEach(button => {
+        if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
+        button.disabled = true;
+
+        if (button.dataset.multiplier === "1" || buttons.length === 1) {
+            button.innerHTML = `<i class="fas fa-check"></i> ${appliedText}`;
+
+            if (canUndo) {
+                // Ensure the parent is a flex container with gap
+                button.parentElement.style.display = "flex";
+                button.parentElement.style.gap = "4px";
+
+                const undoBtn = document.createElement("button");
+                undoBtn.className = "nd5t-undo-btn";
+                undoBtn.innerHTML = `<i class="fas fa-undo"></i> ${game.i18n.localize("ND5T.DamagePrompt.Undo")}`;
+                undoBtn.title = game.i18n.localize("ND5T.DamagePrompt.UndoHint");
+                undoBtn.style.flex = "0 0 auto";
+                undoBtn.style.width = "auto";
+                undoBtn.style.padding = "0 12px";
+
+                undoBtn.addEventListener("click", async (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+
+                    const actor = await fromUuid(flagData.actorUuid);
+                    if (actor) {
+                        const newHp = Math.max(0, Math.min(actor.system.attributes.hp.max, actor.system.attributes.hp.value + flagData.hp));
+                        const newTemp = Math.max(0, actor.system.attributes.hp.temp + flagData.temp);
+                        await actor.update({
+                            "system.attributes.hp.value": newHp,
+                            "system.attributes.hp.temp": newTemp
+                        });
+                        debug(`Player Damage Prompt | Undo applied | Restored ${flagData.hp} HP and ${flagData.temp} Temp HP`);
+                    }
+
+                    _requestUnmarkApplied(message.id);
+                });
+
+                button.parentElement.appendChild(undoBtn);
+                button.style.flex = "1";
+            }
+        } else {
+            button.style.display = "none";
+        }
+    });
+}
+
+/**
+ * Restore the buttons back to their unapplied state.
+ */
+function _setPromptStateUnapplied(prompt) {
+    const buttons = prompt.querySelectorAll('button[data-action="nd5t-apply-damage"]');
+    
+    buttons.forEach(button => {
+        button.disabled = false;
+        button.style.display = "";
+        button.style.flex = "";
+        if (button.dataset.originalHtml) {
+            button.innerHTML = button.dataset.originalHtml;
+        }
+    });
+    
+    const undoBtn = prompt.querySelector('.nd5t-undo-btn');
+    if (undoBtn) undoBtn.remove();
+}
+
+/**
  * Bind a click handler to the "Apply Damage" button inside a rendered
  * chat message.  Shared between V13 (renderChatMessage) and V14
  * (renderChatMessageHTML) hooks.
@@ -1271,6 +1638,10 @@ function _cleanupStaleDamagePrompts(newMessage) {
 function _bindApplyDamageButton(message, element) {
     const prompt = element.querySelector(".nd5t-damage-prompt");
     if (!prompt) return;
+
+    // Prevent double binding if both V13 and V14 render hooks fire on the same element
+    if (prompt.dataset.bound) return;
+    prompt.dataset.bound = "true";
 
     // Allow individual players to suppress damage prompts
     if (!game.user.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
@@ -1282,18 +1653,10 @@ function _bindApplyDamageButton(message, element) {
     if (!buttons.length) return;
 
     // If damage was already applied (flag set by _markMessageApplied),
-    // disable the buttons in the DOM. We cannot rely on the HTML `disabled`
-    // attribute persisting in the stored content because Foundry's HTML
-    // sanitiser strips it during rendering.
-    if (message.getFlag(MODULE_ID, "damageApplied")) {
-        buttons.forEach(button => {
-            button.disabled = true;
-            if (button.dataset.multiplier === "1" || buttons.length === 1) {
-                button.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
-            } else {
-                button.style.display = "none";
-            }
-        });
+    // visually transition the buttons to the disabled + undo state.
+    const flagData = message.getFlag(MODULE_ID, "damageApplied");
+    if (flagData) {
+        _setPromptStateApplied(message, prompt, flagData);
         return;
     }
 
@@ -1332,24 +1695,29 @@ function _bindApplyDamageButton(message, element) {
                 `| Temp HP: ${actor.system.attributes.hp.temp || 0}`);
 
             try {
+                const hpBefore = actor.system.attributes.hp.value;
+                const tempBefore = actor.system.attributes.hp.temp || 0;
+
                 await actor.applyDamage(damages);
 
-                debug(`Player Damage Prompt | ✓ Damage applied to ${actor.name}`,
-                    `| HP after: ${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}`,
-                    `| Temp HP: ${actor.system.attributes.hp.temp || 0}`);
+                const hpAfter = actor.system.attributes.hp.value;
+                const tempAfter = actor.system.attributes.hp.temp || 0;
 
-                // Immediately disable the buttons in the DOM
-                buttons.forEach(b => {
-                    b.disabled = true;
-                    if (b === button || buttons.length === 1) {
-                        b.innerHTML = '<i class="fas fa-check"></i> Damage Applied';
-                    } else {
-                        b.style.display = "none";
-                    }
-                });
+                debug(`Player Damage Prompt | ✓ Damage applied to ${actor.name}`,
+                    `| HP after: ${hpAfter}/${actor.system.attributes.hp.max}`,
+                    `| Temp HP: ${tempAfter}`);
+
+                const deltas = {
+                    hp: hpBefore - hpAfter,
+                    temp: tempBefore - tempAfter,
+                    actorUuid: actorUuid
+                };
+
+                // Immediately update DOM
+                _setPromptStateApplied(message, prompt, deltas);
 
                 // Ask the GM to persist the disabled state in the message content
-                _requestMarkApplied(message.id);
+                _requestMarkApplied(message.id, deltas);
             } catch (err) {
                 console.error("Nik's DnD5e Tweaks | Failed to apply damage:", err);
                 debug("Player Damage Prompt | ✗ applyDamage failed:", err.message);
@@ -1367,18 +1735,39 @@ function _bindApplyDamageButton(message, element) {
  * author), set the flag directly; otherwise emit a socket event so
  * the GM's client does it.
  * @param {string} messageId
+ * @param {object} deltas
  */
-function _requestMarkApplied(messageId) {
+function _requestMarkApplied(messageId, deltas) {
     const msg = game.messages.get(messageId);
     if (!msg) return;
     const authorId = msg.author?.id ?? msg.user?.id;
 
     if (game.user.id === authorId || game.user.isGM) {
-        _markMessageApplied(messageId);
+        _markMessageApplied(messageId, deltas);
     } else {
         debug("Player Damage Prompt | Emitting socket to mark message applied:", messageId);
         game.socket.emit(`module.${MODULE_ID}`, {
             type: "damagePromptApplied",
+            messageId,
+            deltas
+        });
+    }
+}
+
+/**
+ * Handle a request to unset the "damageApplied" flag on a chat message.
+ */
+function _requestUnmarkApplied(messageId) {
+    const msg = game.messages.get(messageId);
+    if (!msg) return;
+    const authorId = msg.author?.id ?? msg.user?.id;
+
+    if (game.user.id === authorId || game.user.isGM) {
+        _unmarkMessageApplied(messageId);
+    } else {
+        debug("Player Damage Prompt | Emitting socket to unmark message applied:", messageId);
+        game.socket.emit(`module.${MODULE_ID}`, {
+            type: "damagePromptUnapplied",
             messageId
         });
     }
@@ -1389,16 +1778,27 @@ function _requestMarkApplied(messageId) {
  * @param {object} data  The socket payload.
  */
 function _onSocketMessage(data) {
-    if (data?.type !== "damagePromptApplied") return;
-    
-    // The client who authored the prompt must update it (or a GM)
-    const msg = game.messages.get(data.messageId);
-    if (!msg) return;
-    const authorId = msg.author?.id ?? msg.user?.id;
-    if (game.user.id !== authorId && !game.user.isGM) return;
+    if (data?.type === "damagePromptApplied") {
+        const msg = game.messages.get(data.messageId);
+        if (!msg) return;
+        const authorId = msg.author?.id ?? msg.user?.id;
+        if (game.user.id !== authorId && !game.user.isGM) return;
 
-    debug("Player Damage Prompt | Socket received: damagePromptApplied for message", data.messageId);
-    _markMessageApplied(data.messageId);
+        debug("Player Damage Prompt | Socket received: damagePromptApplied for message", data.messageId);
+        _markMessageApplied(data.messageId, data.deltas);
+        return;
+    }
+
+    if (data?.type === "damagePromptUnapplied") {
+        const msg = game.messages.get(data.messageId);
+        if (!msg) return;
+        const authorId = msg.author?.id ?? msg.user?.id;
+        if (game.user.id !== authorId && !game.user.isGM) return;
+
+        debug("Player Damage Prompt | Socket received: damagePromptUnapplied for message", data.messageId);
+        _unmarkMessageApplied(data.messageId);
+        return;
+    }
 }
 
 /**
@@ -1410,8 +1810,9 @@ function _onSocketMessage(data) {
  *
  * Must be called on the GM's client (the message author).
  * @param {string} messageId
+ * @param {object} deltas - The HP/TempHP deltas and actor UUID for undo.
  */
-async function _markMessageApplied(messageId) {
+async function _markMessageApplied(messageId, deltas) {
     const message = game.messages.get(messageId);
     if (!message) {
         debug("Player Damage Prompt | ✗ Could not find message to mark applied:", messageId);
@@ -1424,6 +1825,21 @@ async function _markMessageApplied(messageId) {
         return;
     }
 
-    await message.setFlag(MODULE_ID, "damageApplied", true);
+    const flagData = deltas || true;
+    await message.setFlag(MODULE_ID, "damageApplied", flagData);
     debug("Player Damage Prompt | ✓ Message flagged as damage applied:", messageId);
+}
+
+/**
+ * Server/GM-side handler to unset the "damageApplied" flag on a message.
+ * @param {string} messageId 
+ */
+async function _unmarkMessageApplied(messageId) {
+    const message = game.messages.get(messageId);
+    if (!message) return;
+
+    if (!message.getFlag(MODULE_ID, "damageApplied")) return;
+
+    await message.unsetFlag(MODULE_ID, "damageApplied");
+    debug("Player Damage Prompt | ✓ Message flagged as damage unapplied:", messageId);
 }

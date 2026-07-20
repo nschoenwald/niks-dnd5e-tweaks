@@ -347,6 +347,20 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "damagePromptLayout", {
+        name: "↳ Damage Prompt Layout",
+        hint: "Controls the visual layout of damage prompt messages. 'Structured' shows a table with per-type damage breakdown including trait modifiers. 'Classic' shows the original text-based layout.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "structured",
+        choices: {
+            structured: "Structured (Table)",
+            classic: "Classic (Text)"
+        },
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "suppressDamagePrompt", {
         name: "↳ Suppress Damage Prompts (Player)",
         hint: "Hide damage prompt whispers in chat. This is a per-user setting — each player can choose independently whether to see damage prompts.",
