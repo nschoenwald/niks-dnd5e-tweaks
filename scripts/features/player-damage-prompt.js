@@ -1570,8 +1570,9 @@ function _setPromptStateApplied(message, prompt, flagData) {
             button.innerHTML = `<i class="fas fa-check"></i> ${appliedText}`;
 
             if (canUndo) {
-                // Ensure the parent is a flex container with gap
+                // Ensure the parent is a horizontal flex container
                 button.parentElement.style.display = "flex";
+                button.parentElement.style.flexDirection = "row";
                 button.parentElement.style.gap = "4px";
 
                 const undoBtn = document.createElement("button");
@@ -1619,6 +1620,7 @@ function _setPromptStateUnapplied(prompt) {
         button.disabled = false;
         button.style.display = "";
         button.style.flex = "";
+        button.parentElement.style.flexDirection = "";
         if (button.dataset.originalHtml) {
             button.innerHTML = button.dataset.originalHtml;
         }
