@@ -47,5 +47,20 @@
   "ND5T.DamagePrompt.Structured.HitDescription": "Attack Roll {attackTotal}",
   "ND5T.DamagePrompt.Structured.CritDescription": "Critical Hit — Attack Roll {attackTotal}",
   "ND5T.DamagePrompt.Structured.GrazeDescription": "Grazed — Attack Missed",
-  "ND5T.DamagePrompt.Structured.SaveDescription": "Saving Throw Required"
+  "ND5T.DamagePrompt.Structured.SaveDescription": "Saving Throw Required",
+
+  "ND5T.CombatExpTracker.SpeakerAlias": "Combat XP Tracker",
+  "ND5T.CombatExpTracker.Notification.DistributedSingle": "Distributed {xp} XP to 1 character.",
+  "ND5T.CombatExpTracker.Notification.DistributedPlural": "Distributed {xp} XP to {count} characters.",
+  "ND5T.CombatExpTracker.Button.Distribute": "Distribute {xp} XP Each",
+  "ND5T.CombatExpTracker.Button.Distributed": "XP Distributed",
+  "ND5T.CombatExpTracker.Summary.Header": "Combat XP Summary",
+  "ND5T.CombatExpTracker.Summary.Creature": "Creature",
+  "ND5T.CombatExpTracker.Summary.XP": "XP",
+  "ND5T.CombatExpTracker.Summary.Total": "Total",
+  "ND5T.CombatExpTracker.Summary.ShareEach": "<strong>{xp} XP</strong> each",
+  "ND5T.CombatExpTracker.Summary.ShareMathSingle": "({totalXP} ÷ 1 character)",
+  "ND5T.CombatExpTracker.Summary.ShareMathPlural": "({totalXP} ÷ {count} characters)",
+  "ND5T.CombatExpTracker.Summary.ParticipatingSingle": "1 Participating Character",
+  "ND5T.CombatExpTracker.Summary.ParticipatingPlural": "{count} Participating Characters"
 }

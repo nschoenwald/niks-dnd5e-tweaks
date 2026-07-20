@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.21] - 2026-07-20
+### Added
+- **Combat Experience Tracker**: Localized all hard-coded English text in the UI to support community translations.
+- **Force Compendium Browser**: Added a new setting "Allow Shift-Click to Bypass" (enabled by default) that allows players to hold Shift while clicking the Compendium tab to access the standard Foundry compendium sidebar instead of the forced browser.
+
+### Fixed
+- **Combat Experience Tracker**: Fixed a bug where multiple logged-in GMs would process the XP summary simultaneously, resulting in duplicate chat messages and potential flag data corruption.
+- **Combat Experience Tracker**: Fixed a data corruption issue when saving Player Characters (caused by UUID dots expanding as nested object paths via Foundry's `setFlag`). PCs are now safely tracked by combatant ID.
+- **Combat Experience Tracker**: Fixed race conditions during concurrent combatant additions (e.g. dragging a group of enemies to the tracker) by upgrading flag tracking to use atomic deep-key `combat.update()` payload merges.
+
 ## [14.11.20] - 2026-07-20
 ### Fixed
 - **Cursor Hints**: Fixed an issue where cursor hints could get permanently "stuck" on the screen. This happened when releasing a modifier key while simultaneously holding another modifier key (causing the keyup event to be ignored due to strict modifier matching), or when another module intercepted the keyup event. The module now intercepts keyboard events during the capture phase and bypasses strict modifier matching for key releases.

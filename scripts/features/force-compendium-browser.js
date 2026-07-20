@@ -13,6 +13,11 @@ export function initForceCompendiumBrowser() {
             compendiumButton.dataset.nd5tForced = "true";
 
             compendiumButton.addEventListener("click", (event) => {
+                if (event.shiftKey && game.settings.get(MODULE_ID, "allowShiftClickCompendiumSidebar")) {
+                    debug("Shift-click detected: bypassing forced compendium browser.");
+                    return; // Allow the default behavior (opening the standard tab)
+                }
+
                 debug("Intercepting Compendium tab click to force browser");
                 event.stopPropagation();
                 event.preventDefault();

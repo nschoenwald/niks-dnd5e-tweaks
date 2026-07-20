@@ -72,7 +72,7 @@ async function _setFlag(combat, data) {
  * @param {Combat} combat    The combat that just started.
  */
 async function _onCombatStart(combat) {
-    if (!game.user.isGM) return;
+    if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
     const npcs = {};
@@ -94,7 +94,7 @@ async function _onCombatStart(combat) {
  * @param {Combatant} combatant   The newly created combatant.
  */
 async function _onCreateCombatant(combatant) {
-    if (!game.user.isGM) return;
+    if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
     const combat = combatant.combat;
@@ -103,12 +103,22 @@ async function _onCreateCombatant(combatant) {
     const flag = _getFlag(combat);
     if (!flag) return; // No tracker running on this combat
 
-    const npcs = { ...flag.npcs };
-    const pcs = { ...flag.pcs };
+    const newNpcs = {};
+    const newPcs = {};
 
-    _classifyCombatant(combatant, npcs, pcs);
+    _classifyCombatant(combatant, newNpcs, newPcs);
 
-    await _setFlag(combat, { npcs, pcs });
+    const updates = {};
+    for (const [k, v] of Object.entries(newNpcs)) {
+        updates[`flags.${MODULE_ID}.${FLAG_KEY}.npcs.${k}`] = v;
+    }
+    for (const [k, v] of Object.entries(newPcs)) {
+        updates[`flags.${MODULE_ID}.${FLAG_KEY}.pcs.${k}`] = v;
+    }
+
+    if (Object.keys(updates).length > 0) {
+        await combat.update(updates);
+    }
 
     debug("Combat Exp Tracker | Combatant added mid-combat:",
         combatant.actor?.name ?? "(unknown)");
@@ -119,7 +129,7 @@ async function _onCreateCombatant(combatant) {
  * @param {Combat} combat    The combat that was just deleted.
  */
 async function _onDeleteCombat(combat) {
-    if (!game.user.isGM) return;
+    if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
     const flag = _getFlag(combat);
@@ -159,10 +169,10 @@ function _classifyCombatant(combatant, npcs, pcs) {
     if (!actor) return;
 
     if (actor.type === "character") {
-        const uuid = actor.uuid;
-        if (!pcs[uuid]) {
-            pcs[uuid] = { name: actor.name };
-            debug("Combat Exp Tracker |   PC:", actor.name, `(${uuid})`);
+        const key = combatant.id;
+        if (!pcs[key]) {
+            pcs[key] = { name: actor.name, uuid: actor.uuid };
+            debug("Combat Exp Tracker |   PC:", actor.name, `(${actor.uuid})`);
         }
     } else if (actor.type === "npc") {
         // Check disposition — only track hostile NPCs
@@ -193,7 +203,13 @@ function _classifyCombatant(combatant, npcs, pcs) {
  */
 async function _sendExpSummary(npcs, pcs) {
     const npcEntries = Object.values(npcs);
-    const pcEntries = Object.entries(pcs);
+    
+    // Deduplicate PCs by UUID in case multiple combatants reference the same actor
+    const uniquePcs = {};
+    for (const pc of Object.values(pcs)) {
+        if (pc.uuid) uniquePcs[pc.uuid] = pc;
+    }
+    const pcEntries = Object.entries(uniquePcs);
 
     const totalXP = npcEntries.reduce((sum, npc) => sum + npc.xp, 0);
     const pcCount = pcEntries.length;
@@ -202,13 +218,17 @@ async function _sendExpSummary(npcs, pcs) {
     // HTML-escape helper (with fallback for pre-V12 compatibility)
     const esc = (str) => foundry.utils.escapeHTML?.(str) ?? str;
 
+    const loc = (key, data) => data ? game.i18n.format(`ND5T.CombatExpTracker.${key}`, data) : game.i18n.localize(`ND5T.CombatExpTracker.${key}`);
+    const shareMathKey = pcCount === 1 ? "Summary.ShareMathSingle" : "Summary.ShareMathPlural";
+    const participatingKey = pcCount === 1 ? "Summary.ParticipatingSingle" : "Summary.ParticipatingPlural";
+
     // Build NPC table rows
     const npcRows = npcEntries
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(npc => `
             <tr>
                 <td>${esc(npc.name)}</td>
-                <td class="nd5t-exp-xp-cell">${npc.xp.toLocaleString()} XP</td>
+                <td class="nd5t-exp-xp-cell">${npc.xp.toLocaleString()} ${loc("Summary.XP")}</td>
             </tr>
         `).join("");
 
@@ -225,14 +245,14 @@ async function _sendExpSummary(npcs, pcs) {
     const content = `
         <div class="dnd5e chat-card nd5t-exp-summary">
             <header class="card-header flexrow">
-                <h3>Combat XP Summary</h3>
+                <h3>${loc("Summary.Header")}</h3>
             </header>
             <div class="card-content">
                 <table class="nd5t-exp-table">
                     <thead>
                         <tr>
-                            <th>Creature</th>
-                            <th class="nd5t-exp-xp-cell">XP</th>
+                            <th>${loc("Summary.Creature")}</th>
+                            <th class="nd5t-exp-xp-cell">${loc("Summary.XP")}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -240,17 +260,17 @@ async function _sendExpSummary(npcs, pcs) {
                     </tbody>
                     <tfoot>
                         <tr class="nd5t-exp-total-row">
-                            <td><strong>Total</strong></td>
-                            <td class="nd5t-exp-xp-cell"><strong>${totalXP.toLocaleString()} XP</strong></td>
+                            <td><strong>${loc("Summary.Total")}</strong></td>
+                            <td class="nd5t-exp-xp-cell"><strong>${totalXP.toLocaleString()} ${loc("Summary.XP")}</strong></td>
                         </tr>
                     </tfoot>
                 </table>
                 <p class="nd5t-exp-share">
-                    <strong>${perPC.toLocaleString()} XP</strong> each
-                    (${totalXP.toLocaleString()} ÷ ${pcCount} character${pcCount !== 1 ? "s" : ""})
+                    ${loc("Summary.ShareEach", { xp: perPC.toLocaleString() })}
+                    ${loc(shareMathKey, { totalXP: totalXP.toLocaleString(), count: pcCount })}
                 </p>
                 <details class="nd5t-exp-pc-details">
-                    <summary>${pcCount} Participating Character${pcCount !== 1 ? "s" : ""}</summary>
+                    <summary>${loc(participatingKey, { count: pcCount })}</summary>
                     <ul class="nd5t-exp-pc-list">${pcList}</ul>
                 </details>
             </div>
@@ -259,7 +279,7 @@ async function _sendExpSummary(npcs, pcs) {
                         data-xp-per-pc="${perPC}"
                         data-pc-uuids='${pcUuids.replace(/'/g, "&#39;")}'>
                     <i class="fas fa-gift"></i>
-                    Distribute ${perPC.toLocaleString()} XP Each
+                    ${loc("Button.Distribute", { xp: perPC.toLocaleString() })}
                 </button>
             </div>
         </div>
@@ -270,7 +290,7 @@ async function _sendExpSummary(npcs, pcs) {
     await ChatMessage.create({
         content,
         whisper: gmUsers,
-        speaker: { alias: "Combat XP Tracker" }
+        speaker: { alias: loc("SpeakerAlias") }
     });
 
     debug("Combat Exp Tracker | Summary posted:",
@@ -330,14 +350,15 @@ function _bindDistributeButton(message, element) {
 
         // Disable the button
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-check"></i> XP Distributed';
+        const buttonText = game.i18n.localize("ND5T.CombatExpTracker.Button.Distributed");
+        button.innerHTML = `<i class="fas fa-check"></i> ${buttonText}`;
 
         // Persist the disabled state in the message content
         _markMessageDistributed(message.id);
 
-        ui.notifications.info(
-            `Distributed ${xpPerPC.toLocaleString()} XP to ${successCount} character${successCount !== 1 ? "s" : ""}.`
-        );
+        const notifKey = successCount === 1 ? "Notification.DistributedSingle" : "Notification.DistributedPlural";
+        const notifMsg = game.i18n.format(`ND5T.CombatExpTracker.${notifKey}`, { xp: xpPerPC.toLocaleString(), count: successCount });
+        ui.notifications.info(notifMsg);
     });
 }
 
@@ -349,9 +370,10 @@ async function _markMessageDistributed(messageId) {
     const message = game.messages.get(messageId);
     if (!message) return;
 
+    const buttonText = game.i18n.localize("ND5T.CombatExpTracker.Button.Distributed");
     const updatedContent = message.content.replace(
         /<button\s+data-action="nd5t-distribute-xp"[\s\S]*?<\/button>/,
-        '<button data-action="nd5t-distribute-xp" disabled><i class="fas fa-check"></i> XP Distributed</button>'
+        `<button data-action="nd5t-distribute-xp" disabled><i class="fas fa-check"></i> ${buttonText}</button>`
     );
 
     if (updatedContent === message.content) return;

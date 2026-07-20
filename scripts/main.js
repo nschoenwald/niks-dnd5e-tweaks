@@ -455,6 +455,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "allowShiftClickCompendiumSidebar", {
+        name: "↳ Allow Shift-Click to Bypass",
+        hint: "When enabled, players can hold the Shift key while clicking the Compendium tab to access the regular Foundry compendium sidebar instead of the browser.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
 
     // ==========================================
     // Utilities
