@@ -411,6 +411,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "legendaryActionPlaceholderIcon", {
+        name: "↳ Placeholder Icon",
+        hint: "Select an icon to use for legendary action initiative placeholders.",
+        scope: "world",
+        config: true,
+        type: String,
+        filePicker: "image",
+        default: "icons/svg/combat.svg",
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableCombatExpTracker", {
         name: "Combat Experience Tracker",
         hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",

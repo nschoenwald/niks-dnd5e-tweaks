@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.22] - 2026-07-21
+### Added
+- **Legendary Action Placeholders**: Added a sub-setting ("↳ Placeholder Icon") with a file picker to configure a custom icon for legendary action initiative placeholders (defaults to `icons/svg/combat.svg`). Includes automatic validation via image preloading to fall back to the default icon for any load failure (404, 403, CORS, network errors, or corrupt/invalid image files).
+
 ## [14.11.21] - 2026-07-20
 ### Added
 - **Combat Experience Tracker**: Localized all hard-coded English text in the UI to support community translations.

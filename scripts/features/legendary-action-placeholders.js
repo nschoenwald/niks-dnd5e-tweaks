@@ -1,13 +1,50 @@
 import { MODULE_ID, debug } from "../main.js";
 
+const DEFAULT_ICON = "icons/svg/combat.svg";
+
+/**
+ * Preloads an image path using HTMLImageElement to test whether it can be loaded.
+ * @param {string} src
+ * @returns {Promise<boolean>}
+ */
+function _canLoadImage(src) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = src;
+    });
+}
+
+/**
+ * Validate that an icon path exists and can be rendered by the browser.
+ * Falls back to DEFAULT_ICON for any error (404, 403, CORS, network failure, or corrupt/invalid image file).
+ * @param {string} path
+ * @returns {Promise<string>}
+ */
+async function _resolveIcon(path) {
+    if (!path || typeof path !== "string") return DEFAULT_ICON;
+    const trimmed = path.trim();
+    if (!trimmed || trimmed === DEFAULT_ICON) return DEFAULT_ICON;
+
+    try {
+        const canLoad = await _canLoadImage(trimmed);
+        if (canLoad) return trimmed;
+    } catch (err) {
+        debug(`Legendary Action Placeholders | Custom icon "${trimmed}" failed validation:`, err);
+    }
+
+    debug(`Legendary Action Placeholders | Custom icon "${trimmed}" could not be loaded. Falling back to default icon.`);
+    return DEFAULT_ICON;
+}
+
 export function initLegendaryActionPlaceholders() {
     Hooks.on("combatStart", async (combat) => {
         // Only run for the primary GM
         const activeGM = game.users.primaryGM ?? game.users.activeGM;
         if (!activeGM?.isSelf) return;
 
-        // Check if the setting is enabled (in case it can be toggled without reload, although we use a direct hook here, 
-        // usually we can check a setting directly if we don't hot-toggle the hook itself, or if we unhook it)
+        // Check if the setting is enabled
         if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return;
 
         // Check if there is at least one combatant with legendary actions
@@ -23,11 +60,14 @@ export function initLegendaryActionPlaceholders() {
 
         if (!playerCombatants.length) return;
 
+        const configuredIcon = game.settings.get(MODULE_ID, "legendaryActionPlaceholderIcon");
+        const img = await _resolveIcon(configuredIcon);
+
         const newCombatants = playerCombatants.map(pc => {
             return {
                 name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
                 hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
-                img: "icons/svg/combat.svg",
+                img,
                 initiative: (pc.initiative || 0) - 0.001,
 
                 flags: {
