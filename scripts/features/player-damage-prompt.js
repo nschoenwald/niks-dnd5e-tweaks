@@ -1314,15 +1314,11 @@ function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, a
 
     if (grazeMode) {
         hitType = game.i18n.localize("ND5T.DamagePrompt.GrazeBadge");
-        hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.GrazeDescription");
         hitTypeClass = "nd5t-status-badge nd5t-graze-text";
     } else if (activityType === "attack") {
         if (isCritical) {
             hitType = game.i18n.localize("ND5T.DamagePrompt.CritBadge");
-            hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.CritDescription", { attackTotal });
             hitTypeClass = "nd5t-status-badge nd5t-crit-text";
-        } else {
-            hitDetail = game.i18n.format("ND5T.DamagePrompt.Structured.HitDescription", { attackTotal });
         }
     } else if (activityType === "save") {
         hitDetail = game.i18n.localize("ND5T.DamagePrompt.Structured.SaveDescription");

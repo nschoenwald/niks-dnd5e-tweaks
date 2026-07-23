@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 - **Player Damage Prompt**: Fixed NPC names in damage prompt chat cards being hidden for GMs when the `hide-npc-names` module is active. The prompt now builds chat cards using the target's unhidden token/actor name, allowing GMs to see the real name while `hide-npc-names` dynamically hides it for non-GM players when rendering the card in chat.
 
 ### Changed
-- **Player Damage Prompt**: Removed redundant target name repetition from the card body text in both Structured and Classic layouts, as the target's name is already displayed in the native chat card speaker header.
+- **Player Damage Prompt**: Removed redundant target name repetition and attack roll totals from the card body text in both Structured and Classic layouts, producing a cleaner chat card design.
 
 ## [14.11.22] - 2026-07-21
 ### Added
