@@ -4,9 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [14.12.0] - 2026-07-23
 ### Added
-- **Auto-Roll Concentration Saves**: Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage, matching official DnD5e 5.2+ rules (DC 10 or half damage taken) and accounting for intrinsic concentration advantage/disadvantage traits (e.g. War Caster or Eldritch Mind).
-- **Interactive "End Concentration" Chat Card Button**: Appends an "End Concentration" button to concentration roll chat cards in chat, allowing GMs and owning players to manually break concentration with a single click.
-- **Concentration Settings**: Added module settings to toggle Auto-Roll Concentration Saves, Fast-Forward Concentration Rolls, and an optional Auto-End Concentration on Save Failure sub-setting.
+- **Auto-Roll Concentration Saves**: Automatically rolls a concentration saving throw for concentration when a concentrating token takes damage, matching official DnD5e 5.2+ rules (DC 10 or half damage taken, whichever is higher) and accounting for intrinsic concentration advantage/disadvantage traits (e.g. War Caster, Eldritch Mind). The roll card appears in chat after the system's own "click to roll" concentration prompt.
+- **Interactive "End Concentration" Chat Card Button**: Appends an "End Concentration" button to concentration roll chat cards. The button appears on all concentration saves — including auto-rolled ones and manually triggered ones (from the system's DC prompt card or the character sheet) — allowing GMs and owning players to break concentration with a single click.
+- **Auto-Roll Concentration Settings**: Added module settings for the new feature:
+  - **Auto-Roll Concentration Saves** — master toggle (enabled by default).
+  - **Fast-Forward Concentration Rolls** — four-way choice controlling which actor types skip the roll dialog: *All Actors* (default), *NPCs Only*, *Players Only*, or *Never* (always show the pre-configured dialog).
+  - **Auto-End Concentration on Save Failure** — when enabled, concentration is ended automatically on a failed save. Disabled by default; the "End Concentration" button on the chat card handles manual removal.
+
+### Fixed
+- **Auto-Roll Concentration Saves**: Fixed module flags not being persisted on the created ChatMessage. Flags were passed at the top level of the message config (`message.flags`) but `buildPost` only writes `message.data` into the document — flags must be nested under `data.flags`. This caused the "End Concentration" button to never appear.
+- **Auto-Roll Concentration Saves**: Fixed the auto-rolled save card appearing *above* the system's "DC X Concentration" prompt in the chat log. `challengeConcentration()` is not awaited in `onUpdateHP`, so both messages raced to the server. Increased the pre-roll defer from 0 ms to 200 ms to reliably ensure the system's message receives a lower server timestamp.
+
+### Changed
+- **Prompt for Death Saves**: Instead of posting a whispered chat card for the player to click, the Death Saving Throw roll dialog now opens automatically and directly on the owning player's client when their character's turn starts at 0 HP. The pre-configured dialog pops up immediately without requiring a manual click. The GM fallback whispered chat card (with a clickable button) is still sent when no owner of the actor is connected, so unattended characters are still covered.
+- **Auto Status at 0 HP**: Improved resilience of the heal-recovery path. `wasZeroHP` now falls back to checking the actor's current statuses (`dead`/`unconscious`) when `preUpdateActor` was bypassed by another module or system path, preventing statuses from silently persisting after a heal.
 
 ## [14.11.23] - 2026-07-23
 ### Fixed

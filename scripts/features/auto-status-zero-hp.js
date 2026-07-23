@@ -215,7 +215,13 @@ function _onUpdateActor(actor, change, options, userId) {
     // so our checks reflect what other modules have already applied.
     const newHP = actor.system.attributes.hp.value;
     const type = _ownershipType(actor);
-    const wasZeroHP = options.autoStatusWasZeroHP;
+    // Prefer the value captured in preUpdateActor. Fall back to checking
+    // whether the actor currently holds a zero-HP status — this covers cases
+    // where another module or system path bypassed preUpdateActor entirely,
+    // which would otherwise leave wasZeroHP undefined and silently prevent
+    // status removal on a subsequent heal.
+    const wasZeroHP = options.autoStatusWasZeroHP
+        ?? (actor.statuses.has("dead") || actor.statuses.has("unconscious"));
 
     // Debounce per actor — if HP changes again within 250ms, cancel the
     // previous callback and only process the latest state.

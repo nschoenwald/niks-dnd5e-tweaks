@@ -56,13 +56,17 @@ function _bindDeathSaveButton(message, element) {
 
 /**
  * Handle checking if a death save prompt should be sent.
+ *
+ * Strategy:
+ *   1. If the current client owns the actor → call actor.rollDeathSave() directly,
+ *      opening the pre-configured roll dialog for the player immediately.
+ *   2. If the current client is the primary GM and no owner is connected →
+ *      post the fallback whispered chat card so an unattended actor can still roll.
+ *
  * @param {Combat} combat - The current combat.
  */
 async function handleDeathSavePrompt(combat) {
     if (!game.settings.get(MODULE_ID, "enableDeathSavePrompt")) return;
-    
-    // Only the GM should send the message to avoid duplicates
-    if (!game.user.isGM) return;
 
     const combatant = combat.combatant;
     const actor = combatant?.actor;
@@ -72,19 +76,43 @@ async function handleDeathSavePrompt(combat) {
     const hp = actor.system.attributes.hp.value;
     const death = actor.system.attributes.death;
 
-    // Check if at 0 HP and hasn't yet stabilized or died (3 successes or 3 failures)
-    if (hp === 0 && death.success < 3 && death.failure < 3) {
-        const key = `${combatant.id}-${combat.round}`;
-        if (lastPromptKey === key) return;
-        lastPromptKey = key;
+    // Only prompt when at 0 HP and not yet stabilized/resolved (< 3 successes or failures)
+    if (!(hp === 0 && death.success < 3 && death.failure < 3)) return;
 
-        debug(`Prompting for death save for ${actor.name}`);
-        await sendDeathSavePrompt(actor);
+    // Deduplicate per combatant per round — each client checks independently
+    const key = `${combatant.id}-${combat.round}`;
+    if (lastPromptKey === key) return;
+    lastPromptKey = key;
+
+    debug(`Death Save Prompt | ${actor.name} needs a death save (round ${combat.round}).`);
+
+    // ── Path 1: owning player client → open roll dialog directly ──────────────
+    // actor.isOwner is true for the actor's owning player(s) and always true for GMs.
+    // We exclude GMs here so they don't auto-pop a dialog for every player actor.
+    if (actor.isOwner && !game.user.isGM) {
+        debug(`Death Save Prompt | Opening death save dialog for ${actor.name} on owning client.`);
+        await actor.rollDeathSave();
+        return;
     }
+
+    // ── Path 2: GM fallback for unattended actors ──────────────────────────────
+    // Only run on the primary/active GM to avoid duplicate chat messages.
+    // Check whether any non-GM owner of this actor is currently connected.
+    // If an owner is online, their client will handle Path 1 — no card needed.
+    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
+    if (!primaryGM?.isSelf) return;
+
+    const hasConnectedOwner = game.users.some(u =>
+        !u.isGM && u.active && actor.testUserPermission(u, "OWNER")
+    );
+    if (hasConnectedOwner) return; // Owner client is handling it via Path 1
+
+    debug(`Death Save Prompt | No connected owner for ${actor.name}. Sending GM fallback chat card.`);
+    await sendDeathSavePrompt(actor);
 }
 
 /**
- * Send a whispered death save prompt message.
+ * Send a whispered death save prompt message (GM fallback for unattended actors).
  * @param {Actor} actor - The actor to prompt for.
  */
 async function sendDeathSavePrompt(actor) {

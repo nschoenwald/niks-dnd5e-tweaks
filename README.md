@@ -43,16 +43,19 @@ All features can be toggled on or off individually within the Foundry VTT Module
   * *↳ NPC Token Status at 0 HP* — defaults to **Dead** (choices: Unconscious, Dead, None).
   * *↳ Player Token Combat Action at 0 HP* — defaults to **None** (choices: Mark Defeated, Remove from Combat, None).
   * *↳ NPC Token Combat Action at 0 HP* — defaults to **Mark Defeated** (choices: Mark Defeated, Remove from Combat, None).
-* **Prompt for Death Saves**: When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.
+* **Prompt for Death Saves**: When a player character starts their combat turn at 0 HP, automatically opens the Death Saving Throw roll dialog directly for the owning player. If the player is not connected, the GM receives a fallback whispered chat card with a clickable button to roll on their behalf.
 * **Auto-Open Damage Dialog for Saves**: Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used. This mirrors the built-in behaviour of Attack activities, which already auto-open their attack roll dialog. Automatically disabled when midi-qol is active to avoid duplicate rolls.
 * **Healing Roll Context Menu**: Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default.
 * **Player Damage Prompt**: When an attack hits a targeted token, whispers a chat message with the damage breakdown (accounting for damage reductions, resistances, vulnerabilities, and immunities per the 2024 rules order), the effective damage total, and a button to apply the damage. The button state syncs across all clients. Critical hits are indicated with "CRITICALLY HIT" in the message. Also supports the **Graze** weapon mastery — when an attack misses but the weapon has the Graze mastery and the attacker has mastered that weapon, a damage prompt is sent for the Graze damage (ability modifier only). Disabled by default.
   * *↳ Damage Prompt Whisper Visibility* — controls who receives the whisper when a player token is hit (choices: **GM & Player** (default), Player Only).
   * *↳ GM Damage Prompt for Player Attacks* — when a player rolls attack damage against an NPC token that was hit, whispers a damage prompt to the GM. Disabled by default.
   * *↳ Non-Attack Damage Prompts* — when enabled, damage prompts are also sent for damage rolls originating from non-attack activities (like saving throws or utility abilities). For save activities, the prompt includes both Full and Half damage buttons. Also fully supports healing and temporary hit point rolls, displaying "Apply Healing" or "Apply Temp HP" with appropriate icons. Enabled by default.
+  * *↳ Damage Prompt Layout* — controls the visual layout of damage prompts. **Structured** (default) shows a per-type breakdown table with raw damage, trait modifiers, and effective damage. **Classic** shows the original text-based layout.
+  * *↳ Wait for Dice So Nice* — when enabled alongside the Dice So Nice module, damage prompt whispers are delayed until the 3D dice animation finishes. Disabled by default.
   * *↳ Suppress Damage Prompts (Player)* — a per-user setting allowing individual players to hide damage prompt whispers from their chat log.
 * **Legendary Action Placeholders**: When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.
   * *↳ Show Placeholders to Players* — by default, placeholder turns are hidden from players. Enable this to make them visible.
+  * *↳ Placeholder Icon* — file picker to choose a custom icon for placeholder turns (defaults to `icons/svg/combat.svg`).
 * **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved, with a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.
 * **Auto-Roll Concentration Saves**: Automatically rolls a concentration saving throw when a concentrating token takes damage, following official DnD5e rules (DC 10 or half damage taken, whichever is higher). All native system mechanics are respected — including the actor's configured concentration ability, concentration bonuses, and intrinsic advantage/disadvantage (e.g. War Caster, Eldritch Mind). The roll appears in chat after the system's own concentration prompt. An **"End Concentration"** button is appended to every concentration roll card (including manually initiated ones) so GMs and owning players can break concentration with a single click. Also respects the dnd5e system's global "Disable Concentration Tracking" setting.
   * *↳ Fast-Forward Concentration Rolls* — controls which actors skip the roll dialog and roll immediately. Choices: **All Actors** (default), NPCs Only, Players Only, Never (always show dialog).
@@ -63,6 +66,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 ### Group 4: Restrictions & Rules
 
 * **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
+  * *↳ Allow Shift-Click to Bypass* — when enabled, players can hold **Shift** while clicking the Compendium tab to access the standard Foundry compendium sidebar instead of the forced browser. Enabled by default.
 
 
 ### Utilities
@@ -82,7 +86,12 @@ This module includes automatic compatibility checks for other popular modules. N
 | Feature | Reason |
 |---|---|
 | **Auto-Open Damage Dialog for Saves** | midi-qol manages the entire activity workflow and auto-rolls damage itself. Running both would produce duplicate damage dialogs. |
-| **Auto-Roll Concentration Saves** | midi-qol manages its own concentration save workflow. It is recommended to disable this feature when midi-qol is active to avoid duplicate concentration rolls. |
+
+The following feature is **not** automatically disabled but is **recommended to be turned off** manually when using midi-qol:
+
+| Feature | Reason |
+|---|---|
+| **Auto-Roll Concentration Saves** | midi-qol manages its own concentration save workflow. Running both may produce duplicate concentration rolls. Disable this feature in Module Settings when using midi-qol. |
 
 Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, etc.) coexist safely with midi-qol — they either use idempotent checks to avoid duplicating effects, or provide purely additive UI enhancements that don't interfere with midi-qol's workflow.
 
