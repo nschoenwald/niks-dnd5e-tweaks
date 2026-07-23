@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.12.2] - 2026-07-24
+### Changed
+- **Settings**: Reordered the Automation & QOL settings panel for better logical grouping. The Healing Roll Context Menu setting now sits directly after the Player Damage Prompt block. The concentration-related settings now form a cohesive sequence: Auto-Roll Concentration Saves → ↳ Fast-Forward → ↳ Auto-End on Failure → Mage Slayer: Concentration Disadvantage → Auto-End Concentration → Auto-End Rage.
+
 ## [14.12.1] - 2026-07-24
 ### Added
 - **Mage Slayer: Concentration Breaker**: When an attacker with the Mage Slayer feat deals damage to a concentrating creature, the concentration saving throw is automatically rolled with Disadvantage. If the defender has intrinsic Advantage on concentration saves (e.g. War Caster, Eldritch Mind), the two cancel to a normal roll per 2024 PHB rules. Attacker detection uses a 3-tier check: official `mage-slayer` item identifier, legacy `dnd5e.mageSlayer` actor flag, or item name match for homebrew.

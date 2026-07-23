@@ -470,6 +470,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableMageSlayerConcentration", {
+        name: "Mage Slayer: Concentration Disadvantage",
+        hint: "When a creature with the Mage Slayer feat damages a concentrating target, the target rolls its concentration saving throw with Disadvantage. If the target has intrinsic Advantage (e.g. War Caster), the two cancel out to a normal roll.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -483,16 +493,6 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableAutoEndRage", {
         name: "Auto-End Rage",
         hint: "Automatically ends a Barbarian's Rage effect when the token becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned. Identifies rage by the source item's identifier or by effect name (\"Rage\" / \"Raging\").",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableMageSlayerConcentration", {
-        name: "Mage Slayer: Concentration Disadvantage",
-        hint: "When a creature with the Mage Slayer feat damages a concentrating target, the target rolls its concentration saving throw with Disadvantage. If the target has intrinsic Advantage (e.g. War Caster), the two cancel out to a normal roll.",
         scope: "world",
         config: true,
         type: Boolean,
