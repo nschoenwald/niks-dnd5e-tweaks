@@ -346,7 +346,7 @@ async function _onCreateChatMessage_Attack(message) {
             continue;
         }
 
-        const tokenName = tokenDoc?.name || target.name || actor.name;
+        const tokenName = _getTokenName(tokenDoc, target, actor);
         await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
     }
 }
@@ -597,6 +597,22 @@ function _resolveTarget(uuid) {
     return { tokenDoc: null, actor: resolved };
 }
 
+/**
+ * Extract the true/unhidden display name of a token or actor.
+ * Modules like `hide-npc-names` override `TokenDocument.prototype.name` with a
+ * getter that returns a hidden name (e.g. "Unidentified Creature") for non-GMs.
+ * To ensure chat cards created on player clients retain the original name (so that
+ * GMs see the real name while `hide-npc-names` dynamically hides it for players),
+ * we bypass the getter by reading `tokenDoc.__name` or `tokenDoc._source.name`.
+ * @param {TokenDocument|null} tokenDoc
+ * @param {object|null} target
+ * @param {Actor|null} actor
+ * @returns {string} The unhidden display name.
+ */
+function _getTokenName(tokenDoc, target, actor) {
+    return tokenDoc?.__name || tokenDoc?._source?.name || tokenDoc?.name || target?.name || actor?.name || "";
+}
+
 // ── Per-target processing ────────────────────────────────────────────
 
 /**
@@ -741,7 +757,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     debug(`Player Damage Prompt |    Sending whisper to ${whisperTargets.length} user(s):`,
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
-    const tokenName = tokenDoc?.name || target.name || actor.name;
+    const tokenName = _getTokenName(tokenDoc, target, actor);
     const itemUuid = damageMessage.getFlag("dnd5e", "item.uuid");
     const sourceItem = itemUuid ? fromUuidSync(itemUuid) : null;
     
@@ -1256,26 +1272,26 @@ function _buildClassicLayout(tokenName, attackTotal, isCritical, grazeMode, acti
     let descriptionHtml = "";
     if (grazeMode) {
         descriptionHtml = game.i18n.format("ND5T.DamagePrompt.Grazed", {
-            tokenName, damage: damageDisplay,
+            damage: damageDisplay,
             grazeBadge: game.i18n.localize("ND5T.DamagePrompt.GrazeBadge")
         });
     } else if (activityType === "attack") {
         if (isCritical) {
             descriptionHtml = game.i18n.format("ND5T.DamagePrompt.CriticalHit", {
-                tokenName, attackTotal, damage: damageDisplay,
+                attackTotal, damage: damageDisplay,
                 critBadge: game.i18n.localize("ND5T.DamagePrompt.CritBadge")
             });
         } else {
             descriptionHtml = game.i18n.format("ND5T.DamagePrompt.HitBy", {
-                tokenName, attackTotal, damage: damageDisplay
+                attackTotal, damage: damageDisplay
             });
         }
     } else if (activityType === "save") {
         descriptionHtml = game.i18n.format("ND5T.DamagePrompt.SavingThrow", {
-            tokenName, damage: damageDisplay
+            damage: damageDisplay
         });
     } else {
-        descriptionHtml = _buildGenericDescription(tokenName, damageDisplay, sourceItem, isPureHealing);
+        descriptionHtml = _buildGenericDescription(damageDisplay, sourceItem, isPureHealing);
     }
 
     let html = descriptionHtml;
@@ -1328,17 +1344,19 @@ function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, a
     }
 
     // Build header HTML
-    let headerHtml = `<div class="nd5t-structured-header">`;
-    headerHtml += `<strong>${tokenName}</strong>`;
-    if (hitType) {
-        headerHtml += ` — <span class="${hitTypeClass}">${hitType}</span>`;
+    let headerHtml = "";
+    if (hitType || hitDetail) {
+        headerHtml += `<div class="nd5t-structured-header">`;
+        if (hitType) {
+            headerHtml += `<span class="${hitTypeClass}">${hitType}</span>`;
+            if (hitDetail) {
+                headerHtml += ` — <span class="nd5t-hit-detail">${hitDetail}</span>`;
+            }
+        } else {
+            headerHtml += `<span class="nd5t-hit-detail">${hitDetail}</span>`;
+        }
+        headerHtml += `</div>`;
     }
-    if (hitDetail && !hitType) {
-        headerHtml += ` — <span class="nd5t-hit-detail">${hitDetail}</span>`;
-    } else if (hitDetail && hitType) {
-        headerHtml += ` <span class="nd5t-hit-detail">(${hitDetail})</span>`;
-    }
-    headerHtml += `</div>`;
 
     // Column headers
     const colType = game.i18n.localize("ND5T.DamagePrompt.Structured.ColType");
@@ -1406,28 +1424,28 @@ function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, a
  * Build a generic (non-attack, non-save) description for the classic layout.
  * @returns {string} HTML string.
  */
-function _buildGenericDescription(tokenName, damageDisplay, sourceItem, isPureHealing) {
+function _buildGenericDescription(damageDisplay, sourceItem, isPureHealing) {
     if (sourceItem && sourceItem.parent) {
         if (isPureHealing) {
             return game.i18n.format("ND5T.DamagePrompt.RecoversHP", {
-                tokenName, damage: damageDisplay,
+                damage: damageDisplay,
                 sourceName: sourceItem.parent.name,
                 itemName: sourceItem.name
             });
         }
         return game.i18n.format("ND5T.DamagePrompt.ReceivesDamage", {
-            tokenName, damage: damageDisplay,
+            damage: damageDisplay,
             sourceName: sourceItem.parent.name,
             itemName: sourceItem.name
         });
     }
     if (isPureHealing) {
         return game.i18n.format("ND5T.DamagePrompt.RecoversHPGeneric", {
-            tokenName, damage: damageDisplay
+            damage: damageDisplay
         });
     }
     return game.i18n.format("ND5T.DamagePrompt.ReceivesDamageGeneric", {
-        tokenName, damage: damageDisplay
+        damage: damageDisplay
     });
 }
 

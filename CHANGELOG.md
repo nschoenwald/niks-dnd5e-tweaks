@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.11.23] - 2026-07-23
+### Fixed
+- **Player Damage Prompt**: Fixed NPC names in damage prompt chat cards being hidden for GMs when the `hide-npc-names` module is active. The prompt now builds chat cards using the target's unhidden token/actor name, allowing GMs to see the real name while `hide-npc-names` dynamically hides it for non-GM players when rendering the card in chat.
+
+### Changed
+- **Player Damage Prompt**: Removed redundant target name repetition from the card body text in both Structured and Classic layouts, as the target's name is already displayed in the native chat card speaker header.
+
 ## [14.11.22] - 2026-07-21
 ### Added
 - **Legendary Action Placeholders**: Added a sub-setting ("↳ Placeholder Icon") with a file picker to configure a custom icon for legendary action initiative placeholders (defaults to `icons/svg/combat.svg`). Includes automatic validation via image preloading to fall back to the default icon for any load failure (404, 403, CORS, network errors, or corrupt/invalid image files).
