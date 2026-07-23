@@ -54,6 +54,11 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Legendary Action Placeholders**: When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.
   * *↳ Show Placeholders to Players* — by default, placeholder turns are hidden from players. Enable this to make them visible.
 * **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved, with a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.
+* **Auto-Roll Concentration Saves**: Automatically rolls a concentration saving throw when a concentrating token takes damage, following official DnD5e rules (DC 10 or half damage taken, whichever is higher). All native system mechanics are respected — including the actor's configured concentration ability, concentration bonuses, and intrinsic advantage/disadvantage (e.g. War Caster, Eldritch Mind). The roll appears in chat after the system's own concentration prompt. An **"End Concentration"** button is appended to every concentration roll card (including manually initiated ones) so GMs and owning players can break concentration with a single click. Also respects the dnd5e system's global "Disable Concentration Tracking" setting.
+  * *↳ Fast-Forward Concentration Rolls* — controls which actors skip the roll dialog and roll immediately. Choices: **All Actors** (default), NPCs Only, Players Only, Never (always show dialog).
+  * *↳ Auto-End Concentration on Save Failure* — when enabled, concentration is ended automatically when the saving throw fails. When disabled (default), the "End Concentration" button on the chat card must be clicked manually.
+* **Auto-End Concentration**: Automatically ends all concentration effects from a token when it gains a condition that prevents maintaining concentration (Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned). Works alongside the DnD5e system's own concentration tracking.
+* **Auto-End Rage**: Automatically ends a Barbarian's Rage effect when the token gains one of the above concentration-breaking conditions. Identifies rage by the source item identifier (`rage`) or by the effect name ("Rage" / "Raging") as a fallback.
 
 ### Group 4: Restrictions & Rules
 
@@ -77,6 +82,7 @@ This module includes automatic compatibility checks for other popular modules. N
 | Feature | Reason |
 |---|---|
 | **Auto-Open Damage Dialog for Saves** | midi-qol manages the entire activity workflow and auto-rolls damage itself. Running both would produce duplicate damage dialogs. |
+| **Auto-Roll Concentration Saves** | midi-qol manages its own concentration save workflow. It is recommended to disable this feature when midi-qol is active to avoid duplicate concentration rolls. |
 
 Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, etc.) coexist safely with midi-qol — they either use idempotent checks to avoid duplicating effects, or provide purely additive UI enhancements that don't interfere with midi-qol's workflow.
 

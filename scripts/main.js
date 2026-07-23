@@ -19,6 +19,7 @@ import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
 import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
+import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -432,6 +433,42 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableAutoRollConcentration", {
+        name: "Auto-Roll Concentration Saves",
+        hint: "Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoRollConcentrationFastForward", {
+        name: "↳ Fast-Forward Concentration Rolls",
+        hint: "When to skip the roll configuration dialog and roll immediately. 'All Actors' skips the dialog for everyone. 'NPCs Only' skips for NPC tokens but shows the dialog for player-owned actors. 'Players Only' is the reverse. 'Never' always shows the dialog, pre-configured with the DC.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "all",
+        choices: {
+            all: "All Actors",
+            npcsOnly: "NPCs Only",
+            playersOnly: "Players Only",
+            none: "Never (always show dialog)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoEndConcentrationOnFailure", {
+        name: "↳ Auto-End Concentration on Save Failure",
+        hint: "Automatically ends concentration effects when a concentration saving throw fails. When disabled, concentration is not removed automatically, but an \"End Concentration\" button is provided on the chat card.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -525,6 +562,7 @@ Hooks.once("setup", () => {
     initAutoRollSaveDamage();
     initPlayerDamagePrompt();
     initAutoEndConcentration();
+    initAutoRollConcentration();
 
     initCombatExpTracker();
 });

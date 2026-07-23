@@ -276,3 +276,20 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     cursor: default;
     pointer-events: none;
 }
+
+/* ── Auto-Roll Concentration Saves ─────────────────────────────────── */
+
+.nd5t-end-concentration-btn {
+    margin-top: 6px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.nd5t-end-concentration-btn[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}

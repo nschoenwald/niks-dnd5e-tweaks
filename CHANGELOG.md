@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.12.0] - 2026-07-23
+### Added
+- **Auto-Roll Concentration Saves**: Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage, matching official DnD5e 5.2+ rules (DC 10 or half damage taken) and accounting for intrinsic concentration advantage/disadvantage traits (e.g. War Caster or Eldritch Mind).
+- **Interactive "End Concentration" Chat Card Button**: Appends an "End Concentration" button to concentration roll chat cards in chat, allowing GMs and owning players to manually break concentration with a single click.
+- **Concentration Settings**: Added module settings to toggle Auto-Roll Concentration Saves, Fast-Forward Concentration Rolls, and an optional Auto-End Concentration on Save Failure sub-setting.
+
 ## [14.11.23] - 2026-07-23
 ### Fixed
 - **Player Damage Prompt**: Fixed NPC names in damage prompt chat cards being hidden for GMs when the `hide-npc-names` module is active. The prompt now builds chat cards using the target's unhidden token/actor name, allowing GMs to see the real name while `hide-npc-names` dynamically hides it for non-GM players when rendering the card in chat.
