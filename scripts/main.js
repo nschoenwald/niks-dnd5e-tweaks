@@ -20,6 +20,7 @@ import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
+import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -489,6 +490,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableMageSlayerConcentration", {
+        name: "Mage Slayer: Concentration Disadvantage",
+        hint: "When a creature with the Mage Slayer feat damages a concentrating target, the target rolls its concentration saving throw with Disadvantage. If the target has intrinsic Advantage (e.g. War Caster), the two cancel out to a normal roll.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ==========================================
     // GROUP 4: Restrictions & Rules
     // ==========================================
@@ -563,6 +574,7 @@ Hooks.once("setup", () => {
     initPlayerDamagePrompt();
     initAutoEndConcentration();
     initAutoRollConcentration();
+    initMageSlayerConcentration();
 
     initCombatExpTracker();
 });

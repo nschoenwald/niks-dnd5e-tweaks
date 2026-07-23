@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.12.1] - 2026-07-24
+### Added
+- **Mage Slayer: Concentration Breaker**: When an attacker with the Mage Slayer feat deals damage to a concentrating creature, the concentration saving throw is automatically rolled with Disadvantage. If the defender has intrinsic Advantage on concentration saves (e.g. War Caster, Eldritch Mind), the two cancel to a normal roll per 2024 PHB rules. Attacker detection uses a 3-tier check: official `mage-slayer` item identifier, legacy `dnd5e.mageSlayer` actor flag, or item name match for homebrew.
+
 ## [14.12.0] - 2026-07-23
 ### Added
 - **Auto-Roll Concentration Saves**: Automatically rolls a concentration saving throw for concentration when a concentrating token takes damage, matching official DnD5e 5.2+ rules (DC 10 or half damage taken, whichever is higher) and accounting for intrinsic concentration advantage/disadvantage traits (e.g. War Caster, Eldritch Mind). The roll card appears in chat after the system's own "click to roll" concentration prompt.
