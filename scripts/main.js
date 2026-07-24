@@ -21,6 +21,7 @@ import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
 import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
+import { initSelfEffectApplication } from "./features/self-effect-application.js";
 
 
 export const MODULE_ID = "niks-dnd5e-tweaks";
@@ -480,6 +481,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableSelfEffectApplication", {
+        name: "Self Effect Application Prompt",
+        hint: "When an actor uses an ability that has Active Effects targeting \"Self\" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owner and the GM with one-click Apply buttons for each effect.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -575,6 +586,7 @@ Hooks.once("setup", () => {
     initAutoEndConcentration();
     initAutoRollConcentration();
     initMageSlayerConcentration();
+    initSelfEffectApplication();
 
     initCombatExpTracker();
 });

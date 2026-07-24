@@ -293,3 +293,61 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     cursor: default;
     pointer-events: none;
 }
+
+/* ── Self Effect Application Prompt ─────────────────────────────────── */
+
+.nd5t-self-effect-prompt .nd5t-self-effect-content {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.nd5t-self-effect-prompt .nd5t-self-effect-content p {
+    margin: 0.3em 0;
+    line-height: 1.4;
+}
+
+.nd5t-self-effect-prompt .nd5t-self-effect-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nd5t-self-effect-prompt button[data-action="nd5t-apply-self-effect"] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.nd5t-self-effect-prompt .nd5t-effect-icon {
+    width: 18px;
+    height: 18px;
+    border: none;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.nd5t-self-effect-prompt button:not([disabled]):hover {
+    filter: brightness(1.15);
+    transition: filter 0.15s ease;
+}
+
+.nd5t-self-effect-prompt button:not([disabled]):active {
+    filter: brightness(0.92);
+    transition: filter 0.05s ease;
+}
+
+.nd5t-self-effect-prompt button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
+.nd5t-self-effect-prompt .nd5t-self-effect-undo-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}

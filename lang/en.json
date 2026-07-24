@@ -65,5 +65,16 @@
   "ND5T.CombatExpTracker.Summary.ShareMathSingle": "({totalXP} ÷ 1 character)",
   "ND5T.CombatExpTracker.Summary.ShareMathPlural": "({totalXP} ÷ {count} characters)",
   "ND5T.CombatExpTracker.Summary.ParticipatingSingle": "1 Participating Character",
-  "ND5T.CombatExpTracker.Summary.ParticipatingPlural": "{count} Participating Characters"
+  "ND5T.CombatExpTracker.Summary.ParticipatingPlural": "{count} Participating Characters",
+
+  "ND5T.SelfEffectApplication.Description": "Using <strong>{itemName}</strong> grants the following effect(s). Apply them to {actorName}:",
+  "ND5T.SelfEffectApplication.Apply": "Apply: {effectName}",
+  "ND5T.SelfEffectApplication.Applied": "Effect Applied",
+  "ND5T.SelfEffectApplication.Undo": "Undo",
+  "ND5T.SelfEffectApplication.UndoHint": "Undo the application of {effectName}",
+  "ND5T.SelfEffectApplication.Undoing": "Undoing...",
+  "ND5T.SelfEffectApplication.UnknownEffect": "Unknown Effect",
+  "ND5T.SelfEffectApplication.ActorNotFound": "Could not find the actor to apply the effect to.",
+  "ND5T.SelfEffectApplication.ApplyError": "Failed to apply effect. See the console for details.",
+  "ND5T.SelfEffectApplication.UndoError": "Failed to undo effect. See the console for details."
 }
