@@ -111,37 +111,41 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
     const item = activity.item;
     const whisperUsers = _getWhisperTargets(actor);
 
+    // Serialize effect data into flags as an array (safe from DOMPurify AND Foundry dot-expansion).
+    // Keys in objects are expanded by Foundry's setFlag/create if they contain dots (like UUIDs).
+    const effectFlagData = effects.map(effect => ({
+        uuid: effect.uuid,
+        data: effect.toObject()
+    }));
+
     // Build one button row per effect.
     const effectButtons = effects.map(effect => {
-        const effectData = JSON.stringify(effect.toObject()).replace(/"/g, "&quot;");
         const effectIcon = effect.img ?? "icons/svg/aura.svg";
         const effectName = effect.name ?? effect.label ?? game.i18n.localize("ND5T.SelfEffectApplication.UnknownEffect");
         const effectUuid = effect.uuid;
         const applyLabel = game.i18n.format("ND5T.SelfEffectApplication.Apply", { effectName });
 
         return `
-            <button
-                data-action="nd5t-apply-self-effect"
-                data-actor-uuid="${actor.uuid}"
-                data-effect-uuid="${effectUuid}"
-                data-effect-data="${effectData}"
-                data-effect-name="${effectName.replace(/"/g, "&quot;")}"
-                title="${applyLabel.replace(/"/g, "&quot;")}">
-                <img src="${effectIcon}" class="nd5t-effect-icon" alt="" />
-                ${applyLabel}
-            </button>`.trim();
+            <div class="nd5t-effect-row">
+                <button
+                    data-action="nd5t-apply-self-effect"
+                    data-actor-uuid="${actor.uuid}"
+                    data-effect-uuid="${effectUuid}"
+                    data-effect-name="${effectName.replace(/"/g, "&quot;")}"
+                    title="${applyLabel.replace(/"/g, "&quot;")}">
+                    <img src="${effectIcon}" class="nd5t-effect-icon" alt="" />
+                    ${applyLabel}
+                </button>
+            </div>`.trim();
     }).join("\n");
 
-    const itemIcon = item?.img ?? "icons/svg/aura.svg";
     const itemName = item?.name ?? activity.name ?? "";
-    const description = game.i18n.format("ND5T.SelfEffectApplication.Description", { itemName, actorName: actor.name });
+    const isPlural = effects.length > 1;
+    const descriptionKey = isPlural ? "ND5T.SelfEffectApplication.DescriptionPlural" : "ND5T.SelfEffectApplication.DescriptionSingle";
+    const description = game.i18n.format(descriptionKey, { itemName, actorName: actor.name });
 
     const content = `
         <div class="dnd5e chat-card item-card nd5t-self-effect-prompt" data-actor-uuid="${actor.uuid}">
-            <header class="card-header flexrow">
-                <img src="${itemIcon}" title="${itemName.replace(/"/g, "&quot;")}" width="36" height="36" />
-                <h3>${itemName}</h3>
-            </header>
             <div class="card-content nd5t-self-effect-content">
                 <p>${description}</p>
             </div>
@@ -159,7 +163,8 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
             [MODULE_ID]: {
                 selfEffectPrompt: true,
                 actorUuid: actor.uuid,
-                effectsApplied: {}  // effectUuid → created effect UUID on actor (for undo)
+                effects: effectFlagData,       // effectUuid → effect plain object (for apply)
+                effectsApplied: {}             // effectUuid → created effect id on actor (for undo)
             }
         }
     });
@@ -187,7 +192,8 @@ function _bindSelfEffectButtons(message, element) {
     if (!buttons.length) return;
 
     // Restore applied visual state for any effects already in the flag map.
-    const effectsApplied = message.getFlag(MODULE_ID, "effectsApplied") ?? {};
+    // Read directly from flags object to avoid dot-expansion of UUID keys.
+    const effectsApplied = message.flags?.[MODULE_ID]?.effectsApplied ?? {};
     if (Object.keys(effectsApplied).length > 0) {
         _applyAppliedState(message, prompt, effectsApplied);
     }
@@ -213,41 +219,74 @@ async function _handleApplyClick(event, message, button, prompt) {
     const effectUuid = button.dataset.effectUuid;
     const effectName = button.dataset.effectName;
 
-    // Reconstruct the effect data from the JSON attribute.
-    let effectData;
-    try {
-        effectData = JSON.parse(button.dataset.effectData.replace(/&quot;/g, '"'));
-    } catch (err) {
-        console.error("Nik's DnD5e Tweaks | Self Effect Application: Failed to parse effect data", err);
+    // Read effect plain-object from message flags.
+    // IMPORTANT: effects is stored as an array of { uuid, data } to avoid Foundry expanding dots in UUIDs.
+    const allEffects = message.flags?.[MODULE_ID]?.effects ?? [];
+    const effectEntry = Array.isArray(allEffects)
+        ? allEffects.find(e => e.uuid === effectUuid)
+        : null;
+
+    const effectData = effectEntry?.data;
+    if (!effectData) {
+        console.error("Nik's DnD5e Tweaks | Self Effect Application: Effect data not found in flags for", effectUuid, "| Available effects:", allEffects);
+        ui.notifications.warn(game.i18n.localize("ND5T.SelfEffectApplication.ApplyError"));
         return;
     }
 
+    await _applyEffectData(message, button, prompt, actorUuid, effectUuid, effectName, effectData);
+}
+
+/**
+ * Actually create the active effect on the actor.
+ */
+async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, effectName, effectData) {
     const actor = await fromUuid(actorUuid);
     if (!actor) {
         ui.notifications.warn(game.i18n.localize("ND5T.SelfEffectApplication.ActorNotFound"));
         return;
     }
 
-    // Disable button immediately for the clicking client to prevent double-clicks.
     button.disabled = true;
 
     debug(`Self Effect Application | Applying effect "${effectName}" to "${actor.name}"`);
 
     try {
-        // Strip the id so a fresh one is generated on creation.
-        delete effectData._id;
+        let createdId = null;
 
-        // Set origin so this effect can be identified for undo.
-        if (effectUuid) effectData.origin = effectUuid;
+        // Derive parent item UUID from effect UUID (e.g. Actor.xxx.Item.yyy.ActiveEffect.zzz -> Actor.xxx.Item.yyy)
+        const itemUuid = effectUuid ? effectUuid.split(".ActiveEffect")[0] : null;
+        const cleanTargetName = (effectName || effectData.name || effectData.label || "").trim().toLowerCase();
 
-        const [created] = await ActiveEffect.createDocuments([effectData], { parent: actor });
-        const createdId = created?.id;
+        // Find existing effect on actor: match by effect UUID, parent item UUID, or normalized name/label
+        const existingEffect = actor.effects.find(e => {
+            if (effectUuid && e.origin === effectUuid) return true;
+            if (itemUuid && e.origin === itemUuid) return true;
+            const eName = (e.name || e.label || "").trim().toLowerCase();
+            if (cleanTargetName && eName && (eName === cleanTargetName || eName.includes(cleanTargetName) || cleanTargetName.includes(eName))) return true;
+            return false;
+        });
 
-        debug(`Self Effect Application | ✓ Effect "${effectName}" applied to "${actor.name}" (created id: ${createdId})`);
+        if (existingEffect) {
+            debug(`Self Effect Application | Enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
+            await existingEffect.update({ disabled: false, origin: effectUuid || existingEffect.origin });
+            createdId = existingEffect.id;
+        } else {
+            const data = foundry.utils.deepClone(effectData);
+            delete data._id;
+            data.disabled = false;
+            data.transfer = false;
+            if (effectUuid) data.origin = effectUuid;
 
-        // Build the new effectsApplied map: effectUuid → created effect id.
-        const existingApplied = message.getFlag(MODULE_ID, "effectsApplied") ?? {};
-        const newApplied = { ...existingApplied, [effectUuid]: createdId ?? true };
+            const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
+            createdId = created?.id;
+        }
+
+        debug(`Self Effect Application | ✓ Effect "${effectName}" applied to "${actor.name}" (id: ${createdId})`);
+
+        // Build the new effectsApplied map.
+        // Keys are the SHORT created-effect IDs (no dots), values are the source effectUuids.
+        const existingApplied = message.flags?.[MODULE_ID]?.effectsApplied ?? {};
+        const newApplied = { ...existingApplied, [createdId ?? "unknown"]: effectUuid };
 
         // Immediately update DOM for clicking client.
         _applyAppliedState(message, prompt, newApplied);
@@ -274,34 +313,37 @@ async function _handleApplyClick(event, message, button, prompt) {
 function _applyAppliedState(message, prompt, effectsApplied) {
     if (!effectsApplied || Object.keys(effectsApplied).length === 0) return;
 
+    // effectsApplied structure: { [createdEffectId]: effectUuid }
+    // Build a reverse map: effectUuid → createdEffectId for quick lookup.
+    const byEffectUuid = {};
+    for (const [createdId, effectUuid] of Object.entries(effectsApplied)) {
+        byEffectUuid[effectUuid] = createdId;
+    }
+
     const buttons = prompt.querySelectorAll('button[data-action="nd5t-apply-self-effect"]');
     buttons.forEach(button => {
         const effectUuid = button.dataset.effectUuid;
-        if (!effectsApplied.hasOwnProperty(effectUuid)) return;
+        if (!byEffectUuid.hasOwnProperty(effectUuid)) return;
 
         // Already transitioned?
         if (button.dataset.applied === "true") return;
         button.dataset.applied = "true";
         button.disabled = true;
 
-        const createdId = effectsApplied[effectUuid];
+        const createdId = byEffectUuid[effectUuid];
         const effectName = button.dataset.effectName;
         const actorUuid = button.dataset.actorUuid;
 
-        // Replace button text with "Applied ✓"
-        const originalHtml = button.innerHTML;
+        if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
         button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize("ND5T.SelfEffectApplication.Applied")}`;
+        button.style.flex = "1";
 
-        // Build the row container if not already a flex row.
-        const container = button.parentElement;
-        if (!container.dataset.undoSetup) {
-            container.dataset.undoSetup = "true";
-            container.style.display = "flex";
-            container.style.flexDirection = "column";
-            container.style.gap = "4px";
-        }
+        const row = button.closest(".nd5t-effect-row") || button.parentElement;
+        row.style.display = "flex";
+        row.style.flexDirection = "row";
+        row.style.gap = "4px";
 
-        // Add Undo button only if we have the created effect id to delete.
+        // Add Undo button on the right side of the row
         if (createdId && typeof createdId === "string") {
             const undoBtn = document.createElement("button");
             undoBtn.className = "nd5t-self-effect-undo-btn";
@@ -311,16 +353,18 @@ function _applyAppliedState(message, prompt, effectsApplied) {
             undoBtn.dataset.effectName = effectName;
             undoBtn.title = game.i18n.format("ND5T.SelfEffectApplication.UndoHint", { effectName });
             undoBtn.innerHTML = `<i class="fas fa-undo"></i> ${game.i18n.localize("ND5T.SelfEffectApplication.Undo")}`;
+            undoBtn.style.flex = "0 0 auto";
+            undoBtn.style.width = "auto";
+            undoBtn.style.padding = "0 12px";
 
             undoBtn.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
 
-                await _handleUndoClick(message, button, undoBtn, prompt, originalHtml, actorUuid, createdId, effectUuid, effectName);
+                await _handleUndoClick(message, button, undoBtn, prompt, actorUuid, createdId, effectUuid, effectName);
             });
 
-            // Insert undo button directly after the apply button in the container.
-            button.insertAdjacentElement("afterend", undoBtn);
+            row.appendChild(undoBtn);
         }
     });
 }
@@ -334,19 +378,17 @@ function _revertAppliedState(prompt, effectUuid) {
     const button = prompt.querySelector(`button[data-action="nd5t-apply-self-effect"][data-effect-uuid="${effectUuid}"]`);
     if (!button) return;
 
-    const undoBtn = prompt.querySelector(`.nd5t-self-effect-undo-btn[data-effect-uuid="${effectUuid}"]`);
+    const row = button.closest(".nd5t-effect-row") || button.parentElement;
+    const undoBtn = row.querySelector(`.nd5t-self-effect-undo-btn[data-effect-uuid="${effectUuid}"]`);
     if (undoBtn) undoBtn.remove();
 
     button.dataset.applied = "";
     button.disabled = false;
-    // Restore original HTML — the apply button text
-    const effectName = button.dataset.effectName;
-    const effectIcon = button.querySelector("img")?.outerHTML ?? "";
-    const applyLabel = game.i18n.format("ND5T.SelfEffectApplication.Apply", { effectName });
-    button.innerHTML = `${effectIcon} ${applyLabel}`;
+    button.style.flex = "";
 
-    // Note: the click handler from _bindSelfEffectButtons is still attached.
-    // We don't need to re-bind — enabling the button is sufficient.
+    if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+    }
 }
 
 // ── Undo handling ────────────────────────────────────────────────────
@@ -354,9 +396,9 @@ function _revertAppliedState(prompt, effectUuid) {
 /**
  * Handle a click on an "Undo" button.
  */
-async function _handleUndoClick(message, applyButton, undoButton, prompt, originalHtml, actorUuid, createdId, effectUuid, effectName) {
+async function _handleUndoClick(message, applyButton, undoButton, prompt, actorUuid, createdId, effectUuid, effectName) {
     undoButton.disabled = true;
-    undoButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("ND5T.SelfEffectApplication.Undoing")}`;
+    undoButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
 
     debug(`Self Effect Application | Undoing effect "${effectName}" on actor ${actorUuid}, effect id ${createdId}`);
 
@@ -365,22 +407,21 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, origin
         if (actor) {
             const effect = actor.effects.get(createdId);
             if (effect) {
-                await effect.delete();
-                debug(`Self Effect Application | ✓ Deleted effect ${createdId} from "${actor.name}"`);
+                // Disable the effect on undo rather than deleting it.
+                // Deleting can permanently destroy the source effect if it lives on the actor or item.
+                await effect.update({ disabled: true });
+                debug(`Self Effect Application | ✓ Disabled effect ${createdId} on "${actor.name}"`);
             } else {
-                debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor.name}" (already removed?)`);
+                debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor.name}"`);
             }
         }
 
         // Build a new effectsApplied without this effect's entry.
-        const existingApplied = message.getFlag(MODULE_ID, "effectsApplied") ?? {};
+        const existingApplied = message.flags?.[MODULE_ID]?.effectsApplied ?? {};
         const newApplied = { ...existingApplied };
-        delete newApplied[effectUuid];
+        delete newApplied[createdId];
 
-        // Immediately revert DOM for clicking client.
         _revertAppliedState(prompt, effectUuid);
-
-        // Persist the updated flag.
         _requestMarkApplied(message.id, newApplied);
 
     } catch (err) {
@@ -433,10 +474,14 @@ function _onUpdateSelfEffectApplied(message, updateData) {
  * Sync each button's applied/unapplied visual state with the current effectsApplied map.
  */
 function _syncButtonStates(message, prompt, effectsApplied) {
+    // effectsApplied: { [createdEffectId]: effectUuid }
+    // Build a set of effectUuids that are currently applied.
+    const appliedUuids = new Set(Object.values(effectsApplied));
+
     const buttons = prompt.querySelectorAll('button[data-action="nd5t-apply-self-effect"]');
     buttons.forEach(button => {
         const effectUuid = button.dataset.effectUuid;
-        const isApplied = effectsApplied.hasOwnProperty(effectUuid);
+        const isApplied = appliedUuids.has(effectUuid);
         const wasApplied = button.dataset.applied === "true";
 
         if (isApplied && !wasApplied) {

@@ -67,7 +67,8 @@
   "ND5T.CombatExpTracker.Summary.ParticipatingSingle": "1 Participating Character",
   "ND5T.CombatExpTracker.Summary.ParticipatingPlural": "{count} Participating Characters",
 
-  "ND5T.SelfEffectApplication.Description": "Using <strong>{itemName}</strong> grants the following effect(s). Apply them to {actorName}:",
+  "ND5T.SelfEffectApplication.DescriptionSingle": "Using <strong>{itemName}</strong> grants the following effect. Apply it to {actorName}:",
+  "ND5T.SelfEffectApplication.DescriptionPlural": "Using <strong>{itemName}</strong> grants the following effects. Apply them to {actorName}:",
   "ND5T.SelfEffectApplication.Apply": "Apply: {effectName}",
   "ND5T.SelfEffectApplication.Applied": "Effect Applied",
   "ND5T.SelfEffectApplication.Undo": "Undo",

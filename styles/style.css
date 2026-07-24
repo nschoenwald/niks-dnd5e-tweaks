@@ -312,6 +312,14 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     gap: 4px;
 }
 
+.nd5t-self-effect-prompt .nd5t-effect-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
 .nd5t-self-effect-prompt button[data-action="nd5t-apply-self-effect"] {
     display: flex;
     align-items: center;
@@ -345,7 +353,9 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
 }
 
 .nd5t-self-effect-prompt .nd5t-self-effect-undo-btn {
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0 12px;
     display: flex;
     align-items: center;
     justify-content: center;
