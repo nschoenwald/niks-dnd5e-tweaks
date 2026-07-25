@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.13.0] - 2026-07-24
+## [14.13.0] - 2026-07-25
 ### Added
 - **Self Effect Application Prompt**: When an actor uses an activity with Active Effects that target "Self" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owning player and the GM. The card lists each self-targeted effect with an icon and a one-click **Apply** button. After applying an effect, the button transitions to "Effect Applied ✓" and an **Undo** button appears to delete the effect from the actor. Button state syncs across all clients via flag updates and the module socket, matching the same apply/undo pattern as the Player Damage Prompt. Enabled by default.
 
