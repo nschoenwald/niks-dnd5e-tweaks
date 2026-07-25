@@ -191,7 +191,7 @@ function _onPreUpdateActor(actor, change, options, userId) {
     if (!game.user.isGM) return;
 
     // Only react when HP actually changed.
-    if (!foundry.utils.hasProperty(change, "system.attributes.hp.value")) return;
+    if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
 
     // Record whether the actor was at 0 HP before this update
     options.autoStatusWasZeroHP = actor.system.attributes.hp.value <= 0;
@@ -218,7 +218,7 @@ function _onUpdateActor(actor, change, options, userId) {
     if (!game.user.isGM) return;
 
     // Only react when HP actually changed.
-    if (!foundry.utils.hasProperty(change, "system.attributes.hp.value")) return;
+    if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
 
     // Capture values now; defer processing to avoid race conditions.
     // The actor reference is passed live intentionally — by the time the
@@ -255,8 +255,7 @@ function _onUpdateActor(actor, change, options, userId) {
  */
 async function _processHPChange(actor, newHP, type, wasZeroHP) {
     // Guard: actor may have been deleted during the debounce window
-    if (!actor.id || (!actor.parent && !actor.isToken)) return;
-    if (actor.isToken && !actor.token?.object) return;
+    if (!actor || !actor.id) return;
 
     // Skip actors with no max HP (vehicles, objects, etc.) to avoid
     // false triggers — they are always at "0 HP" if max is 0.
