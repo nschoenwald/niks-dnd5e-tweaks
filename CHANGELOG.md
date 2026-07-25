@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Self Effect Application Prompt**: When an actor uses an activity with Active Effects that target "Self" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owning player and the GM. The card lists each self-targeted effect with an icon and a one-click **Apply** button. After applying an effect, the button transitions to "Effect Applied ✓" and an **Undo** button appears to delete the effect from the actor. Button state syncs across all clients via flag updates and the module socket, matching the same apply/undo pattern as the Player Damage Prompt. Enabled by default.
 
+### Fixed
+- **Auto Status at 0 HP**: Fixed player character classification in `_ownershipType` to ensure DnD5e character actors (`actor.type === "character"`) and actors with player owners are correctly identified as `"player"`, preventing player characters at 0 HP from being misclassified as NPCs and incorrectly receiving NPC statuses (`dead`) and combat actions (`defeated`).
+- **Auto Status at 0 HP**: Fixed a bug where a boolean `false` value in `options.autoStatusWasZeroHP` blocked fallback status checking (`false ?? fallback`), causing status overlay removal and un-defeating to be skipped when HP was restored above 0.
+- **Auto Status at 0 HP**: Added automatic removal of opposing 0-HP statuses (e.g. removing `dead` when applying `unconscious`, and vice versa) when 0-HP status conditions are applied.
+
 ## [14.12.2] - 2026-07-24
 ### Changed
 - **Settings**: Reordered the Automation & QOL settings panel for better logical grouping. The Healing Roll Context Menu setting now sits directly after the Player Damage Prompt block. The concentration-related settings now form a cohesive sequence: Auto-Roll Concentration Saves → ↳ Fast-Forward → ↳ Auto-End on Failure → Mage Slayer: Concentration Disadvantage → Auto-End Concentration → Auto-End Rage.

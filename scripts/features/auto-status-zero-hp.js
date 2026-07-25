@@ -27,13 +27,14 @@ const _debounceTimers = new Map();
  * @param {Actor} actor
  * @returns {"player"|"npc"}
  */
+/**
+ * Determine whether an actor is "player-owned" (Player Character type or has player owners)
+ * or "NPC" (GM-owned non-character).
+ * @param {Actor} actor
+ * @returns {"player"|"npc"}
+ */
 function _ownershipType(actor) {
-    for (const [id, level] of Object.entries(actor.ownership)) {
-        if (level !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) continue;
-        if (id === "default") return "player"; // default-owner means every player owns it
-        const user = game.users.get(id);
-        if (user && !user.isGM) return "player";
-    }
+    if (actor.type === "character" || actor.hasPlayerOwner) return "player";
     return "npc";
 }
 
@@ -54,6 +55,16 @@ function _ownershipType(actor) {
  */
 async function _applyZeroHPStatus(actor, statusId) {
     if (statusId === "none") return;
+
+    // Remove conflicting opposite 0-HP status if present
+    const oppositeStatusId = statusId === "unconscious" ? "dead" : statusId === "dead" ? "unconscious" : null;
+    if (oppositeStatusId && actor.statuses.has(oppositeStatusId)) {
+        try {
+            await actor.toggleStatusEffect(oppositeStatusId, { active: false });
+        } catch (e) {
+            debug(`Auto-Status | Could not remove opposing status "${oppositeStatusId}" from ${actor.name}: ${e.message}`);
+        }
+    }
 
     if (!actor.statuses.has(statusId)) {
         // Status not yet present — apply it fresh as an overlay
@@ -215,13 +226,11 @@ function _onUpdateActor(actor, change, options, userId) {
     // so our checks reflect what other modules have already applied.
     const newHP = actor.system.attributes.hp.value;
     const type = _ownershipType(actor);
-    // Prefer the value captured in preUpdateActor. Fall back to checking
-    // whether the actor currently holds a zero-HP status — this covers cases
-    // where another module or system path bypassed preUpdateActor entirely,
-    // which would otherwise leave wasZeroHP undefined and silently prevent
-    // status removal on a subsequent heal.
-    const wasZeroHP = options.autoStatusWasZeroHP
-        ?? (actor.statuses.has("dead") || actor.statuses.has("unconscious"));
+
+    // Determine if actor was at 0 HP before, or currently has 0-HP statuses.
+    const wasZeroHP = options.autoStatusWasZeroHP === true
+        || actor.statuses.has("dead")
+        || actor.statuses.has("unconscious");
 
     // Debounce per actor — if HP changes again within 250ms, cancel the
     // previous callback and only process the latest state.
@@ -253,7 +262,10 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
     // false triggers — they are always at "0 HP" if max is 0.
     if (actor.system.attributes.hp.max <= 0) return;
 
-    if (newHP <= 0) {
+    // Use live HP if available
+    const liveHP = actor.system.attributes.hp.value ?? newHP;
+
+    if (liveHP <= 0) {
         // ── Status overlay ──
         const statusKey = type === "player"
             ? "autoStatusZeroHP_playerStatus"
@@ -268,9 +280,10 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
         const combatAction = game.settings.get(MODULE_ID, combatKey);
         await _handleCombatActionZeroHP(actor, combatAction);
     } else {
-        // HP is above 0 — remove any auto-applied statuses and un-defeat,
-        // but ONLY if the token was at 0 HP before.
-        if (wasZeroHP) {
+        // HP is above 0 — remove any zero-HP statuses and un-defeat,
+        // if the actor was at 0 HP before or currently holds dead/unconscious statuses.
+        const holdsZeroHPStatus = actor.statuses.has("dead") || actor.statuses.has("unconscious");
+        if (wasZeroHP || holdsZeroHPStatus) {
             await _removeZeroHPStatuses(actor);
             await _undefeatCombatant(actor);
         }
