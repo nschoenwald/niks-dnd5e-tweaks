@@ -59,10 +59,6 @@ export function initSelfEffectApplication() {
 async function _onPostUseActivity(activity, usageConfig, results) {
     if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
 
-    // Only the primary GM runs this to avoid duplicate cards.
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (!primaryGM?.isSelf) return;
-
     // The activity must have "self" as its target type.
     const targetType = activity.target?.affects?.type;
     if (targetType !== "self") return;
@@ -98,7 +94,7 @@ function _getWhisperTargets(actor) {
         }
     }
     const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
-    return [...new Set([...ownerIds, ...gmIds])];
+    return [...new Set([game.user.id, ...ownerIds, ...gmIds])];
 }
 
 /**
@@ -560,9 +556,10 @@ function _onSocketMessage(data) {
     const msg = game.messages.get(data.messageId);
     if (!msg) return;
 
-    // Only the message author or a GM should write the flag.
+    // Only the message author or the primary GM should write the flag.
     const authorId = msg.author?.id ?? msg.user?.id;
-    if (game.user.id !== authorId && !game.user.isGM) return;
+    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
+    if (game.user.id !== authorId && !primaryGM?.isSelf) return;
 
     debug("Self Effect Application | Socket received: selfEffectApplied for message", data.messageId, data.effectsApplied);
     _writeEffectsAppliedFlag(data.messageId, data.effectsApplied);
