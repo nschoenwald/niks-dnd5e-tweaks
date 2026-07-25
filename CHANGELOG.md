@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.13.2] - 2026-07-26
+### Fixed
+- **Self Effect Application Prompt**: Fixed self-effect application prompt cards not appearing for self-targeted spells (e.g. *Shield*, *Mirror Image*, *Divine Favor*, *Armor of Agathys*, *Absorb Elements*). In DnD5e v5.2+, spell activities do not duplicate target data on the activity object unless overridden (`activity.target.override = false`), so target criteria now check the parent item (`item.system.target.affects.type`, `item.system.range.units`), and effect retrieval falls back to non-transfer ActiveEffects on the parent item when `activity.applicableEffects` is empty.
+
 ## [14.13.1] - 2026-07-26
 ### Fixed
 - **Self Effect Application Prompt**: Fixed a bug where self-targeted activity prompt chat cards failed to pop up for player clients. Removed an erroneous primary GM guard in `_onPostUseActivity` (`dnd5e.postUseActivity` fires on the client executing the activity), and explicitly added `game.user.id` to whisper targets so the triggering player always receives the prompt card.

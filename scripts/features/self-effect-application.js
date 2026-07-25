@@ -56,16 +56,76 @@ export function initSelfEffectApplication() {
  * @param {ActivityUseConfiguration} usageConfig  Configuration for the usage.
  * @param {ActivityUsageResults} results           Results of the usage.
  */
+/**
+ * Check whether an activity or its parent item targets "self".
+ * Handles direct activity targets, range units, item-level targets (essential for spells in DnD5e v5.2+),
+ * and system labels.
+ *
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _isSelfTargeted(activity) {
+    const item = activity.item;
+
+    // 1. Direct activity target affects or template type
+    const actTargetType = activity.target?.affects?.type || activity.target?.template?.type || activity.target?.type;
+    if (actTargetType === "self") return true;
+
+    // 2. Direct activity range units
+    if (activity.range?.units === "self") return true;
+
+    // 3. Item system target affects or template type (spells in DnD5e v5.2+ store target on item.system.target)
+    const itemTargetType = item?.system?.target?.affects?.type
+        || item?.system?.target?.template?.type
+        || item?.system?.target?.type;
+    if (itemTargetType === "self") return true;
+
+    // 4. Item system range units
+    if (item?.system?.range?.units === "self") return true;
+
+    // 5. Formatted labels (fallback for localized/custom target descriptions)
+    if (activity.labels?.target?.toLowerCase() === "self") return true;
+    if (activity.labels?.range?.toLowerCase() === "self") return true;
+    if (item?.labels?.target?.toLowerCase() === "self") return true;
+    if (item?.labels?.range?.toLowerCase() === "self") return true;
+
+    return false;
+}
+
+/**
+ * Retrieve applicable Active Effects for an activity or its parent item.
+ *
+ * @param {Activity} activity
+ * @returns {ActiveEffect5e[]}
+ */
+function _getApplicableEffects(activity) {
+    // 1. Check activity.applicableEffects first
+    const actEffects = activity.applicableEffects;
+    if (actEffects && actEffects.length > 0) return Array.from(actEffects);
+
+    // 2. Fall back to non-transfer ActiveEffects on the item itself
+    const item = activity.item;
+    if (item?.effects?.size > 0 || item?.effects?.length > 0) {
+        const itemEffects = Array.from(item.effects.values ? item.effects.values() : item.effects);
+        const nonTransfer = itemEffects.filter(e => !e.transfer);
+        if (nonTransfer.length > 0) return nonTransfer;
+    }
+
+    return [];
+}
+
 async function _onPostUseActivity(activity, usageConfig, results) {
     if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
 
-    // The activity must have "self" as its target type.
-    const targetType = activity.target?.affects?.type;
-    if (targetType !== "self") return;
+    // Ignore CastActivity containers since the cast spell's own activity will execute
+    if (activity.type === "cast") return;
 
-    // The activity must have applicable Active Effects.
-    const applicableEffects = activity.applicableEffects;
-    if (!applicableEffects?.length) return;
+    // The activity or item must target "self".
+    if (!_isSelfTargeted(activity)) return;
+
+    // Retrieve applicable Active Effects from the activity or parent item.
+    const applicableEffects = _getApplicableEffects(activity);
+    if (!applicableEffects.length) return;
 
     const actor = activity.item?.actor;
     if (!actor) return;
@@ -110,15 +170,15 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
     // Serialize effect data into flags as an array (safe from DOMPurify AND Foundry dot-expansion).
     // Keys in objects are expanded by Foundry's setFlag/create if they contain dots (like UUIDs).
     const effectFlagData = effects.map(effect => ({
-        uuid: effect.uuid,
-        data: effect.toObject()
+        uuid: effect.uuid ?? effect.id ?? "",
+        data: effect.toObject ? effect.toObject() : effect
     }));
 
     // Build one button row per effect.
     const effectButtons = effects.map(effect => {
         const effectIcon = effect.img ?? "icons/svg/aura.svg";
         const effectName = effect.name ?? effect.label ?? game.i18n.localize("ND5T.SelfEffectApplication.UnknownEffect");
-        const effectUuid = effect.uuid;
+        const effectUuid = effect.uuid ?? effect.id ?? "";
         const applyLabel = game.i18n.format("ND5T.SelfEffectApplication.Apply", { effectName });
 
         return `
