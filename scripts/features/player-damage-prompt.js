@@ -132,6 +132,16 @@ async function _onCreateChatMessage(message) {
     const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
     if (!playerPromptEnabled && !gmPromptEnabled) return;
 
+    // Skip if midi-qol is active and configured to auto-apply damage
+    if (game.modules.get("midi-qol")?.active) {
+        const midiAutoApply = globalThis.MidiQOL?.configSettings?.()?.autoApplyDamage
+            ?? game.settings.get("midi-qol", "ConfigSettings")?.autoApplyDamage;
+        if (midiAutoApply && midiAutoApply.toLowerCase().includes("yes")) {
+            debug("Player Damage Prompt | midi-qol detected and auto-applies damage — feature bypassed.");
+            return;
+        }
+    }
+
     // Only process damage rolls from attack activities by default,
     // unless non-attack damage prompts are enabled.
     const rollType = message.getFlag("dnd5e", "roll.type");

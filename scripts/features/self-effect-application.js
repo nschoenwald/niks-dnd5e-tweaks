@@ -117,6 +117,16 @@ function _getApplicableEffects(activity) {
 async function _onPostUseActivity(activity, usageConfig, results) {
     if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
 
+    // Skip if midi-qol is active and configured to auto-apply item active effects
+    if (game.modules.get("midi-qol")?.active) {
+        const autoEffects = globalThis.MidiQOL?.configSettings?.()?.autoItemEffects
+            ?? game.settings.get("midi-qol", "ConfigSettings")?.autoItemEffects;
+        if (autoEffects && autoEffects !== "off" && autoEffects !== "none") {
+            debug("Self Effect Application | midi-qol detected and auto-applies item effects — feature bypassed.");
+            return;
+        }
+    }
+
     // Ignore CastActivity containers since the cast spell's own activity will execute
     if (activity.type === "cast") return;
 
@@ -130,9 +140,27 @@ async function _onPostUseActivity(activity, usageConfig, results) {
     const actor = activity.item?.actor;
     if (!actor) return;
 
-    debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${applicableEffects.length} self-targeted effect(s).`);
+    // Filter out effects that are already active on the target actor
+    const unappliedEffects = applicableEffects.filter(effect => {
+        const effectName = effect.name ?? effect.label;
+        const effectUuid = effect.uuid ?? effect.id;
+        return !actor.effects.some(e =>
+            !e.disabled && (
+                e.origin === activity.item?.uuid ||
+                e.origin === effectUuid ||
+                (effectName && e.name === effectName)
+            )
+        );
+    });
 
-    await _sendSelfEffectPrompt(actor, activity, applicableEffects);
+    if (!unappliedEffects.length) {
+        debug(`Self Effect Application | All self effects for "${activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
+        return;
+    }
+
+    debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
+
+    await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
 }
 
 // ── Chat card creation ───────────────────────────────────────────────

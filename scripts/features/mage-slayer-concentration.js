@@ -95,14 +95,16 @@ function _onPreApplyDamage(defenderActor, amount, _updates, options) {
     // Defender must be concentrating
     if (!defenderActor?.concentration?.effects?.size) return;
 
-    // Resolve the attacking actor from the originating chat message
+    // Resolve the attacking actor from the originating chat message or workflow
+    let attackerActor = null;
     const originMsg = options?.originatingMessage;
-    if (!originMsg) return;
-
-    const attackerActorId = originMsg.speaker?.actor;
-    if (!attackerActorId) return;
-
-    const attackerActor = game.actors.get(attackerActorId);
+    if (originMsg?.speaker?.actor) {
+        attackerActor = game.actors.get(originMsg.speaker.actor);
+    }
+    if (!attackerActor) {
+        const wfActor = options?.workflow?.actor ?? options?.item?.actor ?? options?.midi?.workflow?.actor;
+        if (wfActor) attackerActor = wfActor;
+    }
     if (!attackerActor) return;
 
     if (!_hasMageSlayer(attackerActor)) return;

@@ -44,6 +44,16 @@ async function _onDamageActor(actor, changes, update, userId) {
     // If the GM has disabled concentration tracking globally, we should not auto-roll either.
     if (game.settings.get("dnd5e", "disableConcentration")) return;
 
+    // Automatically skip if midi-qol is active and configured to handle concentration checks
+    if (game.modules.get("midi-qol")?.active) {
+        const midiDoConc = globalThis.MidiQOL?.configSettings?.()?.doConcentrationCheck
+            ?? game.settings.get("midi-qol", "ConfigSettings")?.doConcentrationCheck;
+        if (midiDoConc && midiDoConc !== "none") {
+            debug("Auto-Roll Concentration | midi-qol detected and handles concentration checks — feature bypassed to avoid duplicate rolls.");
+            return;
+        }
+    }
+
     // Only process if total net HP change is negative (damage)
     if (!changes || typeof changes.total !== "number" || changes.total >= 0) return;
 
@@ -179,14 +189,15 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
  * @param {HTMLElement} html
  */
 function _onRenderChatMessage(message, html) {
-    // Only process messages flagged as a concentration save by our module.
+    // Process messages flagged as a concentration save by our module or by midi-qol.
     // _onRollConcentration stamps this flag on ALL concentration saves (auto-rolled or manual)
     // so we don't need to rely on the native roll.options.isConcentration which is not set
     // by the dnd5e system on the serialised Roll object.
-    if (!message.flags?.[MODULE_ID]?.isConcentrationSave) return;
+    const isMidiConc = message.flags?.["midi-qol"]?.isConcentrationCheck;
+    if (!message.flags?.[MODULE_ID]?.isConcentrationSave && !isMidiConc) return;
 
     // Resolve the actor
-    const actorUuid = message.flags?.[MODULE_ID]?.actorUuid;
+    const actorUuid = message.flags?.[MODULE_ID]?.actorUuid ?? message.flags?.["midi-qol"]?.actorUuid;
     let actor = actorUuid ? fromUuidSync(actorUuid) : null;
     if (!actor && message.speaker?.actor) {
         actor = game.actors.get(message.speaker.actor);

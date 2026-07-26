@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.13.4] - 2026-07-26
+### Improved
+- **midi-qol Compatibility & Optimization**:
+  - **Auto-Roll Concentration Saves**: Automatically detects if `midi-qol` is active and configured to process concentration checks (`doConcentrationCheck !== "none"`). When midi-qol handles concentration checks, `niks-dnd5e-tweaks` automatically yields to prevent duplicate concentration save rolls. Expanded chat card processing so the "End Concentration" button works on midi-qol concentration roll cards.
+  - **Self Effect Application**: Automatically yields when `midi-qol` is configured to auto-apply item active effects (`autoItemEffects !== "off"`). Also filters out effects that are already active on the target actor to avoid redundant prompt cards.
+  - **Player Damage Prompt**: Automatically yields when `midi-qol` is configured to auto-apply damage (`autoApplyDamage` mode is "yes*") to prevent duplicate damage prompt cards or double damage application.
+  - **Mage Slayer Concentration**: Enhanced attacker actor resolution in `dnd5e.preApplyDamage` to check midi-qol workflow options (`options.workflow.actor`, `options.item.actor`, `options.midi.workflow.actor`), allowing Mage Slayer concentration disadvantage to function seamlessly when damage is applied via midi-qol.
+  - **Documentation**: Updated `README.md` to detail the smart automatic compatibility handling for midi-qol settings.
+
 ## [14.13.3] - 2026-07-26
 ### Added
 - **Auto-End Class Features**: Expanded auto-ending class feature effects (`scripts/features/auto-end-class-features.js`) when an actor gains an incapacitating status:

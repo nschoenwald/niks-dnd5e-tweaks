@@ -83,19 +83,17 @@ This module includes automatic compatibility checks for other popular modules. N
 
 ### midi-qol
 
-[midi-qol](https://gitlab.com/tposney/midi-qol) provides its own comprehensive combat automation workflow, including auto-rolling damage and applying saves. The following features are **automatically disabled** when midi-qol is active to avoid duplicate rolls or conflicting behaviour:
+[midi-qol](https://gitlab.com/tposney/midi-qol) provides its own comprehensive combat automation workflow, including auto-rolling damage and applying saves. The following features include **smart automatic compatibility checks** with midi-qol settings to avoid duplicate actions or conflicting behaviour:
 
-| Feature | Reason |
+| Feature | Behavior with midi-qol |
 |---|---|
-| **Auto-Open Damage Dialog for Saves** | midi-qol manages the entire activity workflow and auto-rolls damage itself. Running both would produce duplicate damage dialogs. |
+| **Auto-Open Damage Dialog for Saves** | **Automatically disabled** when midi-qol is active, as midi-qol manages activity damage workflows. |
+| **Auto-Roll Concentration Saves** | **Automatically bypassed** if midi-qol is configured to handle concentration checks (`doConcentrationCheck !== "none"`). The "End Concentration" button continues to be injected into concentration check roll cards. |
+| **Self Effect Application** | **Automatically bypassed** if midi-qol is configured to auto-apply item active effects (`autoItemEffects !== "off"`). Also filters out any effects already active on the target actor. |
+| **Player Damage Prompt** | **Automatically bypassed** if midi-qol is configured to auto-apply damage (`autoApplyDamage` mode contains "yes"). |
+| **Mage Slayer Concentration** | Fully compatible with midi-qol damage application workflows. |
 
-The following feature is **not** automatically disabled but is **recommended to be turned off** manually when using midi-qol:
-
-| Feature | Reason |
-|---|---|
-| **Auto-Roll Concentration Saves** | midi-qol manages its own concentration save workflow. Running both may produce duplicate concentration rolls. Disable this feature in Module Settings when using midi-qol. |
-
-Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, etc.) coexist safely with midi-qol — they either use idempotent checks to avoid duplicating effects, or provide purely additive UI enhancements that don't interfere with midi-qol's workflow.
+Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, Auto-End Class Features, etc.) coexist safely with midi-qol — using idempotent checks to avoid duplicating effects or providing purely additive UI enhancements that do not interfere with midi-qol.
 
 ---
 
