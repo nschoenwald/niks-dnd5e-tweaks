@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.13.3] - 2026-07-26
+### Added
+- **Auto-End Class Features**: Expanded auto-ending class feature effects (`scripts/features/auto-end-class-features.js`) when an actor gains an incapacitating status:
+  - **Barbarian Rage**: Supports Level 15+ Barbarian **Persistent Rage** (Rage only ends early on `unconscious` or `dead` condition for level 15+ Barbarians).
+  - **Sea Druid's Wrath of the Sea** (`wrath-of-the-sea`): Automatically ends when the token becomes incapacitated.
+  - **Star Druid's Starry Form** (`starry-form`): Automatically ends when the token becomes incapacitated.
+- **Refactoring**: Split class feature auto-end logic out of `auto-end-concentration.js` into its own dedicated module (`scripts/features/auto-end-class-features.js`).
+
 ## [14.13.2] - 2026-07-26
 ### Fixed
 - **Self Effect Application Prompt**: Fixed self-effect application prompt cards not appearing for self-targeted spells (e.g. *Shield*, *Mirror Image*, *Divine Favor*, *Armor of Agathys*, *Absorb Elements*). In DnD5e v5.2+, spell activities do not duplicate target data on the activity object unless overridden (`activity.target.override = false`), so target criteria now check the parent item (`item.system.target.affects.type`, `item.system.range.units`), and effect retrieval falls back to non-transfer ActiveEffects on the parent item when `activity.applicableEffects` is empty.

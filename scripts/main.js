@@ -19,6 +19,7 @@ import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
 import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
+import { initAutoEndClassFeatures } from "./features/auto-end-class-features.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
 import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
 import { initSelfEffectApplication } from "./features/self-effect-application.js";
@@ -503,7 +504,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoEndRage", {
         name: "Auto-End Rage",
-        hint: "Automatically ends a Barbarian's Rage effect when the token becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned. Identifies rage by the source item's identifier or by effect name (\"Rage\" / \"Raging\").",
+        hint: "Automatically ends a Barbarian's Rage effect when gaining concentration-breaking conditions (or unconscious/dead for level 15+ Barbarians with Persistent Rage). Identifies rage by the source item's identifier or by effect name (\"Rage\" / \"Raging\").",
         scope: "world",
         config: true,
         type: Boolean,
@@ -584,6 +585,7 @@ Hooks.once("setup", () => {
     initAutoRollSaveDamage();
     initPlayerDamagePrompt();
     initAutoEndConcentration();
+    initAutoEndClassFeatures();
     initAutoRollConcentration();
     initMageSlayerConcentration();
     initSelfEffectApplication();
