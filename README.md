@@ -35,6 +35,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold **Shift** while placing to temporarily override and place freely. Cones and rays are not affected. Compatible with both Foundry V13 (MeasuredTemplates) and V14 (Regions).
 * **Auto-Clear Movement History**: Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).
 * **Disable Underground Token Hiding**: Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Compatible with Foundry V14 native Scene Levels. Disabled by default.
+* **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
 
 ### Group 3: Automation & QOL Tasks
 
@@ -69,7 +70,6 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 * **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
   * *↳ Allow Shift-Click to Bypass* — when enabled, players can hold **Shift** while clicking the Compendium tab to access the standard Foundry compendium sidebar instead of the forced browser. Enabled by default.
-* **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
 
 
 
@@ -96,6 +96,10 @@ This module includes automatic compatibility checks for other popular modules. N
 | **Mage Slayer Concentration** | Fully compatible with midi-qol damage application workflows. |
 
 Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, Auto-End Class Features, etc.) coexist safely with midi-qol — using idempotent checks to avoid duplicating effects or providing purely additive UI enhancements that do not interfere with midi-qol.
+
+### Tidy 5e Sheets
+
+[Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets) is fully supported. Features that interact with character sheets (such as the **Item/Spell/Feature Add: Choice Dialog**) natively integrate with Tidy 5e Sheets (both Classic and Quadrone layouts) alongside standard DnD5e sheets (V1 & V2).
 
 ---
 

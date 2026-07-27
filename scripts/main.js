@@ -212,6 +212,16 @@ Hooks.once("init", () => {
         requiresReload: true
     });
 
+    game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
+        name: "Item/Spell/Feature Add: Choice Dialog",
+        hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
@@ -535,15 +545,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
-        name: "Item/Spell/Feature Add: Choice Dialog",
-        hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
 
 
 
