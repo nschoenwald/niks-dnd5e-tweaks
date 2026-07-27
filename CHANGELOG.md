@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.14.1] - 2026-07-27
+## [14.14.2] - 2026-07-27
 ### Added
 - **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, prompts the user to select whether to create a new document directly or open the DnD5e Compendium Browser.
   - **Default Choice**: "Browse Compendium" is focused as the default primary button in the dialog.
