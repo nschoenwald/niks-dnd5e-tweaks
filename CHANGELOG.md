@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [14.13.5] - 2026-07-27
 ### Improved
 - **Self Effect Application**: Extended self-effect application from items that explicitly/naturally target "self" to also include items targeting other creatures (e.g., *Haste*, *Invisibility*, *Fly*, *Cure Wounds*, *Bless*, *Shield of Faith*, *Sanctuary*) when the user manually targets their own token on the canvas or in the activity usage chat card.
+- **Self Effect Application**: Fixed a bug where un-applied item template effects (displayed under "Unavailable Effects" on the character sheet, such as *Mage Armor*) were incorrectly treated as already-active effects on the actor, preventing prompt cards from appearing.
 - **Auto-Clear Movement History**: Simplified configuration by removing sub-settings. When enabled, token movement history trails are now always automatically cleared for all combatants on every turn change and when combat starts.
 
 ## [14.13.4] - 2026-07-26

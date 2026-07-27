@@ -104,14 +104,20 @@ function _hasManualSelfTarget(actor, results) {
     if (!actor) return false;
 
     const actorUuid = actor.uuid;
-    const activeTokenUuids = new Set(actor.getActiveTokens().map(t => t.document?.uuid || t.uuid));
+    const actorId = actor.id;
+    const activeTokens = actor.getActiveTokens();
+    const activeTokenUuids = new Set(activeTokens.map(t => t.document?.uuid || t.uuid));
+    const activeTokenIds = new Set(activeTokens.map(t => t.id || t.document?.id));
 
     // 1. Check chat message flags from the activity usage
     const msgTargets = results?.message?.getFlag?.("dnd5e", "targets")
         || results?.message?.flags?.dnd5e?.targets;
     if (Array.isArray(msgTargets) && msgTargets.length > 0) {
         const isSelfInMsg = msgTargets.some(t =>
-            t.uuid === actorUuid || activeTokenUuids.has(t.uuid)
+            t.uuid === actorUuid ||
+            (t.uuid && actorId && t.uuid.includes(actorId)) ||
+            activeTokenUuids.has(t.uuid) ||
+            (t.id && activeTokenIds.has(t.id))
         );
         if (isSelfInMsg) return true;
     }
@@ -119,8 +125,9 @@ function _hasManualSelfTarget(actor, results) {
     // 2. Check game.user.targets (canvas targeted tokens)
     if (game.user?.targets?.size > 0) {
         for (const token of game.user.targets) {
-            if (token.actor === actor || token.actor?.uuid === actorUuid) return true;
+            if (token.actor === actor || token.actor?.uuid === actorUuid || (token.actor?.id && actorId && token.actor.id === actorId)) return true;
             if (token.document?.uuid && activeTokenUuids.has(token.document.uuid)) return true;
+            if (token.id && activeTokenIds.has(token.id)) return true;
         }
     }
 
@@ -182,13 +189,16 @@ async function _onPostUseActivity(activity, usageConfig, results) {
     const unappliedEffects = applicableEffects.filter(effect => {
         const effectName = effect.name ?? effect.label;
         const effectUuid = effect.uuid ?? effect.id;
-        return !actor.effects.some(e =>
-            !e.disabled && (
-                e.origin === activity.item?.uuid ||
-                e.origin === effectUuid ||
-                (effectName && e.name === effectName)
-            )
-        );
+        return !actor.effects.some(e => {
+            // Ignore template effects sitting on items; only check applied effects directly on the actor
+            if (e.parent && e.parent !== actor && e.parent.documentName !== "Actor") return false;
+            if (e.disabled || e.isSuppressed) return false;
+
+            if (effectUuid && e.origin === effectUuid) return true;
+            if (activity.item?.uuid && e.origin === activity.item.uuid) return true;
+            if (effectName && e.name === effectName) return true;
+            return false;
+        });
     });
 
     if (!unappliedEffects.length) {
@@ -381,6 +391,7 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
 
         // Find existing effect on actor: match by effect UUID, parent item UUID, or normalized name/label
         const existingEffect = actor.effects.find(e => {
+            if (e.parent && e.parent !== actor && e.parent.documentName !== "Actor") return false;
             if (effectUuid && e.origin === effectUuid) return true;
             if (itemUuid && e.origin === itemUuid) return true;
             const eName = (e.name || e.label || "").trim().toLowerCase();
