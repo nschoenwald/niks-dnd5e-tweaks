@@ -5,13 +5,16 @@ import { MODULE_ID, log, debug } from "../main.js";
  *
  * Compatible with standard DnD5e Sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone).
  *
- * When clicking the '+' button on an actor sheet in the Items, Spells, or Features tab:
- *   - Prompts the user to choose between creating a new document or opening the Compendium Browser.
- *   - Defaults to "Browse Compendium" (placed on the left).
- *   - Spells tab: Filters by actor's class(es) (e.g. `class:wizard`, `class:cleric`) and spell level.
- *   - Items tab: Opens the Compendium Browser to the Physical Items tab.
- *   - Features tab: Opens the Compendium Browser to the Feats tab.
- *   - Holding Shift while clicking bypasses the prompt and performs default creation.
+ * Intercepts clicks on page-level and sub-category/section add buttons on character sheets:
+ *   - Items tab (inventory, equipment, physical items)
+ *   - Spells tab (spellbook, cantrips, spell slot levels)
+ *   - Features tab (features, feats, class features, racial traits)
+ *
+ * Choice Dialog Options:
+ *   - "Browse Compendium" (placed on the left, set as default choice)
+ *   - "Create New Item/Spell/Feature"
+ *
+ * Holding Shift while clicking bypasses the prompt and performs default creation directly.
  */
 
 export function initSheetPlusCompendium() {
@@ -75,20 +78,17 @@ function _attachPlusButtonInterceptor(app, html) {
         // Bypass if event was dispatched internally to execute standard creation
         if (event.nd5tBypass) return;
 
-        // Check if the clicked target or ancestor is a plus/add button
-        // Matches standard DnD5e buttons as well as Tidy 5e Sheets buttons (.item-create, etc.)
-        const button = event.target.closest(
-            'button.create-child, .item-create, [data-action="addDocument"], [data-action="create"], [data-action="create-item"], [data-action="add-item"], [data-action="createItem"], [data-action="createSpell"], [data-action="createFeature"]'
-        );
+        // Find the add/create button (page-level or sub-category section header button)
+        const button = _findPlusButton(event.target);
         if (!button) return;
 
         // Determine active tab name
         const tabName = _getActiveTabName(app, rootElement, button);
-        debug(`Plus button clicked on sheet. Active tab: "${tabName}"`, button);
+        debug(`Plus button clicked on sheet. Resolved tab: "${tabName}"`, button);
 
-        const isItemsTab = tabName === "inventory" || tabName === "items";
-        const isSpellsTab = tabName === "spells" || tabName === "spellbook";
-        const isFeaturesTab = tabName === "features" || tabName === "feature";
+        const isItemsTab = tabName === "inventory" || tabName === "items" || tabName === "equipment" || tabName === "container";
+        const isSpellsTab = tabName === "spells" || tabName === "spellbook" || tabName.startsWith("spell");
+        const isFeaturesTab = tabName === "features" || tabName === "feature" || tabName === "feats" || tabName === "actions";
 
         if (!isItemsTab && !isSpellsTab && !isFeaturesTab) return;
 
@@ -114,8 +114,44 @@ function _attachPlusButtonInterceptor(app, html) {
     }, { capture: true });
 }
 
+/**
+ * Finds add/create buttons (both page-level and sub-category section header buttons)
+ * across standard DnD5e sheets and Tidy 5e Sheets (Classic & Quadrone).
+ */
+function _findPlusButton(target) {
+    if (!target) return null;
+
+    // 1. Direct class/action match for standard & Tidy 5e buttons
+    const directMatch = target.closest(
+        'button.create-child, .item-create, [data-action="addDocument"], [data-action="create"], [data-action="create-item"], [data-action="add-item"], [data-action="createItem"], [data-action="createSpell"], [data-action="createFeature"]'
+    );
+    if (directMatch) return directMatch;
+
+    // 2. Clickable container (a, button, role=button) containing a plus icon or matching creation tooltips
+    const clickable = target.closest('a, button, [role="button"]');
+    if (!clickable) return null;
+
+    // Check for plus icons (.fa-plus, .fa-plus-circle, .fa-circle-plus, etc.)
+    const hasPlusIcon = !!clickable.querySelector('.fa-plus, .fa-plus-circle, .fa-circle-plus')
+        || clickable.classList.contains('fa-plus')
+        || clickable.classList.contains('fa-plus-circle')
+        || clickable.classList.contains('fa-circle-plus');
+
+    if (hasPlusIcon) {
+        return clickable;
+    }
+
+    // Check tooltip/title/aria-label for creation intent
+    const tooltipText = (clickable.getAttribute('data-tooltip') || clickable.getAttribute('title') || clickable.getAttribute('aria-label') || '').toLowerCase();
+    if (tooltipText.includes('create') || tooltipText.includes('add') || tooltipText.includes('itemcreate') || tooltipText.includes('featureadd') || tooltipText.includes('spelladd')) {
+        return clickable;
+    }
+
+    return null;
+}
+
 function _getActiveTabName(app, rootElement, button) {
-    // 1. Check closest container ancestor for data attributes (Tidy5e, dnd5e)
+    // 1. Check closest container ancestor for data attributes (Tidy5e & dnd5e)
     const tabContainer = button.closest("[data-tab-contents-for], [data-tab-id], [data-tab]");
     if (tabContainer) {
         const id = tabContainer.getAttribute("data-tab-contents-for")
@@ -135,7 +171,14 @@ function _getActiveTabName(app, rootElement, button) {
         if (id) return id;
     }
 
-    // 3. App tab properties (Tidy5e currentTab, dnd5e tabGroups, etc.)
+    // 3. Check section key or dataset on button/ancestor
+    const sectionEl = button.closest("[data-section], [data-section-key]");
+    if (sectionEl) {
+        const secKey = sectionEl.getAttribute("data-section") || sectionEl.getAttribute("data-section-key");
+        if (secKey) return secKey;
+    }
+
+    // 4. App tab properties (Tidy5e currentTab, dnd5e tabGroups, etc.)
     const appTab = (typeof app.currentTab === "object" ? app.currentTab?.id : app.currentTab)
         || app.tab
         || app.tabGroups?.primary
@@ -297,14 +340,14 @@ function _openCompendiumBrowserForSpells(actor, level) {
 }
 
 function _getSpellLevelFromElement(target) {
-    const el = target.closest("[data-level], [data-item-level], [data-spell-level], [data-prop]");
+    const el = target.closest("[data-level], [data-item-level], [data-spell-level], [data-prop], [data-filter-level], [data-section-key], [data-key]");
     if (!el) return null;
 
-    const val = el.dataset.level ?? el.dataset.itemLevel ?? el.dataset.spellLevel ?? el.dataset.prop;
+    const val = el.dataset.level ?? el.dataset.itemLevel ?? el.dataset.spellLevel ?? el.dataset.prop ?? el.dataset.filterLevel ?? el.dataset.sectionKey ?? el.dataset.key;
     if (val === undefined || val === null) return null;
 
     const strVal = String(val).toLowerCase();
-    if (strVal === "cantrip" || strVal === "spell0") return 0;
+    if (strVal === "cantrip" || strVal === "spell0" || strVal === "0") return 0;
     if (strVal.startsWith("spell")) {
         const num = parseInt(strVal.replace("spell", ""), 10);
         if (!isNaN(num)) return num;

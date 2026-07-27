@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.4] - 2026-07-27
+### Improved
+- **Item/Spell/Feature Add: Choice Dialog**:
+  - **Tidy 5e Sheets Subcategory Add Buttons**: Expanded button resolution to catch all sub-category section header add buttons (`.tidy-table-button`, plus icons in table headers) and empty-state section add buttons across Tidy 5e Sheets (Classic & Quadrone) for Items, Spells, and Features tabs.
+
 ## [14.14.3] - 2026-07-27
 ### Improved
 - **Item/Spell/Feature Add: Choice Dialog**:
