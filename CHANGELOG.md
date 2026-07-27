@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.0] - 2026-07-27
+### Added
+- **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, prompts the user to select whether to create a new document directly or open the DnD5e Compendium Browser.
+  - **Default Choice**: "Browse Compendium" is focused as the default primary button in the dialog.
+  - **Spells Compendium Filtering**: Selecting "Browse Compendium" for spells automatically pre-filters the Compendium Browser for the actor's class(es) (e.g. `class:wizard`, `class:cleric`) and the spell level of the section clicked (or the actor's castable spell level range).
+  - **Items Compendium Filtering**: Selecting "Browse Compendium" for items opens the Compendium Browser on the physical items tab.
+  - **Features Compendium Filtering**: Selecting "Browse Compendium" for features opens the Compendium Browser on the feats tab.
+  - **Shift-Click Bypass**: Holding **Shift** while clicking the '+' button bypasses the prompt dialog and proceeds directly with standard item/spell/feature creation.
+  - **Configurable Setting**: Gated by a new world setting (`enableSheetPlusCompendium`), enabled by default.
+
+
 ## [14.13.5] - 2026-07-27
 ### Improved
 - **Self Effect Application**: Extended self-effect application from items that explicitly/naturally target "self" to also include items targeting other creatures (e.g., *Haste*, *Invisibility*, *Fly*, *Cure Wounds*, *Bless*, *Shield of Faith*, *Sanctuary*) when the user manually targets their own token on the canvas or in the activity usage chat card.
