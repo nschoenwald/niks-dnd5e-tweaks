@@ -1,5 +1,5 @@
 import { initForceCompendiumBrowser } from "./features/force-compendium-browser.js";
-import { registerAutoClearMovementSettings, initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/auto-clear-movement-history.js";
+import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/auto-clear-movement-history.js";
 import { initSceneNavName } from "./features/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.js";
 import { enableProneRotation, disableProneRotation } from "./features/prone-rotation.js";
@@ -187,7 +187,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
         name: "Auto-Clear Movement History",
-        hint: "Automatically clears token movement history trails at the start of each combat turn (GM client only). Sub-settings below control exactly when clearing occurs.",
+        hint: "Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).",
         scope: "world",
         config: true,
         type: Boolean,
@@ -198,9 +198,6 @@ Hooks.once("init", () => {
             else disableAutoClearMovementHistory();
         }
     });
-
-    // Register its sub-settings (these belong to movement history logically)
-    registerAutoClearMovementSettings();
 
     game.settings.register(MODULE_ID, "disableUndergroundTokenHiding", {
         name: "Disable Underground Token Hiding",

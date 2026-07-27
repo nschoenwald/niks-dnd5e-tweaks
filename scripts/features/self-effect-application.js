@@ -93,6 +93,41 @@ function _isSelfTargeted(activity) {
 }
 
 /**
+ * Check whether the actor using the activity was manually targeted on the canvas
+ * or recorded in the usage chat message targets flag.
+ *
+ * @param {Actor5e} actor
+ * @param {ActivityUsageResults} [results]
+ * @returns {boolean}
+ */
+function _hasManualSelfTarget(actor, results) {
+    if (!actor) return false;
+
+    const actorUuid = actor.uuid;
+    const activeTokenUuids = new Set(actor.getActiveTokens().map(t => t.document?.uuid || t.uuid));
+
+    // 1. Check chat message flags from the activity usage
+    const msgTargets = results?.message?.getFlag?.("dnd5e", "targets")
+        || results?.message?.flags?.dnd5e?.targets;
+    if (Array.isArray(msgTargets) && msgTargets.length > 0) {
+        const isSelfInMsg = msgTargets.some(t =>
+            t.uuid === actorUuid || activeTokenUuids.has(t.uuid)
+        );
+        if (isSelfInMsg) return true;
+    }
+
+    // 2. Check game.user.targets (canvas targeted tokens)
+    if (game.user?.targets?.size > 0) {
+        for (const token of game.user.targets) {
+            if (token.actor === actor || token.actor?.uuid === actorUuid) return true;
+            if (token.document?.uuid && activeTokenUuids.has(token.document.uuid)) return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Retrieve applicable Active Effects for an activity or its parent item.
  *
  * @param {Activity} activity
@@ -130,15 +165,18 @@ async function _onPostUseActivity(activity, usageConfig, results) {
     // Ignore CastActivity containers since the cast spell's own activity will execute
     if (activity.type === "cast") return;
 
-    // The activity or item must target "self".
-    if (!_isSelfTargeted(activity)) return;
+    const actor = activity.item?.actor;
+    if (!actor) return;
+
+    // Check if the activity/item intrinsically targets "self" or if the actor manually targeted themselves
+    const isIntrinsicSelf = _isSelfTargeted(activity);
+    const isManualSelf = _hasManualSelfTarget(actor, results);
+
+    if (!isIntrinsicSelf && !isManualSelf) return;
 
     // Retrieve applicable Active Effects from the activity or parent item.
     const applicableEffects = _getApplicableEffects(activity);
     if (!applicableEffects.length) return;
-
-    const actor = activity.item?.actor;
-    if (!actor) return;
 
     // Filter out effects that are already active on the target actor
     const unappliedEffects = applicableEffects.filter(effect => {
