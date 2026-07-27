@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.14.2] - 2026-07-27
+## [14.14.3] - 2026-07-27
+### Improved
+- **Item/Spell/Feature Add: Choice Dialog**:
+  - **Tidy 5e Sheets Compatibility**: Added full support for Tidy 5e Sheets (both Classic and Quadrone layouts) via dedicated render hooks (`tidy5e-sheet.renderActorSheet`) and support for Tidy5e tab attributes (`data-tab-contents-for`, `data-tab-id`) and button selectors (`.item-create`).
+
+## [14.14.0] - 2026-07-27
 ### Added
 - **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, prompts the user to select whether to create a new document directly or open the DnD5e Compendium Browser.
-  - **Default Choice**: "Browse Compendium" is focused as the default primary button in the dialog.
+  - **Default Choice**: "Browse Compendium" is placed on the left as the default primary button in the dialog.
   - **Spells Compendium Filtering**: Selecting "Browse Compendium" for spells automatically pre-filters the Compendium Browser for the actor's class(es) (e.g. `class:wizard`, `class:cleric`) and the spell level of the section clicked (or the actor's castable spell level range).
   - **Items Compendium Filtering**: Selecting "Browse Compendium" for items opens the Compendium Browser on the physical items tab.
   - **Features Compendium Filtering**: Selecting "Browse Compendium" for features opens the Compendium Browser on the feats tab.

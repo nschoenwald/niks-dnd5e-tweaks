@@ -69,7 +69,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 * **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
   * *↳ Allow Shift-Click to Bypass* — when enabled, players can hold **Shift** while clicking the Compendium tab to access the standard Foundry compendium sidebar instead of the forced browser. Enabled by default.
-* **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
+* **Item/Spell/Feature Add: Choice Dialog**: When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
 
 
 

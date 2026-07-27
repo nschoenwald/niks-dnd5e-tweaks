@@ -3,9 +3,11 @@ import { MODULE_ID, log, debug } from "../main.js";
 /**
  * Item, Spell & Feature Add: Choice Dialog & Compendium Filter
  *
- * When clicking the '+' button on a character sheet in the Items, Spells, or Features tab:
+ * Compatible with standard DnD5e Sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone).
+ *
+ * When clicking the '+' button on an actor sheet in the Items, Spells, or Features tab:
  *   - Prompts the user to choose between creating a new document or opening the Compendium Browser.
- *   - Defaults to "Browse Compendium".
+ *   - Defaults to "Browse Compendium" (placed on the left).
  *   - Spells tab: Filters by actor's class(es) (e.g. `class:wizard`, `class:cleric`) and spell level.
  *   - Items tab: Opens the Compendium Browser to the Physical Items tab.
  *   - Features tab: Opens the Compendium Browser to the Feats tab.
@@ -17,11 +19,17 @@ export function initSheetPlusCompendium() {
         _attachPlusButtonInterceptor(app, html);
     };
 
+    // Standard DnD5e hooks
     Hooks.on("renderActorSheet", attach);
     Hooks.on("renderApplicationV2", (app, html) => {
         if (app.document?.documentName === "Actor" || app.actor || (globalThis.dnd5e?.applications?.actor?.BaseActorSheet && app instanceof globalThis.dnd5e.applications.actor.BaseActorSheet)) {
             attach(app, html);
         }
+    });
+
+    // Tidy 5e Sheets dedicated hook
+    Hooks.on("tidy5e-sheet.renderActorSheet", (app, element) => {
+        attach(app, element);
     });
 
     // Also scan any already-open actor sheets on init/setup
@@ -40,7 +48,7 @@ function _scanAndAttachOpenSheets() {
 }
 
 function _attachPlusButtonInterceptor(app, html) {
-    // Robustly resolve the root HTMLElement across V1, V2 App parts, or app.element
+    // Robustly resolve the root HTMLElement across V1, V2 App parts, Tidy5e, or app.element
     let rootElement = app.element;
     if (!rootElement && html) {
         if (html instanceof HTMLElement) rootElement = html;
@@ -54,7 +62,7 @@ function _attachPlusButtonInterceptor(app, html) {
 
     // Only target actor sheets where the document is an actor
     const actor = app.actor || app.document;
-    if (!actor || actor.documentName !== "Actor") return;
+    if (!actor || (actor.documentName !== "Actor" && actor.constructor?.name !== "Actor5e")) return;
 
     if (rootElement.dataset.nd5tPlusCompendiumBound) return;
     rootElement.dataset.nd5tPlusCompendiumBound = "true";
@@ -68,8 +76,9 @@ function _attachPlusButtonInterceptor(app, html) {
         if (event.nd5tBypass) return;
 
         // Check if the clicked target or ancestor is a plus/add button
+        // Matches standard DnD5e buttons as well as Tidy 5e Sheets buttons (.item-create, etc.)
         const button = event.target.closest(
-            'button.create-child, [data-action="addDocument"], [data-action="create"], .item-create, [data-action="createItem"], [data-action="createSpell"]'
+            'button.create-child, .item-create, [data-action="addDocument"], [data-action="create"], [data-action="create-item"], [data-action="add-item"], [data-action="createItem"], [data-action="createSpell"], [data-action="createFeature"]'
         );
         if (!button) return;
 
@@ -106,16 +115,34 @@ function _attachPlusButtonInterceptor(app, html) {
 }
 
 function _getActiveTabName(app, rootElement, button) {
-    // 1. Check if button itself is inside a [data-tab] container
-    const tabEl = button.closest("[data-tab]");
-    if (tabEl?.dataset?.tab) return tabEl.dataset.tab;
+    // 1. Check closest container ancestor for data attributes (Tidy5e, dnd5e)
+    const tabContainer = button.closest("[data-tab-contents-for], [data-tab-id], [data-tab]");
+    if (tabContainer) {
+        const id = tabContainer.getAttribute("data-tab-contents-for")
+            || tabContainer.getAttribute("data-tab-id")
+            || tabContainer.getAttribute("data-tab");
+        if (id) return id;
+    }
 
-    // 2. Check active tab element in DOM
-    const activeTabEl = rootElement.querySelector(".tab.active[data-tab]") || rootElement.querySelector("[data-tab].active");
-    if (activeTabEl?.dataset?.tab) return activeTabEl.dataset.tab;
+    // 2. Check active tab element in DOM (Tidy5e data-tab-id / data-tab-contents-for, dnd5e v2, dnd5e v1)
+    const activeTabEl = rootElement.querySelector(
+        "[data-tab-id].active, [data-tab-contents-for].active, .tab.active[data-tab], [data-tab].active"
+    );
+    if (activeTabEl) {
+        const id = activeTabEl.getAttribute("data-tab-contents-for")
+            || activeTabEl.getAttribute("data-tab-id")
+            || activeTabEl.getAttribute("data-tab");
+        if (id) return id;
+    }
 
-    // 3. App tabGroups / properties
-    return app.tabGroups?.primary || app._currentTab || "";
+    // 3. App tab properties (Tidy5e currentTab, dnd5e tabGroups, etc.)
+    const appTab = (typeof app.currentTab === "object" ? app.currentTab?.id : app.currentTab)
+        || app.tab
+        || app.tabGroups?.primary
+        || app._currentTab;
+    if (appTab) return appTab;
+
+    return "";
 }
 
 function _triggerDefaultAddAction(button) {
