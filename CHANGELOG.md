@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.7] - 2026-07-29
+### Removed
+- **Player Damage Prompt**: Removed automatic cleanup of chat messages older than 10 minutes.
+
 ## [14.14.6] - 2026-07-29
 ### Changed
 - **Auto-Roll Concentration Saves**: Changed the default value of the **Fast-Forward Concentration Rolls** setting (`autoRollConcentrationFastForward`) to **"NPCs Only"** (previously "All Actors").

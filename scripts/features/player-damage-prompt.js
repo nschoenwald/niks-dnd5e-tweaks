@@ -1177,7 +1177,7 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
         </div>
     `;
 
-    const newMessage = await ChatMessage.create({
+    await ChatMessage.create({
         content,
         whisper: whisperUsers,
         speaker: Object.assign(ChatMessage.getSpeaker({ actor, token: speakerToken }), { alias: tokenName }),
@@ -1185,9 +1185,6 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
             [MODULE_ID]: { damagePrompt: true }
         }
     });
-
-    // Clean up stale damage prompts (>10 min old) for the same recipients
-    if (newMessage) _cleanupStaleDamagePrompts(newMessage);
 }
 
 /**
@@ -1482,51 +1479,6 @@ function _getModifierCellHtml(modifier) {
     return { text: modifier, cssClass: "nd5t-mod-flat" };
 }
 
-// ── Stale prompt cleanup ─────────────────────────────────────────────
-
-/**
- * Delete damage prompt chat messages older than 10 minutes.
- * Only runs on the GM client (the message author) to avoid duplicate
- * deletions.
- * @param {ChatMessage} newMessage  The newly created damage prompt.
- */
-function _cleanupStaleDamagePrompts(newMessage) {
-    const activeGM = game.users.activeGM;
-    if (activeGM) {
-        if (game.user.id !== activeGM.id) return;
-    } else {
-        const authorId = newMessage.author?.id ?? newMessage.user?.id;
-        if (game.user.id !== authorId) return;
-    }
-
-    const STALE_MS = 10 * 60 * 1000; // 10 minutes
-    const cutoff = Date.now() - STALE_MS;
-
-    const stale = [];
-    const maxMessagesToScan = 1000;
-    const contents = game.messages.contents;
-    const startIndex = Math.max(0, contents.length - maxMessagesToScan);
-
-    // Iterate backwards from newest to oldest, up to the max messages cap
-    for (let i = contents.length - 1; i >= startIndex; i--) {
-        const m = contents[i];
-        if (m.id === newMessage.id) continue;
-        
-        // Direct property access is much faster than getFlag for large collections
-        if (m.flags?.[MODULE_ID]?.damagePrompt && (m.timestamp * 1000 < cutoff)) {
-            stale.push(m);
-        }
-    }
-
-    if (!stale.length) return;
-
-    debug(`Player Damage Prompt | Cleaning up ${stale.length} stale damage prompt(s) (>10 min old)`);
-
-    const ids = stale.map(m => m.id);
-    ChatMessage.deleteDocuments(ids).catch(err => {
-        console.error("Nik's DnD5e Tweaks | Failed to delete stale damage prompts:", err);
-    });
-}
 
 // ── Button handling ──────────────────────────────────────────────────
 
