@@ -64,7 +64,13 @@ class AutoClearController {
     if (!game.user.isGM) return;
     try {
       debug(`Combat turn change detected, clearing movement histories for combat ${combat?.id}`);
-      await this.#clearForCombat(combat);
+      queueMicrotask(async () => {
+        try {
+          await this.#clearForCombat(combat);
+        } catch (err) {
+          console.error(`${MODULE_ID} | Auto-clear movement history turn hook failed:`, err);
+        }
+      });
     } catch (err) {
       console.error(`${MODULE_ID} | Auto-clear movement history turn hook failed:`, err);
     }
@@ -74,7 +80,13 @@ class AutoClearController {
     if (!game.user.isGM) return;
     try {
       debug(`Combat start detected, clearing movement histories for combat ${combat?.id}`);
-      await this.#clearForCombat(combat);
+      queueMicrotask(async () => {
+        try {
+          await this.#clearForCombat(combat);
+        } catch (err) {
+          console.error(`${MODULE_ID} | Auto-clear movement history start hook failed:`, err);
+        }
+      });
     } catch (err) {
       console.error(`${MODULE_ID} | Auto-clear movement history start hook failed:`, err);
     }

@@ -2,10 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.14.8] - 2026-07-29
+## [14.14.9] - 2026-07-29
 ### Fixed
-- **Calendaria Compatibility & Hook Safety**: Resolved an issue where an unhandled exception in `Combat Exp Tracker`'s `deleteCombat` hook could prevent third-party modules like Calendaria from unhiding their interface widgets when combat ended.
-- **Hook Guard Audit**: Added comprehensive `try...catch` guards and safe nullish flag handling across all module hooks (`deleteCombat`, `updateCombat`, `combatStart`, `createCombatant`, `preUpdateActor`, `updateActor`, `createActiveEffect`, `updateActiveEffect`, `preApplyDamage`, `preRollConcentration`, and post-activity hooks) to ensure runtime errors never break Foundry's hook dispatch chain for other modules.
+- **Calendaria Compatibility & Combat Start Race Condition**: Fixed a timing race condition where `Combat Exp Tracker` saved its tracking flag (`combat.setFlag`) synchronously inside the `combatStart` hook callback. In Foundry VTT core, `combatStart` fires *before* `started: true` is committed to the database. Writing a flag synchronously inside `combatStart` triggered an immediate `updateCombat` event while `combat.started` was still `false`, causing Calendaria's `updateCombat` listener to misidentify combat as unstarted and prematurely reset its `closedForCombat` state.
+- **Event-Driven Microtask Deferral**: Switched document updates in `Combat Exp Tracker`, `Legendary Action Placeholders`, `Death Save Prompt`, and `Auto Clear Movement History` to use `queueMicrotask()`. Side-effect document writes now defer to the next microtask tick after Foundry core commits `started: true` to the database, ensuring clean event loop isolation without arbitrary timer delays.
 
 ## [14.14.7] - 2026-07-29
 ### Removed

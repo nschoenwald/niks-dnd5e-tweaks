@@ -83,11 +83,21 @@ async function _onCombatStart(combat) {
             _classifyCombatant(combatant, npcs, pcs);
         }
 
-        await _setFlag(combat, { npcs, pcs });
-
-        debug("Combat Exp Tracker | Combat started — tracked",
-            Object.keys(npcs).length, "hostile NPC(s) and",
-            Object.keys(pcs).length, "PC(s)");
+        // Defer flag write to the next microtask tick after combat.startCombat() completes.
+        // In Foundry VTT core, combatStart fires BEFORE started: true is committed to the database.
+        // Writing a flag synchronously inside combatStart triggers an updateCombat event
+        // while combat.started is still false, causing third-party modules (like Calendaria)
+        // to misidentify combat as unstarted and clear their internal state.
+        queueMicrotask(async () => {
+            try {
+                await _setFlag(combat, { npcs, pcs });
+                debug("Combat Exp Tracker | Combat started — tracked",
+                    Object.keys(npcs).length, "hostile NPC(s) and",
+                    Object.keys(pcs).length, "PC(s)");
+            } catch (err) {
+                console.error(`Nik's DnD5e Tweaks | Failed writing XP tracker flag:`, err);
+            }
+        });
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onCombatStart for Combat Exp Tracker:`, err);
     }
@@ -157,7 +167,13 @@ async function _onDeleteCombat(combat) {
             return;
         }
 
-        await _sendExpSummary(npcs, pcs);
+        // Defer posting the XP summary chat card so ChatMessage.create runs AFTER
+        // the deleteCombat hook stack completes on all modules.
+        setTimeout(() => {
+            _sendExpSummary(npcs, pcs).catch(err => {
+                console.error(`Nik's DnD5e Tweaks | Failed to send XP summary:`, err);
+            });
+        }, 50);
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onDeleteCombat for Combat Exp Tracker:`, err);
     }

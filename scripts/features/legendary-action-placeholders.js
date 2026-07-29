@@ -80,7 +80,13 @@ export function initLegendaryActionPlaceholders() {
             });
 
             debug(`Inserting ${newCombatants.length} legendary action placeholders for combat ${combat.id}.`);
-            await combat.createEmbeddedDocuments("Combatant", newCombatants);
+            queueMicrotask(async () => {
+                try {
+                    await combat.createEmbeddedDocuments("Combatant", newCombatants);
+                } catch (err) {
+                    console.error(`Nik's DnD5e Tweaks | Failed to create legendary action placeholder combatants:`, err);
+                }
+            });
         } catch (err) {
             console.error(`Nik's DnD5e Tweaks | Error in combatStart hook for Legendary Action Placeholders:`, err);
         }

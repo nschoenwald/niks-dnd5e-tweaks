@@ -99,7 +99,13 @@ async function handleDeathSavePrompt(combat) {
     // We exclude GMs here so they don't auto-pop a dialog for every player actor.
     if (actor.isOwner && !game.user.isGM) {
         debug(`Death Save Prompt | Opening death save dialog for ${actor.name} on owning client.`);
-        await actor.rollDeathSave();
+        queueMicrotask(async () => {
+            try {
+                await actor.rollDeathSave();
+            } catch (err) {
+                console.error(`Nik's DnD5e Tweaks | Failed opening death save dialog:`, err);
+            }
+        });
         return;
     }
 
@@ -116,7 +122,13 @@ async function handleDeathSavePrompt(combat) {
     if (hasConnectedOwner) return; // Owner client is handling it via Path 1
 
     debug(`Death Save Prompt | No connected owner for ${actor.name}. Sending GM fallback chat card.`);
-    await sendDeathSavePrompt(actor);
+    queueMicrotask(async () => {
+        try {
+            await sendDeathSavePrompt(actor);
+        } catch (err) {
+            console.error(`Nik's DnD5e Tweaks | Failed sending GM death save prompt:`, err);
+        }
+    });
 }
 
 /**
