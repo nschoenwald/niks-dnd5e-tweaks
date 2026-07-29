@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.5] - 2026-07-29
+### Fixed
+- **Self Effect Application**: Fixed a bug where applying an item effect configured with `transfer: true` (such as Barbarian **Rage**) created a duplicate active effect document directly on the actor while leaving the item's transferred effect inactive on the actor. Transferred item effects are now directly enabled and disabled on the source effect document, preventing duplicate active effect documents and leftover inactive copies on the actor. Also automatically cleans up any stale duplicate non-transfer effects created on actors by earlier module versions.
+
 ## [14.14.4] - 2026-07-27
 ### Improved
 - **Item/Spell/Feature Add: Choice Dialog**:

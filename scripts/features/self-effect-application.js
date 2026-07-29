@@ -189,16 +189,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
     const unappliedEffects = applicableEffects.filter(effect => {
         const effectName = effect.name ?? effect.label;
         const effectUuid = effect.uuid ?? effect.id;
-        return !actor.effects.some(e => {
-            // Ignore template effects sitting on items; only check applied effects directly on the actor
-            if (e.parent && e.parent !== actor && e.parent.documentName !== "Actor") return false;
-            if (e.disabled || e.isSuppressed) return false;
-
-            if (effectUuid && e.origin === effectUuid) return true;
-            if (activity.item?.uuid && e.origin === activity.item.uuid) return true;
-            if (effectName && e.name === effectName) return true;
-            return false;
-        });
+        return !_isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity);
     });
 
     if (!unappliedEffects.length) {
@@ -209,6 +200,34 @@ async function _onPostUseActivity(activity, usageConfig, results) {
     debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
 
     await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
+}
+
+/**
+ * Check whether an effect is already active on an actor.
+ *
+ * @param {Actor5e} actor
+ * @param {ActiveEffect5e} effect
+ * @param {string} effectUuid
+ * @param {string} effectName
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity) {
+    if (effect.transfer && !effect.disabled && !effect.isSuppressed) return true;
+
+    const cleanName = (effectName || "").trim().toLowerCase();
+    const itemUuid = activity.item?.uuid;
+
+    return actor.effects.some(e => {
+        if (e.disabled || e.isSuppressed) return false;
+
+        if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.origin === effectUuid)) return true;
+        if (itemUuid && e.origin === itemUuid) return true;
+        const eName = (e.name || e.label || "").trim().toLowerCase();
+        if (cleanName && eName && (eName === cleanName || eName.includes(cleanName) || cleanName.includes(eName))) return true;
+
+        return false;
+    });
 }
 
 // ── Chat card creation ───────────────────────────────────────────────
@@ -385,33 +404,51 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
     try {
         let createdId = null;
 
-        // Derive parent item UUID from effect UUID (e.g. Actor.xxx.Item.yyy.ActiveEffect.zzz -> Actor.xxx.Item.yyy)
+        // Try to fetch source effect document (e.g. from item or actor)
+        const sourceEffect = effectUuid ? await fromUuid(effectUuid) : null;
         const itemUuid = effectUuid ? effectUuid.split(".ActiveEffect")[0] : null;
         const cleanTargetName = (effectName || effectData.name || effectData.label || "").trim().toLowerCase();
 
-        // Find existing effect on actor: match by effect UUID, parent item UUID, or normalized name/label
-        const existingEffect = actor.effects.find(e => {
-            if (e.parent && e.parent !== actor && e.parent.documentName !== "Actor") return false;
-            if (effectUuid && e.origin === effectUuid) return true;
-            if (itemUuid && e.origin === itemUuid) return true;
-            const eName = (e.name || e.label || "").trim().toLowerCase();
-            if (cleanTargetName && eName && (eName === cleanTargetName || eName.includes(cleanTargetName) || cleanTargetName.includes(eName))) return true;
-            return false;
-        });
+        if (sourceEffect && sourceEffect.transfer) {
+            debug(`Self Effect Application | Enabling transferred source effect "${sourceEffect.name}" (${sourceEffect.id}) on ${actor.name}`);
+            await sourceEffect.update({ disabled: false });
+            createdId = sourceEffect.id;
 
-        if (existingEffect) {
-            debug(`Self Effect Application | Enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
-            await existingEffect.update({ disabled: false, origin: effectUuid || existingEffect.origin });
-            createdId = existingEffect.id;
+            // Clean up any stale duplicate non-transfer effects created on actor by earlier module versions
+            const duplicateEffect = actor.effects.find(e =>
+                e !== sourceEffect &&
+                e.parent === actor &&
+                !e.transfer &&
+                (e.origin === effectUuid || e.origin === itemUuid || (cleanTargetName && (e.name || e.label || "").trim().toLowerCase() === cleanTargetName))
+            );
+            if (duplicateEffect) {
+                debug(`Self Effect Application | Cleaning up stale duplicate effect "${duplicateEffect.name}" (${duplicateEffect.id}) on ${actor.name}`);
+                await duplicateEffect.delete();
+            }
         } else {
-            const data = foundry.utils.deepClone(effectData);
-            delete data._id;
-            data.disabled = false;
-            data.transfer = false;
-            if (effectUuid) data.origin = effectUuid;
+            // Find existing effect on actor: match by effect UUID, parent item UUID, or normalized name/label
+            const existingEffect = actor.effects.find(e => {
+                if (effectUuid && (e.uuid === effectUuid || e.id === sourceEffect?.id || e.origin === effectUuid)) return true;
+                if (itemUuid && e.origin === itemUuid) return true;
+                const eName = (e.name || e.label || "").trim().toLowerCase();
+                if (cleanTargetName && eName && (eName === cleanTargetName || eName.includes(cleanTargetName) || cleanTargetName.includes(eName))) return true;
+                return false;
+            });
 
-            const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
-            createdId = created?.id;
+            if (existingEffect) {
+                debug(`Self Effect Application | Enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
+                await existingEffect.update({ disabled: false, origin: effectUuid || existingEffect.origin });
+                createdId = existingEffect.id;
+            } else {
+                const data = foundry.utils.deepClone(effectData);
+                delete data._id;
+                data.disabled = false;
+                data.transfer = false;
+                if (effectUuid) data.origin = effectUuid;
+
+                const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
+                createdId = created?.id;
+            }
         }
 
         debug(`Self Effect Application | ✓ Effect "${effectName}" applied to "${actor.name}" (id: ${createdId})`);
@@ -537,16 +574,18 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, actorU
 
     try {
         const actor = await fromUuid(actorUuid);
-        if (actor) {
-            const effect = actor.effects.get(createdId);
-            if (effect) {
-                // Disable the effect on undo rather than deleting it.
-                // Deleting can permanently destroy the source effect if it lives on the actor or item.
-                await effect.update({ disabled: true });
-                debug(`Self Effect Application | ✓ Disabled effect ${createdId} on "${actor.name}"`);
-            } else {
-                debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor.name}"`);
-            }
+        let effect = effectUuid ? await fromUuid(effectUuid) : null;
+        if (!effect && actor) {
+            effect = actor.effects.get(createdId);
+        }
+
+        if (effect) {
+            // Disable the effect on undo rather than deleting it.
+            // Deleting can permanently destroy the source effect if it lives on the actor or item.
+            await effect.update({ disabled: true });
+            debug(`Self Effect Application | ✓ Disabled effect ${createdId} on "${actor?.name ?? actorUuid}"`);
+        } else {
+            debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor?.name ?? actorUuid}"`);
         }
 
         // Build a new effectsApplied without this effect's entry.
