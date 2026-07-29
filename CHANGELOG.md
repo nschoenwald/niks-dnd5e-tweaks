@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.6] - 2026-07-29
+### Changed
+- **Auto-Roll Concentration Saves**: Changed the default value of the **Fast-Forward Concentration Rolls** setting (`autoRollConcentrationFastForward`) to **"NPCs Only"** (previously "All Actors").
+
+### Fixed
+- **Sheet Plus Compendium**: Fixed an issue where the choice dialog erroneously triggered on item quantity plus buttons (`+`) and other non-creation sheet buttons. Added strict button filtering (`_isExcludedButton` and targeted button matching) to ensure the dialog only triggers on actual item, spell, or feature creation buttons across DnD5e and Tidy 5e sheets.
+
 ## [14.14.5] - 2026-07-29
 ### Fixed
 - **Self Effect Application**: Fixed a bug where applying an item effect configured with `transfer: true` (such as Barbarian **Rage**) created a duplicate active effect document directly on the actor while leaving the item's transferred effect inactive on the actor. Transferred item effects are now directly enabled and disabled on the source effect document, preventing duplicate active effect documents and leftover inactive copies on the actor. Also automatically cleans up any stale duplicate non-transfer effects created on actors by earlier module versions.

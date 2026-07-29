@@ -457,14 +457,14 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "autoRollConcentrationFastForward", {
         name: "↳ Fast-Forward Concentration Rolls",
-        hint: "When to skip the roll configuration dialog and roll immediately. 'All Actors' skips the dialog for everyone. 'NPCs Only' skips for NPC tokens but shows the dialog for player-owned actors. 'Players Only' is the reverse. 'Never' always shows the dialog, pre-configured with the DC.",
+        hint: "When to skip the roll configuration dialog and roll immediately. 'NPCs Only' skips for NPC tokens but shows the dialog for player-owned actors. 'All Actors' skips the dialog for everyone. 'Players Only' is the reverse. 'Never' always shows the dialog, pre-configured with the DC.",
         scope: "world",
         config: true,
         type: String,
-        default: "all",
+        default: "npcsOnly",
         choices: {
-            all: "All Actors",
             npcsOnly: "NPCs Only",
+            all: "All Actors",
             playersOnly: "Players Only",
             none: "Never (always show dialog)"
         },

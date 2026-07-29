@@ -115,36 +115,141 @@ function _attachPlusButtonInterceptor(app, html) {
 }
 
 /**
+ * Determines whether a clickable element is an excluded (non-creation) control,
+ * such as a quantity adjuster, slot tracker, or item row action.
+ */
+function _isExcludedButton(clickable) {
+    if (!clickable) return true;
+
+    // 1. Quantity controls & wrappers
+    if (clickable.closest(".tidy-inline-quantity-tracker, .quantity-tracker-input-wrapper, .quantity, .item-quantity, .quantity-attribution, [data-property*='quantity'], [data-name*='quantity']")) {
+        return true;
+    }
+
+    if (clickable.classList.contains("incrementer") ||
+        clickable.classList.contains("decrementer") ||
+        clickable.classList.contains("quantity-plus") ||
+        clickable.classList.contains("quantity-minus") ||
+        clickable.classList.contains("adjustment-button")) {
+        return true;
+    }
+
+    const action = clickable.getAttribute("data-action");
+    if (["adjustQuantity", "quantity", "rollQuantity", "rollQuantities", "increase", "decrease", "increaseSlots", "addRecovery"].includes(action)) {
+        return true;
+    }
+
+    // 2. Exclude other specific non-item-creation actions
+    const nonCreationActions = [
+        "showConfiguration", "roll", "togglePip", "toggleControls", "toggleExpand",
+        "use", "edit", "delete", "showDocument", "rollHitDie", "toggleInspiration",
+        "toggleSidebar", "editImage", "inspectWarning", "activity-use",
+        "showContextMenu", "currency", "browseActors", "transfer-currency"
+    ];
+    if (action && nonCreationActions.includes(action)) {
+        return true;
+    }
+
+    // 3. Tooltip check for non-item-creation concepts
+    const tooltip = (
+        clickable.getAttribute("data-tooltip") ||
+        clickable.getAttribute("title") ||
+        clickable.getAttribute("aria-label") ||
+        ""
+    ).toLowerCase();
+
+    if (tooltip.includes("dnd5e.quantity") ||
+        tooltip.includes("quantity") ||
+        tooltip.includes("slots") ||
+        tooltip.includes("recovery") ||
+        tooltip.includes("configure") ||
+        tooltip.includes("configuration") ||
+        tooltip.includes("effect") ||
+        tooltip.includes("activity") ||
+        tooltip.includes("advancement") ||
+        tooltip.includes("consumption") ||
+        tooltip.includes("damage")) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Finds add/create buttons (both page-level and sub-category section header buttons)
- * across standard DnD5e sheets and Tidy 5e Sheets (Classic & Quadrone).
+ * across standard DnD5e sheets and Tidy 5e Sheets (Classic & Quadrone) specifically
+ * for adding items, spells, or features.
  */
 function _findPlusButton(target) {
     if (!target) return null;
 
-    // 1. Direct class/action match for standard & Tidy 5e buttons
-    const directMatch = target.closest(
-        'button.create-child, .item-create, [data-action="addDocument"], [data-action="create"], [data-action="create-item"], [data-action="add-item"], [data-action="createItem"], [data-action="createSpell"], [data-action="createFeature"]'
-    );
-    if (directMatch) return directMatch;
-
-    // 2. Clickable container (a, button, role=button) containing a plus icon or matching creation tooltips
-    const clickable = target.closest('a, button, [role="button"]');
+    // Find the nearest clickable element
+    const clickable = target.closest('a, button, [role="button"], [data-action]');
     if (!clickable) return null;
 
-    // Check for plus icons (.fa-plus, .fa-plus-circle, .fa-circle-plus, etc.)
-    const hasPlusIcon = !!clickable.querySelector('.fa-plus, .fa-plus-circle, .fa-circle-plus')
-        || clickable.classList.contains('fa-plus')
-        || clickable.classList.contains('fa-plus-circle')
-        || clickable.classList.contains('fa-circle-plus');
+    // Exclude quantity controls and other non-creation buttons first
+    if (_isExcludedButton(clickable)) return null;
 
-    if (hasPlusIcon) {
+    // 1. Explicit class or attribute matches for item/spell/feature creation buttons
+    if (clickable.classList.contains("create-child") ||
+        clickable.classList.contains("item-create") ||
+        clickable.classList.contains("item-list-footer-button") ||
+        clickable.matches('[data-tidy-sheet-part*="item-create"]')) {
         return clickable;
     }
 
-    // Check tooltip/title/aria-label for creation intent
-    const tooltipText = (clickable.getAttribute('data-tooltip') || clickable.getAttribute('title') || clickable.getAttribute('aria-label') || '').toLowerCase();
-    if (tooltipText.includes('create') || tooltipText.includes('add') || tooltipText.includes('itemcreate') || tooltipText.includes('featureadd') || tooltipText.includes('spelladd')) {
+    // 2. Explicit data-action matches for item/spell/feature creation
+    const action = clickable.getAttribute("data-action");
+    if (["addDocument", "createItem", "createSpell", "createFeature", "create-item", "add-item"].includes(action)) {
         return clickable;
+    }
+
+    // 3. Tooltip / Title / Aria-Label check for explicit item, spell, or feature creation
+    const tooltipText = (
+        clickable.getAttribute("data-tooltip") ||
+        clickable.getAttribute("title") ||
+        clickable.getAttribute("aria-label") ||
+        ""
+    ).toLowerCase();
+
+    const isCreationTooltip = (
+        tooltipText.includes("dnd5e.itemcreate") ||
+        tooltipText.includes("dnd5e.spellcreate") ||
+        tooltipText.includes("dnd5e.featureadd") ||
+        tooltipText.includes("dnd5e.featurecreate") ||
+        tooltipText.includes("sidebar.create") ||
+        tooltipText === "create item" ||
+        tooltipText === "create spell" ||
+        tooltipText === "create feature" ||
+        tooltipText === "add item" ||
+        tooltipText === "add spell" ||
+        tooltipText === "add feature"
+    );
+
+    if (isCreationTooltip) {
+        return clickable;
+    }
+
+    // 4. Generic data-action="create" or data-action="add" check:
+    // Must NOT be inside an existing item document row and must have explicit creation cues.
+    if (action === "create" || action === "add") {
+        // Exclude if inside an existing item document row or effect row
+        if (clickable.closest("[data-item-id], [data-entry-id], [data-effect-id], .item-row, .tidy-table-row")) {
+            return null;
+        }
+
+        // Must have a plus icon or explicit add/create label
+        const hasPlusIcon = !!clickable.querySelector(".fa-plus, .fa-plus-circle, .fa-circle-plus")
+            || clickable.classList.contains("fa-plus")
+            || clickable.classList.contains("fa-plus-circle")
+            || clickable.classList.contains("fa-circle-plus");
+
+        const text = (clickable.textContent || "").trim().toLowerCase();
+        const hasCreateText = text.includes("add") || text.includes("create");
+
+        if (hasPlusIcon || hasCreateText) {
+            return clickable;
+        }
     }
 
     return null;
