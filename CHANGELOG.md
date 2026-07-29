@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [14.14.9] - 2026-07-29
 ### Fixed
-- **Calendaria Compatibility & Combat Start Race Condition**: Fixed a timing race condition where `Combat Exp Tracker` saved its tracking flag (`combat.setFlag`) synchronously inside the `combatStart` hook callback. In Foundry VTT core, `combatStart` fires *before* `started: true` is committed to the database. Writing a flag synchronously inside `combatStart` triggered an immediate `updateCombat` event while `combat.started` was still `false`, causing Calendaria's `updateCombat` listener to misidentify combat as unstarted and prematurely reset its `closedForCombat` state.
+- **Combat Start Race Condition**: Fixed a timing race condition where `Combat Exp Tracker` saved its tracking flag (`combat.setFlag`) synchronously inside the `combatStart` hook callback. In Foundry VTT core, `combatStart` fires *before* `started: true` is committed to the database. Writing a flag synchronously inside `combatStart` triggered an immediate `updateCombat` event while `combat.started` was still `false`.
 - **Event-Driven Microtask Deferral**: Switched document updates in `Combat Exp Tracker`, `Legendary Action Placeholders`, `Death Save Prompt`, and `Auto Clear Movement History` to use `queueMicrotask()`. Side-effect document writes now defer to the next microtask tick after Foundry core commits `started: true` to the database, ensuring clean event loop isolation without arbitrary timer delays.
 
 ## [14.14.7] - 2026-07-29
