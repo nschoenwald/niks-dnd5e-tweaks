@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.8] - 2026-07-29
+### Fixed
+- **Calendaria Compatibility & Hook Safety**: Resolved an issue where an unhandled exception in `Combat Exp Tracker`'s `deleteCombat` hook could prevent third-party modules like Calendaria from unhiding their interface widgets when combat ended.
+- **Hook Guard Audit**: Added comprehensive `try...catch` guards and safe nullish flag handling across all module hooks (`deleteCombat`, `updateCombat`, `combatStart`, `createCombatant`, `preUpdateActor`, `updateActor`, `createActiveEffect`, `updateActiveEffect`, `preApplyDamage`, `preRollConcentration`, and post-activity hooks) to ensure runtime errors never break Foundry's hook dispatch chain for other modules.
+
 ## [14.14.7] - 2026-07-29
 ### Removed
 - **Player Damage Prompt**: Removed automatic cleanup of chat messages older than 10 minutes.

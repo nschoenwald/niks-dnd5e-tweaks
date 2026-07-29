@@ -5,13 +5,21 @@ import { MODULE_ID, debug } from "../main.js";
  */
 export function initDeathSavePrompt() {
     Hooks.on("updateCombat", (combat, update, options, userId) => {
-        if (update.turn !== undefined || update.round !== undefined) {
-            handleDeathSavePrompt(combat);
+        try {
+            if (update.turn !== undefined || update.round !== undefined) {
+                handleDeathSavePrompt(combat);
+            }
+        } catch (err) {
+            console.error(`Nik's DnD5e Tweaks | Error in updateCombat hook for Death Save Prompt:`, err);
         }
     });
 
     Hooks.on("combatStart", (combat, update) => {
-        handleDeathSavePrompt(combat);
+        try {
+            handleDeathSavePrompt(combat);
+        } catch (err) {
+            console.error(`Nik's DnD5e Tweaks | Error in combatStart hook for Death Save Prompt:`, err);
+        }
     });
 
     // V13 compat — renderChatMessage passes jQuery or HTMLElement

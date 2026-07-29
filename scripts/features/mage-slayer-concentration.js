@@ -87,30 +87,34 @@ function _hasMageSlayer(actor) {
  * @param {object} options        Damage application options.
  */
 function _onPreApplyDamage(defenderActor, amount, _updates, options) {
-    if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
+    try {
+        if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
 
-    // Only care about actual damage
-    if (amount <= 0) return;
+        // Only care about actual damage
+        if (amount <= 0) return;
 
-    // Defender must be concentrating
-    if (!defenderActor?.concentration?.effects?.size) return;
+        // Defender must be concentrating
+        if (!defenderActor?.concentration?.effects?.size) return;
 
-    // Resolve the attacking actor from the originating chat message or workflow
-    let attackerActor = null;
-    const originMsg = options?.originatingMessage;
-    if (originMsg?.speaker?.actor) {
-        attackerActor = game.actors.get(originMsg.speaker.actor);
+        // Resolve the attacking actor from the originating chat message or workflow
+        let attackerActor = null;
+        const originMsg = options?.originatingMessage;
+        if (originMsg?.speaker?.actor) {
+            attackerActor = game.actors.get(originMsg.speaker.actor);
+        }
+        if (!attackerActor) {
+            const wfActor = options?.workflow?.actor ?? options?.item?.actor ?? options?.midi?.workflow?.actor;
+            if (wfActor) attackerActor = wfActor;
+        }
+        if (!attackerActor) return;
+
+        if (!_hasMageSlayer(attackerActor)) return;
+
+        debug(`Mage Slayer | ${attackerActor.name} has Mage Slayer — flagging ${defenderActor.name} for concentration disadvantage`);
+        _pendingMageSlayerDisadvantage.set(defenderActor.id, Date.now());
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onPreApplyDamage for Mage Slayer:`, err);
     }
-    if (!attackerActor) {
-        const wfActor = options?.workflow?.actor ?? options?.item?.actor ?? options?.midi?.workflow?.actor;
-        if (wfActor) attackerActor = wfActor;
-    }
-    if (!attackerActor) return;
-
-    if (!_hasMageSlayer(attackerActor)) return;
-
-    debug(`Mage Slayer | ${attackerActor.name} has Mage Slayer — flagging ${defenderActor.name} for concentration disadvantage`);
-    _pendingMageSlayerDisadvantage.set(defenderActor.id, Date.now());
 }
 
 /**
@@ -129,34 +133,34 @@ function _onPreApplyDamage(defenderActor, amount, _updates, options) {
  * @param {BasicRollMessageConfiguration}  _message
  */
 function _onPreRollConcentration(config, _dialog, _message) {
-    if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
+    try {
+        if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
 
-    const actor = config.subject;
-    if (!actor?.id) return;
+        const actor = config.subject;
+        if (!actor?.id) return;
 
-    const timestamp = _pendingMageSlayerDisadvantage.get(actor.id);
-    if (timestamp === undefined) return;
+        const timestamp = _pendingMageSlayerDisadvantage.get(actor.id);
+        if (timestamp === undefined) return;
 
-    // Consume the entry regardless of TTL to avoid lingering state
-    _pendingMageSlayerDisadvantage.delete(actor.id);
+        // Consume the entry regardless of TTL to avoid lingering state
+        _pendingMageSlayerDisadvantage.delete(actor.id);
 
-    // Ignore stale entries — this should rarely happen given the 200ms
-    // auto-roll defer in auto-roll-concentration.js, but acts as a safety net
-    // if the concentration save was triggered much later (e.g. manual click).
-    if (Date.now() - timestamp > MAGE_SLAYER_TTL_MS) {
-        debug(`Mage Slayer | Pending disadvantage entry for ${actor.name} expired — skipping`);
-        return;
+        // Ignore stale entries — this should rarely happen given the 200ms
+        // auto-roll defer in auto-roll-concentration.js, but acts as a safety net
+        // if the concentration save was triggered much later (e.g. manual click).
+        if (Date.now() - timestamp > MAGE_SLAYER_TTL_MS) {
+            debug(`Mage Slayer | Pending disadvantage entry for ${actor.name} expired — skipping`);
+            return;
+        }
+
+        const roll = config.rolls?.[0];
+        if (!roll) return;
+
+        debug(`Mage Slayer | Injecting disadvantage into concentration save for ${actor.name}`);
+        roll.options.disadvantage = true;
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onPreRollConcentration for Mage Slayer:`, err);
     }
-
-    const roll = config.rolls?.[0];
-    if (!roll) return;
-
-    debug(`Mage Slayer | Injecting disadvantage into concentration save for ${actor.name}`);
-    roll.options.disadvantage = true;
-    // Note: if roll.options.advantage is already true (e.g. War Caster),
-    // the D20Roll.applyKeybindings resolver (d20-roll.mjs line 96-100)
-    // evaluates advantage=true + disadvantage=true → ADV_MODE.NORMAL.
-    // This is correct 2024 PHB behavior — no special handling needed here.
 }
 
 // ── Init ──────────────────────────────────────────────────────────────

@@ -43,8 +43,12 @@ export function initAutoEndConcentration() {
  * @param {string} userId
  */
 function _onCreateActiveEffect(effect, options, userId) {
-    if (effect.disabled) return;
-    _processEffect(effect, userId);
+    try {
+        if (effect.disabled) return;
+        _processEffect(effect, userId);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCreateActiveEffect for Auto-End Concentration:`, err);
+    }
 }
 
 /**
@@ -56,8 +60,12 @@ function _onCreateActiveEffect(effect, options, userId) {
  * @param {string} userId
  */
 function _onUpdateActiveEffect(effect, changes, options, userId) {
-    if (changes.disabled === false) {
-        _processEffect(effect, userId);
+    try {
+        if (changes.disabled === false) {
+            _processEffect(effect, userId);
+        }
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onUpdateActiveEffect for Auto-End Concentration:`, err);
     }
 }
 
@@ -87,7 +95,9 @@ function _processEffect(effect, userId) {
 
     const timer = setTimeout(() => {
         _debounceTimers.delete(actor.id);
-        _checkAndEndConcentration(actor, effectName);
+        _checkAndEndConcentration(actor, effectName).catch(err => {
+            console.error(`Nik's DnD5e Tweaks | Failed processing concentration check:`, err);
+        });
     }, 250);
     _debounceTimers.set(actor.id, timer);
 }

@@ -38,92 +38,63 @@ export function initAutoRollConcentration() {
  * @param {string} userId
  */
 async function _onDamageActor(actor, changes, update, userId) {
-    if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
-
-    // Bug 3 fix: respect the dnd5e system-level "disable concentration tracking" setting.
-    // If the GM has disabled concentration tracking globally, we should not auto-roll either.
-    if (game.settings.get("dnd5e", "disableConcentration")) return;
-
-    // Automatically skip if midi-qol is active and configured to handle concentration checks
-    if (game.modules.get("midi-qol")?.active) {
-        const midiDoConc = globalThis.MidiQOL?.configSettings?.()?.doConcentrationCheck
-            ?? game.settings.get("midi-qol", "ConfigSettings")?.doConcentrationCheck;
-        if (midiDoConc && midiDoConc !== "none") {
-            debug("Auto-Roll Concentration | midi-qol detected and handles concentration checks — feature bypassed to avoid duplicate rolls.");
-            return;
-        }
-    }
-
-    // Only process if total net HP change is negative (damage)
-    if (!changes || typeof changes.total !== "number" || changes.total >= 0) return;
-
-    // Respect dnd5e concentrationCheck option if set to false
-    if (update?.dnd5e?.concentrationCheck === false) return;
-
-    const damage = Math.abs(changes.total);
-    if (damage <= 0) return;
-
-    // Check if actor has active concentration effects (dnd5e 5.2+ API)
-    const isConcentrating = actor.concentration?.effects?.size > 0;
-    if (!isConcentrating) return;
-
-    // Bug 1 fix: Prevent duplicate processing across multiple connected clients.
-    //
-    // actor.rollConcentration() requires the calling client to be an owner of the actor.
-    // The correct routing logic is:
-    //   • If I triggered the update: roll only if I own the actor.
-    //   • If someone else triggered the update: only the primary GM steps in, and only
-    //     if the updating user does NOT own the actor (if they did, their own client
-    //     would have handled it in the branch above).
-    //
-    // GMs always have OWNER-level access, so `actor.isOwner` is always true for GMs.
-    if (game.userId === userId) {
-        // Bug 2 fix: I triggered this update — only proceed if I actually own the actor.
-        // actor.rollConcentration() guards !this.isOwner internally and returns null silently,
-        // so we must check here to avoid false-positive "rolling" log messages.
-        if (!actor.isOwner) return;
-    } else {
-        // Someone else triggered the update. Step in as the primary GM fallback, but only
-        // if the updater themselves do not own the actor (avoids double-rolling when the
-        // actor owner is the one who applied damage and their client is the primary handler).
-        const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-        if (!primaryGM?.isSelf) return;
-        const updatingUser = game.users.get(userId);
-        if (updatingUser && actor.testUserPermission(updatingUser, "OWNER")) return;
-    }
-
-    // Calculate DC: dnd5e rules specify Math.max(10, Math.floor(damage / 2)).
-    // Use actor.getConcentrationDC() from dnd5e 5.2+ which also clamps to 30 for 2024 rules.
-    const dc = typeof actor.getConcentrationDC === "function"
-        ? actor.getConcentrationDC(damage)
-        : Math.max(10, Math.floor(damage / 2));
-
-    debug(`Auto-Roll Concentration | ${actor.name} took ${damage} damage while concentrating. Rolling concentration save (DC ${dc}).`);
-
-    const fastForwardSetting = game.settings.get(MODULE_ID, "autoRollConcentrationFastForward");
-    const fastForward = fastForwardSetting === "all"
-        || (fastForwardSetting === "npcsOnly" && actor.type === "npc")
-        || (fastForwardSetting === "playersOnly" && actor.type === "character");
-    const autoEndOnFailure = game.settings.get(MODULE_ID, "autoEndConcentrationOnFailure");
-
-    // Defer our roll so it appears AFTER the system's "click to roll" concentration prompt.
-    //
-    // The dnd5e system calls challengeConcentration() (which creates a chat prompt) inside
-    // onUpdateHP() WITHOUT awaiting it, immediately followed by Hooks.callAll("dnd5e.damageActor").
-    // Both the system's ChatMessage.create and our rollConcentration are in-flight concurrently,
-    // racing to reach the server. A zero-delay tick was not sufficient — both socket requests
-    // still arrived at the server in the wrong order. 200ms gives the system's message time to
-    // complete its round trip and be assigned a lower server timestamp before we begin ours.
-    await new Promise(resolve => setTimeout(resolve, 200));
-
     try {
+        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+
+        // Bug 3 fix: respect the dnd5e system-level "disable concentration tracking" setting.
+        // If the GM has disabled concentration tracking globally, we should not auto-roll either.
+        if (game.settings.get("dnd5e", "disableConcentration")) return;
+
+        // Automatically skip if midi-qol is active and configured to handle concentration checks
+        if (game.modules.get("midi-qol")?.active) {
+            const midiDoConc = globalThis.MidiQOL?.configSettings?.()?.doConcentrationCheck
+                ?? game.settings.get("midi-qol", "ConfigSettings")?.doConcentrationCheck;
+            if (midiDoConc && midiDoConc !== "none") {
+                debug("Auto-Roll Concentration | midi-qol detected and handles concentration checks — feature bypassed to avoid duplicate rolls.");
+                return;
+            }
+        }
+
+        // Only process if total net HP change is negative (damage)
+        if (!changes || typeof changes.total !== "number" || changes.total >= 0) return;
+
+        // Respect dnd5e concentrationCheck option if set to false
+        if (update?.dnd5e?.concentrationCheck === false) return;
+
+        const damage = Math.abs(changes.total);
+        if (damage <= 0) return;
+
+        // Check if actor has active concentration effects (dnd5e 5.2+ API)
+        const isConcentrating = actor.concentration?.effects?.size > 0;
+        if (!isConcentrating) return;
+
+        if (game.userId === userId) {
+            if (!actor.isOwner) return;
+        } else {
+            const primaryGM = game.users.primaryGM ?? game.users.activeGM;
+            if (!primaryGM?.isSelf) return;
+            const updatingUser = game.users.get(userId);
+            if (updatingUser && actor.testUserPermission(updatingUser, "OWNER")) return;
+        }
+
+        const dc = typeof actor.getConcentrationDC === "function"
+            ? actor.getConcentrationDC(damage)
+            : Math.max(10, Math.floor(damage / 2));
+
+        debug(`Auto-Roll Concentration | ${actor.name} took ${damage} damage while concentrating. Rolling concentration save (DC ${dc}).`);
+
+        const fastForwardSetting = game.settings.get(MODULE_ID, "autoRollConcentrationFastForward");
+        const fastForward = fastForwardSetting === "all"
+            || (fastForwardSetting === "npcsOnly" && actor.type === "npc")
+            || (fastForwardSetting === "playersOnly" && actor.type === "character");
+        const autoEndOnFailure = game.settings.get(MODULE_ID, "autoEndConcentrationOnFailure");
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+
         const rolls = await actor.rollConcentration(
             { target: dc },
             { configure: !fastForward },
             {
-                // Flags must be nested under `data` — buildPost calls this.toMessage(rolls, message.data)
-                // so only properties under message.data are written into the created ChatMessage.
-                // Top-level message.flags would be silently ignored.
                 data: {
                     flags: {
                         [MODULE_ID]: {
@@ -136,13 +107,10 @@ async function _onDamageActor(actor, changes, update, userId) {
             }
         );
 
-        // rollConcentration returns null if cancelled from dialog or if not an owner
         if (!rolls?.length) return;
 
         if (autoEndOnFailure) {
             const roll = rolls[0];
-            // Bug 4 fix: use nullish coalescing — isSuccess returns undefined (unevaluated)
-            // or false (no target set), never undefined for an evaluated roll with a target.
             const isSuccess = roll.isSuccess ?? (roll.total >= dc);
 
             if (!isSuccess) {
@@ -153,7 +121,7 @@ async function _onDamageActor(actor, changes, update, userId) {
             }
         }
     } catch (err) {
-        console.error(`Nik's DnD5e Tweaks | Failed auto concentration roll for ${actor.name}:`, err);
+        console.error(`Nik's DnD5e Tweaks | Failed auto concentration roll for ${actor?.name}:`, err);
     }
 }
 
@@ -165,22 +133,26 @@ async function _onDamageActor(actor, changes, update, userId) {
  * @param {{ subject: Actor5e }} data
  */
 function _onRollConcentration(rolls, { subject: actor } = {}) {
-    if (!actor) return;
+    try {
+        if (!actor) return;
 
-    // The message was just created by buildPost. Find it in the recent message log by matching
-    // the actor's speaker ID. We check the last 5 messages to guard against busy chat logs.
-    const recentMessages = game.messages.contents.slice(-5).reverse();
-    const message = recentMessages.find(m =>
-        m.speaker?.actor === actor.id &&
-        m.flags?.dnd5e?.roll?.type === "save" &&
-        !m.flags?.[MODULE_ID]?.isConcentrationSave
-    );
-    if (!message) return;
+        // The message was just created by buildPost. Find it in the recent message log by matching
+        // the actor's speaker ID. We check the last 5 messages to guard against busy chat logs.
+        const recentMessages = game.messages.contents.slice(-5).reverse();
+        const message = recentMessages.find(m =>
+            m.speaker?.actor === actor.id &&
+            m.flags?.dnd5e?.roll?.type === "save" &&
+            !m.flags?.[MODULE_ID]?.isConcentrationSave
+        );
+        if (!message) return;
 
-    // Stamp the flag — this triggers a message update which re-renders the card,
-    // causing _onRenderChatMessage to run again and inject the button.
-    message.setFlag(MODULE_ID, "isConcentrationSave", true);
-    message.setFlag(MODULE_ID, "actorUuid", actor.uuid);
+        // Stamp the flag — this triggers a message update which re-renders the card,
+        // causing _onRenderChatMessage to run again and inject the button.
+        message.setFlag(MODULE_ID, "isConcentrationSave", true);
+        message.setFlag(MODULE_ID, "actorUuid", actor.uuid);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onRollConcentration:`, err);
+    }
 }
 
 /**

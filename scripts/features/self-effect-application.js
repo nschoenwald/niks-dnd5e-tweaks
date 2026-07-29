@@ -157,49 +157,53 @@ function _getApplicableEffects(activity) {
 }
 
 async function _onPostUseActivity(activity, usageConfig, results) {
-    if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
+    try {
+        if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
 
-    // Skip if midi-qol is active and configured to auto-apply item active effects
-    if (game.modules.get("midi-qol")?.active) {
-        const autoEffects = globalThis.MidiQOL?.configSettings?.()?.autoItemEffects
-            ?? game.settings.get("midi-qol", "ConfigSettings")?.autoItemEffects;
-        if (autoEffects && autoEffects !== "off" && autoEffects !== "none") {
-            debug("Self Effect Application | midi-qol detected and auto-applies item effects — feature bypassed.");
+        // Skip if midi-qol is active and configured to auto-apply item active effects
+        if (game.modules.get("midi-qol")?.active) {
+            const autoEffects = globalThis.MidiQOL?.configSettings?.()?.autoItemEffects
+                ?? game.settings.get("midi-qol", "ConfigSettings")?.autoItemEffects;
+            if (autoEffects && autoEffects !== "off" && autoEffects !== "none") {
+                debug("Self Effect Application | midi-qol detected and auto-applies item effects — feature bypassed.");
+                return;
+            }
+        }
+
+        // Ignore CastActivity containers since the cast spell's own activity will execute
+        if (activity.type === "cast") return;
+
+        const actor = activity.item?.actor;
+        if (!actor) return;
+
+        // Check if the activity/item intrinsically targets "self" or if the actor manually targeted themselves
+        const isIntrinsicSelf = _isSelfTargeted(activity);
+        const isManualSelf = _hasManualSelfTarget(actor, results);
+
+        if (!isIntrinsicSelf && !isManualSelf) return;
+
+        // Retrieve applicable Active Effects from the activity or parent item.
+        const applicableEffects = _getApplicableEffects(activity);
+        if (!applicableEffects.length) return;
+
+        // Filter out effects that are already active on the target actor
+        const unappliedEffects = applicableEffects.filter(effect => {
+            const effectName = effect.name ?? effect.label;
+            const effectUuid = effect.uuid ?? effect.id;
+            return !_isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity);
+        });
+
+        if (!unappliedEffects.length) {
+            debug(`Self Effect Application | All self effects for "${activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
             return;
         }
+
+        debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
+
+        await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onPostUseActivity for Self Effect Application:`, err);
     }
-
-    // Ignore CastActivity containers since the cast spell's own activity will execute
-    if (activity.type === "cast") return;
-
-    const actor = activity.item?.actor;
-    if (!actor) return;
-
-    // Check if the activity/item intrinsically targets "self" or if the actor manually targeted themselves
-    const isIntrinsicSelf = _isSelfTargeted(activity);
-    const isManualSelf = _hasManualSelfTarget(actor, results);
-
-    if (!isIntrinsicSelf && !isManualSelf) return;
-
-    // Retrieve applicable Active Effects from the activity or parent item.
-    const applicableEffects = _getApplicableEffects(activity);
-    if (!applicableEffects.length) return;
-
-    // Filter out effects that are already active on the target actor
-    const unappliedEffects = applicableEffects.filter(effect => {
-        const effectName = effect.name ?? effect.label;
-        const effectUuid = effect.uuid ?? effect.id;
-        return !_isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity);
-    });
-
-    if (!unappliedEffects.length) {
-        debug(`Self Effect Application | All self effects for "${activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
-        return;
-    }
-
-    debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
-
-    await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
 }
 
 /**

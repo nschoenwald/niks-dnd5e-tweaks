@@ -119,18 +119,19 @@ function _waitForDiceSoNice(messageId) {
  * @param {ChatMessage} message  The message that was just created.
  */
 async function _onCreateChatMessage(message) {
-    const activeGM = game.users.activeGM;
-    if (activeGM) {
-        if (game.user.id !== activeGM.id) return;
-    } else {
-        const authorId = message.author?.id ?? message.user?.id;
-        if (game.user.id !== authorId) return;
-    }
+    try {
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (game.user.id !== activeGM.id) return;
+        } else {
+            const authorId = message.author?.id ?? message.user?.id;
+            if (game.user.id !== authorId) return;
+        }
 
-    // Check if at least one damage prompt mode is enabled
-    const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
-    const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
-    if (!playerPromptEnabled && !gmPromptEnabled) return;
+        // Check if at least one damage prompt mode is enabled
+        const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
+        const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
+        if (!playerPromptEnabled && !gmPromptEnabled) return;
 
     // Skip if midi-qol is active and configured to auto-apply damage
     if (game.modules.get("midi-qol")?.active) {
@@ -242,6 +243,9 @@ async function _onCreateChatMessage(message) {
     for (const target of targets) {
         await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType);
     }
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCreateChatMessage for Player Damage Prompt:`, err);
+    }
 }
 
 /**
@@ -254,13 +258,14 @@ async function _onCreateChatMessage(message) {
  * @param {ChatMessage} message  The message that was just created.
  */
 async function _onCreateChatMessage_Attack(message) {
-    const activeGM = game.users.activeGM;
-    if (activeGM) {
-        if (game.user.id !== activeGM.id) return;
-    } else {
-        const authorId = message.author?.id ?? message.user?.id;
-        if (game.user.id !== authorId) return;
-    }
+    try {
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (game.user.id !== activeGM.id) return;
+        } else {
+            const authorId = message.author?.id ?? message.user?.id;
+            if (game.user.id !== authorId) return;
+        }
 
     // Check if at least one damage prompt mode is enabled
     const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
@@ -358,6 +363,9 @@ async function _onCreateChatMessage_Attack(message) {
 
         const tokenName = _getTokenName(tokenDoc, target, actor);
         await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
+    }
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCreateChatMessage_Attack for Player Damage Prompt:`, err);
     }
 }
 

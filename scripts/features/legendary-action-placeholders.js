@@ -40,45 +40,49 @@ async function _resolveIcon(path) {
 
 export function initLegendaryActionPlaceholders() {
     Hooks.on("combatStart", async (combat) => {
-        // Only run for the primary GM
-        const activeGM = game.users.primaryGM ?? game.users.activeGM;
-        if (!activeGM?.isSelf) return;
+        try {
+            // Only run for the primary GM
+            const activeGM = game.users.primaryGM ?? game.users.activeGM;
+            if (!activeGM?.isSelf) return;
 
-        // Check if the setting is enabled
-        if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return;
+            // Check if the setting is enabled
+            if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return;
 
-        // Check if there is at least one combatant with legendary actions
-        const hasLegendary = combat.combatants.some(c => c.actor?.system?.resources?.legact?.max > 0);
+            // Check if there is at least one combatant with legendary actions
+            const hasLegendary = combat.combatants.some(c => c.actor?.system?.resources?.legact?.max > 0);
 
-        if (!hasLegendary) {
-            debug(`No actors with legendary actions found in combat ${combat.id}.`);
-            return;
-        }
+            if (!hasLegendary) {
+                debug(`No actors with legendary actions found in combat ${combat.id}.`);
+                return;
+            }
 
-        // Find all player characters or friendly creatures
-        const playerCombatants = combat.combatants.filter(c => c.actor?.type === "character" || c.token?.disposition === 1);
+            // Find all player characters or friendly creatures
+            const playerCombatants = combat.combatants.filter(c => c.actor?.type === "character" || c.token?.disposition === 1);
 
-        if (!playerCombatants.length) return;
+            if (!playerCombatants.length) return;
 
-        const configuredIcon = game.settings.get(MODULE_ID, "legendaryActionPlaceholderIcon");
-        const img = await _resolveIcon(configuredIcon);
+            const configuredIcon = game.settings.get(MODULE_ID, "legendaryActionPlaceholderIcon");
+            const img = await _resolveIcon(configuredIcon);
 
-        const newCombatants = playerCombatants.map(pc => {
-            return {
-                name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
-                hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
-                img,
-                initiative: (pc.initiative || 0) - 0.001,
+            const newCombatants = playerCombatants.map(pc => {
+                return {
+                    name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
+                    hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
+                    img,
+                    initiative: (pc.initiative || 0) - 0.001,
 
-                flags: {
-                    [MODULE_ID]: {
-                        isLegendaryPlaceholder: true
+                    flags: {
+                        [MODULE_ID]: {
+                            isLegendaryPlaceholder: true
+                        }
                     }
-                }
-            };
-        });
+                };
+            });
 
-        debug(`Inserting ${newCombatants.length} legendary action placeholders for combat ${combat.id}.`);
-        await combat.createEmbeddedDocuments("Combatant", newCombatants);
+            debug(`Inserting ${newCombatants.length} legendary action placeholders for combat ${combat.id}.`);
+            await combat.createEmbeddedDocuments("Combatant", newCombatants);
+        } catch (err) {
+            console.error(`Nik's DnD5e Tweaks | Error in combatStart hook for Legendary Action Placeholders:`, err);
+        }
     });
 }

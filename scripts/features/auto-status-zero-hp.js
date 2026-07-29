@@ -185,16 +185,20 @@ async function _undefeatCombatant(actor) {
  * @param {string} userId
  */
 function _onPreUpdateActor(actor, change, options, userId) {
-    if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
+    try {
+        if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
-    // Only the GM client should process this.
-    if (!game.user.isGM) return;
+        // Only the GM client should process this.
+        if (!game.user.isGM) return;
 
-    // Only react when HP actually changed.
-    if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
+        // Only react when HP actually changed.
+        if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
 
-    // Record whether the actor was at 0 HP before this update
-    options.autoStatusWasZeroHP = actor.system.attributes.hp.value <= 0;
+        // Record whether the actor was at 0 HP before this update
+        options.autoStatusWasZeroHP = actor.system.attributes.hp.value <= 0;
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onPreUpdateActor for Auto-Status 0 HP:`, err);
+    }
 }
 
 /**
@@ -212,36 +216,42 @@ function _onPreUpdateActor(actor, change, options, userId) {
  * @param {string} userId
  */
 function _onUpdateActor(actor, change, options, userId) {
-    if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
+    try {
+        if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
-    // Only the GM client should process this to avoid duplicate updates.
-    if (!game.user.isGM) return;
+        // Only the GM client should process this to avoid duplicate updates.
+        if (!game.user.isGM) return;
 
-    // Only react when HP actually changed.
-    if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
+        // Only react when HP actually changed.
+        if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
 
-    // Capture values now; defer processing to avoid race conditions.
-    // The actor reference is passed live intentionally — by the time the
-    // deferred callback runs, we *want* to see the latest statuses/effects
-    // so our checks reflect what other modules have already applied.
-    const newHP = actor.system.attributes.hp.value;
-    const type = _ownershipType(actor);
+        // Capture values now; defer processing to avoid race conditions.
+        // The actor reference is passed live intentionally — by the time the
+        // deferred callback runs, we *want* to see the latest statuses/effects
+        // so our checks reflect what other modules have already applied.
+        const newHP = actor.system.attributes.hp.value;
+        const type = _ownershipType(actor);
 
-    // Determine if actor was at 0 HP before, or currently has 0-HP statuses.
-    const wasZeroHP = options.autoStatusWasZeroHP === true
-        || actor.statuses.has("dead")
-        || actor.statuses.has("unconscious");
+        // Determine if actor was at 0 HP before, or currently has 0-HP statuses.
+        const wasZeroHP = options.autoStatusWasZeroHP === true
+            || actor.statuses.has("dead")
+            || actor.statuses.has("unconscious");
 
-    // Debounce per actor — if HP changes again within 250ms, cancel the
-    // previous callback and only process the latest state.
-    const existingTimer = _debounceTimers.get(actor.id);
-    if (existingTimer) clearTimeout(existingTimer);
+        // Debounce per actor — if HP changes again within 250ms, cancel the
+        // previous callback and only process the latest state.
+        const existingTimer = _debounceTimers.get(actor.id);
+        if (existingTimer) clearTimeout(existingTimer);
 
-    const timer = setTimeout(() => {
-        _debounceTimers.delete(actor.id);
-        _processHPChange(actor, newHP, type, wasZeroHP);
-    }, 250);
-    _debounceTimers.set(actor.id, timer);
+        const timer = setTimeout(() => {
+            _debounceTimers.delete(actor.id);
+            _processHPChange(actor, newHP, type, wasZeroHP).catch(err => {
+                console.error(`Nik's DnD5e Tweaks | Failed processing HP change for Auto-Status 0 HP:`, err);
+            });
+        }, 250);
+        _debounceTimers.set(actor.id, timer);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onUpdateActor for Auto-Status 0 HP:`, err);
+    }
 }
 
 /**

@@ -72,21 +72,25 @@ async function _setFlag(combat, data) {
  * @param {Combat} combat    The combat that just started.
  */
 async function _onCombatStart(combat) {
-    if (!game.users.activeGM?.isSelf) return;
-    if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+    try {
+        if (!game.users.activeGM?.isSelf) return;
+        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
-    const npcs = {};
-    const pcs = {};
+        const npcs = {};
+        const pcs = {};
 
-    for (const combatant of combat.combatants) {
-        _classifyCombatant(combatant, npcs, pcs);
+        for (const combatant of combat.combatants) {
+            _classifyCombatant(combatant, npcs, pcs);
+        }
+
+        await _setFlag(combat, { npcs, pcs });
+
+        debug("Combat Exp Tracker | Combat started — tracked",
+            Object.keys(npcs).length, "hostile NPC(s) and",
+            Object.keys(pcs).length, "PC(s)");
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCombatStart for Combat Exp Tracker:`, err);
     }
-
-    await _setFlag(combat, { npcs, pcs });
-
-    debug("Combat Exp Tracker | Combat started — tracked",
-        Object.keys(npcs).length, "hostile NPC(s) and",
-        Object.keys(pcs).length, "PC(s)");
 }
 
 /**
@@ -94,34 +98,38 @@ async function _onCombatStart(combat) {
  * @param {Combatant} combatant   The newly created combatant.
  */
 async function _onCreateCombatant(combatant) {
-    if (!game.users.activeGM?.isSelf) return;
-    if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+    try {
+        if (!game.users.activeGM?.isSelf) return;
+        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
-    const combat = combatant.combat;
-    if (!combat) return;
+        const combat = combatant.combat;
+        if (!combat) return;
 
-    const flag = _getFlag(combat);
-    if (!flag) return; // No tracker running on this combat
+        const flag = _getFlag(combat);
+        if (!flag) return; // No tracker running on this combat
 
-    const newNpcs = {};
-    const newPcs = {};
+        const newNpcs = {};
+        const newPcs = {};
 
-    _classifyCombatant(combatant, newNpcs, newPcs);
+        _classifyCombatant(combatant, newNpcs, newPcs);
 
-    const updates = {};
-    for (const [k, v] of Object.entries(newNpcs)) {
-        updates[`flags.${MODULE_ID}.${FLAG_KEY}.npcs.${k}`] = v;
+        const updates = {};
+        for (const [k, v] of Object.entries(newNpcs)) {
+            updates[`flags.${MODULE_ID}.${FLAG_KEY}.npcs.${k}`] = v;
+        }
+        for (const [k, v] of Object.entries(newPcs)) {
+            updates[`flags.${MODULE_ID}.${FLAG_KEY}.pcs.${k}`] = v;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await combat.update(updates);
+        }
+
+        debug("Combat Exp Tracker | Combatant added mid-combat:",
+            combatant.actor?.name ?? "(unknown)");
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCreateCombatant for Combat Exp Tracker:`, err);
     }
-    for (const [k, v] of Object.entries(newPcs)) {
-        updates[`flags.${MODULE_ID}.${FLAG_KEY}.pcs.${k}`] = v;
-    }
-
-    if (Object.keys(updates).length > 0) {
-        await combat.update(updates);
-    }
-
-    debug("Combat Exp Tracker | Combatant added mid-combat:",
-        combatant.actor?.name ?? "(unknown)");
 }
 
 /**
@@ -129,24 +137,30 @@ async function _onCreateCombatant(combatant) {
  * @param {Combat} combat    The combat that was just deleted.
  */
 async function _onDeleteCombat(combat) {
-    if (!game.users.activeGM?.isSelf) return;
-    if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+    try {
+        if (!game.users.activeGM?.isSelf) return;
+        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
 
-    const flag = _getFlag(combat);
-    if (!flag) return; // No tracker was running on this combat
+        const flag = _getFlag(combat);
+        if (!flag) return; // No tracker was running on this combat
 
-    debug("Combat Exp Tracker | Combat ended — building XP summary");
+        debug("Combat Exp Tracker | Combat ended — building XP summary");
 
-    const npcCount = Object.keys(flag.npcs).length;
-    const pcCount = Object.keys(flag.pcs).length;
+        const npcs = flag.npcs ?? {};
+        const pcs = flag.pcs ?? {};
+        const npcCount = Object.keys(npcs).length;
+        const pcCount = Object.keys(pcs).length;
 
-    // Only post if there are both NPCs and PCs
-    if (npcCount === 0 || pcCount === 0) {
-        debug("Combat Exp Tracker | Skipping summary: no hostile NPCs or no PCs tracked");
-        return;
+        // Only post if there are both NPCs and PCs
+        if (npcCount === 0 || pcCount === 0) {
+            debug("Combat Exp Tracker | Skipping summary: no hostile NPCs or no PCs tracked");
+            return;
+        }
+
+        await _sendExpSummary(npcs, pcs);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onDeleteCombat for Combat Exp Tracker:`, err);
     }
-
-    await _sendExpSummary(flag.npcs, flag.pcs);
 }
 
 // ── Combatant classification ─────────────────────────────────────────

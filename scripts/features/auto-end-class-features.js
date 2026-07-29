@@ -93,8 +93,12 @@ export function initAutoEndClassFeatures() {
  * @param {string} userId
  */
 function _onCreateActiveEffect(effect, options, userId) {
-    if (effect.disabled) return;
-    _processEffect(effect, userId);
+    try {
+        if (effect.disabled) return;
+        _processEffect(effect, userId);
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onCreateActiveEffect for Auto-End Class Features:`, err);
+    }
 }
 
 /**
@@ -106,8 +110,12 @@ function _onCreateActiveEffect(effect, options, userId) {
  * @param {string} userId
  */
 function _onUpdateActiveEffect(effect, changes, options, userId) {
-    if (changes.disabled === false) {
-        _processEffect(effect, userId);
+    try {
+        if (changes.disabled === false) {
+            _processEffect(effect, userId);
+        }
+    } catch (err) {
+        console.error(`Nik's DnD5e Tweaks | Error in _onUpdateActiveEffect for Auto-End Class Features:`, err);
     }
 }
 
@@ -134,7 +142,9 @@ function _processEffect(effect, userId) {
 
     const timer = setTimeout(() => {
         _debounceTimers.delete(actor.id);
-        _checkAndEndClassFeatures(actor, effectName);
+        _checkAndEndClassFeatures(actor, effectName).catch(err => {
+            console.error(`Nik's DnD5e Tweaks | Failed processing class feature check:`, err);
+        });
     }, 250);
     _debounceTimers.set(actor.id, timer);
 }
