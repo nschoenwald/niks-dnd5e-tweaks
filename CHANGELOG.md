@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.10] - 2026-07-30
+### Fixed
+- **Player Damage Prompt**: Fixed an issue where NPC target names in GM-whispered damage prompt chat cards were displayed as `"Unidentified Creature"` when the `hide-npc-names` module was active. Prioritized `actor._source.name` and `actor.name` over `target.name` in `_getTokenName` so player attack roll message flags do not override the true NPC name in cards sent to GMs.
+
 ## [14.14.9] - 2026-07-29
 ### Fixed
 - **Combat Start Race Condition**: Fixed a timing race condition where `Combat Exp Tracker` saved its tracking flag (`combat.setFlag`) synchronously inside the `combatStart` hook callback. In Foundry VTT core, `combatStart` fires *before* `started: true` is committed to the database. Writing a flag synchronously inside `combatStart` triggered an immediate `updateCombat` event while `combat.started` was still `false`.

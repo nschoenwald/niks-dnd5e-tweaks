@@ -628,7 +628,7 @@ function _resolveTarget(uuid) {
  * @returns {string} The unhidden display name.
  */
 function _getTokenName(tokenDoc, target, actor) {
-    return tokenDoc?.__name || tokenDoc?._source?.name || tokenDoc?.name || target?.name || actor?.name || "";
+    return tokenDoc?.__name || tokenDoc?._source?.name || actor?._source?.name || actor?.name || tokenDoc?.name || target?.name || "";
 }
 
 // ── Per-target processing ────────────────────────────────────────────
