@@ -43,14 +43,17 @@ export function initDisableUndergroundTokenHiding() {
         // Call the original method first — it sets this.mesh.elevation etc.
         originalRefreshElevation.call(this);
 
+        // Guard: skip if the token placeable or its document is destroyed
+        if (this.destroyed || this._destroyed || !this.document) return;
+
         // If the token's document elevation is negative, clamp the mesh
         // elevation to 0 so the token renders above the background layer.
         // We check this.mesh (Foundry V13+) or this.primaryGraphic (V14+).
-        const elevation = this.document?.elevation;
+        const elevation = this.document.elevation;
         if (elevation == null || elevation >= 0) return;
 
         const mesh = this.mesh ?? this.primaryGraphic;
-        if (mesh && typeof mesh.elevation === "number" && mesh.elevation < 0) {
+        if (mesh && !mesh.destroyed && typeof mesh.elevation === "number" && mesh.elevation < 0) {
             debug(`Clamping token "${this.document.name}" mesh elevation from ${mesh.elevation} to 0`);
             mesh.elevation = 0;
         }

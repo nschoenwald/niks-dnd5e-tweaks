@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Self Effect Application**: Added a new world setting **Always Prompt Features** (`selfEffectAlwaysPromptFeatures`), a text input field allowing a comma-separated list of feature/item names (default: `"Mage Armor"`). When these features are used and have an active effect attached, the self-effect application prompt is posted even if they were not self-targeted.
 
+### Fixed
+- **Canvas Crash on Token Deletion (Prone Rotation)**: Added safety checks to verify canvas readiness and scene token membership before attempting `updateEmbeddedDocuments("Token", ...)` during `deleteActiveEffect` hooks. Prevents document update collisions when deleting tokens with active status conditions.
+- **Canvas Crash on Token Deletion (Disable Underground Token Hiding)**: Added `!mesh.destroyed` and token document validity checks in `_refreshElevation` to prevent mutating PIXI mesh elevation properties on destroyed placeable objects during token deletion.
+- **Auto-Status at 0 HP**: Added checks for deleted actors and unlinked tokens removed from the active scene to avoid attempting status updates during or after token deletion.
+
 ## [14.14.10] - 2026-07-30
 ### Fixed
 - **Player Damage Prompt**: Fixed an issue where NPC target names in GM-whispered damage prompt chat cards were displayed as `"Unidentified Creature"` when the `hide-npc-names` module was active. Prioritized `actor._source.name` and `actor.name` over `target.name` in `_getTokenName` so player attack roll message flags do not override the true NPC name in cards sent to GMs.

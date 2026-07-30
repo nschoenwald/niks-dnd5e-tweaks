@@ -54,7 +54,7 @@ function _ownershipType(actor) {
  * @param {string} statusId  "dead" | "unconscious" | "none"
  */
 async function _applyZeroHPStatus(actor, statusId) {
-    if (statusId === "none") return;
+    if (!actor || !actor.statuses || statusId === "none") return;
 
     // Remove conflicting opposite 0-HP status if present
     const oppositeStatusId = statusId === "unconscious" ? "dead" : statusId === "dead" ? "unconscious" : null;
@@ -96,6 +96,7 @@ async function _applyZeroHPStatus(actor, statusId) {
  * @param {Actor} actor
  */
 async function _removeZeroHPStatuses(actor) {
+    if (!actor || !actor.statuses) return;
     for (const statusId of ["dead", "unconscious"]) {
         if (actor.statuses.has(statusId)) {
             debug(`Auto-Status | Removing "${statusId}" from ${actor.name}`);
@@ -265,14 +266,18 @@ function _onUpdateActor(actor, change, options, userId) {
  */
 async function _processHPChange(actor, newHP, type, wasZeroHP) {
     // Guard: actor may have been deleted during the debounce window
-    if (!actor || !actor.id) return;
+    if (!actor || !actor.id || !actor.statuses) return;
+    if (actor.isToken) {
+        if (!actor.token || actor.token._destroyed) return;
+        if (canvas?.scene && !canvas.scene.tokens.has(actor.token.id)) return;
+    }
 
     // Skip actors with no max HP (vehicles, objects, etc.) to avoid
     // false triggers — they are always at "0 HP" if max is 0.
-    if (actor.system.attributes.hp.max <= 0) return;
+    if ((actor.system?.attributes?.hp?.max ?? 0) <= 0) return;
 
     // Use live HP if available
-    const liveHP = actor.system.attributes.hp.value ?? newHP;
+    const liveHP = actor.system.attributes.hp?.value ?? newHP;
 
     if (liveHP <= 0) {
         // ── Status overlay ──
@@ -291,7 +296,7 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
     } else {
         // HP is above 0 — remove any zero-HP statuses and un-defeat,
         // if the actor was at 0 HP before or currently holds dead/unconscious statuses.
-        const holdsZeroHPStatus = actor.statuses.has("dead") || actor.statuses.has("unconscious");
+        const holdsZeroHPStatus = actor.statuses?.has("dead") || actor.statuses?.has("unconscious");
         if (wasZeroHP || holdsZeroHPStatus) {
             await _removeZeroHPStatuses(actor);
             await _undefeatCombatant(actor);

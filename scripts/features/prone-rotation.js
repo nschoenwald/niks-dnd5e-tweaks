@@ -44,25 +44,30 @@ export class ProneRotation {
     }
 
     async _handleRotation(actor, isProne) {
-        if (!actor) return;
+        if (!actor || !canvas?.ready || !canvas.scene) return;
         const tokens = actor.getActiveTokens();
         debug(`_handleRotation: actor=${actor.name}, isProne=${isProne}, tokens found=${tokens.length}`);
 
         const updates = [];
         for (const token of tokens) {
-            if (!token.document.canUserModify(game.user, "update")) continue;
+            const doc = token.document;
+            if (!doc || doc._destroyed || token.destroyed || token._destroyed) continue;
+
+            // Guard: don't attempt document update on a token currently being deleted or missing from the scene
+            if (!canvas.scene.tokens.has(doc.id)) continue;
+            if (!doc.canUserModify(game.user, "update")) continue;
 
             const targetRotation = isProne ? 90 : 0;
-            if (token.document.rotation === targetRotation) continue;
+            if (doc.rotation === targetRotation) continue;
 
             if (!isProne) {
                 // Don't un-rotate if the actor still has another rotation-triggering status
-                if (actor.statuses.has("prone") || actor.statuses.has("unconscious") || actor.statuses.has("dead")) continue;
+                if (actor.statuses?.has("prone") || actor.statuses?.has("unconscious") || actor.statuses?.has("dead")) continue;
             }
 
-            debug(`  ${token.name} (${token.id}): ${token.document.rotation}° → ${targetRotation}°`);
-            const update = { _id: token.document.id, rotation: targetRotation };
-            if (isProne && token.document.lockRotation) {
+            debug(`  ${token.name} (${token.id}): ${doc.rotation}° → ${targetRotation}°`);
+            const update = { _id: doc.id, rotation: targetRotation };
+            if (isProne && doc.lockRotation) {
                 update.lockRotation = false;
             }
             updates.push(update);
