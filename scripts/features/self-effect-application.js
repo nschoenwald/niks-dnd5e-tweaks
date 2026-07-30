@@ -156,6 +156,30 @@ function _getApplicableEffects(activity) {
     return [];
 }
 
+/**
+ * Check whether an activity or its parent item matches the configured list of always-prompt features.
+ *
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _isAlwaysPromptFeature(activity) {
+    const rawList = game.settings.get(MODULE_ID, "selfEffectAlwaysPromptFeatures");
+    if (!rawList || typeof rawList !== "string") return false;
+
+    const list = rawList
+        .split(",")
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+
+    if (!list.length) return false;
+
+    const itemName = (activity.item?.name || "").trim().toLowerCase();
+    const activityName = (activity.name || "").trim().toLowerCase();
+    const itemIdentifier = (activity.item?.system?.identifier || "").trim().toLowerCase();
+
+    return list.some(entry => entry === itemName || entry === activityName || (itemIdentifier && entry === itemIdentifier));
+}
+
 async function _onPostUseActivity(activity, usageConfig, results) {
     try {
         if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
@@ -176,11 +200,13 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         const actor = activity.item?.actor;
         if (!actor) return;
 
-        // Check if the activity/item intrinsically targets "self" or if the actor manually targeted themselves
+        // Check if the activity/item intrinsically targets "self", if the actor manually targeted themselves,
+        // or if the feature is explicitly configured in the always-prompt list.
         const isIntrinsicSelf = _isSelfTargeted(activity);
         const isManualSelf = _hasManualSelfTarget(actor, results);
+        const isAlwaysPrompt = _isAlwaysPromptFeature(activity);
 
-        if (!isIntrinsicSelf && !isManualSelf) return;
+        if (!isIntrinsicSelf && !isManualSelf && !isAlwaysPrompt) return;
 
         // Retrieve applicable Active Effects from the activity or parent item.
         const applicableEffects = _getApplicableEffects(activity);

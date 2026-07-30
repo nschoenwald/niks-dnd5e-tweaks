@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.11] - 2026-07-30
+### Added
+- **Self Effect Application**: Added a new world setting **Always Prompt Features** (`selfEffectAlwaysPromptFeatures`), a text input field allowing a comma-separated list of feature/item names (default: `"Mage Armor"`). When these features are used and have an active effect attached, the self-effect application prompt is posted even if they were not self-targeted.
+
 ## [14.14.10] - 2026-07-30
 ### Fixed
 - **Player Damage Prompt**: Fixed an issue where NPC target names in GM-whispered damage prompt chat cards were displayed as `"Unidentified Creature"` when the `hide-npc-names` module was active. Prioritized `actor._source.name` and `actor.name` over `target.name` in `_getTokenName` so player attack roll message flags do not override the true NPC name in cards sent to GMs.

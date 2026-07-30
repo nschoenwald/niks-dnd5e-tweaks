@@ -501,6 +501,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "selfEffectAlwaysPromptFeatures", {
+        name: "↳ Always Prompt Features",
+        hint: "A comma-separated list of feature or item names (case-insensitive). When these features are used and have an Active Effect attached, the self-effect application prompt will be posted even if they were not self-targeted.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "Mage Armor",
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
