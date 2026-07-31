@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.14.12] - 2026-07-31
+### Fixed
+- **Player Damage Prompt**: Fixed an issue where the GM damage prompt (triggered when a player hits an NPC with **GM Damage Prompt for Player Attacks** enabled) was visible to both the player and the GM. The whisper-recipient logic now correctly keys on the attacker's role rather than solely on target ownership: when the attacker is a player, the prompt is always sent only to GMs, even when the target happens to be a player-owned actor (e.g. a familiar or companion). Additionally added a guard that suppresses message creation entirely when the recipient list would be empty (no GMs online), preventing an unintentional public broadcast.
+
 ## [14.14.11] - 2026-07-30
 ### Added
 - **Self Effect Application**: Added a new world setting **Always Prompt Features** (`selfEffectAlwaysPromptFeatures`), a text input field allowing a comma-separated list of feature/item names (default: `"Mage Armor"`). When these features are used and have an active effect attached, the self-effect application prompt is posted even if they were not self-targeted.

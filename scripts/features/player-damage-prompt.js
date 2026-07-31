@@ -350,14 +350,26 @@ async function _onCreateChatMessage_Attack(message) {
 
         // Determine target ownership and which prompt mode applies
         const playerOwned = _isPlayerOwned(actor);
+        const isPlayerAttack_Graze = (message.author ?? message.user) && !(message.author ?? message.user).isGM;
         let whisperTargets;
 
-        if (playerOwned && playerPromptEnabled) {
+        if (isPlayerAttack_Graze && gmPromptEnabled) {
+            // Player is the attacker — always whisper to GM only.
+            whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
+        } else if (!isPlayerAttack_Graze && playerOwned && playerPromptEnabled) {
+            // GM attacker, player-owned target → whisper to player (+ maybe GM).
             whisperTargets = _getWhisperTargets(actor);
-        } else if (!playerOwned && gmPromptEnabled) {
+        } else if (!isPlayerAttack_Graze && !playerOwned && gmPromptEnabled) {
+            // GM attacker, NPC target → whisper to GM only.
             whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
         } else {
             debug(`Player Damage Prompt | Graze: No matching prompt mode for ${actor.name}, skipping`);
+            continue;
+        }
+
+        // Guard: skip if no recipients (avoids unintentional public messages).
+        if (!whisperTargets.length) {
+            debug(`Player Damage Prompt | Graze: No whisper recipients available — skipping prompt for ${actor.name}`);
             continue;
         }
 
@@ -713,20 +725,35 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     const playerOwned = _isPlayerOwned(actor);
     let whisperTargets;
 
-    if (playerOwned && playerPromptEnabled) {
-        // Player-owned target → whisper to player (+ maybe GM per visibility setting)
-        whisperTargets = _getWhisperTargets(actor);
-        debug(`Player Damage Prompt |    Player-owned target, using player prompt mode`);
-    } else if (!playerOwned && gmPromptEnabled) {
-        // NPC target hit → whisper to GM only
+    if (isPlayerAttack && gmPromptEnabled) {
+        // Player is the attacker — always whisper to GM only, regardless of target
+        // ownership (e.g. player-owned familiars / companions should not also notify
+        // the owning player when a *fellow player* attacks them).
         whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
-        debug(`Player Damage Prompt |    NPC target hit, using GM prompt mode`);
+        debug(`Player Damage Prompt |    Player attacker, using GM-only prompt mode`);
+    } else if (!isPlayerAttack && playerOwned && playerPromptEnabled) {
+        // GM is the attacker and the target is player-owned → whisper to player
+        // (+ maybe GM per visibility setting).
+        whisperTargets = _getWhisperTargets(actor);
+        debug(`Player Damage Prompt |    GM attacker, player-owned target, using player prompt mode`);
+    } else if (!isPlayerAttack && !playerOwned && gmPromptEnabled) {
+        // GM is the attacker and the target is an NPC → whisper to GM only.
+        whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
+        debug(`Player Damage Prompt |    GM attacker, NPC target, using GM prompt mode`);
     } else {
         debug(`Player Damage Prompt |    ✗ ${actor.name}: no matching prompt mode`,
             `| playerOwned=${playerOwned}`,
             `| isPlayerAttack=${isPlayerAttack}`,
             `| playerPrompt=${playerPromptEnabled}`,
             `| gmPrompt=${gmPromptEnabled}`);
+        return;
+    }
+
+    // Guard: if there are no recipients (e.g. no GMs online when the no-GM
+    // fallback code path ran), skip creating the message rather than
+    // broadcasting an unintended public message (whisper: [] = public in Foundry).
+    if (!whisperTargets.length) {
+        debug(`Player Damage Prompt |    ✗ No whisper recipients available — skipping prompt for ${actor.name}`);
         return;
     }
 
