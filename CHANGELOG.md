@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [14.14.12] - 2026-07-31
 ### Fixed
-- **Player Damage Prompt**: Fixed an issue where the GM damage prompt (triggered when a player hits an NPC with **GM Damage Prompt for Player Attacks** enabled) was visible to both the player and the GM. The whisper-recipient logic now correctly keys on the attacker's role rather than solely on target ownership: when the attacker is a player, the prompt is always sent only to GMs, even when the target happens to be a player-owned actor (e.g. a familiar or companion). Additionally added a guard that suppresses message creation entirely when the recipient list would be empty (no GMs online), preventing an unintentional public broadcast.
+- **Player Damage Prompt**: Fixed an issue where damage prompt chat messages were broadcast publicly when no GM was online. Foundry VTT treats `whisper: []` (an empty recipient list) as a public message, so when the GM-only prompt fired while no GM was logged in the message was visible to all players. Added a guard that silently suppresses message creation when the whisper recipient list resolves to empty, preventing unintended public broadcasts.
 
 ## [14.14.11] - 2026-07-30
 ### Added
