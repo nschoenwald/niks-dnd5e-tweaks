@@ -2,15 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.14.12] - 2026-07-31
-### Fixed
-- **Player Damage Prompt**: Fixed an issue where damage prompt chat messages were broadcast publicly when no GM was online. Foundry VTT treats `whisper: []` (an empty recipient list) as a public message, so when the GM-only prompt fired while no GM was logged in the message was visible to all players. Added a guard that silently suppresses message creation when the whisper recipient list resolves to empty, preventing unintended public broadcasts.
-
-## [14.14.11] - 2026-07-30
+## [14.14.11] - 2026-07-31
 ### Added
 - **Self Effect Application**: Added a new world setting **Always Prompt Features** (`selfEffectAlwaysPromptFeatures`), a text input field allowing a comma-separated list of feature/item names (default: `"Mage Armor"`). When these features are used and have an active effect attached, the self-effect application prompt is posted even if they were not self-targeted.
 
 ### Fixed
+- **Player Damage Prompt**: Fixed an issue where damage prompt chat messages were broadcast publicly when no GM was online. Foundry VTT treats `whisper: []` (an empty recipient list) as a public message, so when the GM-only prompt fired while no GM was logged in the message was visible to all players. Added a guard that silently suppresses message creation when the whisper recipient list resolves to empty, preventing unintended public broadcasts.
 - **Canvas Crash on Token Deletion (Prone Rotation)**: Added safety checks to verify canvas readiness and scene token membership before attempting `updateEmbeddedDocuments("Token", ...)` during `deleteActiveEffect` hooks. Prevents document update collisions when deleting tokens with active status conditions.
 - **Canvas Crash on Token Deletion (Disable Underground Token Hiding)**: Added `!mesh.destroyed` and token document validity checks in `_refreshElevation` to prevent mutating PIXI mesh elevation properties on destroyed placeable objects during token deletion.
 - **Auto-Status at 0 HP**: Added checks for deleted actors and unlinked tokens removed from the active scene to avoid attempting status updates during or after token deletion.
