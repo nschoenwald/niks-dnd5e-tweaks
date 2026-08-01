@@ -134,30 +134,79 @@ function _hasManualSelfTarget(actor, results) {
     return false;
 }
 
+function _cleanName(str) {
+    return (str || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 /**
  * Retrieve applicable Active Effects for an activity or its parent item.
+ * Generates a synthetic fallback effect for always-prompt items without pre-created effects.
  *
  * @param {Activity} activity
+ * @param {boolean} [isAlwaysPrompt=false]
  * @returns {ActiveEffect5e[]}
  */
-function _getApplicableEffects(activity) {
+function _getApplicableEffects(activity, isAlwaysPrompt = false) {
+    let effects = [];
+    const item = activity.item;
+    const itemName = item?.name || "Effect";
+
     // 1. Check activity.applicableEffects first
     const actEffects = activity.applicableEffects;
-    if (actEffects && actEffects.length > 0) return Array.from(actEffects);
-
-    // 2. Fall back to non-transfer ActiveEffects on the item itself
-    const item = activity.item;
-    if (item?.effects?.size > 0 || item?.effects?.length > 0) {
-        const itemEffects = Array.from(item.effects.values ? item.effects.values() : item.effects);
-        const nonTransfer = itemEffects.filter(e => !e.transfer);
-        if (nonTransfer.length > 0) return nonTransfer;
+    if (actEffects && actEffects.length > 0) {
+        effects = Array.from(actEffects);
     }
 
-    return [];
+    // 2. Fall back to ActiveEffects on the item itself
+    if (!effects.length && item) {
+        if (item.effects?.size > 0 || item.effects?.length > 0) {
+            const itemEffects = Array.from(item.effects.values ? item.effects.values() : item.effects);
+            const nonTransfer = itemEffects.filter(e => !e.transfer);
+            effects = nonTransfer.length > 0 ? nonTransfer : itemEffects;
+        }
+    }
+
+    // 3. Fallback for always-prompt features (like Mage Armor) without pre-created ActiveEffect documents
+    if (!effects.length && isAlwaysPrompt) {
+        const effectImg = item?.img || activity.img || "icons/svg/aura.svg";
+        const isMageArmor = _cleanName(itemName).includes("magearmor");
+
+        const changes = isMageArmor ? [
+            { key: "system.attributes.ac.calc", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: "mage", priority: 20 }
+        ] : [];
+
+        effects = [{
+            name: itemName,
+            img: effectImg,
+            changes: changes,
+            disabled: false,
+            duration: isMageArmor ? { seconds: 28800 } : {},
+            uuid: `${item?.uuid || activity.uuid}.SyntheticEffect`
+        }];
+    }
+
+    // Replace generic activity effect names (like "use", "cast", "utility", "effect") with the Item Name
+    if (itemName) {
+        effects = effects.map(e => {
+            const eName = (e.name ?? e.label ?? "").trim().toLowerCase();
+            if (!eName || eName === "use" || eName === "cast" || eName === "utility" || eName === "effect") {
+                if (typeof e.toObject === "function") {
+                    const obj = e.toObject();
+                    obj.name = itemName;
+                    return obj;
+                }
+                return { ...e, name: itemName };
+            }
+            return e;
+        });
+    }
+
+    return effects;
 }
 
 /**
  * Check whether an activity or its parent item matches the configured list of always-prompt features.
+ * Performs lookup primarily by Item Name or Item Identifier.
  *
  * @param {Activity} activity
  * @returns {boolean}
@@ -168,16 +217,20 @@ function _isAlwaysPromptFeature(activity) {
 
     const list = rawList
         .split(",")
-        .map(s => s.trim().toLowerCase())
+        .map(s => _cleanName(s))
         .filter(Boolean);
 
     if (!list.length) return false;
 
-    const itemName = (activity.item?.name || "").trim().toLowerCase();
-    const activityName = (activity.name || "").trim().toLowerCase();
-    const itemIdentifier = (activity.item?.system?.identifier || "").trim().toLowerCase();
+    const cItemName = _cleanName(activity.item?.name);
+    const cIdentifier = _cleanName(activity.item?.system?.identifier);
 
-    return list.some(entry => entry === itemName || entry === activityName || (itemIdentifier && entry === itemIdentifier));
+    return list.some(entry => {
+        if (!entry) return false;
+        if (cItemName && (cItemName === entry || cItemName.includes(entry) || entry.includes(cItemName))) return true;
+        if (cIdentifier && (cIdentifier === entry || cIdentifier.includes(entry) || entry.includes(cIdentifier))) return true;
+        return false;
+    });
 }
 
 async function _onPostUseActivity(activity, usageConfig, results) {
@@ -194,9 +247,6 @@ async function _onPostUseActivity(activity, usageConfig, results) {
             }
         }
 
-        // Ignore CastActivity containers since the cast spell's own activity will execute
-        if (activity.type === "cast") return;
-
         const actor = activity.item?.actor;
         if (!actor) return;
 
@@ -208,8 +258,8 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         if (!isIntrinsicSelf && !isManualSelf && !isAlwaysPrompt) return;
 
-        // Retrieve applicable Active Effects from the activity or parent item.
-        const applicableEffects = _getApplicableEffects(activity);
+        // Retrieve applicable Active Effects from the activity or parent item (with synthetic fallback for always-prompt items).
+        const applicableEffects = _getApplicableEffects(activity, isAlwaysPrompt);
         if (!applicableEffects.length) return;
 
         // Filter out effects that are already active on the target actor
@@ -220,11 +270,11 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         });
 
         if (!unappliedEffects.length) {
-            debug(`Self Effect Application | All self effects for "${activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
+            debug(`Self Effect Application | All self effects for "${activity.item?.name || activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
             return;
         }
 
-        debug(`Self Effect Application | Activity "${activity.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
+        debug(`Self Effect Application | Item "${activity.item?.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
 
         await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
     } catch (err) {
@@ -233,7 +283,8 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 }
 
 /**
- * Check whether an effect is already active on an actor.
+ * Check whether an effect is currently active as an applied buff on an actor.
+ * Matches against Item Name, Effect Name, or Source Effect UUID.
  *
  * @param {Actor5e} actor
  * @param {ActiveEffect5e} effect
@@ -243,22 +294,32 @@ async function _onPostUseActivity(activity, usageConfig, results) {
  * @returns {boolean}
  */
 function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity) {
-    if (effect.transfer && !effect.disabled && !effect.isSuppressed) return true;
-
-    const cleanName = (effectName || "").trim().toLowerCase();
-    const itemUuid = activity.item?.uuid;
+    const cleanItemName = _cleanName(activity.item?.name);
+    const cleanEffectName = _cleanName(effectName || effect.name || effect.label);
 
     return actor.effects.some(e => {
+        // Must be enabled and not suppressed
         if (e.disabled || e.isSuppressed) return false;
 
-        if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.origin === effectUuid)) return true;
-        if (itemUuid && e.origin === itemUuid) return true;
-        const eName = (e.name || e.label || "").trim().toLowerCase();
-        if (cleanName && eName && (eName === cleanName || eName.includes(cleanName) || cleanName.includes(eName))) return true;
+        // Ignore static/passive item transfer effect definitions on the actor
+        if (e.transfer) return false;
+
+        // Match exact effect UUID or flag origin
+        if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid)) return true;
+
+        // Match by exact clean item name or effect name
+        const eName = _cleanName(e.name || e.label);
+        if (eName) {
+            if (cleanItemName && eName === cleanItemName) return true;
+            if (cleanEffectName && eName === cleanEffectName) return true;
+        }
 
         return false;
     });
 }
+
+
+
 
 // ── Chat card creation ───────────────────────────────────────────────
 

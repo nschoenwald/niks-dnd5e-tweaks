@@ -361,3 +361,86 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     justify-content: center;
     gap: 6px;
 }
+
+/* ── Toolbar Limitation ─────────────────────────────────────────────── */
+
+#scene-controls .nd5t-scrollable-toolbar,
+#scene-controls menu.nd5t-scrollable-toolbar,
+#controls .nd5t-scrollable-toolbar,
+.nd5t-scrollable-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+#scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar,
+#scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar,
+#controls .nd5t-scrollable-toolbar::-webkit-scrollbar,
+.nd5t-scrollable-toolbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+#scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-track,
+#scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-track,
+#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-track,
+.nd5t-scrollable-toolbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
+#scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
+#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
+.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+#scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
+#scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
+#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
+.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Directional Arrow Indicators */
+.nd5t-toolbar-arrow {
+    position: sticky;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, background 0.15s ease;
+    border-radius: 3px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.nd5t-toolbar-arrow-up {
+    top: 0;
+    margin-bottom: -16px;
+}
+
+.nd5t-toolbar-arrow-down {
+    bottom: 0;
+    margin-top: -16px;
+}
+
+.nd5t-toolbar-arrow:hover {
+    background: rgba(0, 0, 0, 0.98);
+    color: #fff;
+}

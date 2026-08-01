@@ -26,6 +26,9 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Sidebar Multi-line Names**: Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.
 * **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Especially useful when detaching windows in V14, where the prefix otherwise consumes all visible space in the OS taskbar.
   * *↳ Sheet Title Format* — controls how titles are displayed (choices: **Name Only** (default), Type: Name, Name (Type)).
+* **Toolbar Limitation**: When the number of buttons in a given toolbar (such as Scene Controls) exceeds a configurable value, turns the toolbar scrollable and limits the displayed buttons to that number.
+  * *↳ Max Displayed Toolbar Buttons* — controls the maximum number of buttons displayed before turning scrollable (default: **12**).
+
 
 ### Group 2: Canvas & Tokens
 

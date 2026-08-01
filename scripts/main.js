@@ -10,6 +10,7 @@ import { initTemplateGridSnap } from "./features/template-grid-snap.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
 import { initBloodDropIcon } from "./features/blood-drop-icon.js";
 import { initCleanSheetTitles } from "./features/clean-sheet-titles.js";
+import { initToolbarLimitation, applyToolbarLimitation, resetToolbars } from "./features/toolbar-limitation.js";
 
 import { initDeathSavePrompt } from "./features/death-save-prompt.js";
 import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
@@ -144,6 +145,35 @@ Hooks.once("init", () => {
             suffix: "Name (Type)"
         },
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableToolbarLimitation", {
+        name: "Toolbar Limitation",
+        hint: "When the number of buttons in a given toolbar exceeds a configured limit, turns the toolbar scrollable and limits the visible height to display only that number of buttons at a time.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) applyToolbarLimitation();
+            else resetToolbars();
+            ui.controls?.render();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "toolbarButtonLimit", {
+        name: "↳ Max Displayed Toolbar Buttons",
+        hint: "The maximum number of buttons to display in a toolbar before it becomes scrollable.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 12,
+        restricted: true,
+        onChange: () => {
+            applyToolbarLimitation();
+            ui.controls?.render();
+        }
     });
 
     // ==========================================
@@ -587,6 +617,7 @@ Hooks.once("init", () => {
     initBloodDropIcon();
     initTokenResizer();
     initDisableUndergroundTokenHiding();
+    initToolbarLimitation();
 });
 
 Hooks.once("setup", () => {
