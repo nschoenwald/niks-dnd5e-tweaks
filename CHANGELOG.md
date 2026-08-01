@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.15.1] - 2026-08-01
+### Fixed
+- **Toolbar Limitation**: Ensured toolbar limitation does not apply to the macro toolbar / hotbar.
+
+
 ## [14.15.0] - 2026-08-01
 ### Added
 - **Toolbar Limitation**: Added a new world setting **Toolbar Limitation** (`enableToolbarLimitation`) and sub-setting **↳ Max Displayed Toolbar Buttons** (`toolbarButtonLimit`, default `12`). When the number of buttons in a toolbar (such as Scene Controls) exceeds the limit, turns the toolbar scrollable and caps the visible size to display only that number of buttons at a time. Compatible with both Foundry V13 and V14.

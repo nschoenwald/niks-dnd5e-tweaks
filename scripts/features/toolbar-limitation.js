@@ -3,6 +3,50 @@ import { MODULE_ID, debug } from "../main.js";
 let observer = null;
 
 /**
+ * Checks whether an element is or is inside a macro toolbar / hotbar.
+ * @param {HTMLElement} element
+ * @returns {boolean}
+ */
+export function isMacroToolbar(element) {
+    if (!element) return false;
+
+    // Check against ui.hotbar element if available
+    if (ui.hotbar?.element && (ui.hotbar.element === element || ui.hotbar.element.contains(element))) {
+        return true;
+    }
+
+    const macroSelector = [
+        "#hotbar",
+        "#hotbar-directory",
+        "#macro-list",
+        "#macro-directory",
+        "#macro-bar",
+        "#action-bar",
+        ".hotbar",
+        ".macro-list",
+        ".macro-bar",
+        ".macro-toolbar",
+        "[data-appid='hotbar']",
+        "[id*='hotbar']",
+        "[id*='macro-bar']",
+        "[id*='macro-toolbar']",
+        "[class*='hotbar']",
+        "[class*='macro-bar']",
+        "[class*='macro-toolbar']"
+    ].join(", ");
+
+    try {
+        if (element.matches?.(macroSelector) || element.closest?.(macroSelector)) {
+            return true;
+        }
+    } catch (e) {
+        // Safe fallback
+    }
+
+    return false;
+}
+
+/**
  * Finds all toolbar list containers in scene controls (supporting both V13 and V14 DOM structures).
  * @returns {HTMLElement[]} List of toolbar container elements
  */
@@ -23,13 +67,13 @@ function getToolbarContainers() {
         ".control-tools"
     ].join(", ");
 
-    const elements = Array.from(document.querySelectorAll(selector));
+    const elements = Array.from(document.querySelectorAll(selector)).filter(el => !isMacroToolbar(el));
 
     // Fallback: search within root controls element if selector returned nothing
     if (elements.length === 0) {
         const root = document.getElementById("scene-controls") || document.getElementById("controls") || ui.controls?.element;
-        if (root) {
-            return Array.from(root.children).filter(child => child.children.length > 0);
+        if (root && !isMacroToolbar(root)) {
+            return Array.from(root.children).filter(child => child.children.length > 0 && !isMacroToolbar(child));
         }
     }
 
@@ -45,10 +89,23 @@ export function applyToolbarLimitation() {
         return;
     }
 
+    // Clean up any macro toolbars if they were previously targeted
+    const macroElements = document.querySelectorAll(".nd5t-scrollable-toolbar, #hotbar, #macro-list, .hotbar, .macro-bar, .macro-toolbar");
+    for (const el of macroElements) {
+        if (isMacroToolbar(el)) {
+            resetSingleToolbar(el);
+        }
+    }
+
     const limit = game.settings.get(MODULE_ID, "toolbarButtonLimit") || 12;
     const toolbars = getToolbarContainers();
 
     for (const toolbar of toolbars) {
+        if (isMacroToolbar(toolbar)) {
+            resetSingleToolbar(toolbar);
+            continue;
+        }
+
         // Collect visible button items inside this toolbar container (excluding indicator arrows)
         const buttons = Array.from(toolbar.children).filter(child => {
             if (child.classList.contains("nd5t-toolbar-arrow")) return false;
@@ -71,7 +128,7 @@ export function applyToolbarLimitation() {
  * and enables scrolling with directional arrow indicators.
  */
 function updateSingleToolbar(toolbar, buttons, limit) {
-    if (!buttons || buttons.length <= limit) {
+    if (isMacroToolbar(toolbar) || !buttons || buttons.length <= limit) {
         resetSingleToolbar(toolbar);
         return;
     }
@@ -212,6 +269,12 @@ export function resetToolbars() {
     const toolbars = getToolbarContainers();
     for (const toolbar of toolbars) {
         resetSingleToolbar(toolbar);
+    }
+    const macroElements = document.querySelectorAll(".nd5t-scrollable-toolbar, #hotbar, #macro-list, .hotbar, .macro-bar, .macro-toolbar");
+    for (const el of macroElements) {
+        if (isMacroToolbar(el)) {
+            resetSingleToolbar(el);
+        }
     }
 }
 
