@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.16.1] - 2026-08-04
+### Fixed
+- **Self Effect Application**: Fixed applying status effects (such as *Mage Armor*) when the caster's token is not present on the active scene. Synthetic fallback effects now include status IDs (`statuses: ["mage-armor"]`), effect status Sets are preserved as Arrays during chat message flag serialization to prevent data loss, and item transfer definitions (`e.transfer === true`) are excluded when finding existing active effects to avoid updating passive definitions instead of applying active effect instances.
+- **Self Effect Application**: The synthetic ActiveEffect fallback for always-prompt items no longer generates an empty, inert effect for unrecognised items. Any item in the *Always Prompt Features* list without a pre-created ActiveEffect document and no known synthetic data will now simply skip the prompt rather than creating a named-but-meaningless ActiveEffect on the actor.
+- **Self Effect Application**: Removed locale-dependent label comparisons (`activity.labels.target === "self"`) from `_isSelfTargeted`. These compared against the hard-coded English string and would silently fail on non-English Foundry installations. All canonical self-target configurations are covered by the data-model checks.
+
+### Changed
+- **Auto-End Class Features** (setting renamed from *Auto-End Rage*): Updated the setting name and hint to correctly document all three class features it manages — Barbarian Rage, Wrath of the Sea, and Druid Wild Shape Starry Form. The internal setting key (`enableAutoEndRage`) is unchanged, so existing saved values are preserved.
+- **Auto-Roll Concentration**: Increased the recent-message scan window from 5 to 10 messages when matching a newly posted concentration save to its source roll. Reduces the risk of missing the correct message during sessions with high concurrent roll volume (e.g. many AOE saves at the same time).
+- **Socket Architecture**: Consolidated the module socket listener into a single central dispatcher in `main.js`. Previously each feature (*Player Damage Prompt*, *Self Effect Application*) registered its own `game.socket.on()` listener independently. The new dispatcher routes all module socket traffic to the correct handler by `data.type`.
+
+
+
+## [14.16.0] - 2026-08-03
+### Added
+- **Auto-Add Tokens to Combat**: Added a new world setting **Auto-Add Tokens to Combat** (`enableAutoAddTokensToCombat`, enabled by default). When a token is created or dragged onto the canvas while a combat encounter is active, it is automatically added to the combat tracker and its initiative is rolled immediately.
+
+
 ## [14.15.1] - 2026-08-01
 ### Fixed
 - **Toolbar Limitation**: Ensured toolbar limitation does not apply to the macro toolbar / hotbar.

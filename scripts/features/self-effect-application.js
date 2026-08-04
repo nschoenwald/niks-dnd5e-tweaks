@@ -37,12 +37,6 @@ export function initSelfEffectApplication() {
     // Foundry does NOT re-fire renderChatMessage on flag changes.
     Hooks.on("updateChatMessage", _onUpdateSelfEffectApplied);
 
-    // Socket listener — non-GM clients ask the GM to write flags.
-    Hooks.once("ready", () => {
-        game.socket.on(`module.${MODULE_ID}`, _onSocketMessage);
-        debug("Self Effect Application | Socket listener registered");
-    });
-
     debug("Self Effect Application | Initialized");
 }
 
@@ -83,11 +77,10 @@ function _isSelfTargeted(activity) {
     // 4. Item system range units
     if (item?.system?.range?.units === "self") return true;
 
-    // 5. Formatted labels (fallback for localized/custom target descriptions)
-    if (activity.labels?.target?.toLowerCase() === "self") return true;
-    if (activity.labels?.range?.toLowerCase() === "self") return true;
-    if (item?.labels?.target?.toLowerCase() === "self") return true;
-    if (item?.labels?.range?.toLowerCase() === "self") return true;
+    // 5. Formatted labels — intentionally omitted: activity.labels are
+    //    locale-dependent strings and comparing them against the English
+    //    "self" would silently break for non-English installations.
+    //    All canonical self-target configurations are covered by checks 1–4.
 
     return false;
 }
@@ -166,23 +159,32 @@ function _getApplicableEffects(activity, isAlwaysPrompt = false) {
         }
     }
 
-    // 3. Fallback for always-prompt features (like Mage Armor) without pre-created ActiveEffect documents
+    // 3. Fallback for always-prompt features (like Mage Armor) without pre-created ActiveEffect documents.
+    //    Only generate a synthetic effect when it would carry meaningful data (changes or statuses).
+    //    For unrecognised items, skip the fallback entirely — an empty synthetic would create a
+    //    named-but-inert ActiveEffect on the actor when applied, which is confusing.
     if (!effects.length && isAlwaysPrompt) {
         const effectImg = item?.img || activity.img || "icons/svg/aura.svg";
         const isMageArmor = _cleanName(itemName).includes("magearmor");
 
-        const changes = isMageArmor ? [
-            { key: "system.attributes.ac.calc", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: "mage", priority: 20 }
-        ] : [];
-
-        effects = [{
-            name: itemName,
-            img: effectImg,
-            changes: changes,
-            disabled: false,
-            duration: isMageArmor ? { seconds: 28800 } : {},
-            uuid: `${item?.uuid || activity.uuid}.SyntheticEffect`
-        }];
+        if (isMageArmor) {
+            // Mage Armor: synthetic effect that sets the AC calculation mode and
+            // stamps the "mage-armor" status so the system can detect it.
+            effects = [{
+                name: itemName,
+                img: effectImg,
+                changes: [
+                    { key: "system.attributes.ac.calc", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: "mage", priority: 20 }
+                ],
+                statuses: ["mage-armor"],
+                disabled: false,
+                duration: { seconds: 28800 },
+                uuid: `${item?.uuid || activity.uuid}.SyntheticEffect`
+            }];
+        }
+        // Other always-prompt items without a pre-created ActiveEffect:
+        // leave effects empty; the caller (_onPostUseActivity) will skip the
+        // prompt when effects is empty, which is the correct behaviour.
     }
 
     // Replace generic activity effect names (like "use", "cast", "utility", "effect") with the Item Name
@@ -284,7 +286,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
 /**
  * Check whether an effect is currently active as an applied buff on an actor.
- * Matches against Item Name, Effect Name, or Source Effect UUID.
+ * Matches against Item Name, Effect Name, Source Effect UUID, or Status IDs.
  *
  * @param {Actor5e} actor
  * @param {ActiveEffect5e} effect
@@ -296,6 +298,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity) {
     const cleanItemName = _cleanName(activity.item?.name);
     const cleanEffectName = _cleanName(effectName || effect.name || effect.label);
+    const effectStatuses = effect.statuses ? Array.from(effect.statuses) : [];
 
     return actor.effects.some(e => {
         // Must be enabled and not suppressed
@@ -306,6 +309,11 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
 
         // Match exact effect UUID or flag origin
         if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid)) return true;
+
+        // Match by status ID overlap
+        if (effectStatuses.length > 0 && e.statuses?.size > 0) {
+            if (effectStatuses.some(statusId => e.statuses.has(statusId))) return true;
+        }
 
         // Match by exact clean item name or effect name
         const eName = _cleanName(e.name || e.label);
@@ -355,10 +363,18 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
 
     // Serialize effect data into flags as an array (safe from DOMPurify AND Foundry dot-expansion).
     // Keys in objects are expanded by Foundry's setFlag/create if they contain dots (like UUIDs).
-    const effectFlagData = effects.map(effect => ({
-        uuid: effect.uuid ?? effect.id ?? "",
-        data: effect.toObject ? effect.toObject() : effect
-    }));
+    const effectFlagData = effects.map(effect => {
+        const rawData = effect.toObject ? effect.toObject() : foundry.utils.deepClone(effect);
+        if (rawData.statuses) {
+            rawData.statuses = Array.from(rawData.statuses);
+        } else if (effect.statuses) {
+            rawData.statuses = Array.from(effect.statuses);
+        }
+        return {
+            uuid: effect.uuid ?? effect.id ?? "",
+            data: rawData
+        };
+    });
 
     // Build one button row per effect.
     const effectButtons = effects.map(effect => {
@@ -499,6 +515,7 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
         const sourceEffect = effectUuid ? await fromUuid(effectUuid) : null;
         const itemUuid = effectUuid ? effectUuid.split(".ActiveEffect")[0] : null;
         const cleanTargetName = (effectName || effectData.name || effectData.label || "").trim().toLowerCase();
+        const effectStatuses = effectData.statuses ? Array.from(effectData.statuses) : [];
 
         if (sourceEffect && sourceEffect.transfer) {
             debug(`Self Effect Application | Enabling transferred source effect "${sourceEffect.name}" (${sourceEffect.id}) on ${actor.name}`);
@@ -517,9 +534,13 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
                 await duplicateEffect.delete();
             }
         } else {
-            // Find existing effect on actor: match by effect UUID, parent item UUID, or normalized name/label
+            // Find existing non-transfer effect on actor: match by effect UUID, status ID overlap, parent item UUID, or normalized name/label
             const existingEffect = actor.effects.find(e => {
+                if (e.transfer) return false; // Ignore static passive item transfer definitions
                 if (effectUuid && (e.uuid === effectUuid || e.id === sourceEffect?.id || e.origin === effectUuid)) return true;
+                if (effectStatuses.length > 0 && e.statuses?.size > 0) {
+                    if (effectStatuses.some(s => e.statuses.has(s))) return true;
+                }
                 if (itemUuid && e.origin === itemUuid) return true;
                 const eName = (e.name || e.label || "").trim().toLowerCase();
                 if (cleanTargetName && eName && (eName === cleanTargetName || eName.includes(cleanTargetName) || cleanTargetName.includes(eName))) return true;
@@ -528,7 +549,17 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
 
             if (existingEffect) {
                 debug(`Self Effect Application | Enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
-                await existingEffect.update({ disabled: false, origin: effectUuid || existingEffect.origin });
+                const updateData = {
+                    disabled: false,
+                    origin: effectUuid || existingEffect.origin
+                };
+                if (effectData.changes && effectData.changes.length > 0) updateData.changes = effectData.changes;
+                if (effectData.duration) updateData.duration = effectData.duration;
+                if (effectStatuses.length > 0) updateData.statuses = effectStatuses;
+                if (effectData.img) updateData.img = effectData.img;
+                if (effectData.name) updateData.name = effectData.name;
+
+                await existingEffect.update(updateData);
                 createdId = existingEffect.id;
             } else {
                 const data = foundry.utils.deepClone(effectData);
@@ -536,6 +567,7 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
                 data.disabled = false;
                 data.transfer = false;
                 if (effectUuid) data.origin = effectUuid;
+                if (effectStatuses.length > 0) data.statuses = effectStatuses;
 
                 const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
                 createdId = created?.id;
@@ -665,9 +697,10 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, actorU
 
     try {
         const actor = await fromUuid(actorUuid);
-        let effect = effectUuid ? await fromUuid(effectUuid) : null;
-        if (!effect && actor) {
-            effect = actor.effects.get(createdId);
+        // Look up the created effect document directly on the actor first
+        let effect = actor?.effects?.get(createdId);
+        if (!effect && effectUuid) {
+            effect = await fromUuid(effectUuid);
         }
 
         if (effect) {
@@ -815,9 +848,10 @@ async function _writeEffectsAppliedFlag(messageId, effectsApplied) {
 
 /**
  * Handle incoming socket messages relevant to self-effect application.
+ * Called by the central socket dispatcher in main.js.
  * @param {object} data  The socket payload.
  */
-function _onSocketMessage(data) {
+export function onSocketMessage(data) {
     if (data?.type !== "selfEffectApplied") return;
 
     const msg = game.messages.get(data.messageId);

@@ -45,13 +45,6 @@ export function initPlayerDamagePrompt() {
     // manually update the button DOM on all clients.
     Hooks.on("updateChatMessage", _onUpdateDamageApplied);
 
-    // Socket listener — any client can ask the GM to mark a message as applied.
-    // We register this in 'ready' to ensure the listener isn't dropped during startup.
-    Hooks.once("ready", () => {
-        game.socket.on(`module.${MODULE_ID}`, _onSocketMessage);
-        debug("Player Damage Prompt | Socket listener registered");
-    });
-
     debug("Player Damage Prompt | Initialized hooks");
 }
 
@@ -133,116 +126,116 @@ async function _onCreateChatMessage(message) {
         const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
         if (!playerPromptEnabled && !gmPromptEnabled) return;
 
-    // Skip if midi-qol is active and configured to auto-apply damage
-    if (game.modules.get("midi-qol")?.active) {
-        const midiAutoApply = globalThis.MidiQOL?.configSettings?.()?.autoApplyDamage
-            ?? game.settings.get("midi-qol", "ConfigSettings")?.autoApplyDamage;
-        if (midiAutoApply && midiAutoApply.toLowerCase().includes("yes")) {
-            debug("Player Damage Prompt | midi-qol detected and auto-applies damage — feature bypassed.");
+        // Skip if midi-qol is active and configured to auto-apply damage
+        if (game.modules.get("midi-qol")?.active) {
+            const midiAutoApply = globalThis.MidiQOL?.configSettings?.()?.autoApplyDamage
+                ?? game.settings.get("midi-qol", "ConfigSettings")?.autoApplyDamage;
+            if (midiAutoApply && midiAutoApply.toLowerCase().includes("yes")) {
+                debug("Player Damage Prompt | midi-qol detected and auto-applies damage — feature bypassed.");
+                return;
+            }
+        }
+
+        // Only process damage rolls from attack activities by default,
+        // unless non-attack damage prompts are enabled.
+        const rollType = message.getFlag("dnd5e", "roll.type");
+        const activityType = message.getFlag("dnd5e", "activity.type");
+        if (rollType !== "damage" && rollType !== "healing") return;
+
+        const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
+        if (activityType !== "attack" && !nonAttackPromptEnabled) return;
+
+        // Only trigger on public rolls — skip private (GM), blind, and self rolls
+        const isPublic = (!message.whisper?.length) && !message.blind;
+        if (!isPublic) {
+            debug("Player Damage Prompt | Non-public roll detected (whisper/blind), skipping");
             return;
         }
-    }
 
-    // Only process damage rolls from attack activities by default,
-    // unless non-attack damage prompts are enabled.
-    const rollType = message.getFlag("dnd5e", "roll.type");
-    const activityType = message.getFlag("dnd5e", "activity.type");
-    if (rollType !== "damage" && rollType !== "healing") return;
+        // Determine if this damage was rolled by a player (non-GM author)
+        const messageAuthor = message.author ?? message.user;
+        const isPlayerAttack = messageAuthor && !messageAuthor.isGM;
 
-    const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
-    if (activityType !== "attack" && !nonAttackPromptEnabled) return;
+        debug("Player Damage Prompt | Attack damage roll detected",
+            "| Message ID:", message.id,
+            "| Author:", messageAuthor?.name, `(${isPlayerAttack ? "player" : "GM"})`,
+            "| Roll type:", rollType,
+            "| Activity type:", activityType,
+            "| Activity ID:", message.getFlag("dnd5e", "activity.id"),
+            "| Settings: playerPrompt=", playerPromptEnabled, "gmPrompt=", gmPromptEnabled);
 
-    // Only trigger on public rolls — skip private (GM), blind, and self rolls
-    const isPublic = (!message.whisper?.length) && !message.blind;
-    if (!isPublic) {
-        debug("Player Damage Prompt | Non-public roll detected (whisper/blind), skipping");
-        return;
-    }
+        // Find the originating (usage) message to get original targets
+        const originatingId = message.getFlag("dnd5e", "originatingMessage");
+        const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
+        debug("Player Damage Prompt | Originating message:",
+            originatingId ? `ID ${originatingId}` : "(none)",
+            "| Found:", !!originatingMessage);
 
-    // Determine if this damage was rolled by a player (non-GM author)
-    const messageAuthor = message.author ?? message.user;
-    const isPlayerAttack = messageAuthor && !messageAuthor.isGM;
+        // Prefer targets from the originating (usage) message, fall back to the damage message
+        const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
+        const damageTargets = message.getFlag("dnd5e", "targets");
+        const targets = originTargets || damageTargets || [];
+        debug("Player Damage Prompt | Targets from originating message:", originTargets?.length ?? 0,
+            "| Targets from damage message:", damageTargets?.length ?? 0,
+            "| Using:", targets.length, "targets",
+            targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
 
-    debug("Player Damage Prompt | Attack damage roll detected",
-        "| Message ID:", message.id,
-        "| Author:", messageAuthor?.name, `(${isPlayerAttack ? "player" : "GM"})`,
-        "| Roll type:", rollType,
-        "| Activity type:", activityType,
-        "| Activity ID:", message.getFlag("dnd5e", "activity.id"),
-        "| Settings: playerPrompt=", playerPromptEnabled, "gmPrompt=", gmPromptEnabled);
-
-    // Find the originating (usage) message to get original targets
-    const originatingId = message.getFlag("dnd5e", "originatingMessage");
-    const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
-    debug("Player Damage Prompt | Originating message:",
-        originatingId ? `ID ${originatingId}` : "(none)",
-        "| Found:", !!originatingMessage);
-
-    // Prefer targets from the originating (usage) message, fall back to the damage message
-    const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
-    const damageTargets = message.getFlag("dnd5e", "targets");
-    const targets = originTargets || damageTargets || [];
-    debug("Player Damage Prompt | Targets from originating message:", originTargets?.length ?? 0,
-        "| Targets from damage message:", damageTargets?.length ?? 0,
-        "| Using:", targets.length, "targets",
-        targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
-
-    if (!targets.length) {
-        debug("Player Damage Prompt | No targets found, skipping");
-        return;
-    }
-
-    // Find the attack roll message (shares the same originatingMessage)
-    let attackMessage = null;
-    let attackRoll = null;
-    
-    if (activityType === "attack") {
-        attackMessage = _findAttackMessage(originatingId);
-        if (!attackMessage) {
-            debug("Player Damage Prompt | No attack roll message found in last 30 messages for originatingId:", originatingId);
+        if (!targets.length) {
+            debug("Player Damage Prompt | No targets found, skipping");
             return;
         }
-        debug("Player Damage Prompt | Found attack roll message:", attackMessage.id,
-            "| Rolls count:", attackMessage.rolls.length);
-    }
 
-    if (activityType === "attack") {
-        // Extract the D20Roll from the attack message
-        attackRoll = _getAttackD20Roll(attackMessage);
-        if (!attackRoll) {
-            debug("Player Damage Prompt | No valid D20 attack roll found in message", attackMessage.id);
+        // Find the attack roll message (shares the same originatingMessage)
+        let attackMessage = null;
+        let attackRoll = null;
+
+        if (activityType === "attack") {
+            attackMessage = _findAttackMessage(originatingId);
+            if (!attackMessage) {
+                debug("Player Damage Prompt | No attack roll message found in last 30 messages for originatingId:", originatingId);
+                return;
+            }
+            debug("Player Damage Prompt | Found attack roll message:", attackMessage.id,
+                "| Rolls count:", attackMessage.rolls.length);
+        }
+
+        if (activityType === "attack") {
+            // Extract the D20Roll from the attack message
+            attackRoll = _getAttackD20Roll(attackMessage);
+            if (!attackRoll) {
+                debug("Player Damage Prompt | No valid D20 attack roll found in message", attackMessage.id);
+                return;
+            }
+            debug("Player Damage Prompt | Attack roll:",
+                "total =", attackRoll.total,
+                "| isCritical =", !!attackRoll.isCritical,
+                "| isFumble =", !!attackRoll.isFumble,
+                "| formula =", attackRoll.formula);
+        }
+
+        // Aggregate damage by type from the damage rolls
+        const damageByType = _aggregateDamage(message.rolls);
+        if (Object.keys(damageByType).length === 0) {
+            debug("Player Damage Prompt | No damage entries found in", message.rolls.length, "rolls, skipping");
             return;
         }
-        debug("Player Damage Prompt | Attack roll:",
-            "total =", attackRoll.total,
-            "| isCritical =", !!attackRoll.isCritical,
-            "| isFumble =", !!attackRoll.isFumble,
-            "| formula =", attackRoll.formula);
-    }
+        debug("Player Damage Prompt | Aggregated damage by type:",
+            Object.entries(damageByType).map(([t, v]) => `${v} ${t}`).join(", "),
+            "| Raw rolls:", message.rolls.length);
 
-    // Aggregate damage by type from the damage rolls
-    const damageByType = _aggregateDamage(message.rolls);
-    if (Object.keys(damageByType).length === 0) {
-        debug("Player Damage Prompt | No damage entries found in", message.rolls.length, "rolls, skipping");
-        return;
-    }
-    debug("Player Damage Prompt | Aggregated damage by type:",
-        Object.entries(damageByType).map(([t, v]) => `${v} ${t}`).join(", "),
-        "| Raw rolls:", message.rolls.length);
+        // Build a per-roll DamageDescription array (preserving properties for applyDamage)
+        const rawDamages = _buildDamageDescriptions(message.rolls);
+        debug("Player Damage Prompt | Built", rawDamages.length, "DamageDescriptions:",
+            rawDamages.map(d => `${d.value} ${d.type} [${d.properties.join(",") || "no props"}]`));
 
-    // Build a per-roll DamageDescription array (preserving properties for applyDamage)
-    const rawDamages = _buildDamageDescriptions(message.rolls);
-    debug("Player Damage Prompt | Built", rawDamages.length, "DamageDescriptions:",
-        rawDamages.map(d => `${d.value} ${d.type} [${d.properties.join(",") || "no props"}]`));
+        // Wait for Dice So Nice animation to finish (if enabled)
+        await _waitForDiceSoNice(message.id);
 
-    // Wait for Dice So Nice animation to finish (if enabled)
-    await _waitForDiceSoNice(message.id);
-
-    // Process each target
-    debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
-    for (const target of targets) {
-        await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType);
-    }
+        // Process each target
+        debug("Player Damage Prompt | Processing", targets.length, "target(s)...");
+        for (const target of targets) {
+            await _processTarget(target, attackRoll, attackMessage, message, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType);
+        }
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onCreateChatMessage for Player Damage Prompt:`, err);
     }
@@ -267,112 +260,112 @@ async function _onCreateChatMessage_Attack(message) {
             if (game.user.id !== authorId) return;
         }
 
-    // Check if at least one damage prompt mode is enabled
-    const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
-    const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
-    if (!playerPromptEnabled && !gmPromptEnabled) return;
+        // Check if at least one damage prompt mode is enabled
+        const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
+        const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
+        if (!playerPromptEnabled && !gmPromptEnabled) return;
 
-    // Only process attack rolls from attack activities
-    const rollType = message.getFlag("dnd5e", "roll.type");
-    const activityType = message.getFlag("dnd5e", "activity.type");
-    if (rollType !== "attack") return;
-    if (activityType !== "attack") return;
+        // Only process attack rolls from attack activities
+        const rollType = message.getFlag("dnd5e", "roll.type");
+        const activityType = message.getFlag("dnd5e", "activity.type");
+        if (rollType !== "attack") return;
+        if (activityType !== "attack") return;
 
-    // Only trigger on public rolls — skip private (GM), blind, and self rolls
-    const isPublic = (!message.whisper?.length) && !message.blind;
-    if (!isPublic) {
-        debug("Player Damage Prompt | Graze: Non-public attack roll detected (whisper/blind), skipping");
-        return;
-    }
-
-    // The DnD5e system stores the chosen mastery in flags.dnd5e.roll.mastery.
-    // Only proceed if this attack used the Graze mastery.
-    const rollMastery = message.getFlag("dnd5e", "roll.mastery");
-    if (rollMastery !== "graze") return;
-
-    debug("Player Damage Prompt | Graze: Attack roll with Graze mastery detected",
-        "| Message ID:", message.id,
-        "| Roll type:", rollType,
-        "| Activity type:", activityType,
-        "| Mastery:", rollMastery);
-
-    // Find the originating (usage) message to get original targets
-    const originatingId = message.getFlag("dnd5e", "originatingMessage");
-    const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
-
-    // Prefer targets from the originating (usage) message, fall back to the attack message
-    const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
-    const attackTargets = message.getFlag("dnd5e", "targets");
-    const targets = originTargets || attackTargets || [];
-    debug("Player Damage Prompt | Graze: Targets:", targets.length,
-        targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
-
-    if (!targets.length) {
-        debug("Player Damage Prompt | Graze: No targets found, skipping");
-        return;
-    }
-
-    // Extract the D20Roll from the attack message
-    const attackRoll = _getAttackD20Roll(message);
-    if (!attackRoll) {
-        debug("Player Damage Prompt | Graze: No valid D20 attack roll found in message", message.id);
-        return;
-    }
-
-    const isCritical = !!attackRoll.isCritical;
-    const attackTotal = attackRoll.total;
-
-    // Wait for Dice So Nice animation to finish (if enabled)
-    await _waitForDiceSoNice(message.id);
-
-    // Process each target — only handle misses (graze candidates)
-    for (const target of targets) {
-        const targetAC = target.ac;
-
-        // Skip hits and crits — those are handled by the damage handler
-        if (isCritical || attackTotal >= targetAC) {
-            debug(`Player Damage Prompt | Graze: Attack hit ${target.name || target.uuid} (${attackTotal} >= AC ${targetAC}), skipping (handled by damage handler)`);
-            continue;
+        // Only trigger on public rolls — skip private (GM), blind, and self rolls
+        const isPublic = (!message.whisper?.length) && !message.blind;
+        if (!isPublic) {
+            debug("Player Damage Prompt | Graze: Non-public attack roll detected (whisper/blind), skipping");
+            return;
         }
 
-        debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
+        // The DnD5e system stores the chosen mastery in flags.dnd5e.roll.mastery.
+        // Only proceed if this attack used the Graze mastery.
+        const rollMastery = message.getFlag("dnd5e", "roll.mastery");
+        if (rollMastery !== "graze") return;
 
-        // Resolve the target token/actor
-        const { tokenDoc, actor } = _resolveTarget(target.uuid);
-        if (!actor) {
-            debug(`Player Damage Prompt | Graze: Could not resolve token UUID: ${target.uuid}`);
-            continue;
-        }
-        if (!actor.system?.attributes?.hp) {
-            debug(`Player Damage Prompt | Graze: Actor has no HP attribute: ${actor.name}`);
-            continue;
-        }
+        debug("Player Damage Prompt | Graze: Attack roll with Graze mastery detected",
+            "| Message ID:", message.id,
+            "| Roll type:", rollType,
+            "| Activity type:", activityType,
+            "| Mastery:", rollMastery);
 
-        // Determine target ownership and which prompt mode applies
-        const playerOwned = _isPlayerOwned(actor);
-        let whisperTargets;
+        // Find the originating (usage) message to get original targets
+        const originatingId = message.getFlag("dnd5e", "originatingMessage");
+        const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
 
-        if (playerOwned && playerPromptEnabled) {
-            // Player-owned target → whisper to the owning player(s)
-            // (+ maybe GM per visibility setting).
-            whisperTargets = _getWhisperTargets(actor);
-        } else if (!playerOwned && gmPromptEnabled) {
-            // NPC target → whisper to GM only.
-            whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
-        } else {
-            debug(`Player Damage Prompt | Graze: No matching prompt mode for ${actor.name}, skipping`);
-            continue;
+        // Prefer targets from the originating (usage) message, fall back to the attack message
+        const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
+        const attackTargets = message.getFlag("dnd5e", "targets");
+        const targets = originTargets || attackTargets || [];
+        debug("Player Damage Prompt | Graze: Targets:", targets.length,
+            targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
+
+        if (!targets.length) {
+            debug("Player Damage Prompt | Graze: No targets found, skipping");
+            return;
         }
 
-        // Guard: skip if no recipients (avoids unintentional public messages).
-        if (!whisperTargets.length) {
-            debug(`Player Damage Prompt | Graze: No whisper recipients available — skipping prompt for ${actor.name}`);
-            continue;
+        // Extract the D20Roll from the attack message
+        const attackRoll = _getAttackD20Roll(message);
+        if (!attackRoll) {
+            debug("Player Damage Prompt | Graze: No valid D20 attack roll found in message", message.id);
+            return;
         }
 
-        const tokenName = _getTokenName(tokenDoc, target, actor);
-        await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
-    }
+        const isCritical = !!attackRoll.isCritical;
+        const attackTotal = attackRoll.total;
+
+        // Wait for Dice So Nice animation to finish (if enabled)
+        await _waitForDiceSoNice(message.id);
+
+        // Process each target — only handle misses (graze candidates)
+        for (const target of targets) {
+            const targetAC = target.ac;
+
+            // Skip hits and crits — those are handled by the damage handler
+            if (isCritical || attackTotal >= targetAC) {
+                debug(`Player Damage Prompt | Graze: Attack hit ${target.name || target.uuid} (${attackTotal} >= AC ${targetAC}), skipping (handled by damage handler)`);
+                continue;
+            }
+
+            debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
+
+            // Resolve the target token/actor
+            const { tokenDoc, actor } = _resolveTarget(target.uuid);
+            if (!actor) {
+                debug(`Player Damage Prompt | Graze: Could not resolve token UUID: ${target.uuid}`);
+                continue;
+            }
+            if (!actor.system?.attributes?.hp) {
+                debug(`Player Damage Prompt | Graze: Actor has no HP attribute: ${actor.name}`);
+                continue;
+            }
+
+            // Determine target ownership and which prompt mode applies
+            const playerOwned = _isPlayerOwned(actor);
+            let whisperTargets;
+
+            if (playerOwned && playerPromptEnabled) {
+                // Player-owned target → whisper to the owning player(s)
+                // (+ maybe GM per visibility setting).
+                whisperTargets = _getWhisperTargets(actor);
+            } else if (!playerOwned && gmPromptEnabled) {
+                // NPC target → whisper to GM only.
+                whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
+            } else {
+                debug(`Player Damage Prompt | Graze: No matching prompt mode for ${actor.name}, skipping`);
+                continue;
+            }
+
+            // Guard: skip if no recipients (avoids unintentional public messages).
+            if (!whisperTargets.length) {
+                debug(`Player Damage Prompt | Graze: No whisper recipients available — skipping prompt for ${actor.name}`);
+                continue;
+            }
+
+            const tokenName = _getTokenName(tokenDoc, target, actor);
+            await _handleGrazeMastery(actor, tokenDoc, tokenName, attackRoll, message, originatingMessage, whisperTargets);
+        }
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onCreateChatMessage_Attack for Player Damage Prompt:`, err);
     }
@@ -1780,9 +1773,10 @@ function _requestUnmarkApplied(messageId) {
 
 /**
  * Handle incoming socket messages for this module.
+ * Called by the central socket dispatcher in main.js.
  * @param {object} data  The socket payload.
  */
-function _onSocketMessage(data) {
+export function onSocketMessage(data) {
     if (data?.type === "damagePromptApplied") {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;

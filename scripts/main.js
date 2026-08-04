@@ -23,8 +23,10 @@ import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/auto-end-class-features.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
 import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
-import { initSelfEffectApplication } from "./features/self-effect-application.js";
+import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
+import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
+import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
 
 
 
@@ -255,6 +257,16 @@ Hooks.once("init", () => {
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
+
+    game.settings.register(MODULE_ID, "enableAutoAddTokensToCombat", {
+        name: "Auto-Add & Roll Initiative on Token Creation",
+        hint: "Automatically adds new tokens to the active combat encounter and rolls their initiative when created or dragged to the canvas during combat.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
 
     game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
         name: "Auto-Apply Status at 0 HP",
@@ -552,8 +564,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "enableAutoEndRage", {
-        name: "Auto-End Rage",
-        hint: "Automatically ends a Barbarian's Rage effect when gaining concentration-breaking conditions (or unconscious/dead for level 15+ Barbarians with Persistent Rage). Identifies rage by the source item's identifier or by effect name (\"Rage\" / \"Raging\").",
+        name: "Auto-End Class Features",
+        hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers: Barbarian Rage (and Wrath of the Sea for level 15+ Barbarians), and Druid Wild Shape Starry Form. Identifies each feature by item identifier or effect name.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -629,6 +641,7 @@ Hooks.once("setup", () => {
 
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
+    initAutoAddTokensToCombat();
     initDeathSavePrompt();
     initAutoStatusZeroHP();
     initLegendaryActionPlaceholders();
@@ -655,6 +668,17 @@ Hooks.once("ready", async () => {
     if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
+
+    // ── Central socket dispatcher ──────────────────────────────────────
+    // A single listener routes incoming socket messages to the correct
+    // feature handler by payload type.  This avoids the fragile pattern
+    // of each feature registering its own game.socket.on() listener,
+    // which can't be cleanly de-registered if a feature is hot-toggled.
+    game.socket.on(`module.${MODULE_ID}`, (data) => {
+        damagePromptSocketMessage(data);
+        selfEffectSocketMessage(data);
+    });
+    log("Central socket dispatcher registered");
 
 });
 

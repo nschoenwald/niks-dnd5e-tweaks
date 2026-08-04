@@ -137,8 +137,8 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
         if (!actor) return;
 
         // The message was just created by buildPost. Find it in the recent message log by matching
-        // the actor's speaker ID. We check the last 5 messages to guard against busy chat logs.
-        const recentMessages = game.messages.contents.slice(-5).reverse();
+        // the actor's speaker ID. We check the last 10 messages to guard against busy chat logs.
+        const recentMessages = game.messages.contents.slice(-10).reverse();
         const message = recentMessages.find(m =>
             m.speaker?.actor === actor.id &&
             m.flags?.dnd5e?.roll?.type === "save" &&

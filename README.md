@@ -41,6 +41,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 ### Group 3: Automation & QOL Tasks
 
+* **Auto-Add Tokens to Combat**: Automatically adds new tokens to the active combat encounter and rolls their initiative when created or dragged to the canvas during combat. Enabled by default.
 * **Auto-Apply Status at 0 HP**: Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Also supports marking tokens as defeated in the combat tracker or removing them from combat entirely. All actions are configurable separately for player-owned and GM-owned (NPC) tokens. Works well with Auto-Rotate Prone / Unconscious / Dead Tokens — if both features are enabled, tokens that drop to 0 HP will be rotated automatically via the applied status.
   * *↳ Player Token Status at 0 HP* — defaults to **Unconscious** (choices: Unconscious, Dead, None).
   * *↳ NPC Token Status at 0 HP* — defaults to **Dead** (choices: Unconscious, Dead, None).
