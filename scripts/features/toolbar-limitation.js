@@ -97,7 +97,7 @@ export function applyToolbarLimitation() {
         }
     }
 
-    const limit = game.settings.get(MODULE_ID, "toolbarButtonLimit") || 12;
+    const limit = game.settings.get(MODULE_ID, "toolbarButtonLimit") || 20;
     const toolbars = getToolbarContainers();
 
     for (const toolbar of toolbars) {

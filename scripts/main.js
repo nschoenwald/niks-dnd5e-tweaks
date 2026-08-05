@@ -152,11 +152,10 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableToolbarLimitation", {
         name: "Toolbar Limitation",
         hint: "When the number of buttons in a given scene controls toolbar exceeds a configured limit, turns the toolbar scrollable and limits the visible height to display only that number of buttons at a time (does not apply to the macro hotbar).",
-        scope: "world",
+        scope: "client",
         config: true,
         type: Boolean,
         default: true,
-        restricted: true,
         onChange: (value) => {
             if (value) applyToolbarLimitation();
             else resetToolbars();
@@ -167,11 +166,10 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "toolbarButtonLimit", {
         name: "↳ Max Displayed Toolbar Buttons",
         hint: "The maximum number of buttons to display in a toolbar before it becomes scrollable.",
-        scope: "world",
+        scope: "client",
         config: true,
         type: Number,
-        default: 12,
-        restricted: true,
+        default: 20,
         onChange: () => {
             applyToolbarLimitation();
             ui.controls?.render();
