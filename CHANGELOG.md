@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.17.0] - 2026-08-08
+### Added
+- **Prompt for Initiative on Combat Add**: Added a new world setting **Prompt for Initiative on Combat Add** (`enableAutoRollInitiative`, enabled by default) and sub-setting **↳ Fast-Forward Initiative Rolls** (`autoRollInitiativeFastForward`, default: **"Never (always show dialog)"**). When a token or combatant is added to an active combat encounter (via token HUD, combat tracker, or token drag), connected players are automatically presented with their DnD5e initiative roll configuration dialog.
+  - **Fast-Forward Choices**: Configurable for `"Never (always show dialog)"` (default), `"NPCs Only"`, `"All Actors"`, or `"Players Only"`.
+  - **GM Fallback for Unattended Actors**: If a player character is added to combat while no owner is connected, a whispered chat card with a one-click **Roll Initiative** button is sent to the GM and offline owners.
+  - **Exclusions**: Automatically excludes summon activity tokens and legendary action placeholders.
+  - **Auto-Add Tokens Integration**: Seamlessly delegates initiative prompting/rolling from `Auto-Add Tokens to Combat` when both features are active.
+
+## [14.16.1] - 2026-08-06
+### Fixed
+- **Auto-Add Tokens to Combat**: Tokens created via a DnD5e summon activity are no longer automatically added to active combat encounters or assigned initiative rolls.
+- **Mage Slayer Concentration**: Fixed Mage Slayer concentration disadvantage not being applied during concentration prompts, dialogs, and **Player Damage Prompt** workflows. Resolved unlinked token actor resolution via `ChatMessage.getSpeakerActor`, expanded feat name matching for 2024 PHB variants (e.g., `"Mage Slayer (2024)"`), extended pending disadvantage TTL (60s) for prompts/dialogs, and ensured `Player Damage Prompt` passes the originating attack message options to `actor.applyDamage`.
+
 ## [14.16.0] - 2026-08-05
 ### Added
 - **Auto-Add Tokens to Combat**: Added a new world setting **Auto-Add Tokens to Combat** (`enableAutoAddTokensToCombat`, enabled by default). When a token is created or dragged onto the canvas while a combat encounter is active, it is automatically added to the combat tracker and its initiative is rolled immediately.

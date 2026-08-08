@@ -38,6 +38,12 @@ function _onCreateToken(tokenDocument, options, userId) {
         const existingCombatant = combat.combatants.some(c => c.tokenId === tokenDocument.id);
         if (existingCombatant) return;
 
+        // Skip tokens created via a summon activity
+        if (_isSummonedToken(tokenDocument)) {
+            debug(`Auto-Add Tokens to Combat | Skipping token "${tokenDocument.name}" (${tokenDocument.id}) created via summon activity.`);
+            return;
+        }
+
         debug(`Auto-adding token "${tokenDocument.name}" (${tokenDocument.id}) to combat ${combat.id} and rolling initiative.`);
 
         queueMicrotask(async () => {
@@ -51,10 +57,13 @@ function _onCreateToken(tokenDocument, options, userId) {
 
                 const combatant = created?.[0];
                 if (combatant) {
-                    try {
-                        await combat.rollInitiative([combatant.id]);
-                    } catch (rollErr) {
-                        console.warn(`${MODULE_ID} | Could not roll initiative for token "${tokenDocument.name}":`, rollErr);
+                    // If Auto-Roll / Prompt Initiative is disabled, roll initiative as fallback
+                    if (!game.settings.get(MODULE_ID, "enableAutoRollInitiative")) {
+                        try {
+                            await combat.rollInitiative([combatant.id]);
+                        } catch (rollErr) {
+                            console.warn(`${MODULE_ID} | Could not roll initiative for token "${tokenDocument.name}":`, rollErr);
+                        }
                     }
                 }
             } catch (err) {
@@ -65,3 +74,17 @@ function _onCreateToken(tokenDocument, options, userId) {
         console.error(`${MODULE_ID} | Error in createToken hook for Auto-Add Tokens to Combat:`, err);
     }
 }
+
+/**
+ * Helper to check if a token was created via a summon activity.
+ * @param {TokenDocument} tokenDocument
+ * @returns {boolean}
+ */
+function _isSummonedToken(tokenDocument) {
+    const actor = tokenDocument.actor;
+    if (actor?.getFlag?.("dnd5e", "summon") || actor?.getFlag?.("dnd5e", "summon.origin") || actor?.flags?.dnd5e?.summon) return true;
+    if (tokenDocument.getFlag?.("dnd5e", "summon") || tokenDocument.getFlag?.("dnd5e", "summon.origin") || tokenDocument.flags?.dnd5e?.summon) return true;
+    if (tokenDocument.delta?.flags?.dnd5e?.summon) return true;
+    return false;
+}
+

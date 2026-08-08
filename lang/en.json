@@ -7,6 +7,12 @@
   "ND5T.AutoRollConcentration.ConcentrationEnded": "Concentration Ended",
   "ND5T.AutoRollConcentration.EndingConcentration": "Ending Concentration...",
 
+  "ND5T.AutoRollInitiative.PromptTitle": "Initiative Roll Required",
+  "ND5T.AutoRollInitiative.PromptMessage": "{name} was added to combat. Please roll initiative.",
+  "ND5T.AutoRollInitiative.RollInitiative": "Roll Initiative",
+  "ND5T.AutoRollInitiative.InitiativeRolled": "Initiative Rolled",
+  "ND5T.AutoRollInitiative.Rolling": "Rolling Initiative...",
+
   "ND5T.DamagePrompt.HitBy": "Hit for {damage}.",
   "ND5T.DamagePrompt.CriticalHit": "<span class=\"nd5t-status-badge nd5t-crit-text\">{critBadge}</span> for {damage}.",
   "ND5T.DamagePrompt.CritBadge": "CRITICALLY HIT",

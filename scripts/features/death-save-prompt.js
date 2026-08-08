@@ -45,18 +45,23 @@ let lastPromptKey = null;
 function _bindDeathSaveButton(message, element) {
     const prompt = element.querySelector(".nd5t-death-save-prompt");
     if (!prompt) return;
+    if (prompt.dataset.bound) return;
+    prompt.dataset.bound = "true";
 
     const button = prompt.querySelector('button[data-action="nd5t-death-save"]');
     if (button) {
         button.addEventListener("click", async (event) => {
             event.preventDefault();
             event.stopPropagation();
+            if (button.disabled) return;
+            button.disabled = true;
             const speaker = message.speaker;
             const actor = ChatMessage.getSpeakerActor(speaker);
             if (actor) {
                 await actor.rollDeathSave({ event: event });
             } else {
                 ui.notifications.warn("Could not find actor for death save roll.");
+                button.disabled = false;
             }
         });
     }

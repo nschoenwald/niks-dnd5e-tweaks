@@ -802,7 +802,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         }
     }
     
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details);
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details, originatingMessage ?? damageMessage);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -1138,7 +1138,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
 
     // Send the graze damage prompt
-    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack", weaponItem, false, details);
+    await _sendDamagePrompt(targetActor, tokenDoc, targetName, attackRoll.total, false, grazeDamageByType, effectiveDamage, traitText, grazeRawDamages, whisperTargets, true, "attack", weaponItem, false, details, originatingMessage ?? message);
     debug(`Player Damage Prompt |    ✓ Graze whisper sent for ${targetActor.name}`);
 }
 
@@ -1160,7 +1160,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {Item|null} [sourceItem=null]       The source item of the damage.
  * @param {boolean}  [hasHalfDamage=false]    Whether the activity does half damage on save.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = []) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null) {
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
@@ -1197,13 +1197,21 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
         </div>
     `;
 
+    const flags = {
+        [MODULE_ID]: {
+            damagePrompt: true
+        }
+    };
+    if (originatingMessage?.id) {
+        flags[MODULE_ID].originatingMessageId = originatingMessage.id;
+        flags.dnd5e = { originatingMessage: originatingMessage.id };
+    }
+
     await ChatMessage.create({
         content,
         whisper: whisperUsers,
         speaker: Object.assign(ChatMessage.getSpeaker({ actor, token: speakerToken }), { alias: tokenName }),
-        flags: {
-            [MODULE_ID]: { damagePrompt: true }
-        }
+        flags
     });
 }
 
@@ -1696,7 +1704,14 @@ function _bindApplyDamageButton(message, element) {
                 const hpBefore = actor.system.attributes.hp.value;
                 const tempBefore = actor.system.attributes.hp.temp || 0;
 
-                await actor.applyDamage(damages);
+                const origMsgId = message.flags?.dnd5e?.originatingMessage
+                    ?? message.flags?.[MODULE_ID]?.originatingMessageId;
+                const originatingMessage = origMsgId ? game.messages.get(origMsgId) : message;
+
+                await actor.applyDamage(damages, {
+                    originatingMessage: originatingMessage,
+                    origin: originatingMessage
+                });
 
                 const hpAfter = actor.system.attributes.hp.value;
                 const tempAfter = actor.system.attributes.hp.temp || 0;

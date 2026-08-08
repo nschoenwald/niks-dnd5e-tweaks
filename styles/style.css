@@ -294,6 +294,42 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     pointer-events: none;
 }
 
+/* ── Prompt for Initiative on Combat Add ────────────────────────────── */
+
+.nd5t-initiative-prompt .card-content {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.nd5t-initiative-prompt .card-content p {
+    margin: 0.3em 0;
+    line-height: 1.4;
+}
+
+.nd5t-initiative-prompt button[data-action="nd5t-roll-initiative"] {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.nd5t-initiative-prompt button:not([disabled]):hover {
+    filter: brightness(1.15);
+    transition: filter 0.15s ease;
+}
+
+.nd5t-initiative-prompt button:not([disabled]):active {
+    filter: brightness(0.92);
+    transition: filter 0.05s ease;
+}
+
+.nd5t-initiative-prompt button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
 /* ── Self Effect Application Prompt ─────────────────────────────────── */
 
 .nd5t-self-effect-prompt .nd5t-self-effect-content {

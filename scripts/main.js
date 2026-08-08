@@ -26,6 +26,7 @@ import { initMageSlayerConcentration } from "./features/mage-slayer-concentratio
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
+import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
 
 
@@ -149,6 +150,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
+        name: "Item/Spell/Feature Add: Choice Dialog",
+        hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableToolbarLimitation", {
         name: "Toolbar Limitation",
         hint: "When the number of buttons in a given scene controls toolbar exceeds a configured limit, turns the toolbar scrollable and limits the visible height to display only that number of buttons at a time (does not apply to the macro hotbar).",
@@ -242,23 +253,15 @@ Hooks.once("init", () => {
         requiresReload: true
     });
 
-    game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
-        name: "Item/Spell/Feature Add: Choice Dialog",
-        hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
 
+    // ── Phase 1: Combat Setup & Initiative ─────────────────────────────
+
     game.settings.register(MODULE_ID, "enableAutoAddTokensToCombat", {
-        name: "Auto-Add & Roll Initiative on Token Creation",
-        hint: "Automatically adds new tokens to the active combat encounter and rolls their initiative when created or dragged to the canvas during combat.",
+        name: "Auto-Add Tokens to Combat",
+        hint: "Automatically adds new tokens to the active combat encounter when created or dragged to the canvas during combat.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -266,9 +269,9 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
-        name: "Auto-Apply Status at 0 HP",
-        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions.",
+    game.settings.register(MODULE_ID, "enableAutoRollInitiative", {
+        name: "Prompt for Initiative on Combat Add",
+        hint: "Automatically prompts connected players with their initiative roll dialog (or rolls immediately) when their token or combatant is added to an active combat encounter.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -276,75 +279,54 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerStatus", {
-        name: "↳ Player Token Status at 0 HP",
-        hint: "Which overlay status condition to apply to player-owned tokens when they drop to 0 HP.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "unconscious",
-        choices: {
-            unconscious: "Unconscious",
-            dead: "Dead",
-            none: "None (disabled)"
-        },
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcStatus", {
-        name: "↳ NPC Token Status at 0 HP",
-        hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "dead",
-        choices: {
-            unconscious: "Unconscious",
-            dead: "Dead",
-            none: "None (disabled)"
-        },
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerCombat", {
-        name: "↳ Player Token Combat Action at 0 HP",
-        hint: "What to do in the combat tracker when a player-owned token drops to 0 HP.",
+    game.settings.register(MODULE_ID, "autoRollInitiativeFastForward", {
+        name: "↳ Fast-Forward Initiative Rolls",
+        hint: "When to skip the roll configuration dialog and roll immediately. 'Never' always shows the configuration dialog. 'NPCs Only' skips the dialog for GM-owned/NPC tokens while prompting connected players with their initiative dialog. 'All Actors' skips the dialog for everyone. 'Players Only' rolls immediately for player characters.",
         scope: "world",
         config: true,
         type: String,
         default: "none",
         choices: {
-            defeated: "Mark Defeated",
-            remove: "Remove from Combat",
-            none: "None (do nothing)"
+            none: "Never (always show dialog)",
+            npcsOnly: "NPCs Only",
+            all: "All Actors",
+            playersOnly: "Players Only"
         },
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcCombat", {
-        name: "↳ NPC Token Combat Action at 0 HP",
-        hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "defeated",
-        choices: {
-            defeated: "Mark Defeated",
-            remove: "Remove from Combat",
-            none: "None (do nothing)"
-        },
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
-        name: "Prompt for Death Saves",
-        hint: "When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.",
+    game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
+        name: "Legendary Action Placeholders",
+        hint: "When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
         scope: "world",
         config: true,
         type: Boolean,
         default: true,
         restricted: true
     });
+
+    game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
+        name: "↳ Show Placeholders to Players",
+        hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "legendaryActionPlaceholderIcon", {
+        name: "↳ Placeholder Icon",
+        hint: "Select an icon to use for legendary action initiative placeholders.",
+        scope: "world",
+        config: true,
+        type: String,
+        filePicker: "image",
+        default: "icons/svg/combat.svg",
+        restricted: true
+    });
+
+    // ── Phase 2: Actions, Rolls & Damage Prompts ────────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoRollSaveDamage", {
         name: "Auto-Open Damage Dialog for Saves",
@@ -444,9 +426,9 @@ Hooks.once("init", () => {
         requiresReload: true
     });
 
-    game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
-        name: "Legendary Action Placeholders",
-        hint: "When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
+    game.settings.register(MODULE_ID, "enableSelfEffectApplication", {
+        name: "Self Effect Application Prompt",
+        hint: "When an actor uses an ability that has Active Effects targeting \"Self\" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owner and the GM with one-click Apply buttons for each effect.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -454,36 +436,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "showLegendaryActionPlaceholders", {
-        name: "↳ Show Placeholders to Players",
-        hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: false,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "legendaryActionPlaceholderIcon", {
-        name: "↳ Placeholder Icon",
-        hint: "Select an icon to use for legendary action initiative placeholders.",
+    game.settings.register(MODULE_ID, "selfEffectAlwaysPromptFeatures", {
+        name: "↳ Always Prompt Features",
+        hint: "A comma-separated list of feature or item names (case-insensitive). When these features are used and have an Active Effect attached, the self-effect application prompt will be posted even if they were not self-targeted.",
         scope: "world",
         config: true,
         type: String,
-        filePicker: "image",
-        default: "icons/svg/combat.svg",
+        default: "Mage Armor",
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableCombatExpTracker", {
-        name: "Combat Experience Tracker",
-        hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: false,
-        restricted: true
-    });
+    // ── Phase 3: Concentration & Ongoing Effects ────────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoRollConcentration", {
         name: "Auto-Roll Concentration Saves",
@@ -531,26 +494,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableSelfEffectApplication", {
-        name: "Self Effect Application Prompt",
-        hint: "When an actor uses an ability that has Active Effects targeting \"Self\" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owner and the GM with one-click Apply buttons for each effect.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "selfEffectAlwaysPromptFeatures", {
-        name: "↳ Always Prompt Features",
-        hint: "A comma-separated list of feature or item names (case-insensitive). When these features are used and have an Active Effect attached, the self-effect application prompt will be posted even if they were not self-targeted.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "Mage Armor",
-        restricted: true
-    });
-
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -568,6 +511,100 @@ Hooks.once("init", () => {
         config: true,
         type: Boolean,
         default: true,
+        restricted: true
+    });
+
+    // ── Phase 4: Health Thresholds & Incapacitation ─────────────────────
+
+    game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
+        name: "Auto-Apply Status at 0 HP",
+        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerStatus", {
+        name: "↳ Player Token Status at 0 HP",
+        hint: "Which overlay status condition to apply to player-owned tokens when they drop to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "unconscious",
+        choices: {
+            unconscious: "Unconscious",
+            dead: "Dead",
+            none: "None (disabled)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcStatus", {
+        name: "↳ NPC Token Status at 0 HP",
+        hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "dead",
+        choices: {
+            unconscious: "Unconscious",
+            dead: "Dead",
+            none: "None (disabled)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_playerCombat", {
+        name: "↳ Player Token Combat Action at 0 HP",
+        hint: "What to do in the combat tracker when a player-owned token drops to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "none",
+        choices: {
+            defeated: "Mark Defeated",
+            remove: "Remove from Combat",
+            none: "None (do nothing)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoStatusZeroHP_npcCombat", {
+        name: "↳ NPC Token Combat Action at 0 HP",
+        hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "defeated",
+        choices: {
+            defeated: "Mark Defeated",
+            remove: "Remove from Combat",
+            none: "None (do nothing)"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
+        name: "Prompt for Death Saves",
+        hint: "When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    // ── Phase 5: Encounter Conclusion ──────────────────────────────────
+
+    game.settings.register(MODULE_ID, "enableCombatExpTracker", {
+        name: "Combat Experience Tracker",
+        hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
         restricted: true
     });
 
@@ -640,6 +677,7 @@ Hooks.once("setup", () => {
     // Register settings for features that manage their own state
     initAutoClearMovementHistory();
     initAutoAddTokensToCombat();
+    initAutoRollInitiative();
     initDeathSavePrompt();
     initAutoStatusZeroHP();
     initLegendaryActionPlaceholders();
