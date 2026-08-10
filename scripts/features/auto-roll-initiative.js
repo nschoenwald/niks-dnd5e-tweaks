@@ -20,6 +20,8 @@ const _handledCombatantIds = new Set();
 
 export function initAutoRollInitiative() {
     Hooks.on("createCombatant", _onCreateCombatant);
+    Hooks.on("updateCombatant", _onUpdateCombatant);
+    Hooks.on("deleteCombatant", _onDeleteCombatant);
 
     // V13 compat — renderChatMessage passes jQuery or HTMLElement
     Hooks.on("renderChatMessage", (message, html) => {
@@ -330,6 +332,47 @@ function _bindInitiativeButton(message, element) {
             button.innerHTML = `<i class="fas fa-dice-d20"></i> ${game.i18n.localize("ND5T.AutoRollInitiative.RollInitiative")}`;
         }
     });
+}
+
+/**
+ * Handler for updateCombatant hook.
+ * Dynamically disables any open chat prompt buttons when initiative is rolled.
+ * @param {Combatant} combatant
+ * @param {object} update
+ * @param {object} options
+ * @param {string} userId
+ */
+function _onUpdateCombatant(combatant, update, options, userId) {
+    if (update.initiative !== undefined || (combatant.initiative !== null && combatant.initiative !== undefined)) {
+        _syncInitiativeCardButtons(combatant);
+    }
+}
+
+/**
+ * Handler for deleteCombatant hook.
+ * Disables prompt buttons if a combatant was removed from combat.
+ * @param {Combatant} combatant
+ */
+function _onDeleteCombatant(combatant) {
+    _syncInitiativeCardButtons(combatant, true);
+}
+
+/**
+ * Synchronize the state of any rendered initiative prompt buttons in the DOM.
+ * @param {Combatant} combatant
+ * @param {boolean} [isDeleted=false]
+ */
+function _syncInitiativeCardButtons(combatant, isDeleted = false) {
+    if (!combatant?.id) return;
+    const buttons = document.querySelectorAll(`button[data-action="nd5t-roll-initiative"][data-combatant-id="${combatant.id}"]`);
+    for (const button of buttons) {
+        button.disabled = true;
+        if (isDeleted) {
+            button.innerHTML = `<i class="fa-solid fa-times" inert></i> ${game.i18n.localize("ND5T.AutoRollInitiative.CombatantRemoved")}`;
+        } else {
+            button.innerHTML = `<i class="fa-solid fa-check" inert></i> ${game.i18n.localize("ND5T.AutoRollInitiative.InitiativeRolled")}`;
+        }
+    }
 }
 
 /**

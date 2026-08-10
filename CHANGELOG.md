@@ -2,13 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.17.0] - 2026-08-08
+## [14.17.0] - 2026-08-10
 ### Added
 - **Prompt for Initiative on Combat Add**: Added a new world setting **Prompt for Initiative on Combat Add** (`enableAutoRollInitiative`, enabled by default) and sub-setting **↳ Fast-Forward Initiative Rolls** (`autoRollInitiativeFastForward`, default: **"Never (always show dialog)"**). When a token or combatant is added to an active combat encounter (via token HUD, combat tracker, or token drag), connected players are automatically presented with their DnD5e initiative roll configuration dialog.
   - **Fast-Forward Choices**: Configurable for `"Never (always show dialog)"` (default), `"NPCs Only"`, `"All Actors"`, or `"Players Only"`.
-  - **GM Fallback for Unattended Actors**: If a player character is added to combat while no owner is connected, a whispered chat card with a one-click **Roll Initiative** button is sent to the GM and offline owners.
+  - **Full Configuration Dialog**: Opens the native DnD5e initiative configuration dialog allowing selection of Advantage, Disadvantage, Situational Bonus (`+/-`), and Roll Mode.
+  - **GM Fallback for Unattended Actors**: If a player character is added to combat while no owner is connected, a whispered chat card with a one-click **Roll Initiative** button is sent to the GM and offline owners as a fallback.
+  - **Live Real-time Sync**: Listens to `updateCombatant` and `deleteCombatant` so visible prompt buttons in chat immediately update to `"Initiative Rolled ✓"` or `"Removed from Combat"` in real time when a manual roll or removal occurs anywhere (character sheet, combat tracker, or macro).
   - **Exclusions**: Automatically excludes summon activity tokens and legendary action placeholders.
   - **Auto-Add Tokens Integration**: Seamlessly delegates initiative prompting/rolling from `Auto-Add Tokens to Combat` when both features are active.
+
+### Changed
+- **Module Settings Reorganization**: Restructured the in-game settings menu under *Group 3: Automation & QOL Tasks* to follow the logical 5-phase combat lifecycle (Combat Setup & Initiative → Actions & Damage Prompts → Concentration & Ongoing Effects → Health & 0 HP → Encounter Conclusion).
+- **Sheet Choice Dialog Placement**: Moved **Item/Spell/Feature Add: Choice Dialog** (`enableSheetPlusCompendium`) from *Group 2: Canvas & Tokens* into *Group 1: User Interface & Visuals*.
+- **Setting Title Harmonization**: Shortened the display name of `enableAutoAddTokensToCombat` to `"Auto-Add Tokens to Combat"`.
+
+### Fixed
+- **Duplicate Event Listener Prevention**: Added DOM binding guards (`prompt.dataset.bound`) and button disable checks across both initiative prompt and death save prompt chat cards to prevent duplicate event listener attachment across V13/V14 render hooks (`renderChatMessage` and `renderChatMessageHTML`).
 
 ## [14.16.1] - 2026-08-06
 ### Fixed
