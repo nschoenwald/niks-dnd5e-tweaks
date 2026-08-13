@@ -48,24 +48,12 @@ function _onCreateToken(tokenDocument, options, userId) {
 
         queueMicrotask(async () => {
             try {
-                const created = await combat.createEmbeddedDocuments("Combatant", [{
+                await combat.createEmbeddedDocuments("Combatant", [{
                     tokenId: tokenDocument.id,
                     sceneId: tokenScene?.id,
                     actorId: tokenDocument.actorId,
                     hidden: tokenDocument.hidden
                 }]);
-
-                const combatant = created?.[0];
-                if (combatant) {
-                    // If Auto-Roll / Prompt Initiative is disabled, roll initiative as fallback
-                    if (!game.settings.get(MODULE_ID, "enableAutoRollInitiative")) {
-                        try {
-                            await combat.rollInitiative([combatant.id]);
-                        } catch (rollErr) {
-                            console.warn(`${MODULE_ID} | Could not roll initiative for token "${tokenDocument.name}":`, rollErr);
-                        }
-                    }
-                }
             } catch (err) {
                 console.error(`${MODULE_ID} | Failed to auto-add token to combat:`, err);
             }

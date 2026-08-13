@@ -22,40 +22,81 @@ export class ProneRotation {
 
     async _onCreateActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
-        if (userId !== game.user.id) return; 
         if (!this._isRotationEffect(effect) || effect.disabled) return;
-        this._handleRotation(effect.parent, true);
+        const actor = this._resolveActor(effect);
+        if (actor) this._handleRotation(actor, true, userId);
     }
 
     async _onUpdateActiveEffect(effect, changes, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
-        if (userId !== game.user.id) return;
         if (!this._isRotationEffect(effect)) return;
         if (changes.disabled !== undefined) {
-             this._handleRotation(effect.parent, !changes.disabled);
+            const actor = this._resolveActor(effect);
+            if (actor) this._handleRotation(actor, !changes.disabled, userId);
         }
     }
 
     async _onDeleteActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
-        if (userId !== game.user.id) return;
         if (!this._isRotationEffect(effect)) return;
-        this._handleRotation(effect.parent, false);
+        const actor = this._resolveActor(effect);
+        if (actor) this._handleRotation(actor, false, userId);
     }
 
-    async _handleRotation(actor, isProne) {
-        if (!actor || !canvas?.ready || !canvas.scene) return;
-        const tokens = actor.getActiveTokens();
-        debug(`_handleRotation: actor=${actor.name}, isProne=${isProne}, tokens found=${tokens.length}`);
+    /**
+     * Resolve the target Actor from an ActiveEffect, supporting effects on Items.
+     * @param {ActiveEffect} effect
+     * @returns {Actor|null}
+     */
+    _resolveActor(effect) {
+        if (!effect?.parent) return null;
+        if (effect.parent instanceof Actor) return effect.parent;
+        if (effect.parent instanceof Item) return effect.parent.actor ?? null;
+        return null;
+    }
 
-        const updates = [];
-        for (const token of tokens) {
-            const doc = token.document;
-            if (!doc || doc._destroyed || token.destroyed || token._destroyed) continue;
+    async _handleRotation(actor, isProne, userId) {
+        if (!actor) return;
 
-            // Guard: don't attempt document update on a token currently being deleted or missing from the scene
-            if (!canvas.scene.tokens.has(doc.id)) continue;
-            if (!doc.canUserModify(game.user, "update")) continue;
+        // Resolve target token documents
+        let tokenDocs = [];
+        if (actor.isToken && actor.token) {
+            tokenDocs = [actor.token];
+        } else if (typeof actor.getActiveTokens === "function") {
+            const tokenPlaceables = actor.getActiveTokens(false, false);
+            if (tokenPlaceables.length) {
+                tokenDocs = tokenPlaceables.map(t => t.document).filter(Boolean);
+            } else if (canvas?.scene) {
+                tokenDocs = canvas.scene.tokens.filter(t => t.actorId === actor.id && t.isLinked);
+            }
+        }
+
+        if (!tokenDocs.length) return;
+        debug(`_handleRotation: actor=${actor.name}, isProne=${isProne}, tokens found=${tokenDocs.length}`);
+
+        const isPrimaryGM = (game.users.primaryGM ?? game.users.activeGM)?.isSelf ?? game.user.isGM;
+        const isTriggeringUser = (userId === game.user.id);
+        const triggeringUser = userId ? game.users.get(userId) : null;
+
+        // Group updates by scene
+        const sceneUpdates = new Map();
+
+        for (const doc of tokenDocs) {
+            if (!doc || doc._destroyed) continue;
+
+            const scene = doc.parent ?? canvas?.scene;
+            if (!scene || !scene.tokens.has(doc.id)) continue;
+
+            // Multiplayer permission handling:
+            // If the triggering user has update permissions on this token, they execute the update.
+            // If the triggering user lacks permissions (e.g. player applying prone to NPC), the primary GM handles it.
+            const userCanModify = doc.canUserModify(game.user, "update");
+            if (isTriggeringUser) {
+                if (!userCanModify) continue;
+            } else {
+                if (!isPrimaryGM) continue;
+                if (triggeringUser && doc.canUserModify(triggeringUser, "update")) continue;
+            }
 
             const targetRotation = isProne ? 90 : 0;
             if (doc.rotation === targetRotation) continue;
@@ -65,17 +106,21 @@ export class ProneRotation {
                 if (actor.statuses?.has("prone") || actor.statuses?.has("unconscious") || actor.statuses?.has("dead")) continue;
             }
 
-            debug(`  ${token.name} (${token.id}): ${doc.rotation}° → ${targetRotation}°`);
+            debug(`  ${doc.name} (${doc.id}): ${doc.rotation}° → ${targetRotation}°`);
             const update = { _id: doc.id, rotation: targetRotation };
             if (isProne && doc.lockRotation) {
                 update.lockRotation = false;
             }
-            updates.push(update);
+
+            if (!sceneUpdates.has(scene)) sceneUpdates.set(scene, []);
+            sceneUpdates.get(scene).push(update);
         }
 
-        if (updates.length) {
-            debug(`  Batch updating ${updates.length} token(s)`);
-            await canvas.scene.updateEmbeddedDocuments("Token", updates);
+        for (const [scene, updates] of sceneUpdates) {
+            if (updates.length) {
+                debug(`  Batch updating ${updates.length} token(s) on scene "${scene.name}"`);
+                await scene.updateEmbeddedDocuments("Token", updates);
+            }
         }
     }
 
@@ -103,3 +148,4 @@ export function disableProneRotation() {
         proneRotation = null;
     }
 }
+

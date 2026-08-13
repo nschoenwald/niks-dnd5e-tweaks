@@ -16,17 +16,11 @@ import { MODULE_ID, debug } from "../main.js";
 /**
  * Per-actor debounce timers to prevent conflicting processing when
  * HP changes rapidly (e.g. damage + instant healing in < 250ms).
- * Only the latest HP change within the debounce window is processed.
+ * Keyed by actor UUID to properly isolate unlinked tokens (synthetic actors).
  * @type {Map<string, number>}
  */
 const _debounceTimers = new Map();
 
-/**
- * Determine whether an actor is "player-owned" (has at least one non-GM
- * user with OWNER permission) or "NPC" (only GM owners).
- * @param {Actor} actor
- * @returns {"player"|"npc"}
- */
 /**
  * Determine whether an actor is "player-owned" (Player Character type or has player owners)
  * or "NPC" (GM-owned non-character).
@@ -76,11 +70,12 @@ async function _applyZeroHPStatus(actor, statusId) {
         }
     } else {
         // Status already exists — ensure it's displayed as an overlay
-        const effect = actor.effects.find(e => e.statuses?.has(statusId));
+        const effect = actor.effects.find(e => e.statuses?.has(statusId))
+            ?? actor.appliedEffects?.find(e => e.statuses?.has(statusId));
         if (effect && !effect.getFlag("core", "overlay")) {
             debug(`Auto-Status | "${statusId}" exists on ${actor.name} but is not an overlay — upgrading`);
             try {
-                await effect.update({ "flags.core.overlay": true });
+                await effect.setFlag("core", "overlay", true);
             } catch (e) {
                 debug(`Auto-Status | Could not upgrade "${statusId}" overlay on ${actor.name}: ${e.message}`);
             }
@@ -189,14 +184,11 @@ function _onPreUpdateActor(actor, change, options, userId) {
     try {
         if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
-        // Only the GM client should process this.
-        if (!game.user.isGM) return;
-
         // Only react when HP actually changed.
         if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
 
         // Record whether the actor was at 0 HP before this update
-        options.autoStatusWasZeroHP = actor.system.attributes.hp.value <= 0;
+        options.autoStatusWasZeroHP = (actor.system?.attributes?.hp?.value ?? 0) <= 0;
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPreUpdateActor for Auto-Status 0 HP:`, err);
     }
@@ -220,8 +212,9 @@ function _onUpdateActor(actor, change, options, userId) {
     try {
         if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
-        // Only the GM client should process this to avoid duplicate updates.
-        if (!game.user.isGM) return;
+        // Only the active primary GM client should process this to avoid duplicate updates.
+        const activeGM = game.users.primaryGM ?? game.users.activeGM;
+        if (!activeGM?.isSelf) return;
 
         // Only react when HP actually changed.
         if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
@@ -230,26 +223,28 @@ function _onUpdateActor(actor, change, options, userId) {
         // The actor reference is passed live intentionally — by the time the
         // deferred callback runs, we *want* to see the latest statuses/effects
         // so our checks reflect what other modules have already applied.
-        const newHP = actor.system.attributes.hp.value;
+        const newHP = actor.system?.attributes?.hp?.value ?? 0;
         const type = _ownershipType(actor);
 
         // Determine if actor was at 0 HP before, or currently has 0-HP statuses.
         const wasZeroHP = options.autoStatusWasZeroHP === true
-            || actor.statuses.has("dead")
-            || actor.statuses.has("unconscious");
+            || actor.statuses?.has("dead")
+            || actor.statuses?.has("unconscious");
 
-        // Debounce per actor — if HP changes again within 250ms, cancel the
+        // Debounce per actor UUID — if HP changes again within 250ms, cancel the
         // previous callback and only process the latest state.
-        const existingTimer = _debounceTimers.get(actor.id);
+        // Using uuid ensures unlinked tokens (synthetic actors) have distinct timers.
+        const debounceKey = actor.uuid;
+        const existingTimer = _debounceTimers.get(debounceKey);
         if (existingTimer) clearTimeout(existingTimer);
 
         const timer = setTimeout(() => {
-            _debounceTimers.delete(actor.id);
+            _debounceTimers.delete(debounceKey);
             _processHPChange(actor, newHP, type, wasZeroHP).catch(err => {
                 console.error(`Nik's DnD5e Tweaks | Failed processing HP change for Auto-Status 0 HP:`, err);
             });
         }, 250);
-        _debounceTimers.set(actor.id, timer);
+        _debounceTimers.set(debounceKey, timer);
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onUpdateActor for Auto-Status 0 HP:`, err);
     }
@@ -266,10 +261,13 @@ function _onUpdateActor(actor, change, options, userId) {
  */
 async function _processHPChange(actor, newHP, type, wasZeroHP) {
     // Guard: actor may have been deleted during the debounce window
-    if (!actor || !actor.id || !actor.statuses) return;
+    if (!actor || !actor.statuses) return;
     if (actor.isToken) {
-        if (!actor.token || actor.token._destroyed) return;
-        if (canvas?.scene && !canvas.scene.tokens.has(actor.token.id)) return;
+        if (!actor.token) return;
+        const scene = actor.token.parent ?? canvas?.scene;
+        if (!scene || !scene.tokens.has(actor.token.id)) return;
+    } else {
+        if (!game.actors.has(actor.id)) return;
     }
 
     // Skip actors with no max HP (vehicles, objects, etc.) to avoid
@@ -277,7 +275,7 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
     if ((actor.system?.attributes?.hp?.max ?? 0) <= 0) return;
 
     // Use live HP if available
-    const liveHP = actor.system.attributes.hp?.value ?? newHP;
+    const liveHP = actor.system?.attributes?.hp?.value ?? newHP;
 
     if (liveHP <= 0) {
         // ── Status overlay ──
@@ -312,3 +310,4 @@ export function initAutoStatusZeroHP() {
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("updateActor", _onUpdateActor);
 }
+

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.18.0] - 2026-08-13
+### Added
+- **Sheet Pop-out Button**: Adds a one-click **↗ pop-out button** (`fa-arrow-up-right-from-square`) directly in the header of Actor and Item document sheets. Clicking it detaches the sheet into a separate browser window using Foundry V14's native `detachWindow()` API — without having to open the three-dot context menu first. The button is automatically hidden when the window is already detached or when the app cannot be detached (e.g. managed child applications). Has no visual effect on V13 (the underlying hook is V14-only). Enabled by default. Configurable under *Group 1: User Interface & Visuals*.
+- **Independent Initiative Settings**: Restructured initiative management on combat add into two independent settings with 4-way choices (**For All**, **For Players**, **For NPCs**, **For None**):
+  - **Prompt for Initiative** (`promptForInitiative`, default: **"For All"**): Controls which actor types are prompted with their initiative configuration dialog when added to combat.
+  - **Auto-Roll Initiative** (`autoRollInitiative`, default: **"For None"**): Controls which actor types have their initiative rolled automatically and immediately without opening a configuration dialog.
+- **Initiative Settings Migration (Migration 2)**: Added an automatic migration on world launch that translates existing boolean `enableAutoRollInitiative` and `autoRollInitiativeFastForward` settings into the new independent `promptForInitiative` and `autoRollInitiative` 4-way options without losing user preferences.
+
+### Fixed
+- **Auto-Status at 0 HP**: Fixed a debounce key collision where `_debounceTimers` was keyed by `actor.id`. Unlinked tokens (synthetic actors) sharing the same base actor ID (e.g. multiple Goblins taking damage in the same round/turn or from AOE) previously cancelled each other's debounce timers, causing earlier tokens to miss their 0 HP status condition and defeated markers. Debounce timers are now keyed by `actor.uuid` to guarantee strict isolation.
+- **Auto-Status at 0 HP**: Removed GM client guard from `preUpdateActor` so the initiating client (player or GM) properly writes `options.autoStatusWasZeroHP` into the update options before broadcasting.
+- **Auto-Status at 0 HP**: Restricted HP update processing to the primary active GM (`(game.users.primaryGM ?? game.users.activeGM)?.isSelf`) to prevent race conditions when multiple GMs are logged in simultaneously.
+- **Auto-Status at 0 HP**: Fixed scene validation in `_processHPChange` to check the token's parent scene (`actor.token.parent ?? canvas?.scene`) rather than failing when the GM is viewing a different scene.
+- **Prone Rotation**: Fixed an issue where Prone / Unconscious / Dead rotation failed when a player inflicted or removed conditions on an NPC token. Token rotation updates are now performed by the triggering user if they possess token update permissions, or automatically delegated to the active primary GM if the triggering user lacks permissions.
+- **Prone Rotation**: Fixed target actor resolution to support ActiveEffects originating on or attached to Item documents (`effect.parent.actor`) in addition to Actor documents (`effect.parent`).
+- **Prone Rotation**: Safely resolved target token documents on synthetic/unlinked actors and linked actors to prevent undefined token references during canvas rendering.
+
 ## [14.17.0] - 2026-08-10
 ### Added
 - **Prompt for Initiative on Combat Add**: Added a new world setting **Prompt for Initiative on Combat Add** (`enableAutoRollInitiative`, enabled by default) and sub-setting **↳ Fast-Forward Initiative Rolls** (`autoRollInitiativeFastForward`, default: **"Never (always show dialog)"**). When a token or combatant is added to an active combat encounter (via token HUD, combat tracker, or token drag), connected players are automatically presented with their DnD5e initiative roll configuration dialog.

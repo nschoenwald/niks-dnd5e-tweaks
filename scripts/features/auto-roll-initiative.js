@@ -1,19 +1,16 @@
 import { MODULE_ID, debug } from "../main.js";
 
 /**
- * Auto-Prompt / Roll Initiative on Combat Add
+ * Auto-Prompt & Auto-Roll Initiative on Combat Add
  *
- * Automatically prompts connected players with their initiative roll dialog (or rolls immediately)
- * when their token/combatant is added to an active combat encounter.
+ * Provides two independent configurable settings:
+ *  - "Prompt for Initiative" (`promptForInitiative`): Opens the initiative roll configuration dialog
+ *    for connected players (or GM for NPCs). Choices: "For All", "For Players", "For NPCs", "For None".
+ *  - "Auto-Roll Initiative" (`autoRollInitiative`): Automatically rolls initiative immediately without
+ *    dialog. Choices: "For All", "For Players", "For NPCs", "For None".
  *
- * Supported fast-forward modes:
- *  - "none": Never fast-forwards. Connected players get the roll dialog, and GM gets dialog for NPCs.
- *  - "npcsOnly": Fast-forwards for NPCs, while connected players get the roll dialog.
- *  - "all": Fast-forwards for all actors (NPCs and players).
- *  - "playersOnly": Fast-forwards for players, shows dialog for NPCs.
- *
- * For unattended player characters (no non-GM owner connected), sends a fallback whispered chat card
- * with a clickable "Roll Initiative" button so the GM can roll on their behalf.
+ * For unattended player characters (no non-GM owner connected), when Prompt is active, sends a fallback
+ * whispered chat card with a clickable "Roll Initiative" button so the GM can roll on their behalf.
  */
 
 const _handledCombatantIds = new Set();
@@ -34,7 +31,44 @@ export function initAutoRollInitiative() {
         if (html instanceof HTMLElement) _bindInitiativeButton(message, html);
     });
 
-    debug("Auto-Prompt Initiative | Initialized");
+    debug("Initiative Management | Initialized");
+}
+
+/**
+ * Determine actor role: "npcs" or "players".
+ * @param {Actor} actor
+ * @param {Combatant} combatant
+ * @returns {"npcs"|"players"}
+ */
+function _getActorRole(actor, combatant) {
+    const isNPC = actor.type === "npc" || combatant?.isNPC || (!actor.hasPlayerOwner && actor.type !== "character");
+    return isNPC ? "npcs" : "players";
+}
+
+/**
+ * Check if Auto-Roll is enabled for the given role.
+ * @param {"npcs"|"players"} role
+ * @returns {boolean}
+ */
+function _shouldAutoRoll(role) {
+    const setting = game.settings.get(MODULE_ID, "autoRollInitiative");
+    if (setting === "all") return true;
+    if (setting === "npcs" && role === "npcs") return true;
+    if (setting === "players" && role === "players") return true;
+    return false;
+}
+
+/**
+ * Check if Prompt is enabled for the given role.
+ * @param {"npcs"|"players"} role
+ * @returns {boolean}
+ */
+function _shouldPrompt(role) {
+    const setting = game.settings.get(MODULE_ID, "promptForInitiative");
+    if (setting === "all") return true;
+    if (setting === "npcs" && role === "npcs") return true;
+    if (setting === "players" && role === "players") return true;
+    return false;
 }
 
 /**
@@ -45,8 +79,6 @@ export function initAutoRollInitiative() {
  */
 function _onCreateCombatant(combatant, options, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoRollInitiative")) return;
-
         // Skip if combatant already has initiative
         if (combatant.initiative !== null && combatant.initiative !== undefined) return;
 
@@ -55,9 +87,19 @@ function _onCreateCombatant(combatant, options, userId) {
 
         // Skip tokens created via summon activities
         if (_isSummonedCombatant(combatant)) {
-            debug(`Auto-Prompt Initiative | Skipping summoned combatant "${combatant.name}".`);
+            debug(`Initiative | Skipping summoned combatant "${combatant.name}".`);
             return;
         }
+
+        const actor = combatant.actor;
+        if (!actor) return;
+
+        const role = _getActorRole(actor, combatant);
+        const autoRoll = _shouldAutoRoll(role);
+        const prompt = !autoRoll && _shouldPrompt(role);
+
+        // Neither auto-roll nor prompt is active for this actor role
+        if (!autoRoll && !prompt) return;
 
         // Deduplicate handling for the same combatant
         if (_handledCombatantIds.has(combatant.id)) return;
@@ -69,16 +111,7 @@ function _onCreateCombatant(combatant, options, userId) {
             _handledCombatantIds.delete(first);
         }
 
-        const actor = combatant.actor;
-        if (!actor) return;
-
-        const isNPC = actor.type === "npc" || combatant.isNPC;
-        const isCharacter = actor.type === "character";
-
-        const fastForwardSetting = game.settings.get(MODULE_ID, "autoRollInitiativeFastForward");
-        const fastForward = fastForwardSetting === "all"
-            || (fastForwardSetting === "npcsOnly" && isNPC)
-            || (fastForwardSetting === "playersOnly" && isCharacter);
+        const isCharacter = role === "players";
 
         // ── Path 1: Connected Owning Player Client ──────────────────────────
         if (actor.isOwner && !game.user.isGM) {
@@ -86,10 +119,10 @@ function _onCreateCombatant(combatant, options, userId) {
             const isPrimaryOwner = connectedOwners[0]?.id === game.userId;
             if (!isPrimaryOwner) return;
 
-            debug(`Auto-Prompt Initiative | ${fastForward ? "Rolling" : "Prompting"} initiative for ${actor.name} on player client.`);
+            debug(`Initiative | ${autoRoll ? "Auto-rolling" : "Prompting"} initiative for ${actor.name} on player client.`);
             queueMicrotask(async () => {
                 try {
-                    if (fastForward) {
+                    if (autoRoll) {
                         if (typeof actor.rollInitiative === "function") {
                             await actor.rollInitiative({
                                 createCombatants: false,
@@ -135,8 +168,8 @@ function _onCreateCombatant(combatant, options, userId) {
 
         // If player character is unattended (no connected owner)
         if (isCharacter && !hasConnectedOwner) {
-            if (fastForward) {
-                debug(`Auto-Prompt Initiative | No connected owner for ${actor.name}. Fast-forwarding initiative on GM client.`);
+            if (autoRoll) {
+                debug(`Initiative | No connected owner for ${actor.name}. Auto-rolling initiative on GM client.`);
                 queueMicrotask(async () => {
                     try {
                         if (typeof actor.rollInitiative === "function") {
@@ -150,11 +183,11 @@ function _onCreateCombatant(combatant, options, userId) {
                             await combatant.rollInitiative();
                         }
                     } catch (err) {
-                        console.error(`${MODULE_ID} | Failed fast-forward initiative for ${actor.name}:`, err);
+                        console.error(`${MODULE_ID} | Failed auto-roll initiative for ${actor.name}:`, err);
                     }
                 });
             } else {
-                debug(`Auto-Prompt Initiative | No connected owner for ${actor.name}. Sending GM fallback chat card.`);
+                debug(`Initiative | No connected owner for ${actor.name}. Sending GM fallback chat card.`);
                 queueMicrotask(async () => {
                     try {
                         await sendInitiativePrompt(combatant, actor);
@@ -167,10 +200,10 @@ function _onCreateCombatant(combatant, options, userId) {
         }
 
         // NPC / GM-controlled combatant
-        debug(`Auto-Prompt Initiative | ${fastForward ? "Rolling" : "Prompting"} initiative for NPC ${actor.name} on GM client.`);
+        debug(`Initiative | ${autoRoll ? "Auto-rolling" : "Prompting"} initiative for NPC ${actor.name} on GM client.`);
         queueMicrotask(async () => {
             try {
-                if (fastForward) {
+                if (autoRoll) {
                     if (typeof actor.rollInitiative === "function") {
                         await actor.rollInitiative({
                             createCombatants: false,
@@ -203,7 +236,7 @@ function _onCreateCombatant(combatant, options, userId) {
             }
         });
     } catch (err) {
-        console.error(`${MODULE_ID} | Error in createCombatant hook for Auto-Prompt Initiative:`, err);
+        console.error(`${MODULE_ID} | Error in createCombatant hook for Initiative Management:`, err);
     }
 }
 
@@ -388,3 +421,4 @@ function _isSummonedCombatant(combatant) {
     if (token?.delta?.flags?.dnd5e?.summon) return true;
     return false;
 }
+

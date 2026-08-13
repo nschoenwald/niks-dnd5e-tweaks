@@ -25,6 +25,7 @@ import { initAutoRollConcentration } from "./features/auto-roll-concentration.js
 import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
+import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/sheet-popout-button.js";
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
@@ -150,6 +151,25 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    // V14+ only: the pop-out/attach button relies on ApplicationV2 and detachWindow(),
+    // neither of which exist in V13. Hide the setting entirely on V13 so it doesn't
+    // appear as a dead/confusing option in the module config UI.
+    if (game.release.generation >= 14) {
+        game.settings.register(MODULE_ID, "enableSheetPopoutButton", {
+            name: "Sheet Pop-out Button",
+            hint: "Adds a one-click pop-out button (\u2197) to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry V14's native pop-out functionality \u2014 without going through the three-dot menu. When the sheet is already detached, the button flips to an attach-back icon (\u2199) to return it to the main workspace.",
+            scope: "world",
+            config: true,
+            type: Boolean,
+            default: true,
+            restricted: true,
+            onChange: (value) => {
+                if (value) initSheetPopoutButton();
+                else disableSheetPopoutButton();
+            }
+        });
+    }
+
     game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
         name: "Item/Spell/Feature Add: Choice Dialog",
         hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
@@ -269,29 +289,52 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableAutoRollInitiative", {
-        name: "Prompt for Initiative on Combat Add",
-        hint: "Automatically prompts connected players with their initiative roll dialog (or rolls immediately) when their token or combatant is added to an active combat encounter.",
+    game.settings.register(MODULE_ID, "promptForInitiative", {
+        name: "Prompt for Initiative",
+        hint: "Prompts connected players (or the GM for NPCs) with the initiative configuration dialog when a token or combatant is added to an active combat encounter.",
         scope: "world",
         config: true,
+        type: String,
+        default: "all",
+        choices: {
+            all: "For All",
+            players: "For Players",
+            npcs: "For NPCs",
+            none: "For None"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoRollInitiative", {
+        name: "Auto-Roll Initiative",
+        hint: "Automatically rolls initiative immediately without showing a configuration dialog when a token or combatant is added to an active combat encounter.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "none",
+        choices: {
+            all: "For All",
+            players: "For Players",
+            npcs: "For NPCs",
+            none: "For None"
+        },
+        restricted: true
+    });
+
+    // Hidden legacy settings for migration reading
+    game.settings.register(MODULE_ID, "enableAutoRollInitiative", {
+        scope: "world",
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
     });
 
     game.settings.register(MODULE_ID, "autoRollInitiativeFastForward", {
-        name: "↳ Fast-Forward Initiative Rolls",
-        hint: "When to skip the roll configuration dialog and roll immediately. 'Never' always shows the configuration dialog. 'NPCs Only' skips the dialog for GM-owned/NPC tokens while prompting connected players with their initiative dialog. 'All Actors' skips the dialog for everyone. 'Players Only' rolls immediately for player characters.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "none",
-        choices: {
-            none: "Never (always show dialog)",
-            npcsOnly: "NPCs Only",
-            all: "All Actors",
-            playersOnly: "Players Only"
-        },
         restricted: true
     });
 
@@ -691,6 +734,7 @@ Hooks.once("setup", () => {
     initMageSlayerConcentration();
     initSelfEffectApplication();
     initSheetPlusCompendium();
+    if (game.release.generation >= 14) initSheetPopoutButton();
 
     initCombatExpTracker();
 });
@@ -741,5 +785,44 @@ async function runMigrations() {
         }
         await game.settings.set(MODULE_ID, "migrationVersion", 1);
         log("Migration 1 complete.");
+    }
+
+    // Migration 2: Migrate legacy boolean enableAutoRollInitiative & autoRollInitiativeFastForward
+    if (currentVersion < 2) {
+        log("Running migration 2: migrating initiative settings...");
+        try {
+            const oldEnable = game.settings.get(MODULE_ID, "enableAutoRollInitiative");
+            const oldFastForward = game.settings.get(MODULE_ID, "autoRollInitiativeFastForward");
+
+            let newPrompt = "all";
+            let newAutoRoll = "none";
+
+            if (oldEnable === false) {
+                newPrompt = "none";
+                newAutoRoll = "none";
+            } else {
+                if (oldFastForward === "all") {
+                    newAutoRoll = "all";
+                    newPrompt = "none";
+                } else if (oldFastForward === "npcsOnly" || oldFastForward === "npcs") {
+                    newAutoRoll = "npcs";
+                    newPrompt = "players";
+                } else if (oldFastForward === "playersOnly" || oldFastForward === "players") {
+                    newAutoRoll = "players";
+                    newPrompt = "npcs";
+                } else {
+                    newPrompt = "all";
+                    newAutoRoll = "none";
+                }
+            }
+
+            await game.settings.set(MODULE_ID, "promptForInitiative", newPrompt);
+            await game.settings.set(MODULE_ID, "autoRollInitiative", newAutoRoll);
+            log(`  Migrated initiative settings: promptForInitiative="${newPrompt}", autoRollInitiative="${newAutoRoll}"`);
+        } catch (err) {
+            log("  Could not read legacy initiative settings, using defaults.", err);
+        }
+        await game.settings.set(MODULE_ID, "migrationVersion", 2);
+        log("Migration 2 complete.");
     }
 }

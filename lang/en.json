@@ -85,5 +85,8 @@
   "ND5T.SelfEffectApplication.UnknownEffect": "Unknown Effect",
   "ND5T.SelfEffectApplication.ActorNotFound": "Could not find the actor to apply the effect to.",
   "ND5T.SelfEffectApplication.ApplyError": "Failed to apply effect. See the console for details.",
-  "ND5T.SelfEffectApplication.UndoError": "Failed to undo effect. See the console for details."
+  "ND5T.SelfEffectApplication.UndoError": "Failed to undo effect. See the console for details.",
+
+  "ND5T.PopoutButton.Tooltip": "Pop out into separate window",
+  "ND5T.AttachButton.Tooltip": "Attach back to main window"
 }
