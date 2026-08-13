@@ -3,12 +3,26 @@
 All notable changes to this project will be documented in this file.
 
 ## [14.17.1] - 2026-08-13
+### Changed
+- **Prompt for Initiative**: Changed the default value of the **Prompt for Initiative** setting (`promptForInitiative`) from `"For All"` to `"For Players"`.
+
+## [14.17.0] - 2026-08-13
 ### Added
 - **Sheet Pop-out Button**: Adds a one-click **↗ pop-out button** (`fa-arrow-up-right-from-square`) directly in the header of Actor and Item document sheets. Clicking it detaches the sheet into a separate browser window using Foundry V14's native `detachWindow()` API — without having to open the three-dot context menu first. The button is automatically hidden when the window is already detached or when the app cannot be detached (e.g. managed child applications). Has no visual effect on V13 (the underlying hook is V14-only). Enabled by default. Configurable under *Group 1: User Interface & Visuals*.
-- **Independent Initiative Settings**: Restructured initiative management on combat add into two independent settings with 4-way choices (**For All**, **For Players**, **For NPCs**, **For None**):
-  - **Prompt for Initiative** (`promptForInitiative`, default: **"For Players"**): Prompts connected players (or the GM for NPCs) with their DnD5e initiative configuration dialog when a token or combatant is added to an active combat encounter.
+- **Independent Initiative Settings**: Added two independent world settings for initiative handling on combat add with 4-way choices (**For All**, **For Players**, **For NPCs**, **For None**):
+  - **Prompt for Initiative** (`promptForInitiative`, default: **"For All"**): Prompts connected players (or the GM for NPCs) with their DnD5e initiative configuration dialog when a token or combatant is added to an active combat encounter.
   - **Auto-Roll Initiative** (`autoRollInitiative`, default: **"For None"**): Automatically rolls initiative immediately without showing a configuration dialog when a token or combatant is added to an active combat encounter.
+  - **Full Configuration Dialog**: Opens the native DnD5e initiative configuration dialog allowing selection of Advantage, Disadvantage, Situational Bonus (`+/-`), and Roll Mode.
+  - **GM Fallback for Unattended Actors**: If a player character is added to combat while no owner is connected and Prompt is active, a whispered chat card with a one-click **Roll Initiative** button is sent to the GM and offline owners as a fallback.
+  - **Live Real-time Sync**: Listens to `updateCombatant` and `deleteCombatant` so visible prompt buttons in chat immediately update to `"Initiative Rolled ✓"` or `"Removed from Combat"` in real time when a manual roll or removal occurs anywhere (character sheet, combat tracker, or macro).
+  - **Exclusions**: Automatically excludes summon activity tokens and legendary action placeholders.
+  - **Auto-Add Tokens Integration**: Seamlessly delegates initiative prompting/rolling from `Auto-Add Tokens to Combat` when both features are active.
 - **Initiative Settings Migration (Migration 2)**: Added an automatic migration on world launch that translates existing boolean `enableAutoRollInitiative` and `autoRollInitiativeFastForward` settings into the new independent `promptForInitiative` and `autoRollInitiative` 4-way options without losing user preferences.
+
+### Changed
+- **Module Settings Reorganization**: Restructured the in-game settings menu under *Group 3: Automation & QOL Tasks* to follow the logical 5-phase combat lifecycle (Combat Setup & Initiative → Actions & Damage Prompts → Concentration & Ongoing Effects → Health & 0 HP → Encounter Conclusion).
+- **Sheet Choice Dialog Placement**: Moved **Item/Spell/Feature Add: Choice Dialog** (`enableSheetPlusCompendium`) from *Group 2: Canvas & Tokens* into *Group 1: User Interface & Visuals*.
+- **Setting Title Harmonization**: Shortened the display name of `enableAutoAddTokensToCombat` to `"Auto-Add Tokens to Combat"`.
 
 ### Fixed
 - **Auto-Status at 0 HP**: Fixed a debounce key collision where `_debounceTimers` was keyed by `actor.id`. Unlinked tokens (synthetic actors) sharing the same base actor ID (e.g. multiple Goblins taking damage in the same round/turn or from AOE) previously cancelled each other's debounce timers, causing earlier tokens to miss their 0 HP status condition and defeated markers. Debounce timers are now keyed by `actor.uuid` to guarantee strict isolation.
@@ -18,25 +32,6 @@ All notable changes to this project will be documented in this file.
 - **Prone Rotation**: Fixed an issue where Prone / Unconscious / Dead rotation failed when a player inflicted or removed conditions on an NPC token. Token rotation updates are now performed by the triggering user if they possess token update permissions, or automatically delegated to the active primary GM if the triggering user lacks permissions.
 - **Prone Rotation**: Fixed target actor resolution to support ActiveEffects originating on or attached to Item documents (`effect.parent.actor`) in addition to Actor documents (`effect.parent`).
 - **Prone Rotation**: Safely resolved target token documents on synthetic/unlinked actors and linked actors to prevent undefined token references during canvas rendering.
-
-## [14.17.0] - 2026-08-10
-### Added
-- **Prompt for Initiative on Combat Add**: Added a new world setting **Prompt for Initiative on Combat Add** (`enableAutoRollInitiative`, enabled by default) and sub-setting **↳ Fast-Forward Initiative Rolls** (`autoRollInitiativeFastForward`, default: **"Never (always show dialog)"**). When a token or combatant is added to an active combat encounter (via token HUD, combat tracker, or token drag), connected players are automatically presented with their DnD5e initiative roll configuration dialog.
-  - **Fast-Forward Choices**: Configurable for `"Never (always show dialog)"` (default), `"NPCs Only"`, `"All Actors"`, or `"Players Only"`.
-  - **Full Configuration Dialog**: Opens the native DnD5e initiative configuration dialog allowing selection of Advantage, Disadvantage, Situational Bonus (`+/-`), and Roll Mode.
-  - **GM Fallback for Unattended Actors**: If a player character is added to combat while no owner is connected, a whispered chat card with a one-click **Roll Initiative** button is sent to the GM and offline owners as a fallback.
-  - **Live Real-time Sync**: Listens to `updateCombatant` and `deleteCombatant` so visible prompt buttons in chat immediately update to `"Initiative Rolled ✓"` or `"Removed from Combat"` in real time when a manual roll or removal occurs anywhere (character sheet, combat tracker, or macro).
-  - **Exclusions**: Automatically excludes summon activity tokens and legendary action placeholders.
-  - **Auto-Add Tokens Integration**: Seamlessly delegates initiative prompting/rolling from `Auto-Add Tokens to Combat` when both features are active.
-
-### Changed
-- **Module Settings Reorganization**: Restructured the in-game settings menu under *Group 3: Automation & QOL Tasks* to follow the logical 5-phase combat lifecycle (Combat Setup & Initiative → Actions & Damage Prompts → Concentration & Ongoing Effects → Health & 0 HP → Encounter Conclusion).
-- **Sheet Choice Dialog Placement**: Moved **Item/Spell/Feature Add: Choice Dialog** (`enableSheetPlusCompendium`) from *Group 2: Canvas & Tokens* into *Group 1: User Interface & Visuals*.
-- **Setting Title Harmonization**: Shortened the display name of `enableAutoAddTokensToCombat` to `"Auto-Add Tokens to Combat"`.
-
-### Fixed
-- **Duplicate Event Listener Prevention**: Added DOM binding guards (`prompt.dataset.bound`) and button disable checks across both initiative prompt and death save prompt chat cards to prevent duplicate event listener attachment across V13/V14 render hooks (`renderChatMessage` and `renderChatMessageHTML`).
-
 ## [14.16.1] - 2026-08-06
 ### Fixed
 - **Auto-Add Tokens to Combat**: Tokens created via a DnD5e summon activity are no longer automatically added to active combat encounters or assigned initiative rolls.
