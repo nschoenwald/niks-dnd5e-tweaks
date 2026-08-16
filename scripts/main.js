@@ -29,6 +29,7 @@ import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/shee
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
+import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
 
 
 
@@ -737,6 +738,9 @@ Hooks.once("setup", () => {
     if (game.release.generation >= 14) initSheetPopoutButton();
 
     initCombatExpTracker();
+
+    // Bug fixes
+    initFixCastActivityDeletion();
 });
 
 Hooks.once("ready", async () => {

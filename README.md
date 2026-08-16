@@ -86,6 +86,14 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 ---
 
+## Patches
+
+Patches are automatic, always-on fixes for confirmed bugs in the DnD5e system or Foundry VTT itself. They are applied silently at startup with no settings to configure, and are removed automatically once the upstream fix ships.
+
+* **Cast Activity Deletion — Orphaned Cached Spells** *(dnd5e < 6.0.0)*: In Foundry V14, deleting a Cast activity uses the new `DataFieldOperator` deletion syntax (`_del`) instead of the legacy `"-="` key prefix. The dnd5e `ActivitiesTemplate#preUpdateActivities` hook only recognised the old prefix, causing the cached spell items created by the activity to be left permanently orphaned on the actor with a stale `flags.dnd5e.cachedFor` reference. This patch intercepts the update and normalises the new syntax to the expected form before the original handler runs, restoring correct cleanup behaviour. Automatically disabled for dnd5e 6.0.0 and newer.
+
+---
+
 ## Module Compatibility
 
 This module includes automatic compatibility checks for other popular modules. No manual configuration is needed. Conflicting features are detected and disabled at startup.

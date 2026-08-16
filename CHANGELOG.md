@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.18.0] - 2026-08-16
+### Fixed
+- **Cast Activity Deletion — Orphaned Cached Spells**: Fixed a Foundry V14 bug where deleting a Cast activity from an item left the actor's corresponding cached spell items permanently orphaned. In Foundry V14, activity deletion uses a `DataFieldOperator` value (`_del`) rather than the legacy `"-="` key prefix. The dnd5e `ActivitiesTemplate#preUpdateActivities` method only recognised the old prefix, so the cleanup step that removes cached spells was silently skipped, leaving the spell items on the actor with a stale `flags.dnd5e.cachedFor` reference. The patch normalises `_del` entries to the `"-="` form before the original handler runs, restoring correct cleanup behaviour. Gated to dnd5e versions below 6.0.0 (where the upstream fix is expected).
+
 ## [14.17.1] - 2026-08-13
+
 ### Changed
 - **Prompt for Initiative**: Changed the default value of the **Prompt for Initiative** setting (`promptForInitiative`) from `"For All"` to `"For Players"`.
 
