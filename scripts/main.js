@@ -29,6 +29,7 @@ import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/shee
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
+import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
 
 
@@ -248,6 +249,20 @@ Hooks.once("init", () => {
         default: true,
         restricted: true
     });
+
+    // V14+ only: template targeting relies on the Region document system and
+    // the refreshMeasuredTemplate / createRegion hooks introduced in V14.
+    if (game.release.generation >= 14) {
+        game.settings.register(MODULE_ID, "enableTemplateTargeting", {
+            name: "Auto-Target Tokens in Spell Templates",
+            hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active. Requires Foundry V14.",
+            scope: "world",
+            config: true,
+            type: Boolean,
+            default: true,
+            restricted: true
+        });
+    }
 
     game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
         name: "Auto-Clear Movement History",
@@ -736,6 +751,7 @@ Hooks.once("setup", () => {
     initSelfEffectApplication();
     initSheetPlusCompendium();
     if (game.release.generation >= 14) initSheetPopoutButton();
+    if (game.release.generation >= 14) initTemplateTargeting();
 
     initCombatExpTracker();
 

@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [14.18.0] - 2026-08-16
+### Added
+- **Auto-Target Tokens in Spell Templates** *(V14 only)*: When a spell or ability template is placed on the canvas, all tokens whose position falls inside the template area are automatically targeted by the placing user. Targets update **live while dragging** — token target rings appear and disappear in real time as the template is moved over tokens, before placement is confirmed. On final placement, targets are re-evaluated using Foundry V14's native `TokenDocument#testInsideRegion()` API for accuracy. Large/Huge/Gargantuan multi-square tokens are correctly handled by checking each occupied grid square. Targets are **replaced** (not merged) on every update, matching midi-qol behavior. The feature is automatically and completely disabled when **midi-qol** is installed and active (to prevent conflicts with its own template targeting). Enabled by default. Configurable under *Group 2: Canvas & Tokens* as **Auto-Target Tokens in Spell Templates**.
+
 ### Fixed
 - **Cast Activity Deletion — Orphaned Cached Spells**: Fixed a Foundry V14 bug where deleting a Cast activity from an item left the actor's corresponding cached spell items permanently orphaned. In Foundry V14, activity deletion uses a `DataFieldOperator` value (`_del`) rather than the legacy `"-="` key prefix. The dnd5e `ActivitiesTemplate#preUpdateActivities` method only recognised the old prefix, so the cleanup step that removes cached spells was silently skipped, leaving the spell items on the actor with a stale `flags.dnd5e.cachedFor` reference. The patch normalises `_del` entries to the `"-="` form before the original handler runs, restoring correct cleanup behaviour. Gated to dnd5e versions below 6.0.0 (where the upstream fix is expected).
 
