@@ -17,6 +17,7 @@ import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
 import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
 import { initHealingContextMenu } from "./features/healing-context-menu.js";
 import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
+import { initAutoRollAttackDamage } from "./features/auto-roll-attack-damage.js";
 import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
@@ -397,6 +398,38 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "promptForAttackDamage", {
+        name: "Prompt for Attack Damage",
+        hint: "Opens the damage roll configuration dialog automatically when an attack roll hits the target's AC. The attacker's actor type (player character or NPC) determines whether the setting applies.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "all",
+        choices: {
+            all: "For All",
+            players: "For Players",
+            npcs: "For NPCs",
+            none: "For None"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "autoRollAttackDamage", {
+        name: "Auto-Roll Attack Damage",
+        hint: "Automatically rolls damage without showing a configuration dialog when an attack roll hits the target's AC. Takes precedence over 'Prompt for Attack Damage' for the same actor type. The attacker's actor type (player character or NPC) determines whether the setting applies. Automatically bypassed when midi-qol is configured to auto-apply damage.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "none",
+        choices: {
+            all: "For All",
+            players: "For Players",
+            npcs: "For NPCs",
+            none: "For None"
+        },
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enablePlayerDamagePrompt", {
         name: "Player Damage Prompt",
         hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
@@ -743,6 +776,7 @@ Hooks.once("setup", () => {
     initTemplateGridSnap();
     initHealingContextMenu();
     initAutoRollSaveDamage();
+    initAutoRollAttackDamage();
     initPlayerDamagePrompt();
     initAutoEndConcentration();
     initAutoEndClassFeatures();

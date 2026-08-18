@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.19.0] - 2026-08-18
+### Added
+- **Prompt for Attack Damage** (`promptForAttackDamage`, default: **"For All"**): When an attack roll hits a target's AC, automatically opens the damage roll configuration dialog for the attacker. Supports the standard four-way choice — **For All**, **For Players**, **For NPCs**, **For None**. The attacker's actor type (player character or NPC) determines whether the setting applies. Critical hits are treated as hits. Bypassed automatically when midi-qol is configured to auto-apply damage.
+- **Auto-Roll Attack Damage** (`autoRollAttackDamage`, default: **"For None"**): When an attack roll hits a target's AC, automatically rolls damage immediately without showing a configuration dialog. Same four-way choice as above. Takes precedence over *Prompt for Attack Damage* for the same actor type. Bypassed automatically when midi-qol is configured to auto-apply damage.
+
 ## [14.18.0] - 2026-08-16
 ### Added
 - **Auto-Target Tokens in Spell Templates** *(V14 only)*: When a spell or ability template is placed on the canvas, all tokens whose position falls inside the template area are automatically targeted by the placing user. Targets update **live while dragging** — token target rings appear and disappear in real time as the template is moved over tokens, before placement is confirmed. On final placement, targets are re-evaluated using Foundry V14's native `TokenDocument#testInsideRegion()` API for accuracy. Large/Huge/Gargantuan multi-square tokens are correctly handled by checking each occupied grid square. Targets are **replaced** (not merged) on every update, matching midi-qol behavior. The feature is automatically and completely disabled when **midi-qol** is installed and active (to prevent conflicts with its own template targeting). Enabled by default. Configurable under *Group 2: Canvas & Tokens* as **Auto-Target Tokens in Spell Templates**.
