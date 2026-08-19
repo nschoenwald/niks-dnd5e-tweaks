@@ -224,6 +224,12 @@ async function _onCreateChatMessage(message) {
             },
             {
                 configure: !autoRoll
+            },
+            {
+                data: {
+                    "flags.dnd5e.originatingMessage": originatingId ?? message.id,
+                    "flags.dnd5e.targets": targets
+                }
             }
         );
 

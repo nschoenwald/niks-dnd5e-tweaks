@@ -32,7 +32,16 @@ function _onPostUseActivity(activity, usageConfig, results) {
     if (!activity.damage?.parts?.length) return;
 
     debug("Auto-Roll Save Damage | Save activity with damage detected, opening damage dialog", activity);
-    activity.rollDamage({ event: usageConfig.event });
+    activity.rollDamage(
+        { event: usageConfig.event },
+        {},
+        {
+            data: {
+                "flags.dnd5e.originatingMessage": results?.message?.id,
+                "flags.dnd5e.targets": results?.message?.getFlag("dnd5e", "targets")
+            }
+        }
+    );
 }
 
 /**

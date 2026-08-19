@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.20.1] - 2026-08-19
+### Fixed
+- **Player Damage Prompt Card Reliability**: Fixed an issue where damage prompt cards were not reliably posted when damage was triggered via *Auto-Roll Attack Damage*, *Prompt for Attack Damage*, or *Auto-Roll Save Damage*. Removed the redundant secondary AC threshold check on damage rolls (since rolling damage implies the attack hit), passed `originatingMessage` and `targets` flags through `activity.rollDamage`, enhanced `_findAttackMessage` to fall back to matching recent attack rolls by speaker and activity context, improved target resolution from canvas when message flags are sparse, and fixed a reference error in the Graze weapon mastery handler.
+
 ## [14.20.0] - 2026-08-19
 ### Added
 - **ApplicationV2 Settings Dashboard**: Replaced the native flat 40+ item module settings scroll list with a modern, categorized **Settings Dashboard** powered by Foundry's `ApplicationV2` and `HandlebarsApplicationMixin`.
