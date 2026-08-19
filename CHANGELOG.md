@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.20.0] - 2026-08-19
+### Added
+- **ApplicationV2 Settings Dashboard**: Replaced the native flat 40+ item module settings scroll list with a modern, categorized **Settings Dashboard** powered by Foundry's `ApplicationV2` and `HandlebarsApplicationMixin`.
+  - **Categorized Tabs**: Organizes all module settings across 4 clean tabs — **UI & Visuals** (including sheet tweaks and Compendium Browser controls), **Canvas & Tokens**, **Combat & Automation** (with sub-headers for the 5 combat lifecycle phases), and **Utilities & Diagnostics**.
+  - **Live Search & Filter**: Real-time search bar that filters settings, hints, and category titles as you type, with matching item counts and clear shortcuts.
+  - **Reactive Parent–Child Dependencies**: Dependent sub-settings (such as layout options, format pickers, and specific combat prompts) automatically enable, dim, or disable reactively when their parent feature switch is toggled.
+  - **JSON Configuration Backup (Export / Import)**: One-click export to download your complete tweaks configuration to a `.json` backup file, and one-click import to restore or migrate settings across worlds.
+  - **Reset to Defaults**: Safely reset all module settings to their defaults with a confirmation dialog.
+  - **Permission Support (`SETTINGS_MODIFY`)**: Fully compatible with Foundry's "Modify Configuration Settings" permission, allowing both GMs and authorized players with settings modification rights to configure module tweaks.
+  - **Visual Feature Badges**: Contextual tags identifying `[World]`, `[Client]`, `[V14+]`, and `[Reload]` settings at a glance.
+
 ## [14.19.0] - 2026-08-18
 ### Added
 - **Prompt for Attack Damage** (`promptForAttackDamage`, default: **"For All"**): When an attack roll hits a target's AC, automatically opens the damage roll configuration dialog for the attacker. Supports the standard four-way choice — **For All**, **For Players**, **For NPCs**, **For None**. The attacker's actor type (player character or NPC) determines whether the setting applies. Critical hits are treated as hits. Bypassed automatically when midi-qol is configured to auto-apply damage.

@@ -32,6 +32,7 @@ import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
 import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
+import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
 
@@ -57,6 +58,19 @@ export function debug(message, ...args) {
 Hooks.once("init", () => {
 
     // ==========================================
+    // Unified ApplicationV2 Settings Dashboard
+    // ==========================================
+
+    game.settings.registerMenu(MODULE_ID, "settingsDashboard", {
+        name: "Nik's D&D 5e Tweaks Configuration",
+        label: "Configure Module",
+        hint: "Open the comprehensive settings dashboard with categorized tabs, search, and backup options.",
+        icon: "fa-solid fa-sliders",
+        type: NiksTweaksSettingsApp,
+        restricted: true
+    });
+
+    // ==========================================
     // GROUP 1: User Interface & Visuals
     // ==========================================
 
@@ -64,7 +78,7 @@ Hooks.once("init", () => {
         name: "Sync Browser Tab Title",
         hint: "Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -80,7 +94,7 @@ Hooks.once("init", () => {
         name: "Cursor Keyboard Hints",
         hint: "Displays small floating icons near the mouse cursor when modifier keys configured in the DnD5e system (such as Skip Dialog, Advantage, or Disadvantage) are held down.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -94,7 +108,7 @@ Hooks.once("init", () => {
         name: "Actor Directory Disposition Dots",
         hint: "Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -107,7 +121,7 @@ Hooks.once("init", () => {
         name: "Blood Drop Bloodied Icon",
         hint: "Replaces the default DnD5e \"bloodied\" condition icon with a red blood drop icon. Requires a reload to take effect.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -118,7 +132,7 @@ Hooks.once("init", () => {
         name: "Sidebar Multi-line Names",
         hint: "Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -132,7 +146,7 @@ Hooks.once("init", () => {
         name: "Clean Sheet Window Titles",
         hint: "Removes the verbose type prefix (e.g. \"Non Player Character:\") from document sheet window titles, showing just the document name. Especially useful when detaching windows in V14, where the prefix otherwise consumes all visible space in the taskbar. Requires a reload to take effect.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -143,7 +157,7 @@ Hooks.once("init", () => {
         name: "↳ Sheet Title Format",
         hint: "How to display document sheet window titles. \"Name Only\" shows just the name (e.g. \"Goblin\"). \"Type: Name\" adds a prefix (e.g. \"Non Player Character: Goblin\"). \"Name (Type)\" adds a suffix (e.g. \"Goblin (Non Player Character)\").",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "name",
         choices: {
@@ -162,7 +176,7 @@ Hooks.once("init", () => {
             name: "Sheet Pop-out Button",
             hint: "Adds a one-click pop-out button (\u2197) to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry V14's native pop-out functionality \u2014 without going through the three-dot menu. When the sheet is already detached, the button flips to an attach-back icon (\u2199) to return it to the main workspace.",
             scope: "world",
-            config: true,
+            config: false,
             type: Boolean,
             default: true,
             restricted: true,
@@ -177,7 +191,7 @@ Hooks.once("init", () => {
         name: "Item/Spell/Feature Add: Choice Dialog",
         hint: "When clicking the '+' button on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items).",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -187,7 +201,7 @@ Hooks.once("init", () => {
         name: "Toolbar Limitation",
         hint: "When the number of buttons in a given scene controls toolbar exceeds a configured limit, turns the toolbar scrollable and limits the visible height to display only that number of buttons at a time (does not apply to the macro hotbar).",
         scope: "client",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         onChange: (value) => {
@@ -201,13 +215,33 @@ Hooks.once("init", () => {
         name: "↳ Max Displayed Toolbar Buttons",
         hint: "The maximum number of buttons to display in a toolbar before it becomes scrollable.",
         scope: "client",
-        config: true,
+        config: false,
         type: Number,
         default: 20,
         onChange: () => {
             applyToolbarLimitation();
             ui.controls?.render();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableForceCompendiumBrowser", {
+        name: "Force Compendium Browser",
+        hint: "Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "allowShiftClickCompendiumSidebar", {
+        name: "↳ Allow Shift-Click to Bypass",
+        hint: "When enabled, players can hold the Shift key while clicking the Compendium tab to access the regular Foundry compendium sidebar instead of the browser.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
     // ==========================================
@@ -218,7 +252,7 @@ Hooks.once("init", () => {
         name: "Auto-Rotate Prone Tokens",
         hint: "Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when it is removed.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -232,7 +266,7 @@ Hooks.once("init", () => {
         name: "Token Resizer Tool",
         hint: "Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan).",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -245,7 +279,7 @@ Hooks.once("init", () => {
         name: "Snap Templates to Grid Intersections",
         hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -258,7 +292,7 @@ Hooks.once("init", () => {
             name: "Auto-Target Tokens in Spell Templates",
             hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active. Requires Foundry V14.",
             scope: "world",
-            config: true,
+            config: false,
             type: Boolean,
             default: true,
             restricted: true
@@ -269,7 +303,7 @@ Hooks.once("init", () => {
         name: "Auto-Clear Movement History",
         hint: "Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -283,7 +317,7 @@ Hooks.once("init", () => {
         name: "Disable Underground Token Hiding",
         hint: "Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Requires a reload to take effect.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true,
@@ -300,7 +334,7 @@ Hooks.once("init", () => {
         name: "Auto-Add Tokens to Combat",
         hint: "Automatically adds new tokens to the active combat encounter when created or dragged to the canvas during combat.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -310,7 +344,7 @@ Hooks.once("init", () => {
         name: "Prompt for Initiative",
         hint: "Prompts connected players (or the GM for NPCs) with the initiative configuration dialog when a token or combatant is added to an active combat encounter.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "players",
         choices: {
@@ -326,7 +360,7 @@ Hooks.once("init", () => {
         name: "Auto-Roll Initiative",
         hint: "Automatically rolls initiative immediately without showing a configuration dialog when a token or combatant is added to an active combat encounter.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "none",
         choices: {
@@ -359,7 +393,7 @@ Hooks.once("init", () => {
         name: "Legendary Action Placeholders",
         hint: "When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -369,7 +403,7 @@ Hooks.once("init", () => {
         name: "↳ Show Placeholders to Players",
         hint: "By default, legendary action placeholder turns are hidden from players in the combat tracker. Enable this to make them visible.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true
@@ -379,7 +413,7 @@ Hooks.once("init", () => {
         name: "↳ Placeholder Icon",
         hint: "Select an icon to use for legendary action initiative placeholders.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         filePicker: "image",
         default: "icons/svg/combat.svg",
@@ -392,7 +426,7 @@ Hooks.once("init", () => {
         name: "Auto-Open Damage Dialog for Saves",
         hint: "Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used. This mirrors the built-in behaviour of Attack activities, which already auto-open their attack roll dialog. Automatically disabled when midi-qol is active.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -402,7 +436,7 @@ Hooks.once("init", () => {
         name: "Prompt for Attack Damage",
         hint: "Opens the damage roll configuration dialog automatically when an attack roll hits the target's AC. The attacker's actor type (player character or NPC) determines whether the setting applies.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "all",
         choices: {
@@ -418,7 +452,7 @@ Hooks.once("init", () => {
         name: "Auto-Roll Attack Damage",
         hint: "Automatically rolls damage without showing a configuration dialog when an attack roll hits the target's AC. Takes precedence over 'Prompt for Attack Damage' for the same actor type. The attacker's actor type (player character or NPC) determines whether the setting applies. Automatically bypassed when midi-qol is configured to auto-apply damage.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "none",
         choices: {
@@ -434,7 +468,7 @@ Hooks.once("init", () => {
         name: "Player Damage Prompt",
         hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true
@@ -444,7 +478,7 @@ Hooks.once("init", () => {
         name: "↳ Damage Prompt Whisper Visibility",
         hint: "Controls who receives the damage prompt whisper when a player token is hit. 'GM & Player' sends to both the owning player and all GMs. 'Player Only' sends only to the owning player.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "gmAndPlayer",
         choices: {
@@ -458,7 +492,7 @@ Hooks.once("init", () => {
         name: "↳ GM Damage Prompt for Player Attacks",
         hint: "When a player rolls attack damage against an NPC token that was hit, whispers a damage prompt to the GM with the damage breakdown and an Apply Damage button. Requires the Player Damage Prompt feature to be enabled.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true
@@ -468,7 +502,7 @@ Hooks.once("init", () => {
         name: "↳ Non-Attack Damage Prompts",
         hint: "When enabled, damage prompts are also sent for damage rolls originating from non-attack activities (like saving throws or utility abilities). For save activities, the prompt includes both Full and Half damage buttons.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -478,7 +512,7 @@ Hooks.once("init", () => {
         name: "↳ Damage Prompt Layout",
         hint: "Controls the visual layout of damage prompt messages. 'Structured' shows a table with per-type damage breakdown including trait modifiers. 'Classic' shows the original text-based layout.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "structured",
         choices: {
@@ -492,7 +526,7 @@ Hooks.once("init", () => {
         name: "↳ Suppress Damage Prompts (Player)",
         hint: "Hide damage prompt whispers in chat. This is a per-user setting — each player can choose independently whether to see damage prompts.",
         scope: "user",
-        config: true,
+        config: false,
         type: Boolean,
         default: false
     });
@@ -501,7 +535,7 @@ Hooks.once("init", () => {
         name: "↳ Wait for Dice So Nice",
         hint: "When enabled, damage prompt whispers are delayed until Dice So Nice finishes its 3D dice animation for the roll. This prevents the prompt from appearing before the dice have landed. Has no effect if Dice So Nice is not installed.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true
@@ -511,7 +545,7 @@ Hooks.once("init", () => {
         name: "Healing Roll Context Menu",
         hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default. Requires a reload to take effect.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true,
@@ -522,7 +556,7 @@ Hooks.once("init", () => {
         name: "Self Effect Application Prompt",
         hint: "When an actor uses an ability that has Active Effects targeting \"Self\" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owner and the GM with one-click Apply buttons for each effect.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -532,7 +566,7 @@ Hooks.once("init", () => {
         name: "↳ Always Prompt Features",
         hint: "A comma-separated list of feature or item names (case-insensitive). When these features are used and have an Active Effect attached, the self-effect application prompt will be posted even if they were not self-targeted.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "Mage Armor",
         restricted: true
@@ -544,7 +578,7 @@ Hooks.once("init", () => {
         name: "Auto-Roll Concentration Saves",
         hint: "Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -554,7 +588,7 @@ Hooks.once("init", () => {
         name: "↳ Fast-Forward Concentration Rolls",
         hint: "When to skip the roll configuration dialog and roll immediately. 'NPCs Only' skips for NPC tokens but shows the dialog for player-owned actors. 'All Actors' skips the dialog for everyone. 'Players Only' is the reverse. 'Never' always shows the dialog, pre-configured with the DC.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "npcsOnly",
         choices: {
@@ -570,7 +604,7 @@ Hooks.once("init", () => {
         name: "↳ Auto-End Concentration on Save Failure",
         hint: "Automatically ends concentration effects when a concentration saving throw fails. When disabled, concentration is not removed automatically, but an \"End Concentration\" button is provided on the chat card.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true
@@ -580,7 +614,7 @@ Hooks.once("init", () => {
         name: "Mage Slayer: Concentration Disadvantage",
         hint: "When a creature with the Mage Slayer feat damages a concentrating target, the target rolls its concentration saving throw with Disadvantage. If the target has intrinsic Advantage (e.g. War Caster), the two cancel out to a normal roll.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -590,7 +624,7 @@ Hooks.once("init", () => {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -600,7 +634,7 @@ Hooks.once("init", () => {
         name: "Auto-End Class Features",
         hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers: Barbarian Rage (and Wrath of the Sea for level 15+ Barbarians), and Druid Wild Shape Starry Form. Identifies each feature by item identifier or effect name.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -612,7 +646,7 @@ Hooks.once("init", () => {
         name: "Auto-Apply Status at 0 HP",
         hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -622,7 +656,7 @@ Hooks.once("init", () => {
         name: "↳ Player Token Status at 0 HP",
         hint: "Which overlay status condition to apply to player-owned tokens when they drop to 0 HP.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "unconscious",
         choices: {
@@ -637,7 +671,7 @@ Hooks.once("init", () => {
         name: "↳ NPC Token Status at 0 HP",
         hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "dead",
         choices: {
@@ -652,7 +686,7 @@ Hooks.once("init", () => {
         name: "↳ Player Token Combat Action at 0 HP",
         hint: "What to do in the combat tracker when a player-owned token drops to 0 HP.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "none",
         choices: {
@@ -667,7 +701,7 @@ Hooks.once("init", () => {
         name: "↳ NPC Token Combat Action at 0 HP",
         hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP.",
         scope: "world",
-        config: true,
+        config: false,
         type: String,
         default: "defeated",
         choices: {
@@ -682,7 +716,7 @@ Hooks.once("init", () => {
         name: "Prompt for Death Saves",
         hint: "When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: true,
         restricted: true
@@ -694,33 +728,9 @@ Hooks.once("init", () => {
         name: "Combat Experience Tracker",
         hint: "At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs involved, with a button to distribute XP evenly to all participating player characters.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
-        restricted: true
-    });
-
-    // ==========================================
-    // GROUP 4: Restrictions & Rules
-    // ==========================================
-
-    game.settings.register(MODULE_ID, "enableForceCompendiumBrowser", {
-        name: "Force Compendium Browser",
-        hint: "Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "allowShiftClickCompendiumSidebar", {
-        name: "↳ Allow Shift-Click to Bypass",
-        hint: "When enabled, players can hold the Shift key while clicking the Compendium tab to access the regular Foundry compendium sidebar instead of the browser.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
         restricted: true
     });
 
@@ -735,7 +745,7 @@ Hooks.once("init", () => {
         name: "Debug Mode",
         hint: "Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.",
         scope: "world",
-        config: true,
+        config: false,
         type: Boolean,
         default: false,
         restricted: true,

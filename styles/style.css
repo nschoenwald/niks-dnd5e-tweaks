@@ -480,3 +480,574 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     background: rgba(0, 0, 0, 0.98);
     color: #fff;
 }
+
+/* ==========================================================================
+   Settings Dashboard (ApplicationV2)
+   ========================================================================== */
+
+.nd5t-settings-app .window-content {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.nd5t-dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: #181a1e;
+    color: #f8fafc;
+}
+
+/* ── Top Header & Search Bar ─────────────────────────────────────────── */
+
+.nd5t-dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 12px;
+}
+
+.nd5t-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 500px;
+}
+
+.nd5t-search-box .search-icon {
+    position: absolute;
+    left: 10px;
+    color: #94a3b8;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.nd5t-search-input {
+    width: 100%;
+    padding: 6px 30px 6px 32px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 13px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nd5t-search-input:focus {
+    border-color: #ff6400;
+    box-shadow: 0 0 6px rgba(255, 100, 0, 0.35);
+    outline: none;
+}
+
+.nd5t-search-clear {
+    position: absolute;
+    right: 6px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.nd5t-search-clear:hover {
+    color: #ffffff;
+}
+
+.nd5t-search-status {
+    font-size: 12px;
+    color: #cbd5e1;
+    white-space: nowrap;
+}
+
+.nd5t-match-count {
+    font-weight: bold;
+    color: #ff7a22;
+}
+
+/* ── Main Dashboard Body ─────────────────────────────────────────────── */
+
+.nd5t-dashboard-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Sidebar Navigation Tabs */
+.nd5t-nav-tabs {
+    width: 210px;
+    background: rgba(0, 0, 0, 0.25);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    padding: 8px 6px;
+    gap: 4px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.nd5t-nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #cbd5e1;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+}
+
+.nd5t-nav-tab i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.nd5t-nav-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.nd5t-nav-tab:hover i {
+    color: #ffffff;
+}
+
+.nd5t-nav-tab.active {
+    background: rgba(255, 100, 0, 0.2);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.nd5t-nav-tab.active i {
+    color: #ff7a22;
+}
+
+.nd5t-nav-tab .tab-badge {
+    margin-left: auto;
+    background: #ff6400;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+/* Settings Content Panel */
+.nd5t-settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.nd5t-tab-panel {
+    display: none;
+}
+
+.nd5t-tab-panel.active {
+    display: block;
+}
+
+.nd5t-tab-header {
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nd5t-tab-header h2 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nd5t-tab-header h2 i {
+    color: #ff7a22;
+    font-size: 16px;
+}
+
+.nd5t-tab-desc {
+    margin: 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.nd5t-section {
+    margin-bottom: 18px;
+}
+
+.nd5t-section-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin: 14px 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nd5t-section-title i {
+    font-size: 12px;
+    color: #ff9f43;
+}
+
+/* Setting Rows */
+.nd5t-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nd5t-setting-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    gap: 16px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nd5t-setting-row:hover {
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.nd5t-child-setting {
+    margin-left: 24px;
+    border-left: 3px solid rgba(255, 100, 0, 0.5);
+    background: rgba(0, 0, 0, 0.14);
+}
+
+.nd5t-tree-branch {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+.nd5t-parent-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.nd5t-setting-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nd5t-setting-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.nd5t-setting-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.nd5t-setting-hint {
+    margin: 4px 0 0 0;
+    font-size: 11.5px;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
+/* Badges */
+.nd5t-badges {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.nd5t-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+.nd5t-badge.world {
+    background: rgba(70, 130, 180, 0.3);
+    color: #93c5fd;
+    border: 1px solid rgba(70, 130, 180, 0.5);
+}
+
+.nd5t-badge.client {
+    background: rgba(46, 139, 87, 0.3);
+    color: #86efac;
+    border: 1px solid rgba(46, 139, 87, 0.5);
+}
+
+.nd5t-badge.v14 {
+    background: rgba(148, 0, 211, 0.3);
+    color: #e9d5ff;
+    border: 1px solid rgba(148, 0, 211, 0.5);
+}
+
+.nd5t-badge.reload {
+    background: rgba(220, 20, 60, 0.3);
+    color: #fca5a5;
+    border: 1px solid rgba(220, 20, 60, 0.5);
+}
+
+/* Controls */
+.nd5t-setting-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 140px;
+}
+
+/* Modern Switch Toggle */
+.nd5t-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+}
+
+.nd5t-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.nd5t-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: 0.2s ease;
+    border-radius: 22px;
+}
+
+.nd5t-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #ffffff;
+    transition: 0.2s ease;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.nd5t-switch input:checked + .nd5t-slider {
+    background-color: #22c55e;
+    border-color: #4ade80;
+}
+
+.nd5t-switch input:checked + .nd5t-slider:before {
+    transform: translateX(18px);
+    background-color: #ffffff;
+}
+
+.nd5t-switch input:focus + .nd5t-slider {
+    box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+}
+
+/* Form Inputs */
+.nd5t-select {
+    padding: 5px 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 12px;
+    min-width: 140px;
+}
+
+.nd5t-select option {
+    background: #1e2024;
+    color: #ffffff;
+}
+
+.nd5t-number-input {
+    width: 70px;
+    padding: 5px 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 12px;
+    text-align: center;
+}
+
+.nd5t-text-input {
+    width: 180px;
+    padding: 5px 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+.nd5t-file-picker-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.nd5t-file-picker-btn {
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.nd5t-file-picker-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* No Results State */
+.nd5t-no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 12px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.nd5t-no-results i {
+    font-size: 36px;
+    color: #64748b;
+}
+
+.nd5t-no-results p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.nd5t-btn-clear-search {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.nd5t-btn-clear-search:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.nd5t-dashboard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 12px;
+}
+
+.nd5t-footer-left,
+.nd5t-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nd5t-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nd5t-btn.primary {
+    background: #ff6400;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.nd5t-btn.primary:hover {
+    background: #ff7a22;
+}
+
+.nd5t-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f1f5f9;
+}
+
+.nd5t-btn.secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.nd5t-btn.cancel {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+}
+
+.nd5t-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.nd5t-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
