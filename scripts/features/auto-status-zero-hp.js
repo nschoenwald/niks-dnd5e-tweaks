@@ -14,12 +14,13 @@ import { MODULE_ID, debug } from "../main.js";
  */
 
 /**
- * Per-actor debounce timers to prevent conflicting processing when
+ * Per-actor debounce records to prevent conflicting processing when
  * HP changes rapidly (e.g. damage + instant healing in < 250ms).
  * Keyed by actor UUID to properly isolate unlinked tokens (synthetic actors).
- * @type {Map<string, number>}
+ * Tracks the timer handle and the initial wasZeroHP state across rapid updates.
+ * @type {Map<string, { timer: ReturnType<typeof setTimeout>, wasZeroHP: boolean }>}
  */
-const _debounceTimers = new Map();
+const _debounceState = new Map();
 
 /**
  * Determine whether an actor is "player-owned" (Player Character type or has player owners)
@@ -226,25 +227,24 @@ function _onUpdateActor(actor, change, options, userId) {
         const newHP = actor.system?.attributes?.hp?.value ?? 0;
         const type = _ownershipType(actor);
 
-        // Determine if actor was at 0 HP before, or currently has 0-HP statuses.
-        const wasZeroHP = options.autoStatusWasZeroHP === true
-            || actor.statuses?.has("dead")
-            || actor.statuses?.has("unconscious");
-
         // Debounce per actor UUID — if HP changes again within 250ms, cancel the
         // previous callback and only process the latest state.
         // Using uuid ensures unlinked tokens (synthetic actors) have distinct timers.
+        // If a debounce sequence is already active, preserve the initial wasZeroHP state
+        // so multi-step HP changes (e.g. 0 -> 1 -> 5) properly recognize the actor started at 0 HP.
         const debounceKey = actor.uuid;
-        const existingTimer = _debounceTimers.get(debounceKey);
-        if (existingTimer) clearTimeout(existingTimer);
+        const existing = _debounceState.get(debounceKey);
+        const wasZeroHP = existing ? existing.wasZeroHP : (options.autoStatusWasZeroHP === true);
+
+        if (existing) clearTimeout(existing.timer);
 
         const timer = setTimeout(() => {
-            _debounceTimers.delete(debounceKey);
+            _debounceState.delete(debounceKey);
             _processHPChange(actor, newHP, type, wasZeroHP).catch(err => {
                 console.error(`Nik's DnD5e Tweaks | Failed processing HP change for Auto-Status 0 HP:`, err);
             });
         }, 250);
-        _debounceTimers.set(debounceKey, timer);
+        _debounceState.set(debounceKey, { timer, wasZeroHP });
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onUpdateActor for Auto-Status 0 HP:`, err);
     }
@@ -293,9 +293,8 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
         await _handleCombatActionZeroHP(actor, combatAction);
     } else {
         // HP is above 0 — remove any zero-HP statuses and un-defeat,
-        // if the actor was at 0 HP before or currently holds dead/unconscious statuses.
-        const holdsZeroHPStatus = actor.statuses?.has("dead") || actor.statuses?.has("unconscious");
-        if (wasZeroHP || holdsZeroHPStatus) {
+        // but ONLY if the token was at 0 HP before this HP restoration.
+        if (wasZeroHP) {
             await _removeZeroHPStatuses(actor);
             await _undefeatCombatant(actor);
         }

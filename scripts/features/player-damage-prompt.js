@@ -1002,8 +1002,9 @@ function _calculateEffectiveDamage(actor, damageByType) {
     if (modified.length) {
         const descriptions = modified.map(({ type, mod }) => {
             const sign = mod > 0 ? "+" : "";
+            const icon = _getDamageTypeIconHtml(type);
             const label = _localizeType(type);
-            return `${label} (${sign}${mod})`;
+            return `${icon}&nbsp;${label} (${sign}${mod})`;
         });
         parts.push(game.i18n.format("ND5T.DamagePrompt.TraitReducing", { descriptions: descriptions.join(", ") }));
     }
@@ -1017,6 +1018,39 @@ function _calculateEffectiveDamage(actor, damageByType) {
     }
 
     return { effectiveDamage, traitText, details };
+}
+
+// ── Damage type icon mapping ─────────────────────────────────────────
+
+/**
+ * Map of D&D 5e damage and healing types to FontAwesome 6 icon class names.
+ */
+const DAMAGE_TYPE_ICONS = {
+    acid: "fa-flask-round-poison",
+    bludgeoning: "fa-mace",
+    cold: "fa-snowflake",
+    fire: "fa-fire-flame-curved",
+    force: "fa-sparkles",
+    lightning: "fa-bolt-lightning",
+    necrotic: "fa-skull",
+    piercing: "fa-location-crosshairs",
+    poison: "fa-skull-crossbones",
+    psychic: "fa-brain",
+    radiant: "fa-sun",
+    slashing: "fa-sword",
+    thunder: "fa-volume-high",
+    healing: "fa-heart",
+    temphp: "fa-shield-halved"
+};
+
+/**
+ * Return an HTML icon element string for a given damage or healing type.
+ * @param {string} type  Damage or healing type key.
+ * @returns {string} HTML <i> element string.
+ */
+function _getDamageTypeIconHtml(type) {
+    const iconClass = DAMAGE_TYPE_ICONS[type] || "fa-burst";
+    return `<i class="fas ${iconClass} nd5t-dmg-icon nd5t-dmg-${type}" aria-hidden="true"></i>`;
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────
@@ -1039,7 +1073,7 @@ function _localizeType(type) {
  * @returns {string}
  */
 function _formatTypeList(types) {
-    const labels = types.map(_localizeType);
+    const labels = types.map(t => `${_getDamageTypeIconHtml(t)}&nbsp;${_localizeType(t)}`);
     if (labels.length <= 1) return labels[0] || "";
     return labels.slice(0, -1).join(", ") + " and " + labels[labels.length - 1];
 }
@@ -1052,10 +1086,12 @@ function _formatTypeList(types) {
  */
 function _formatDamageBreakdown(damageByType) {
     const parts = Object.entries(damageByType).map(([type, amount]) => {
+        const icon = _getDamageTypeIconHtml(type);
+        const label = _localizeType(type);
         if (CONFIG.DND5E?.healingTypes?.[type]) {
-            return `${amount} ${_localizeType(type)}`;
+            return `${amount} ${icon}&nbsp;${label}`;
         }
-        return `${amount} ${_localizeType(type)} damage`;
+        return `${amount} ${icon}&nbsp;${label} damage`;
     });
     if (parts.length <= 1) return parts[0] || "";
     return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
@@ -1458,8 +1494,9 @@ function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, a
     let rowsHtml = "";
     for (const d of details) {
         const typeLabel = _localizeType(d.type);
+        const icon = _getDamageTypeIconHtml(d.type);
         rowsHtml += `<tr>`;
-        rowsHtml += `<td>${typeLabel}</td>`;
+        rowsHtml += `<td>${icon}&nbsp;${typeLabel}</td>`;
         if (hasModifiers) {
             const modHtml = _getModifierCellHtml(d.modifier);
             rowsHtml += `<td class="nd5t-num-cell">${d.raw}</td>`;

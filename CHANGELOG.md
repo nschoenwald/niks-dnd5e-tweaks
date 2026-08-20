@@ -2,9 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.20.3] - 2026-08-20
+### Fixed
+- **Auto-Status at 0 HP**: Fixed a bug where tokens with the unconscious (or dead) condition at positive HP (e.g. from spells or effects like *Sleep*) had their condition erroneously removed when taking damage above 0 HP (e.g. dropping from 9 HP to 1 HP). Status removal and combatant un-defeating are now strictly restricted to tokens that were actually at 0 HP before gaining HP (`wasZeroHP === true`), eliminating the incorrect fallback check on existing status flags.
+- **Auto-Status at 0 HP**: Improved debounce handling across rapid multi-step HP updates (e.g. 0 HP → 1 HP → 5 HP) by preserving the initial pre-update `wasZeroHP` state across the debounce window.
+
+## [14.20.2] - 2026-08-19
+### Added
+- **Damage Type Icons in Damage Prompts**: Added themed, color-coded FontAwesome 6 icons next to damage and healing types in both the classic text layout and structured table layout (e.g. 🔥 Fire, ❄️ Cold, ⚡ Lightning, ⚔️ Slashing, 💚 Healing).
+- **Damage Prompt AC Handling**: Removed the redundant secondary AC threshold check on damage rolls (since rolling damage implies the attack hit, preventing false negatives from situational bonuses or GM rulings).
+
 ## [14.20.1] - 2026-08-19
 ### Fixed
-- **Player Damage Prompt Card Reliability**: Fixed an issue where damage prompt cards were not reliably posted when damage was triggered via *Auto-Roll Attack Damage*, *Prompt for Attack Damage*, or *Auto-Roll Save Damage*. Removed the redundant secondary AC threshold check on damage rolls (since rolling damage implies the attack hit), passed `originatingMessage` and `targets` flags through `activity.rollDamage`, enhanced `_findAttackMessage` to fall back to matching recent attack rolls by speaker and activity context, improved target resolution from canvas when message flags are sparse, and fixed a reference error in the Graze weapon mastery handler.
+- **Player Damage Prompt Card Reliability**: Fixed an issue where damage prompt cards were not reliably posted when damage was triggered via *Auto-Roll Attack Damage*, *Prompt for Attack Damage*, or *Auto-Roll Save Damage*. `activity.rollDamage` now passes `originatingMessage` and `targets` flags through `messageConfig`. Enhanced `_findAttackMessage` to fall back to matching recent attack rolls by speaker and activity context, improved target resolution from canvas when message flags are sparse, and fixed a reference error in the Graze weapon mastery handler.
 
 ## [14.20.0] - 2026-08-19
 ### Added

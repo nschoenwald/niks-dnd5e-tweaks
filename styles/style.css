@@ -204,6 +204,33 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     padding-top: 4px;
 }
 
+/* ── Damage Type Icons ────────────────────────────────────────────── */
+
+.nd5t-dmg-icon {
+    font-size: 0.9em;
+    width: 14px;
+    text-align: center;
+    display: inline-block;
+    vertical-align: -0.5px;
+    margin-right: 2px;
+}
+
+.nd5t-dmg-acid { color: #84cc16; }
+.nd5t-dmg-bludgeoning { color: #a3a3a3; }
+.nd5t-dmg-cold { color: #38bdf8; }
+.nd5t-dmg-fire { color: #f97316; }
+.nd5t-dmg-force { color: #a855f7; }
+.nd5t-dmg-lightning { color: #eab308; }
+.nd5t-dmg-necrotic { color: #94a3b8; }
+.nd5t-dmg-piercing { color: #cbd5e1; }
+.nd5t-dmg-poison { color: #22c55e; }
+.nd5t-dmg-psychic { color: #ec4899; }
+.nd5t-dmg-radiant { color: #f59e0b; }
+.nd5t-dmg-slashing { color: #ef4444; }
+.nd5t-dmg-thunder { color: #60a5fa; }
+.nd5t-dmg-healing { color: #10b981; }
+.nd5t-dmg-temphp { color: #14b8a6; }
+
 /* ── Combat Experience Tracker ────────────────────────────────────── */
 
 .nd5t-exp-summary .card-content {
