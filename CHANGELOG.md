@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.20.4] - 2026-08-20
+### Fixed
+- Fixed release.
+
 ## [14.20.3] - 2026-08-20
 ### Fixed
 - **Auto-Status at 0 HP**: Fixed a bug where tokens with the unconscious (or dead) condition at positive HP (e.g. from spells or effects like *Sleep*) had their condition erroneously removed when taking damage above 0 HP (e.g. dropping from 9 HP to 1 HP). Status removal and combatant un-defeating are now strictly restricted to tokens that were actually at 0 HP before gaining HP (`wasZeroHP === true`), eliminating the incorrect fallback check on existing status flags.
