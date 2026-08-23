@@ -88,5 +88,8 @@
   "ND5T.SelfEffectApplication.UndoError": "Failed to undo effect. See the console for details.",
 
   "ND5T.PopoutButton.Tooltip": "Pop out into separate window",
-  "ND5T.AttachButton.Tooltip": "Attach back to main window"
+  "ND5T.AttachButton.Tooltip": "Attach back to main window",
+
+  "ND5T.NpcHpScaler.ScaleDown": "Scale Hit Points Down (-1 Hit Die; Shift-click for -5)",
+  "ND5T.NpcHpScaler.ScaleUp": "Scale Hit Points Up (+1 Hit Die; Shift-click for +5)"
 }

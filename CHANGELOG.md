@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.21.1] - 2026-08-23
+### Changed
+- **System Compatibility**: Updated `dnd5e` system relationship compatibility in the module manifest to verified `5.3.3` and maximum `5.99.99`.
+
+## [14.21.0] - 2026-08-20
+### Added
+- **NPC Hit Point Scaling Buttons** (`enableNpcHpScaling`, default: `true`): Adds quick plus (`+`) and minus (`-`) scaling buttons directly into the NPC Hit Points configuration dialog (`HitPointsConfig`), allowing GMs to easily scale a creature's hit dice count up or down with one click.
+  - **Dynamic Recalculation**: Automatically recalculates both the creature's average Maximum Hit Points and health formula using official 5e math: $\lfloor X \times \frac{Y + 1}{2} + X \times \text{CON mod} \rfloor$ where $Y$ is the hit die size based on creature size (Tiny: d4, Small: d6, Medium: d8, Large: d10, Huge: d12, Gargantuan: d20) or custom formula denomination.
+  - **Delta Preservation**: Modifying max HP adjusts current HP by the same delta (keeping full health monsters at full HP), managed natively through ApplicationV2 form submission.
+  - **Shift-Click Fast Scaling**: Hold **Shift** while clicking either button to scale by 5 hit dice at a time (e.g. for scaling formidable bosses or minions).
+  - **Safe Minimum**: Automatically enforces a safe minimum of 1 hit die / 1 HP, disabling the minus button when at the minimum.
+  - **Configurable**: Fully toggleable in the Settings Dashboard under *UI & Visuals -> Sheets & Toolbars*.
+
 ## [14.20.4] - 2026-08-20
 ### Fixed
 - Fixed release.

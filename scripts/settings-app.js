@@ -152,6 +152,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "enableNpcHpScaling",
+                                name: "NPC Hit Points Scaling Buttons",
+                                hint: "Adds plus and minus buttons to the NPC Hit Points configuration dialog to easily scale hit dice and recalculate average HP and formula.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
                                 key: "enableToolbarLimitation",
                                 name: "Toolbar Limitation",
                                 hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable and limits its visible height.",

@@ -27,6 +27,7 @@ import { initMageSlayerConcentration } from "./features/mage-slayer-concentratio
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
 import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/sheet-popout-button.js";
+import { initNpcHpScaler, disableNpcHpScaler } from "./features/npc-hp-scaler.js";
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
@@ -195,6 +196,20 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableNpcHpScaling", {
+        name: "NPC Hit Points Scaling Buttons",
+        hint: "Adds plus and minus buttons to the NPC Hit Points configuration dialog to easily scale hit dice and recalculate average HP and formula.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) initNpcHpScaler();
+            else disableNpcHpScaler();
+        }
     });
 
     game.settings.register(MODULE_ID, "enableToolbarLimitation", {
@@ -794,6 +809,7 @@ Hooks.once("setup", () => {
     initMageSlayerConcentration();
     initSelfEffectApplication();
     initSheetPlusCompendium();
+    initNpcHpScaler();
     if (game.release.generation >= 14) initSheetPopoutButton();
     if (game.release.generation >= 14) initTemplateTargeting();
 
