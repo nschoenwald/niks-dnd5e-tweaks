@@ -33,6 +33,7 @@ import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
 import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
+import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -817,6 +818,7 @@ Hooks.once("setup", () => {
 
     // Bug fixes
     initFixCastActivityDeletion();
+    initFixSkillTooltipOverlap();
 });
 
 Hooks.once("ready", async () => {

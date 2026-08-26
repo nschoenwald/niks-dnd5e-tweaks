@@ -95,6 +95,8 @@ Patches are automatic, always-on fixes for confirmed bugs in the DnD5e system or
 
 * **Cast Activity Deletion — Orphaned Cached Spells** *(dnd5e < 6.0.0)*: In Foundry V14, deleting a Cast activity uses the new `DataFieldOperator` deletion syntax (`_del`) instead of the legacy `"-="` key prefix. The dnd5e `ActivitiesTemplate#preUpdateActivities` hook only recognised the old prefix, causing the cached spell items created by the activity to be left permanently orphaned on the actor with a stale `flags.dnd5e.cachedFor` reference. This patch intercepts the update and normalises the new syntax to the expected form before the original handler runs, restoring correct cleanup behaviour. Automatically disabled for dnd5e 6.0.0 and newer.
 
+* **Skill Tooltip Overlap** *(dnd5e < 6.0.0)*: Each skill (and tool) row in the character sheet carries a `data-reference-tooltip` on its `<li>` element. Without a direction hint, Foundry's default tooltip positioning renders the rule tooltip directly on top of adjacent rows in the list, covering their clickable areas (roll link, proficiency-cycle, config button). This patch wraps `_applyTooltips` on the `BaseActorSheet` prototype so that skill/tool list-item elements receive `data-tooltip-direction="LEFT"`, causing the tooltip to appear to the left of the row rather than overlapping the sheet. Automatically disabled for dnd5e 6.0.0 and newer.
+
 ---
 
 ## Module Compatibility

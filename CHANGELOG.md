@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.22.0] - 2026-08-26
+### Fixed
+- **Skill Tooltip Overlap**: Fixed a DnD5e UI bug where skill (and tool) reference tooltips appeared directly over the character sheet skill list, covering adjacent rows and blocking click access to the roll link, proficiency-cycle, and config button. The patch wraps `_applyTooltips` on the `BaseActorSheet` prototype so that any `<li data-key>` element inside a `.skills > ul` or `.tools > ul` list receives `data-tooltip-direction="LEFT"` before the tooltip is set, causing the rule tooltip to render to the left of the row rather than overlapping the list. Gated to dnd5e versions below 6.0.0 (where an upstream fix is expected).
+
 ## [14.21.1] - 2026-08-23
 ### Changed
 - **System Compatibility**: Updated `dnd5e` system relationship compatibility in the module manifest to verified `5.3.3` and maximum `5.99.99`.
