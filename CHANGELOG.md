@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [14.23.0] - 2026-08-29
 ### Added
 - **Auto-Unpause When Logging In** (`autoUnpauseOnLogin`, default: `"Never"`): When the GM logs into a paused world, optionally unpauses the game. Choices: **Always** (unpause regardless of how many players are connected), **When no players are connected** (only unpause if no non-GM players are already in the session), **Never** (disabled, default). This is a **per-user setting** (scope: `user`) — each GM account configures it independently.
+### Fixed
+- **Self Effect Application Prompt**: The prompt is now suppressed for activities that have an area-of-effect template (sphere, cone, cube, cylinder, line, radius, etc.), since those activities are never self-targeted. Previously, AoE spells with Active Effects (e.g. area buff abilities) could incorrectly trigger a self-application prompt.
 
 ## [14.22.0] - 2026-08-26
 ### Fixed

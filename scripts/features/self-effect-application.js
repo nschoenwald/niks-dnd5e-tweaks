@@ -86,6 +86,28 @@ function _isSelfTargeted(activity) {
 }
 
 /**
+ * Check whether an activity places an area-of-effect template (sphere, cone,
+ * cube, cylinder, line, radius, square, etc.). AoE activities are never
+ * self-targeted for the purpose of this feature.
+ *
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _hasAreaOfEffect(activity) {
+    const item = activity.item;
+
+    // Activity-level template type
+    const actTemplateType = activity.target?.template?.type;
+    if (actTemplateType && actTemplateType !== "self") return true;
+
+    // Item-system-level template type (DnD5e v5.2+ spells)
+    const itemTemplateType = item?.system?.target?.template?.type;
+    if (itemTemplateType && itemTemplateType !== "self") return true;
+
+    return false;
+}
+
+/**
  * Check whether the actor using the activity was manually targeted on the canvas
  * or recorded in the usage chat message targets flag.
  *
@@ -251,6 +273,13 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         const actor = activity.item?.actor;
         if (!actor) return;
+
+        // Skip activities that place an area-of-effect template — they are
+        // never self-targeted for the purpose of this feature.
+        if (_hasAreaOfEffect(activity)) {
+            debug(`Self Effect Application | Activity "${activity.name}" on "${activity.item?.name}" has an AoE template — skipping self-effect prompt.`);
+            return;
+        }
 
         // Check if the activity/item intrinsically targets "self", if the actor manually targeted themselves,
         // or if the feature is explicitly configured in the always-prompt list.
