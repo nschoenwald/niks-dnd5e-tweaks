@@ -3,7 +3,7 @@
     <header class="nd5t-dashboard-header">
         <div class="nd5t-search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="search" class="nd5t-search-input" placeholder="Search tweaks & settings... (e.g. initiative, damage, concentration)" autocomplete="off" spellcheck="false">
+            <input type="search" class="nd5t-search-input" placeholder="Search tweaks &amp; settings... (e.g. initiative, damage, concentration)" autocomplete="off" spellcheck="false">
             <button type="button" class="nd5t-search-clear" title="Clear Search" style="display: none;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -60,7 +60,9 @@
                                     
                                     {{!-- Badges --}}
                                     <div class="nd5t-badges">
-                                        {{#if this.isClient}}
+                                        {{#if this.isUser}}
+                                        <span class="nd5t-badge user" title="This setting is stored per user account — each user configures it independently">User</span>
+                                        {{else if this.isClient}}
                                         <span class="nd5t-badge client" title="This setting is stored locally per client/user">Client</span>
                                         {{else}}
                                         <span class="nd5t-badge world" title="This setting applies to all users in this world">World</span>
@@ -84,26 +86,26 @@
                             <div class="nd5t-setting-control">
                                 {{#if (eq this.type "Boolean")}}
                                 <label class="nd5t-switch">
-                                    <input type="checkbox" id="nd5t-setting-{{this.key}}" name="{{this.key}}" {{#if this.value}}checked{{/if}} {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
+                                    <input type="checkbox" id="nd5t-setting-{{this.key}}" name="{{this.key}}" {{#if this.value}}checked{{/if}} {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                     <span class="nd5t-slider"></span>
                                 </label>
                                 {{else if (eq this.type "Select")}}
-                                <select id="nd5t-setting-{{this.key}}" name="{{this.key}}" class="nd5t-select" {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
+                                <select id="nd5t-setting-{{this.key}}" name="{{this.key}}" class="nd5t-select" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                     {{#each this.choices}}
                                     <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
                                     {{/each}}
                                 </select>
                                 {{else if (eq this.type "Number")}}
-                                <input type="number" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-number-input" {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
+                                <input type="number" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-number-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                 {{else if (eq this.type "FilePicker")}}
                                 <div class="nd5t-file-picker-group">
-                                    <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
-                                    <button type="button" class="nd5t-file-picker-btn" data-target="nd5t-setting-{{this.key}}" data-type="{{this.filePicker}}" title="Browse Files" {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
+                                    <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                    <button type="button" class="nd5t-file-picker-btn" data-target="nd5t-setting-{{this.key}}" data-type="{{this.filePicker}}" title="Browse Files" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                         <i class="fa-solid fa-file-import"></i>
                                     </button>
                                 </div>
                                 {{else}}
-                                <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}disabled{{/unless}}{{/unless}}>
+                                <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                 {{/if}}
                             </div>
 

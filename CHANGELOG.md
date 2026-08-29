@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.23.0] - 2026-08-29
+### Added
+- **Auto-Unpause When Logging In** (`autoUnpauseOnLogin`, default: `"Never"`): When the GM logs into a paused world, optionally unpauses the game. Choices: **Always** (unpause regardless of how many players are connected), **When no players are connected** (only unpause if no non-GM players are already in the session), **Never** (disabled, default). This is a **per-user setting** (scope: `user`) — each GM account configures it independently.
+
 ## [14.22.0] - 2026-08-26
 ### Fixed
 - **Skill Tooltip Overlap**: Fixed a DnD5e UI bug where skill (and tool) reference tooltips appeared directly over the character sheet skill list, covering adjacent rows and blocking click access to the roll link, proficiency-cycle, and config button. The patch wraps `_applyTooltips` on the `BaseActorSheet` prototype so that any `<li data-key>` element inside a `.skills > ul` or `.tools > ul` list receives `data-tooltip-direction="LEFT"` before the tooltip is set, causing the rule tooltip to render to the left of the row rather than overlapping the list. Gated to dnd5e versions below 6.0.0 (where an upstream fix is expected).

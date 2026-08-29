@@ -650,6 +650,26 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 description: "Developer tools and debugging logs.",
                 sections: [
                     {
+                        id: "gmConvenience",
+                        title: "GM Convenience",
+                        icon: "fa-solid fa-user-shield",
+                        settings: [
+                            {
+                                key: "autoUnpauseOnLogin",
+                                name: "Auto-Unpause When Logging In",
+                                hint: "When you (the GM) log into a paused world, automatically unpause. \"Always\" unpauses regardless of connected players. \"When no players are connected\" only unpauses if no non-GM players are already in the session.",
+                                type: "Select",
+                                default: "never",
+                                choices: [
+                                    { value: "always", label: "Always" },
+                                    { value: "noPlayers", label: "When no players are connected" },
+                                    { value: "never", label: "Never" }
+                                ],
+                                scope: "user"
+                            }
+                        ]
+                    },
+                    {
                         id: "debugSection",
                         title: "Diagnostics",
                         icon: "fa-solid fa-bug",
@@ -706,6 +726,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             choices,
                             isChild: Boolean(s.parentKey),
                             isClient: s.scope === "client",
+                            isUser: s.scope === "user",
                             searchText
                         };
                     });
@@ -832,7 +853,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 row.classList.remove("nd5t-parent-disabled");
                 // Check overall user permissions before re-enabling
                 const isClient = row.querySelector(".nd5t-badge.client") !== null;
-                if (game.user.can("SETTINGS_MODIFY") || isClient) {
+                const isUser = row.querySelector(".nd5t-badge.user") !== null;
+                if (game.user.can("SETTINGS_MODIFY") || isClient || isUser) {
                     controls.forEach(ctrl => ctrl.removeAttribute("disabled"));
                 }
             }
@@ -936,8 +958,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 for (const s of sec.settings) {
                     if (s.v14Only && game.release.generation < 14) continue;
 
-                    // Enforce permission: non-authorized users can only save client-scoped settings
-                    if (s.scope !== "client" && !canModify) continue;
+                    // Enforce permission: non-authorized users can only save client/user-scoped settings
+                    if (s.scope !== "client" && s.scope !== "user" && !canModify) continue;
 
                     let formVal = formData.object[s.key];
                     if (s.type === "Boolean") {

@@ -853,6 +853,12 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     border: 1px solid rgba(220, 20, 60, 0.5);
 }
 
+.nd5t-badge.user {
+    background: rgba(234, 152, 0, 0.25);
+    color: #fcd34d;
+    border: 1px solid rgba(234, 152, 0, 0.5);
+}
+
 /* Controls */
 .nd5t-setting-control {
     flex-shrink: 0;

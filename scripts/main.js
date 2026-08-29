@@ -34,6 +34,7 @@ import { onSocketMessage as damagePromptSocketMessage } from "./features/player-
 import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
 import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
+import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -757,6 +758,20 @@ Hooks.once("init", () => {
     // Utilities
     // ==========================================
 
+    game.settings.register(MODULE_ID, "autoUnpauseOnLogin", {
+        name: "Auto-Unpause When Logging In",
+        hint: "When you (the GM) log into a world that is paused, automatically unpause. \"Always\" unpauses regardless of connected players. \"When no players are connected\" only unpauses if no non-GM players are already in the session. \"Never\" disables this feature. Per-GM-user setting — each GM account configures this independently.",
+        scope: "user",
+        config: false,
+        type: String,
+        default: "never",
+        choices: {
+            always: "Always",
+            noPlayers: "When no players are connected",
+            never: "Never"
+        }
+    });
+
     game.settings.register(MODULE_ID, "debugMode", {
         name: "Debug Mode",
         hint: "Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.",
@@ -819,6 +834,9 @@ Hooks.once("setup", () => {
     // Bug fixes
     initFixCastActivityDeletion();
     initFixSkillTooltipOverlap();
+
+    // Utilities
+    initAutoUnpauseOnLogin();
 });
 
 Hooks.once("ready", async () => {

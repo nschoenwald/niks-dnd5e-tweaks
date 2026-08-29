@@ -85,6 +85,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 ### Utilities
 
+* **Auto-Unpause When Logging In**: When the GM logs into a paused world, optionally unpauses the game. Choices: **Always** (unpause regardless of connected players), **When no players are connected** (only if no non-GM players are in the session), **Never** (disabled, default). This is a **per-user setting** — each GM account configures it independently.
 * **Debug Mode**: Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.
 
 ---
