@@ -10,6 +10,7 @@ import { MODULE_ID, debug } from "../main.js";
 
 export function initAutoRollConcentration() {
     _patchChallengeConcentration();
+    _patchRollConcentration();
 
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("dnd5e.damageActor", _onDamageActor);
@@ -39,17 +40,18 @@ const BOON_OF_THE_IRON_MIND_REGEX = /.*boon.*of.*the.*iron.*mind.*/i;
 /**
  * Determine whether an actor has the Boon of the Iron Mind feat.
  * Matches:
- *   - item.system.identifier matching /.*boon.*of.*the.*iron.*mind.*/i
+ *   - item.system.identifier or item.identifier matching /.*boon.*of.*the.*iron.*mind.* /i (case-insensitive)
  *   - item.name matching "Boon of the Iron Mind" (case-insensitive fallback)
  *
- * @param {Actor} actor
+ * @param {Actor|TokenDocument|Token} actor
  * @returns {boolean}
  */
 export function hasBoonOfTheIronMind(actor) {
-    if (!actor?.items) return false;
+    const act = actor?.actor ?? actor;
+    if (!act?.items) return false;
 
-    for (const item of actor.items) {
-        const identifier = item.system?.identifier ?? "";
+    for (const item of act.items) {
+        const identifier = item.identifier ?? item.system?.identifier ?? "";
         if (BOON_OF_THE_IRON_MIND_REGEX.test(identifier)) {
             return true;
         }
@@ -85,6 +87,28 @@ function _patchChallengeConcentration() {
     _challengeConcentrationPatched = true;
 }
 
+let _rollConcentrationPatched = false;
+
+/**
+ * Patch Actor5e.prototype.rollConcentration to prevent roll prompts or rolls
+ * for actors that possess the Boon of the Iron Mind feat.
+ */
+function _patchRollConcentration() {
+    if (_rollConcentrationPatched) return;
+    const ActorClass = CONFIG.Actor?.documentClass;
+    if (!ActorClass?.prototype?.rollConcentration) return;
+
+    const originalRollConcentration = ActorClass.prototype.rollConcentration;
+    ActorClass.prototype.rollConcentration = async function (...args) {
+        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
+            debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping rollConcentration.`);
+            return null;
+        }
+        return originalRollConcentration.apply(this, args);
+    };
+    _rollConcentrationPatched = true;
+}
+
 /**
  * Handler for the preUpdateActor hook.
  * If the actor has the Boon of the Iron Mind feat, suppresses the dnd5e system's
@@ -108,8 +132,7 @@ function _onPreUpdateActor(actor, change, options, userId) {
 
 /**
  * Handler for the dnd5e.preRollConcentration hook.
- * Cancels automated concentration rolls (e.g. from damage or external automation)
- * for actors that possess the Boon of the Iron Mind feat.
+ * Cancels any concentration rolls for actors that possess the Boon of the Iron Mind feat.
  *
  * @param {BasicRollProcessConfiguration} config
  * @param {BasicRollDialogConfiguration} dialog
@@ -120,14 +143,11 @@ function _onPreRollConcentration(config, dialog, message) {
     try {
         if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
 
-        const actor = config.subject ?? config.actor;
+        const actor = config.subject ?? config.actor ?? (message?.speaker?.actor ? game.actors.get(message.speaker.actor) : null);
         if (!actor || !hasBoonOfTheIronMind(actor)) return;
 
-        // Allow manual sheet rolls (which attach an event), but suppress automated rolls
-        if (!config.event) {
-            debug(`Auto-Roll Concentration | ${actor.name} has Boon of the Iron Mind — cancelling automated concentration roll.`);
-            return false;
-        }
+        debug(`Auto-Roll Concentration | ${actor.name} has Boon of the Iron Mind — cancelling concentration roll.`);
+        return false;
     } catch (err) {
         console.error("Nik's DnD5e Tweaks | Error in _onPreRollConcentration for Auto-Roll Concentration:", err);
     }

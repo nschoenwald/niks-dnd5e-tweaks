@@ -1,4 +1,5 @@
 import { MODULE_ID, debug } from "../main.js";
+import { hasBoonOfTheIronMind } from "./auto-roll-concentration.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
     "incapacitated",
@@ -7,6 +8,16 @@ const BREAK_CONCENTRATION_STATUSES = new Set([
     "paralyzed",
     "petrified",
     "stunned"
+]);
+
+/**
+ * Statuses that break concentration for characters with the Boon of the Iron Mind feat
+ * (Unshakable Focus: concentration is only lost if petrified, unconscious, or dead).
+ */
+const BOON_OF_THE_IRON_MIND_BREAK_STATUSES = new Set([
+    "unconscious",
+    "dead",
+    "petrified"
 ]);
 
 /**
@@ -109,15 +120,18 @@ function _processEffect(effect, userId) {
  * @param {string} effectName       The name of the effect that triggered the check
  */
 async function _checkAndEndConcentration(actor, effectName) {
+    const isIronMind = hasBoonOfTheIronMind(actor);
+    const breakingStatuses = isIronMind ? BOON_OF_THE_IRON_MIND_BREAK_STATUSES : BREAK_CONCENTRATION_STATUSES;
+
     let breaksConcentration = false;
-    for (const status of BREAK_CONCENTRATION_STATUSES) {
+    for (const status of breakingStatuses) {
         if (actor.statuses.has(status)) {
             breaksConcentration = true;
             break;
         }
     }
 
-    debug(`Auto-End Concentration | Breaks Concentration: ${breaksConcentration} | Actor Statuses: ${Array.from(actor.statuses).join(", ")}`);
+    debug(`Auto-End Concentration | Breaks Concentration: ${breaksConcentration} | Actor Statuses: ${Array.from(actor.statuses).join(", ")}${isIronMind ? " (Boon of the Iron Mind)" : ""}`);
 
     if (!breaksConcentration) return;
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.23.2] - 2026-09-03
+### Added
+- **Auto-End Concentration — Boon of the Iron Mind Support**: For characters with the *Boon of the Iron Mind* feat, concentration now only automatically ends on **Unconscious**, **Dead**, or **Petrified** statuses, honoring the rule that *Unshakable Focus* protects concentration against standard incapacitating conditions like Stunned or Paralyzed.
+### Fixed
+- **Auto-Roll Concentration Saves — Boon of the Iron Mind Reliability**: Fixed an issue where manual roll configurations or button clicks could still trigger concentration saves for characters with the feat. Expanded identifier matching to the case-insensitive pattern `.*boon.*of.*the.*iron.*mind.*` (checking both `item.identifier` and `item.system.identifier`), and patched `Actor5e.prototype.rollConcentration` directly so all concentration roll paths reliably yield `null`.
+
 ## [14.23.1] - 2026-09-03
 ### Added
 - **Auto-Roll Concentration Saves — Boon of the Iron Mind Support**: Characters with the *Boon of the Iron Mind* feat (matched by item identifier `boon-of-the-iron-mind` or case-insensitive name fallback `"Boon of the Iron Mind"`) are now exempted from concentration prompts and rolls upon taking damage. The dnd5e system's concentration challenge chat prompt card is suppressed and automated concentration save rolls are cancelled, fully honoring the feat's *Unshakable Focus* benefit.
