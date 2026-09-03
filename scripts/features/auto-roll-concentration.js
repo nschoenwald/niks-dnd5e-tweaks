@@ -9,7 +9,11 @@ import { MODULE_ID, debug } from "../main.js";
  */
 
 export function initAutoRollConcentration() {
+    _patchChallengeConcentration();
+
+    Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("dnd5e.damageActor", _onDamageActor);
+    Hooks.on("dnd5e.preRollConcentration", _onPreRollConcentration);
 
     // Hook every concentration save — including manually triggered ones (clicking the system's
     // DC prompt card, or rolling directly from the character sheet) — so the "End Concentration"
@@ -30,6 +34,105 @@ export function initAutoRollConcentration() {
     debug("Auto-Roll Concentration | Initialized");
 }
 
+const BOON_OF_THE_IRON_MIND_REGEX = /.*boon.*of.*the.*iron.*mind.*/i;
+
+/**
+ * Determine whether an actor has the Boon of the Iron Mind feat.
+ * Matches:
+ *   - item.system.identifier matching /.*boon.*of.*the.*iron.*mind.*/i
+ *   - item.name matching "Boon of the Iron Mind" (case-insensitive fallback)
+ *
+ * @param {Actor} actor
+ * @returns {boolean}
+ */
+export function hasBoonOfTheIronMind(actor) {
+    if (!actor?.items) return false;
+
+    for (const item of actor.items) {
+        const identifier = item.system?.identifier ?? "";
+        if (BOON_OF_THE_IRON_MIND_REGEX.test(identifier)) {
+            return true;
+        }
+
+        const name = item.name ?? "";
+        if (BOON_OF_THE_IRON_MIND_REGEX.test(name) || name.toLowerCase().includes("boon of the iron mind")) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+let _challengeConcentrationPatched = false;
+
+/**
+ * Patch Actor5e.prototype.challengeConcentration to suppress the system's concentration
+ * challenge chat card prompt for actors that possess the Boon of the Iron Mind feat.
+ */
+function _patchChallengeConcentration() {
+    if (_challengeConcentrationPatched) return;
+    const ActorClass = CONFIG.Actor?.documentClass;
+    if (!ActorClass?.prototype?.challengeConcentration) return;
+
+    const originalChallengeConcentration = ActorClass.prototype.challengeConcentration;
+    ActorClass.prototype.challengeConcentration = async function (...args) {
+        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
+            debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping concentration challenge prompt.`);
+            return null;
+        }
+        return originalChallengeConcentration.apply(this, args);
+    };
+    _challengeConcentrationPatched = true;
+}
+
+/**
+ * Handler for the preUpdateActor hook.
+ * If the actor has the Boon of the Iron Mind feat, suppresses the dnd5e system's
+ * concentration challenge prompt upon taking damage by setting options.dnd5e.concentrationCheck = false.
+ *
+ * @param {Actor} actor
+ * @param {object} change
+ * @param {object} options
+ * @param {string} userId
+ */
+function _onPreUpdateActor(actor, change, options, userId) {
+    try {
+        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+        if (!hasBoonOfTheIronMind(actor)) return;
+
+        foundry.utils.setProperty(options, "dnd5e.concentrationCheck", false);
+    } catch (err) {
+        console.error("Nik's DnD5e Tweaks | Error in _onPreUpdateActor for Auto-Roll Concentration:", err);
+    }
+}
+
+/**
+ * Handler for the dnd5e.preRollConcentration hook.
+ * Cancels automated concentration rolls (e.g. from damage or external automation)
+ * for actors that possess the Boon of the Iron Mind feat.
+ *
+ * @param {BasicRollProcessConfiguration} config
+ * @param {BasicRollDialogConfiguration} dialog
+ * @param {BasicRollMessageConfiguration} message
+ * @returns {boolean|void}
+ */
+function _onPreRollConcentration(config, dialog, message) {
+    try {
+        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+
+        const actor = config.subject ?? config.actor;
+        if (!actor || !hasBoonOfTheIronMind(actor)) return;
+
+        // Allow manual sheet rolls (which attach an event), but suppress automated rolls
+        if (!config.event) {
+            debug(`Auto-Roll Concentration | ${actor.name} has Boon of the Iron Mind — cancelling automated concentration roll.`);
+            return false;
+        }
+    } catch (err) {
+        console.error("Nik's DnD5e Tweaks | Error in _onPreRollConcentration for Auto-Roll Concentration:", err);
+    }
+}
+
 /**
  * Handler for the dnd5e.damageActor hook.
  * @param {Actor} actor
@@ -44,6 +147,12 @@ async function _onDamageActor(actor, changes, update, userId) {
         // Bug 3 fix: respect the dnd5e system-level "disable concentration tracking" setting.
         // If the GM has disabled concentration tracking globally, we should not auto-roll either.
         if (game.settings.get("dnd5e", "disableConcentration")) return;
+
+        // Skip actors with Boon of the Iron Mind
+        if (hasBoonOfTheIronMind(actor)) {
+            debug(`Auto-Roll Concentration | ${actor.name} has Boon of the Iron Mind — skipping concentration roll.`);
+            return;
+        }
 
         // Automatically skip if midi-qol is active and configured to handle concentration checks
         if (game.modules.get("midi-qol")?.active) {

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.23.1] - 2026-09-03
+### Added
+- **Auto-Roll Concentration Saves — Boon of the Iron Mind Support**: Characters with the *Boon of the Iron Mind* feat (matched by item identifier `boon-of-the-iron-mind` or case-insensitive name fallback `"Boon of the Iron Mind"`) are now exempted from concentration prompts and rolls upon taking damage. The dnd5e system's concentration challenge chat prompt card is suppressed and automated concentration save rolls are cancelled, fully honoring the feat's *Unshakable Focus* benefit.
+
 ## [14.23.0] - 2026-08-29
 ### Added
 - **Auto-Unpause When Logging In** (`autoUnpauseOnLogin`, default: `"Never"`): When the GM logs into a paused world, optionally unpauses the game. Choices: **Always** (unpause regardless of how many players are connected), **When no players are connected** (only unpause if no non-GM players are already in the session), **Never** (disabled, default). This is a **per-user setting** (scope: `user`) — each GM account configures it independently.
