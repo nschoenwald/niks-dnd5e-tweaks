@@ -5,9 +5,9 @@
   "url": "https://github.com/nschoenwald/niks-dnd5e-tweaks",
   "manifest": "https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module.json",
   "download": "https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module.zip",
-  "version": "14.23.2",
+  "version": "14.24.0",
   "compatibility": {
-    "minimum": "13",
+    "minimum": "14",
     "verified": "14"
   },
   "socket": true,
@@ -17,9 +17,8 @@
         "id": "dnd5e",
         "type": "system",
         "compatibility": {
-          "minimum": "5.2.0",
-          "verified": "5.3.3",
-          "maximum": "5.99.99"
+          "minimum": "6.0.0",
+          "verified": "6.0.0"
         }
       }
     ]

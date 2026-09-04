@@ -155,13 +155,11 @@ function _cleanName(str) {
 
 /**
  * Retrieve applicable Active Effects for an activity or its parent item.
- * Generates a synthetic fallback effect for always-prompt items without pre-created effects.
  *
  * @param {Activity} activity
- * @param {boolean} [isAlwaysPrompt=false]
  * @returns {ActiveEffect5e[]}
  */
-function _getApplicableEffects(activity, isAlwaysPrompt = false) {
+function _getApplicableEffects(activity) {
     let effects = [];
     const item = activity.item;
     const itemName = item?.name || "Effect";
@@ -179,34 +177,6 @@ function _getApplicableEffects(activity, isAlwaysPrompt = false) {
             const nonTransfer = itemEffects.filter(e => !e.transfer);
             effects = nonTransfer.length > 0 ? nonTransfer : itemEffects;
         }
-    }
-
-    // 3. Fallback for always-prompt features (like Mage Armor) without pre-created ActiveEffect documents.
-    //    Only generate a synthetic effect when it would carry meaningful data (changes or statuses).
-    //    For unrecognised items, skip the fallback entirely — an empty synthetic would create a
-    //    named-but-inert ActiveEffect on the actor when applied, which is confusing.
-    if (!effects.length && isAlwaysPrompt) {
-        const effectImg = item?.img || activity.img || "icons/svg/aura.svg";
-        const isMageArmor = _cleanName(itemName).includes("magearmor");
-
-        if (isMageArmor) {
-            // Mage Armor: synthetic effect that sets the AC calculation mode and
-            // stamps the "mage-armor" status so the system can detect it.
-            effects = [{
-                name: itemName,
-                img: effectImg,
-                changes: [
-                    { key: "system.attributes.ac.calc", mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, value: "mage", priority: 20 }
-                ],
-                statuses: ["mage-armor"],
-                disabled: false,
-                duration: { seconds: 28800 },
-                uuid: `${item?.uuid || activity.uuid}.SyntheticEffect`
-            }];
-        }
-        // Other always-prompt items without a pre-created ActiveEffect:
-        // leave effects empty; the caller (_onPostUseActivity) will skip the
-        // prompt when effects is empty, which is the correct behaviour.
     }
 
     // Replace generic activity effect names (like "use", "cast", "utility", "effect") with the Item Name
@@ -289,8 +259,8 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         if (!isIntrinsicSelf && !isManualSelf && !isAlwaysPrompt) return;
 
-        // Retrieve applicable Active Effects from the activity or parent item (with synthetic fallback for always-prompt items).
-        const applicableEffects = _getApplicableEffects(activity, isAlwaysPrompt);
+        // Retrieve applicable Active Effects from the activity or parent item.
+        const applicableEffects = _getApplicableEffects(activity);
         if (!applicableEffects.length) return;
 
         // Filter out effects that are already active on the target actor

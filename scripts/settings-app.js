@@ -555,9 +555,9 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableAutoStatusZeroHP",
                                 name: "Auto-Apply Status at 0 HP",
-                                hint: "Automatically applies an overlay status condition to tokens when reaching 0 HP.",
+                                hint: "Automatically applies an overlay status condition to tokens when reaching 0 HP. Overrides DnD5e's native Downed Status Automation (autoApplyDowned).",
                                 type: "Boolean",
-                                default: true,
+                                default: false,
                                 scope: "world"
                             },
                             {

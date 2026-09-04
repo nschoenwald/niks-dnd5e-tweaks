@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.24.0] - 2026-09-04
+### Changed
+- **Dropped Foundry V13 Support**: Module compatibility is now Foundry V14 minimum (`minimum: "14"`, `verified: "14"`). Removed legacy V13 code paths and guards.
+- **Dropped DnD5e 5.x Support**: Updated manifest system compatibility to `minimum: "6.0.0"` and `verified: "6.0.0"`.
+- **Removed Cast Activity Deletion Patch**: Removed `fix-cast-activity-deletion.js` as the issue is natively resolved in DnD5e 6.0.0.
+- **Skill Tooltip Overlap**: Retained `fix-skill-tooltip-overlap.js` and removed system version gating so it continues to apply on DnD5e 6.0.0+.
+- **Auto-Status at 0 HP**: Patched `Actor5e.prototype.updateDowned` so that when the module's *Auto-Apply Status at 0 HP* feature is enabled, it completely overrides the DnD5e 6.0.0 native Downed Status Automation (`autoApplyDowned`). This ensures the module's granular PC vs. NPC status choices and combat tracker actions take precedence without system conflicts. Also cleans up any lingering `dnd5e.autoDowned` effects on HP recovery, automatically escalates status to **Dead** if an actor at 0 HP accumulates 3 failed death saves, and set the feature's default state to disabled (`default: false`).
+- **Self Effect Application**: Removed the module's synthetic fallback Active Effect for Mage Armor. Active Effects now only come directly from items or activities; the module itself no longer synthesizes effects.
+- **Player Damage Application**: Verified and confirmed the default value is disabled (`false`, showing no prompts).
+
 ## [14.23.2] - 2026-09-03
 ### Added
 - **Auto-End Concentration — Boon of the Iron Mind Support**: For characters with the *Boon of the Iron Mind* feat, concentration now only automatically ends on **Unconscious**, **Dead**, or **Petrified** statuses, honoring the rule that *Unshakable Focus* protects concentration against standard incapacitating conditions like Stunned or Paralyzed.

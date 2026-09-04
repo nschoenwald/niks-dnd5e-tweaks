@@ -1,7 +1,7 @@
 import { log } from "../main.js";
 
 /**
- * Fix: Skill Tooltip Overlap — Character Sheet Skill/Tool Rows (dnd5e < 6.0.0)
+ * Fix: Skill Tooltip Overlap — Character Sheet Skill/Tool Rows
  * ---------------------------------------------------------------------------
  * Each skill (and tool) row in the DnD5e character sheet is rendered as an
  * `<li data-key="...">` element that carries `data-reference-tooltip` pointing
@@ -18,16 +18,9 @@ import { log } from "../main.js";
  * `data-tooltip-direction` of `"LEFT"` is applied before the tooltip is set.
  * The tooltip then appears to the left of the skill row rather than overlapping
  * the list, restoring full click access to every interactive control.
- *
- * GATING: Only applied when the dnd5e system version is below 6.0.0.
  */
 
 export function initFixSkillTooltipOverlap() {
-    // Only needed for dnd5e < 6.0.0
-    if ( !foundry.utils.isNewerVersion("6.0.0", game.system.version) ) {
-        log("Fix: Skill Tooltip Overlap | dnd5e >= 6.0.0, skipping patch.");
-        return;
-    }
 
     // Locate BaseActorSheet via the dnd5e applications namespace.
     const BaseActorSheet = dnd5e?.applications?.actor?.BaseActorSheet;

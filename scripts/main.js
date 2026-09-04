@@ -32,7 +32,6 @@ import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
 import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
 import { initTemplateTargeting } from "./features/template-targeting.js";
-import { initFixCastActivityDeletion } from "./features/fix-cast-activity-deletion.js";
 import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
 import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
@@ -171,24 +170,19 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    // V14+ only: the pop-out/attach button relies on ApplicationV2 and detachWindow(),
-    // neither of which exist in V13. Hide the setting entirely on V13 so it doesn't
-    // appear as a dead/confusing option in the module config UI.
-    if (game.release.generation >= 14) {
-        game.settings.register(MODULE_ID, "enableSheetPopoutButton", {
-            name: "Sheet Pop-out Button",
-            hint: "Adds a one-click pop-out button (\u2197) to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry V14's native pop-out functionality \u2014 without going through the three-dot menu. When the sheet is already detached, the button flips to an attach-back icon (\u2199) to return it to the main workspace.",
-            scope: "world",
-            config: false,
-            type: Boolean,
-            default: true,
-            restricted: true,
-            onChange: (value) => {
-                if (value) initSheetPopoutButton();
-                else disableSheetPopoutButton();
-            }
-        });
-    }
+    game.settings.register(MODULE_ID, "enableSheetPopoutButton", {
+        name: "Sheet Pop-out Button",
+        hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry's native pop-out functionality — without going through the three-dot menu. When the sheet is already detached, the button flips to an attach-back icon (↙) to return it to the main workspace.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) initSheetPopoutButton();
+            else disableSheetPopoutButton();
+        }
+    });
 
     game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
         name: "Item/Spell/Feature Add: Choice Dialog",
@@ -294,7 +288,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections",
-        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected. Compatible with both V13 (MeasuredTemplates) and V14 (Regions).",
+        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -302,19 +296,15 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    // V14+ only: template targeting relies on the Region document system and
-    // the refreshMeasuredTemplate / createRegion hooks introduced in V14.
-    if (game.release.generation >= 14) {
-        game.settings.register(MODULE_ID, "enableTemplateTargeting", {
-            name: "Auto-Target Tokens in Spell Templates",
-            hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active. Requires Foundry V14.",
-            scope: "world",
-            config: false,
-            type: Boolean,
-            default: true,
-            restricted: true
-        });
-    }
+    game.settings.register(MODULE_ID, "enableTemplateTargeting", {
+        name: "Auto-Target Tokens in Spell Templates",
+        hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
 
     game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
         name: "Auto-Clear Movement History",
@@ -661,11 +651,11 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
         name: "Auto-Apply Status at 0 HP",
-        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions.",
+        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions. When enabled, this feature overrides DnD5e's native Downed Status Automation (autoApplyDowned).",
         scope: "world",
         config: false,
         type: Boolean,
-        default: true,
+        default: false,
         restricted: true
     });
 
@@ -826,13 +816,12 @@ Hooks.once("setup", () => {
     initSelfEffectApplication();
     initSheetPlusCompendium();
     initNpcHpScaler();
-    if (game.release.generation >= 14) initSheetPopoutButton();
-    if (game.release.generation >= 14) initTemplateTargeting();
+    initSheetPopoutButton();
+    initTemplateTargeting();
 
     initCombatExpTracker();
 
     // Bug fixes
-    initFixCastActivityDeletion();
     initFixSkillTooltipOverlap();
 
     // Utilities

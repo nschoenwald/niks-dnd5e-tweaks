@@ -103,6 +103,15 @@ async function _removeZeroHPStatuses(actor) {
             }
         }
     }
+    // Also clean up any effects flagged with dnd5e.autoDowned if present
+    const autoEffects = actor.effects?.filter(e => e.getFlag?.("dnd5e", "autoDowned"));
+    if (autoEffects?.length) {
+        try {
+            await actor.deleteEmbeddedDocuments("ActiveEffect", autoEffects.map(e => e.id));
+        } catch (e) {
+            debug(`Auto-Status | Could not remove dnd5e autoDowned effects from ${actor.name}: ${e.message}`);
+        }
+    }
 }
 
 // ── Combat tracker helpers ────────────────────────────────────────────
@@ -173,6 +182,28 @@ async function _undefeatCombatant(actor) {
     }
 }
 
+let _updateDownedPatched = false;
+
+/**
+ * Patch Actor5e.prototype.updateDowned to suppress the dnd5e system's native
+ * autoApplyDowned automation when this feature is enabled.
+ */
+function _patchUpdateDowned() {
+    if (_updateDownedPatched) return;
+    const ActorClass = CONFIG.Actor?.documentClass;
+    if (!ActorClass?.prototype?.updateDowned) return;
+
+    const originalUpdateDowned = ActorClass.prototype.updateDowned;
+    ActorClass.prototype.updateDowned = async function (...args) {
+        if (game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) {
+            debug(`Auto-Status | Suppressing native updateDowned for ${this.name} (overridden by niks-dnd5e-tweaks)`);
+            return;
+        }
+        return originalUpdateDowned.apply(this, args);
+    };
+    _updateDownedPatched = true;
+}
+
 /**
  * Capture the old HP state before it gets updated.
  *
@@ -185,8 +216,10 @@ function _onPreUpdateActor(actor, change, options, userId) {
     try {
         if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
 
-        // Only react when HP actually changed.
-        if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
+        // React when HP or death save failures change.
+        const hpChanged = foundry.utils.getProperty(change, "system.attributes.hp.value") !== undefined;
+        const deathChanged = foundry.utils.getProperty(change, "system.attributes.death.failure") !== undefined;
+        if (!hpChanged && !deathChanged) return;
 
         // Record whether the actor was at 0 HP before this update
         options.autoStatusWasZeroHP = (actor.system?.attributes?.hp?.value ?? 0) <= 0;
@@ -217,8 +250,10 @@ function _onUpdateActor(actor, change, options, userId) {
         const activeGM = game.users.primaryGM ?? game.users.activeGM;
         if (!activeGM?.isSelf) return;
 
-        // Only react when HP actually changed.
-        if (foundry.utils.getProperty(change, "system.attributes.hp.value") === undefined) return;
+        // React when HP or death save failures change.
+        const hpChanged = foundry.utils.getProperty(change, "system.attributes.hp.value") !== undefined;
+        const deathChanged = foundry.utils.getProperty(change, "system.attributes.death.failure") !== undefined;
+        if (!hpChanged && !deathChanged) return;
 
         // Capture values now; defer processing to avoid race conditions.
         // The actor reference is passed live intentionally — by the time the
@@ -279,10 +314,15 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
 
     if (liveHP <= 0) {
         // ── Status overlay ──
+        const failedDeathSaves = (actor.system?.attributes?.death?.failure ?? 0) >= 3;
         const statusKey = type === "player"
             ? "autoStatusZeroHP_playerStatus"
             : "autoStatusZeroHP_npcStatus";
-        const statusId = game.settings.get(MODULE_ID, statusKey);
+        let statusId = game.settings.get(MODULE_ID, statusKey);
+        // If 3 death saves have failed, escalate to "dead" unless statuses are disabled ("none")
+        if (failedDeathSaves && statusId !== "none") {
+            statusId = "dead";
+        }
         await _applyZeroHPStatus(actor, statusId);
 
         // ── Combat action ──
@@ -306,6 +346,7 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
  * Called once during the "setup" phase from main.js.
  */
 export function initAutoStatusZeroHP() {
+    _patchUpdateDowned();
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("updateActor", _onUpdateActor);
 }
