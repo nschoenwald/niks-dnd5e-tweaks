@@ -22,13 +22,6 @@ export function initDeathSavePrompt() {
         }
     });
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const element = html[0] || html;
-        _bindDeathSaveButton(message, element);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         _bindDeathSaveButton(message, html);
     });
@@ -38,7 +31,6 @@ let lastPromptKey = null;
 
 /**
  * Bind click handler to the death save button inside a chat message.
- * Shared between the V13 (renderChatMessage) and V14 (renderChatMessageHTML) hooks.
  * @param {ChatMessage} message
  * @param {HTMLElement} element
  */

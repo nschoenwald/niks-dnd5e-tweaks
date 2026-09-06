@@ -20,13 +20,6 @@ export function initAutoRollInitiative() {
     Hooks.on("updateCombatant", _onUpdateCombatant);
     Hooks.on("deleteCombatant", _onDeleteCombatant);
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const element = html[0] || html;
-        if (element instanceof HTMLElement) _bindInitiativeButton(message, element);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         if (html instanceof HTMLElement) _bindInitiativeButton(message, html);
     });

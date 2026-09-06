@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.24.1] - 2026-09-06
+### Changed
+- **Removed Residual V13 Code**: Cleaned up all remaining Foundry V13 compatibility code now that V14 is the minimum. Removed `renderChatMessage` dual-hook pattern (6 files), V13 `preCreateMeasuredTemplate` branch from template grid snap, V13 `game.release.generation < 14` guard from template targeting, and V13 references from comments and docstrings across 10 files.
+
 ## [14.24.0] - 2026-09-04
 ### Changed
 - **Dropped Foundry V13 Support**: Module compatibility is now Foundry V14 minimum (`minimum: "14"`, `verified: "14"`). Removed legacy V13 code paths and guards.

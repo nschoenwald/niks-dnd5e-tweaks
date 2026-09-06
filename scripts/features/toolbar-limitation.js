@@ -47,7 +47,7 @@ export function isMacroToolbar(element) {
 }
 
 /**
- * Finds all toolbar list containers in scene controls (supporting both V13 and V14 DOM structures).
+ * Finds all toolbar list containers in scene controls.
  * @returns {HTMLElement[]} List of toolbar container elements
  */
 function getToolbarContainers() {
@@ -312,12 +312,12 @@ export function initToolbarLimitation() {
     if (initialized) return;
     initialized = true;
 
-    // Recalculate on Scene Controls render (V13 & V14)
+    // Recalculate on Scene Controls render
     Hooks.on("renderSceneControls", () => {
         applyToolbarLimitation();
     });
 
-    // Support ApplicationV2 Scene Controls rendering in V14
+    // Support ApplicationV2 Scene Controls rendering
     Hooks.on("renderApplicationV2", (app) => {
         if (app.constructor?.name === "SceneControls" || app instanceof (CONFIG.ui?.controls?.constructor ?? Object)) {
             applyToolbarLimitation();

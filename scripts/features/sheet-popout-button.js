@@ -17,8 +17,6 @@ import { MODULE_ID, log, debug } from "../main.js";
  *     in with Foundry's own header buttons.
  *   - Guarded: only injected into Actor / Item document sheets, not every
  *     ApplicationV2. Skipped automatically when already detached.
- *   - V13 safe: `renderApplicationV2` simply won't fire on V13 (V13 uses the
- *     legacy `Application` class), so nothing happens there.
  */
 
 let _hookId = null;

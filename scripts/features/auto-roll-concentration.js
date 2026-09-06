@@ -21,13 +21,6 @@ export function initAutoRollConcentration() {
     // button is added regardless of who or what initiated the roll.
     Hooks.on("dnd5e.rollConcentration", _onRollConcentration);
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const rootElement = html instanceof HTMLElement ? html : html[0];
-        if (rootElement) _onRenderChatMessage(message, rootElement);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         if (html instanceof HTMLElement) _onRenderChatMessage(message, html);
     });

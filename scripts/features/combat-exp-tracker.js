@@ -31,13 +31,6 @@ export function initCombatExpTracker() {
     Hooks.on("createCombatant", _onCreateCombatant);
     Hooks.on("deleteCombat", _onDeleteCombat);
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const element = html[0] || html;
-        _bindDistributeButton(message, element);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         _bindDistributeButton(message, html);
     });
@@ -331,8 +324,7 @@ async function _sendExpSummary(npcs, pcs) {
 
 /**
  * Bind a click handler to the "Distribute XP" button inside a rendered
- * chat message.  Shared between V13 (renderChatMessage) and V14
- * (renderChatMessageHTML) hooks.
+ * chat message.
  * @param {ChatMessage} message
  * @param {HTMLElement}  element
  */

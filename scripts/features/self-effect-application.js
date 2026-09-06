@@ -22,19 +22,12 @@ import { MODULE_ID, debug } from "../main.js";
 export function initSelfEffectApplication() {
     Hooks.on("dnd5e.postUseActivity", _onPostUseActivity);
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const element = html[0] || html;
-        _bindSelfEffectButtons(message, element);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         _bindSelfEffectButtons(message, html);
     });
 
     // Sync button state across clients when the flag is updated.
-    // Foundry does NOT re-fire renderChatMessage on flag changes.
+    // Foundry does NOT re-fire renderChatMessageHTML on flag changes.
     Hooks.on("updateChatMessage", _onUpdateSelfEffectApplied);
 
     debug("Self Effect Application | Initialized");
@@ -433,7 +426,6 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
 
 /**
  * Bind click handlers to the Apply / Undo buttons inside a rendered chat message.
- * Shared between V13 (renderChatMessage) and V14 (renderChatMessageHTML) hooks.
  * @param {ChatMessage} message
  * @param {HTMLElement} element
  */
@@ -441,7 +433,7 @@ function _bindSelfEffectButtons(message, element) {
     const prompt = element.querySelector(".nd5t-self-effect-prompt");
     if (!prompt) return;
 
-    // Guard against double-binding if both V13 + V14 render hooks fire.
+    // Guard against double-binding if both render hooks fire.
     if (prompt.dataset.bound) return;
     prompt.dataset.bound = "true";
 
@@ -732,7 +724,7 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, actorU
 /**
  * Handle updateChatMessage to sync button states across all clients
  * when the effectsApplied flag changes. Foundry does NOT re-fire the
- * renderChatMessage hook on flag updates.
+ * renderChatMessageHTML hook on flag updates.
  * @param {ChatMessage} message
  * @param {object} updateData
  */

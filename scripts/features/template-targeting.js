@@ -1,7 +1,7 @@
 import { MODULE_ID, debug, log } from "../main.js";
 
 /**
- * Template Auto-Targeting (V14 only)
+ * Template Auto-Targeting
  *
  * When a dnd5e spell or ability template is placed on the canvas, automatically
  * targets all tokens whose position falls inside the template area.
@@ -11,11 +11,10 @@ import { MODULE_ID, debug, log } from "../main.js";
  *    created (before drawPreview). We wrap each template's refresh() method
  *    so that targeting updates every time the template moves.
  * 2. createRegion — fires once when placement is confirmed and the Region is
- *    persisted. Finalises targeting using the V14 TokenDocument#testInsideRegion
+ *    persisted. Finalises targeting using the TokenDocument#testInsideRegion
  *    API. Deferred by one tick to allow the Region's polygon tree to initialise.
  *
  * Guards:
- * - V14 only (returns immediately on V13, checked in initTemplateTargeting).
  * - Completely disabled when midi-qol is active (it has its own targeting).
  * - Only the user who placed the template updates their own game.user.targets;
  *   all other clients skip both hooks.
@@ -28,12 +27,9 @@ import { MODULE_ID, debug, log } from "../main.js";
 /**
  * Register hooks for the Template Auto-Targeting feature.
  * Called once during the "setup" phase from main.js.
- * No-op on Foundry V13 and when midi-qol is active.
+ * No-op when midi-qol is active.
  */
 export function initTemplateTargeting() {
-    // V14-only: this feature relies on the Region document system
-    if (game.release.generation < 14) return;
-
     // Completely disabled when midi-qol is active — it has its own template
     // auto-targeting feature and running both would cause conflicts.
     if (game.modules.get("midi-qol")?.active) {
@@ -49,7 +45,7 @@ export function initTemplateTargeting() {
     // Final placement: re-run containment against the persisted RegionDocument.
     Hooks.on("createRegion", _onCreateRegion);
 
-    log("Template Targeting | Initialized (V14 Region mode)");
+    log("Template Targeting | Initialized (Region mode)");
 }
 
 // ── Hook Handlers ────────────────────────────────────────────────────

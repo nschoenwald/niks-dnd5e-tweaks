@@ -28,20 +28,13 @@ export function initPlayerDamagePrompt() {
     Hooks.on("createChatMessage", _onCreateChatMessage);
     Hooks.on("createChatMessage", _onCreateChatMessage_Attack);
 
-    // V13 compat — renderChatMessage passes jQuery or HTMLElement
-    Hooks.on("renderChatMessage", (message, html) => {
-        const element = html[0] || html;
-        _bindApplyDamageButton(message, element);
-    });
-
-    // V14 — renderChatMessageHTML passes a plain HTMLElement
     Hooks.on("renderChatMessageHTML", (message, html) => {
         _bindApplyDamageButton(message, html);
     });
 
     // When a message's flags are updated (e.g. damageApplied is set by the
     // GM after a player clicks Apply), Foundry does NOT re-fire the
-    // renderChatMessage hook.  We must listen for updateChatMessage and
+    // renderChatMessageHTML hook.  We must listen for updateChatMessage and
     // manually update the button DOM on all clients.
     Hooks.on("updateChatMessage", _onUpdateDamageApplied);
 
@@ -1604,7 +1597,7 @@ function _getModifierCellHtml(modifier) {
 /**
  * Handle updateChatMessage to sync the "Damage Applied" button state
  * across all clients when the damageApplied flag is set.  Foundry does
- * not re-fire renderChatMessage on flag changes, so we must manually
+ * not re-fire renderChatMessageHTML on flag changes, so we must manually
  * update the DOM.
  * @param {ChatMessage} message    The updated message document.
  * @param {object}      updateData The differential update data.
@@ -1727,8 +1720,7 @@ function _setPromptStateUnapplied(prompt) {
 
 /**
  * Bind a click handler to the "Apply Damage" button inside a rendered
- * chat message.  Shared between V13 (renderChatMessage) and V14
- * (renderChatMessageHTML) hooks.
+ * chat message.
  * @param {ChatMessage} message
  * @param {HTMLElement}  element
  */
@@ -1736,7 +1728,7 @@ function _bindApplyDamageButton(message, element) {
     const prompt = element.querySelector(".nd5t-damage-prompt");
     if (!prompt) return;
 
-    // Prevent double binding if both V13 and V14 render hooks fire on the same element
+    // Prevent double binding if render hooks fire multiple times on the same element
     if (prompt.dataset.bound) return;
     prompt.dataset.bound = "true";
 

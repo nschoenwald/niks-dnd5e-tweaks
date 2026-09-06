@@ -13,7 +13,7 @@ import { MODULE_ID, log, debug } from "../main.js";
  * elevation value in the document is preserved — only the sort/render order
  * is affected so the token stays visible above the background.
  *
- * Compatible with Foundry V13 and V14 (including V14 native Scene Levels).
+ * Compatible with Foundry V14 (including native Scene Levels).
  * In V14 with Scene Levels, the background elevation is determined by the
  * level configuration; this tweak only adjusts tokens that would be hidden
  * behind the background.
@@ -48,7 +48,7 @@ export function initDisableUndergroundTokenHiding() {
 
         // If the token's document elevation is negative, clamp the mesh
         // elevation to 0 so the token renders above the background layer.
-        // We check this.mesh (Foundry V13+) or this.primaryGraphic (V14+).
+        // We check this.mesh or this.primaryGraphic.
         const elevation = this.document.elevation;
         if (elevation == null || elevation >= 0) return;
 
