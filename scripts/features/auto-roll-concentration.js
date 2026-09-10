@@ -263,7 +263,7 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
         const recentMessages = game.messages.contents.slice(-10).reverse();
         const message = recentMessages.find(m =>
             m.speaker?.actor === actor.id &&
-            m.flags?.dnd5e?.roll?.type === "save" &&
+            (m.system?.type === "concentration" || m.type === "save" || m.flags?.dnd5e?.roll?.type === "save") &&
             !m.flags?.[MODULE_ID]?.isConcentrationSave
         );
         if (!message) return;

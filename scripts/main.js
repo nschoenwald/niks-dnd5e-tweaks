@@ -279,7 +279,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: Boolean,
-        default: true,
+        default: false,
         restricted: true,
         onChange: () => {
             ui.controls.render();

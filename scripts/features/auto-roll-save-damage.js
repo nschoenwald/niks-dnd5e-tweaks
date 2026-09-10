@@ -37,8 +37,10 @@ function _onPostUseActivity(activity, usageConfig, results) {
         {},
         {
             data: {
-                "flags.dnd5e.originatingMessage": results?.message?.id,
-                "flags.dnd5e.targets": results?.message?.getFlag("dnd5e", "targets")
+                system: {
+                    origin: results?.message?.id,
+                    targets: results?.message?.system?.targets ?? []
+                }
             }
         }
     );

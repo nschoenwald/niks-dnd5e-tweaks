@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.24.2] - 2026-09-10
+### Changed
+- **Token Resizer Default**: Set the *Token Resizer Tool* setting to disabled by default (`default: false`) across both `scripts/main.js` and the Settings Dashboard schema in `scripts/settings-app.js`, while keeping it available for users who still wish to use it.
+- **Foundry V14 Scene Controls**: Updated the Token Resizer scene controls registration to support Foundry V14 object-based control groupings (`buttons?.token ?? buttons?.tokens`).
+- **Settings Dashboard Modernization**: Cleaned up obsolete `v14Only` badges and runtime version guards from `scripts/settings-app.js` and `templates/settings-dashboard.hbs` now that Foundry V14 is the module baseline. Standardized the ApplicationV2 window `close` action handler.
+
+### Fixed
+- **DnD5e 6.0.0 Chat Data Model Compatibility**:
+  - Updated chat message roll and activity inspection to read from `message.type` and `message.system.*` instead of deprecated `flags.dnd5e.*` (which are removed in DnD5e 6.0.0).
+  - Updated target resolution in damage prompts, auto-roll attack damage, and self-effect application to support the new `TargetsField` descriptor objects (`{ token, actor, ac, name, img }`) in addition to UUIDs.
+  - Replaced deprecated chat message getters (`#item`, `#activity`) with official `ChatMessage5e` methods (`getAssociatedItem()`, `getAssociatedActivity()`, `getAssociatedActor()`, and `getOriginatingMessage()`).
+  - Updated `Activity#applicableEffects` handling in Self Effect Application to asynchronously call `await activity.getApplicableEffects()`, properly resolving `ActiveEffect5e` documents from 6.0.0 effect application profiles.
+  - Updated `auto-roll-save-damage` and `auto-roll-attack-damage` to provide `data: { system: { origin, targets } }` when triggering damage rolls.
+  - Updated concentration roll detection in `auto-roll-concentration` to match `message.system.type === "concentration"` or `message.type === "save"`.
+  - Updated Healing Context Menu patch to support `message.type === "healing"` and `message.system.isHealing`.
+  - Updated Template Targeting to support `flags.dnd5e.origin`, `flags.dnd5e.item`, and `flags.dnd5e.activity` on region documents.
+- **Canonical Concentration & Condition Handling**:
+  - Updated `auto-end-concentration.js` to call the official `actor.endConcentration()` method, firing the `dnd5e.preEndConcentration` and `dnd5e.endConcentration` hooks.
+  - Enhanced condition detection in `prone-rotation.js` to inspect `effect.system.type` in addition to `effect.statuses` for full compatibility with DnD5e 6.0.0 Condition ActiveEffects.
+
 ## [14.24.1] - 2026-09-06
 ### Changed
 - **Removed Residual V13 Code**: Cleaned up all remaining Foundry V13 compatibility code now that V14 is the minimum. Removed `renderChatMessage` dual-hook pattern (6 files), V13 `preCreateMeasuredTemplate` branch from template grid snap, V13 `game.release.generation < 14` guard from template targeting, and V13 references from comments and docstrings across 10 files.

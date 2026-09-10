@@ -25,7 +25,7 @@ export function initTokenResizer() {
   Hooks.on("getSceneControlButtons", (buttons) => {
     if (!game.settings.get(MODULE_ID, "enableTokenResizer")) return;
 
-    let tokenButtons = buttons["tokens"] || buttons.find?.(b => b.name === "token");
+    let tokenButtons = buttons?.token ?? buttons?.tokens ?? (Array.isArray(buttons) ? buttons.find(b => b.name === "token" || b.name === "tokens") : null);
 
     if (tokenButtons) {
       const tool = {

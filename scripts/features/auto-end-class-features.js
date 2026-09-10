@@ -226,7 +226,7 @@ function _findFeatureEffects(actor, feature) {
             try {
                 const origin = fromUuidSync(effect.origin);
                 if (origin) {
-                    const item = origin instanceof Item ? origin : origin.parent instanceof Item ? origin.parent : null;
+                    const item = origin instanceof Item ? origin : (origin.item ?? (origin.parent instanceof Item ? origin.parent : null));
                     const activityIdentifier = !(origin instanceof Item) ? origin.identifier : null;
                     if (item?.system?.identifier === feature.identifier || activityIdentifier === feature.identifier) {
                         matchingEffects.push(effect);

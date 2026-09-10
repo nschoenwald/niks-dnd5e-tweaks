@@ -22,10 +22,10 @@ export function initForceCompendiumBrowser() {
                 event.stopPropagation();
                 event.preventDefault();
 
-                if (globalThis.dnd5e?.applications?.CompendiumBrowser) {
-                    new globalThis.dnd5e.applications.CompendiumBrowser().render(true);
-                } else if (game.dnd5e?.applications?.CompendiumBrowser) {
-                    new game.dnd5e.applications.CompendiumBrowser().render(true);
+                const BrowserClass = globalThis.dnd5e?.applications?.CompendiumBrowser
+                    ?? game.dnd5e?.applications?.CompendiumBrowser;
+                if (BrowserClass) {
+                    new BrowserClass().render({ force: true });
                 } else {
                     ui.notifications.warn("Unable to find the DnD5e Compendium Browser.");
                 }

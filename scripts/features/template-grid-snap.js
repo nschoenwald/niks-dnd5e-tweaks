@@ -107,7 +107,7 @@ function _onPreCreateRegion(document, data, options, userId) {
 
     // Only process regions created by dnd5e activities (spell templates)
     const dnd5eFlags = document.flags?.dnd5e;
-    if (!dnd5eFlags?.origin) return;
+    if (!dnd5eFlags?.origin && !dnd5eFlags?.item && !dnd5eFlags?.activity) return;
 
     // Skip emanation (radius) templates — these need free placement on tokens
     if (dnd5eFlags?.dimensions?.adjustedSize) return;

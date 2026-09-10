@@ -108,8 +108,8 @@ function _onCreateRegion(regionDoc, options, userId) {
     }
 
     // Guard 2: dnd5e activity template flag
-    if (!regionDoc.flags?.dnd5e?.origin) {
-        debug("Template Targeting | createRegion: no flags.dnd5e.origin, not a dnd5e template, skipping");
+    if (!regionDoc.flags?.dnd5e?.origin && !regionDoc.flags?.dnd5e?.item && !regionDoc.flags?.dnd5e?.activity) {
+        debug("Template Targeting | createRegion: no flags.dnd5e.(origin|item|activity), not a dnd5e template, skipping");
         return;
     }
 

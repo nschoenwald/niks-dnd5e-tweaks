@@ -113,10 +113,23 @@ function _getAttackerActor(options) {
                 ? chatMessage.getOriginatingMessage()
                 : chatMessage;
 
-            if (origMsg.item?.actor) return origMsg.item.actor;
-            if (origMsg.activity?.actor) return origMsg.activity.actor;
-            if (chatMessage.item?.actor) return chatMessage.item.actor;
-            if (chatMessage.activity?.actor) return chatMessage.activity.actor;
+            const origItemActor = origMsg.getAssociatedItem?.()?.actor ?? origMsg.item?.actor;
+            if (origItemActor) return origItemActor;
+
+            const origActivityActor = origMsg.getAssociatedActivity?.()?.actor ?? origMsg.activity?.actor;
+            if (origActivityActor) return origActivityActor;
+
+            const origActor = origMsg.getAssociatedActor?.();
+            if (origActor) return origActor;
+
+            const chatItemActor = chatMessage.getAssociatedItem?.()?.actor ?? chatMessage.item?.actor;
+            if (chatItemActor) return chatItemActor;
+
+            const chatActivityActor = chatMessage.getAssociatedActivity?.()?.actor ?? chatMessage.activity?.actor;
+            if (chatActivityActor) return chatActivityActor;
+
+            const chatActor = chatMessage.getAssociatedActor?.();
+            if (chatActor) return chatActor;
 
             if (origMsg.speaker) {
                 const speakerActor = ChatMessage.getSpeakerActor(origMsg.speaker);

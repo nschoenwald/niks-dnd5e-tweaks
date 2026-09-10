@@ -48,7 +48,7 @@
 
                     <div class="nd5t-settings-list">
                         {{#each this.settings}}
-                        <div class="nd5t-setting-row {{#if this.isChild}}nd5t-child-setting{{/if}} {{#if this.v14Only}}nd5t-v14-only{{/if}}" 
+                        <div class="nd5t-setting-row {{#if this.isChild}}nd5t-child-setting{{/if}}" 
                              data-key="{{this.key}}" 
                              {{#if this.parentKey}}data-parent="{{this.parentKey}}"{{/if}}
                              data-search-text="{{this.searchText}}">
@@ -66,10 +66,6 @@
                                         <span class="nd5t-badge client" title="This setting is stored locally per client/user">Client</span>
                                         {{else}}
                                         <span class="nd5t-badge world" title="This setting applies to all users in this world">World</span>
-                                        {{/if}}
-
-                                        {{#if this.v14Only}}
-                                        <span class="nd5t-badge v14" title="This feature requires Foundry V14 or higher">V14+</span>
                                         {{/if}}
 
                                         {{#if this.requiresReload}}

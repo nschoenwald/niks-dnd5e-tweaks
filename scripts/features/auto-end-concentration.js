@@ -32,8 +32,8 @@ const _debounceTimers = new Map();
  * Automatically ends all concentration effects from a token when it receives
  * conditions that break concentration.
  *
- * Uses the official `actor.concentration.effects` API (dnd5e 5.2+) to
- * identify active concentration effects and deletes them directly.
+ * Uses the official `actor.concentration.effects` API and canonical
+ * `actor.endConcentration()` method to identify and end active concentration effects.
  *
  * NOTE: This feature interacts with Auto-Status at 0 HP — when that
  * feature applies "unconscious" or "dead" at 0 HP (after its own 250ms
@@ -143,7 +143,11 @@ async function _checkAndEndConcentration(actor, effectName) {
     debug(`Auto-End Concentration | ${actor.name} gained a status that breaks concentration. Ending ${effectIdsToDelete.length} effect(s).`);
 
     try {
-        await actor.deleteEmbeddedDocuments("ActiveEffect", effectIdsToDelete);
+        if (typeof actor.endConcentration === "function") {
+            await actor.endConcentration();
+        } else {
+            await actor.deleteEmbeddedDocuments("ActiveEffect", effectIdsToDelete);
+        }
     } catch (e) {
         console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, e);
         return;

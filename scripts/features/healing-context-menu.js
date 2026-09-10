@@ -33,12 +33,13 @@ export function initHealingContextMenu() {
 
     Object.defineProperty(ChatMessage5e.prototype, "canApplyDamage", {
         get() {
-            const type = this.flags.dnd5e?.roll?.type;
+            const type = this.type ?? this.flags?.dnd5e?.roll?.type;
+            const isHealing = type === "healing" || this.system?.isHealing;
 
             // The original getter rejects anything that isn't "damage".
             // We extend it to also allow "healing" (which covers both
             // regular healing and temp HP rolls in dnd5e).
-            if (type === "healing") {
+            if (isHealing) {
                 debug("canApplyDamage override: allowing healing roll type");
                 return this.isRoll && this.isContentVisible && !!canvas.tokens?.controlled.length;
             }

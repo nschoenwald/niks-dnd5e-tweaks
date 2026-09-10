@@ -30,7 +30,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             resetDefaults: NiksTweaksSettingsApp.#onResetDefaults,
             exportSettings: NiksTweaksSettingsApp.#onExportSettings,
             importSettings: NiksTweaksSettingsApp.#onImportSettings,
-            close: (event, target) => target.closest(".nd5t-settings-app")?.querySelector(".header-control.close")?.click() || this.close()
+            close: function(event, target) { return this.close(); }
         }
     };
 
@@ -140,8 +140,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets to detach into a separate window without the 3-dot menu.",
                                 type: "Boolean",
                                 default: true,
-                                scope: "world",
-                                v14Only: true
+                                scope: "world"
                             },
                             {
                                 key: "enableSheetPlusCompendium",
@@ -228,7 +227,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 name: "Token Resizer Tool",
                                 hint: "Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes.",
                                 type: "Boolean",
-                                default: true,
+                                default: false,
                                 scope: "world"
                             },
                             {
@@ -245,8 +244,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area in real time.",
                                 type: "Boolean",
                                 default: true,
-                                scope: "world",
-                                v14Only: true
+                                scope: "world"
                             },
                             {
                                 key: "enableAutoClearMovementHistory",
@@ -692,14 +690,12 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     /** @override */
     async _prepareContext(options) {
         const canModify = game.user.can("SETTINGS_MODIFY");
-        const isV14 = game.release.generation >= 14;
 
         const tabs = NiksTweaksSettingsApp.SETTINGS_SCHEMA.map(tab => {
             const isActiveTab = tab.id === this.#activeTab;
 
             const sections = tab.sections.map(sec => {
                 const settings = sec.settings
-                    .filter(s => !s.v14Only || isV14)
                     .map(s => {
                         let value;
                         try {
@@ -956,8 +952,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         for (const tab of NiksTweaksSettingsApp.SETTINGS_SCHEMA) {
             for (const sec of tab.sections) {
                 for (const s of sec.settings) {
-                    if (s.v14Only && game.release.generation < 14) continue;
-
                     // Enforce permission: non-authorized users can only save client/user-scoped settings
                     if (s.scope !== "client" && s.scope !== "user" && !canModify) continue;
 
@@ -1007,7 +1001,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         for (const tab of NiksTweaksSettingsApp.SETTINGS_SCHEMA) {
             for (const sec of tab.sections) {
                 for (const s of sec.settings) {
-                    if (s.v14Only && game.release.generation < 14) continue;
                     const currentVal = game.settings.get(MODULE_ID, s.key);
                     if (currentVal !== s.default) {
                         await game.settings.set(MODULE_ID, s.key, s.default);
@@ -1046,7 +1039,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         const exportPayload = {
             module: MODULE_ID,
             title: "Nik's D&D 5e Tweaks Settings Export",
-            version: game.modules.get(MODULE_ID)?.version || "14.20.0",
+            version: game.modules.get(MODULE_ID)?.version || "14.24.2",
             exportedAt: new Date().toISOString(),
             exportedBy: game.user.name,
             settings: settingsData

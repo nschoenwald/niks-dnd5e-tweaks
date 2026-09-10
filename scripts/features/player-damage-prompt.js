@@ -131,8 +131,10 @@ async function _onCreateChatMessage(message) {
 
         // Only process damage rolls from attack activities by default,
         // unless non-attack damage prompts are enabled.
-        const rollType = message.getFlag("dnd5e", "roll.type");
-        const activityType = message.getFlag("dnd5e", "activity.type");
+        const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
+        const activity = message.getAssociatedActivity?.()
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "damage" && rollType !== "healing") return;
 
         const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
@@ -154,12 +156,14 @@ async function _onCreateChatMessage(message) {
             "| Author:", messageAuthor?.name, `(${isPlayerAttack ? "player" : "GM"})`,
             "| Roll type:", rollType,
             "| Activity type:", activityType,
-            "| Activity ID:", message.getFlag("dnd5e", "activity.id"),
+            "| Activity ID:", message.system?.activity?.id ?? message.getFlag("dnd5e", "activity.id"),
             "| Settings: playerPrompt=", playerPromptEnabled, "gmPrompt=", gmPromptEnabled);
 
         // Find the originating (usage) message to get original targets
-        const originatingId = message.getFlag("dnd5e", "originatingMessage");
-        let originatingMessage = originatingId ? game.messages.get(originatingId) : null;
+        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
+            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
+            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
         debug("Player Damage Prompt | Originating message:",
             originatingId ? `ID ${originatingId}` : "(none)",
             "| Found:", !!originatingMessage);
@@ -169,10 +173,12 @@ async function _onCreateChatMessage(message) {
         let attackRoll = null;
 
         if (activityType === "attack" || !activityType) {
-            attackMessage = _findAttackMessage(originatingId, message);
+            attackMessage = _findAttackMessage(originatingId, message, originatingMessage);
             if (!originatingMessage && attackMessage) {
-                const attackOriginId = attackMessage.getFlag("dnd5e", "originatingMessage");
-                originatingMessage = attackOriginId ? game.messages.get(attackOriginId) : attackMessage;
+                const attackOrigin = (typeof attackMessage.getOriginatingMessage === "function" ? attackMessage.getOriginatingMessage() : null)
+                    ?? (attackMessage.system?.origin ? game.messages.get(attackMessage.system.origin) : null)
+                    ?? (attackMessage.getFlag("dnd5e", "originatingMessage") ? game.messages.get(attackMessage.getFlag("dnd5e", "originatingMessage")) : null);
+                originatingMessage = attackOrigin ?? attackMessage;
             }
             if (attackMessage) {
                 attackRoll = _getAttackD20Roll(attackMessage);
@@ -182,15 +188,20 @@ async function _onCreateChatMessage(message) {
         }
 
         // Prefer targets from originating message, attack message, or damage message
-        const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
-        const attackTargets = attackMessage?.getFlag("dnd5e", "targets");
-        const damageTargets = message.getFlag("dnd5e", "targets");
-        let targets = originTargets || attackTargets || damageTargets || [];
+        const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
+        const attackTargets = attackMessage?.system?.targets ?? attackMessage?.getFlag("dnd5e", "targets");
+        const damageTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
+        let targets = (originTargets?.length ? originTargets : null)
+            || (attackTargets?.length ? attackTargets : null)
+            || (damageTargets?.length ? damageTargets : null)
+            || [];
 
-        // Fallback to canvas targets if message flags have no targets
+        // Fallback to canvas targets if message has no targets
         if (!targets.length && game.user.targets?.size > 0) {
             targets = Array.from(game.user.targets).map(t => ({
-                uuid: t.document.uuid,
+                token: t.document?.uuid,
+                actor: t.actor?.uuid,
+                uuid: t.document?.uuid,
                 name: t.name,
                 ac: t.actor?.system?.attributes?.ac?.value
             }));
@@ -201,7 +212,7 @@ async function _onCreateChatMessage(message) {
             "| Targets from attack message:", attackTargets?.length ?? 0,
             "| Targets from damage message:", damageTargets?.length ?? 0,
             "| Using:", targets.length, "targets",
-            targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
+            targets.length ? targets.map(t => `${t.name || t.token || t.actor || t.uuid} (AC ${t.ac})`) : []);
 
         if (!targets.length) {
             debug("Player Damage Prompt | No targets found, skipping");
@@ -261,8 +272,10 @@ async function _onCreateChatMessage_Attack(message) {
         if (!playerPromptEnabled && !gmPromptEnabled) return;
 
         // Only process attack rolls from attack activities
-        const rollType = message.getFlag("dnd5e", "roll.type");
-        const activityType = message.getFlag("dnd5e", "activity.type");
+        const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
+        const activity = message.getAssociatedActivity?.()
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "attack") return;
         if (activityType !== "attack") return;
 
@@ -273,9 +286,9 @@ async function _onCreateChatMessage_Attack(message) {
             return;
         }
 
-        // The DnD5e system stores the chosen mastery in flags.dnd5e.roll.mastery.
+        // The DnD5e system stores the chosen mastery in system.mastery (or flags.dnd5e.roll.mastery).
         // Only proceed if this attack used the Graze mastery.
-        const rollMastery = message.getFlag("dnd5e", "roll.mastery");
+        const rollMastery = message.system?.mastery ?? message.getFlag("dnd5e", "roll.mastery");
         if (rollMastery !== "graze") return;
 
         debug("Player Damage Prompt | Graze: Attack roll with Graze mastery detected",
@@ -285,24 +298,30 @@ async function _onCreateChatMessage_Attack(message) {
             "| Mastery:", rollMastery);
 
         // Find the originating (usage) message to get original targets
-        const originatingId = message.getFlag("dnd5e", "originatingMessage");
-        const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
+        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
+            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
+            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
 
         // Prefer targets from the originating (usage) message, fall back to the attack message
-        const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
-        const attackTargets = message.getFlag("dnd5e", "targets");
-        let targets = originTargets || attackTargets || [];
+        const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
+        const attackTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
+        let targets = (originTargets?.length ? originTargets : null)
+            || (attackTargets?.length ? attackTargets : null)
+            || [];
 
         if (!targets.length && game.user.targets?.size > 0) {
             targets = Array.from(game.user.targets).map(t => ({
-                uuid: t.document.uuid,
+                token: t.document?.uuid,
+                actor: t.actor?.uuid,
+                uuid: t.document?.uuid,
                 name: t.name,
                 ac: t.actor?.system?.attributes?.ac?.value
             }));
         }
 
         debug("Player Damage Prompt | Graze: Targets:", targets.length,
-            targets.length ? targets.map(t => `${t.name || t.uuid} (AC ${t.ac})`) : []);
+            targets.length ? targets.map(t => `${t.name || t.token || t.actor || t.uuid} (AC ${t.ac})`) : []);
 
         if (!targets.length) {
             debug("Player Damage Prompt | Graze: No targets found, skipping");
@@ -329,16 +348,16 @@ async function _onCreateChatMessage_Attack(message) {
 
             // Skip hits and crits — those are handled by the damage handler
             if (isCritical || attackTotal >= targetAC) {
-                debug(`Player Damage Prompt | Graze: Attack hit ${target.name || target.uuid} (${attackTotal} >= AC ${targetAC}), skipping (handled by damage handler)`);
+                debug(`Player Damage Prompt | Graze: Attack hit ${target.name || target.token || target.actor || target.uuid} (${attackTotal} >= AC ${targetAC}), skipping (handled by damage handler)`);
                 continue;
             }
 
-            debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
+            debug(`Player Damage Prompt | Graze: Attack missed ${target.name || target.token || target.actor || target.uuid} (${attackTotal} < AC ${targetAC}), checking for Graze mastery...`);
 
             // Resolve the target token/actor
             const { tokenDoc, actor } = _resolveTarget(target);
             if (!actor) {
-                debug(`Player Damage Prompt | Graze: Could not resolve token UUID: ${target.uuid || target}`);
+                debug(`Player Damage Prompt | Graze: Could not resolve target:`, target);
                 continue;
             }
             if (!actor.system?.attributes?.hp) {
@@ -380,53 +399,67 @@ async function _onCreateChatMessage_Attack(message) {
 
 /**
  * Search recent messages for the attack roll that corresponds to this damage roll.
- * Checks originatingMessage flag, direct message reference, and falls back to
+ * Checks associated rolls, originatingMessage, direct message reference, and falls back to
  * matching recent attack messages by speaker/activity.
  * @param {string|null} originatingId  ID of the originating usage message.
  * @param {ChatMessage|null} [damageMessage=null] The damage message for contextual matching.
+ * @param {ChatMessage|null} [originatingMessage=null] The originating message if already resolved.
  * @returns {ChatMessage|null}
  */
-function _findAttackMessage(originatingId, damageMessage = null) {
+function _findAttackMessage(originatingId, damageMessage = null, originatingMessage = null) {
+    // 1. If we have the originating message, check its associated rolls (official DnD5e method)
+    const originDoc = originatingMessage ?? (originatingId ? game.messages.get(originatingId) : null);
+    if (originDoc && typeof originDoc.getAssociatedRolls === "function") {
+        const attacks = originDoc.getAssociatedRolls("attack");
+        if (attacks?.length) return attacks[attacks.length - 1];
+    }
+
     const messages = game.messages.contents;
     const startIdx = Math.max(0, messages.length - 30);
 
-    // 1. Direct check if originatingId points directly to an attack message
+    // 2. Direct check if originatingId points directly to an attack message
     if (originatingId) {
-        const directMsg = game.messages.get(originatingId);
-        if (directMsg?.getFlag("dnd5e", "roll.type") === "attack") {
+        const directMsg = originDoc ?? game.messages.get(originatingId);
+        if (directMsg?.type === "attack" || directMsg?.getFlag("dnd5e", "roll.type") === "attack") {
             return directMsg;
         }
 
-        // 2. Search for attack roll sharing the same originatingMessage
+        // 3. Search for attack roll sharing the same originatingMessage / system.origin
         for (let i = messages.length - 1; i >= startIdx; i--) {
             const msg = messages[i];
-            if (msg.getFlag("dnd5e", "roll.type") === "attack"
-                && msg.getFlag("dnd5e", "originatingMessage") === originatingId) {
+            const isAttack = msg.type === "attack" || msg.getFlag("dnd5e", "roll.type") === "attack";
+            const originMatch = (msg.system?.origin === originatingId)
+                || (msg.getFlag("dnd5e", "originatingMessage") === originatingId);
+            if (isAttack && originMatch) {
                 return msg;
             }
         }
     }
 
-    // 3. Fallback: match recent attack roll by same actor/subject and activity/item
+    // 4. Fallback: match recent attack roll by same actor/subject and activity/item
     if (damageMessage) {
         const speakerActor = damageMessage.speaker?.actor;
-        const subjectUuid = damageMessage.getFlag("dnd5e", "subject.uuid");
-        const activityId = damageMessage.getFlag("dnd5e", "activity.id");
-        const itemUuid = damageMessage.getFlag("dnd5e", "item.uuid");
+        const subjectUuid = damageMessage.system?.item?.uuid
+            ?? damageMessage.getFlag("dnd5e", "subject.uuid");
+        const activityId = damageMessage.system?.activity?.id
+            ?? damageMessage.getFlag("dnd5e", "activity.id");
+        const itemUuid = damageMessage.system?.item?.uuid
+            ?? damageMessage.getFlag("dnd5e", "item.uuid");
 
         for (let i = messages.length - 1; i >= startIdx; i--) {
             const msg = messages[i];
             if (msg.id === damageMessage.id) continue;
-            if (msg.getFlag("dnd5e", "roll.type") !== "attack") continue;
+            const isAttack = msg.type === "attack" || msg.getFlag("dnd5e", "roll.type") === "attack";
+            if (!isAttack) continue;
 
             // Match speaker / subject
             const matchesActor = (speakerActor && msg.speaker?.actor === speakerActor)
-                || (subjectUuid && msg.getFlag("dnd5e", "subject.uuid") === subjectUuid);
+                || (subjectUuid && (msg.system?.item?.uuid === subjectUuid || msg.getFlag("dnd5e", "subject.uuid") === subjectUuid));
             if (!matchesActor) continue;
 
             // Match activity or item
-            const matchesActivity = activityId && msg.getFlag("dnd5e", "activity.id") === activityId;
-            const matchesItem = itemUuid && msg.getFlag("dnd5e", "item.uuid") === itemUuid;
+            const matchesActivity = activityId && (msg.system?.activity?.id === activityId || msg.getFlag("dnd5e", "activity.id") === activityId);
+            const matchesItem = itemUuid && (msg.system?.item?.uuid === itemUuid || msg.getFlag("dnd5e", "item.uuid") === itemUuid);
 
             if (matchesActivity || matchesItem || (!activityId && !itemUuid)) {
                 return msg;
@@ -641,6 +674,35 @@ function _buildDamageDescriptions(rolls) {
  */
 function _resolveTarget(uuidOrTarget) {
     if (!uuidOrTarget) return { tokenDoc: null, actor: null };
+
+    // Support TargetDescriptor object from DnD5e 6.0.0+ TargetsField
+    if (typeof uuidOrTarget === "object") {
+        if (uuidOrTarget.token || uuidOrTarget.actor) {
+            let tokenDoc = null;
+            let actor = null;
+            if (uuidOrTarget.token) {
+                try {
+                    const doc = fromUuidSync(uuidOrTarget.token);
+                    tokenDoc = doc?.documentName === "Token" ? doc : (doc?.document ?? null);
+                    actor = tokenDoc?.actor ?? null;
+                } catch { /* continue */ }
+            }
+            if (!actor && uuidOrTarget.actor) {
+                try {
+                    const doc = fromUuidSync(uuidOrTarget.actor);
+                    actor = doc?.actor ?? doc;
+                } catch { /* continue */ }
+            }
+            if (actor) {
+                if (!tokenDoc && typeof actor.getActiveTokens === "function") {
+                    const activeTokens = actor.getActiveTokens(true, true);
+                    tokenDoc = activeTokens?.[0]?.document ?? null;
+                }
+                return { tokenDoc, actor };
+            }
+        }
+    }
+
     const uuid = typeof uuidOrTarget === "string" ? uuidOrTarget : (uuidOrTarget.uuid || uuidOrTarget.tokenUuid || uuidOrTarget.actorUuid);
     if (!uuid) return { tokenDoc: null, actor: null };
 
@@ -670,7 +732,10 @@ function _resolveTarget(uuidOrTarget) {
     }
 
     // Fallback: resolved is the Actor itself (linked token or direct Actor UUID)
-    return { tokenDoc: null, actor: resolved };
+    const fallbackTokenDoc = (typeof resolved.getActiveTokens === "function")
+        ? (resolved.getActiveTokens(true, true)?.[0]?.document ?? null)
+        : null;
+    return { tokenDoc: fallbackTokenDoc, actor: resolved };
 }
 
 /**
@@ -750,11 +815,12 @@ function _getWhisperTargets(actor) {
  * @param {string}  activityType         The activity type (e.g. "attack", "save").
  */
 async function _processTarget(target, attackRoll, attackMessage, damageMessage, originatingMessage, damageByType, rawDamages, isPlayerAttack, playerPromptEnabled, gmPromptEnabled, activityType) {
-    debug(`Player Damage Prompt | ── Processing target: ${target.name || target.uuid} (AC ${target.ac})`);
+    const targetLabel = target.name || target.token || target.actor || target.uuid;
+    debug(`Player Damage Prompt | ── Processing target: ${targetLabel} (AC ${target.ac})`);
 
-    const { tokenDoc, actor } = _resolveTarget(target.uuid);
+    const { tokenDoc, actor } = _resolveTarget(target);
     if (!actor) {
-        debug(`Player Damage Prompt |    ✗ Could not resolve token UUID: ${target.uuid}`);
+        debug(`Player Damage Prompt |    ✗ Could not resolve target: ${targetLabel}`);
         return;
     }
     if (!actor.system?.attributes?.hp) {
@@ -835,17 +901,21 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         whisperTargets.map(id => game.users.get(id)?.name || id));
 
     const tokenName = _getTokenName(tokenDoc, target, actor);
-    const itemUuid = damageMessage.getFlag("dnd5e", "item.uuid");
-    const sourceItem = itemUuid ? fromUuidSync(itemUuid) : null;
+    const sourceItem = damageMessage.getAssociatedItem?.()
+        ?? (damageMessage.system?.item?.uuid ? fromUuidSync(damageMessage.system.item.uuid) : null)
+        ?? (damageMessage.getFlag("dnd5e", "item.uuid") ? fromUuidSync(damageMessage.getFlag("dnd5e", "item.uuid")) : null);
     
     let hasHalfDamage = false;
-    if (activityType === "save" && sourceItem) {
-        const activityId = damageMessage.getFlag("dnd5e", "activity.id");
-        if (activityId && sourceItem.system?.activities) {
-            const activity = sourceItem.system.activities.get?.(activityId) ?? sourceItem.system.activities[activityId];
-            if (activity?.damage?.onSave === "half") {
-                hasHalfDamage = true;
-            }
+    if (activityType === "save") {
+        const activity = (typeof damageMessage.getAssociatedActivity === "function" ? damageMessage.getAssociatedActivity() : null)
+            ?? (() => {
+                const activityId = damageMessage.system?.activity?.id ?? damageMessage.getFlag?.("dnd5e", "activity.id");
+                return activityId && sourceItem?.system?.activities
+                    ? (sourceItem.system.activities.get?.(activityId) ?? sourceItem.system.activities[activityId])
+                    : null;
+            })();
+        if (activity?.damage?.onSave === "half") {
+            hasHalfDamage = true;
         }
     }
     
@@ -1094,9 +1164,10 @@ function _formatDamageBreakdown(damageByType) {
 
 /**
  * Resolve the weapon Item from one or more chat messages.
- * In DnD5e 5.2+, the system stores item info in `flags.dnd5e.item`
- * (via the Activity `messageFlags` getter).  Both the attack roll
- * and damage roll messages carry this flag.
+ * In DnD5e 6.0.0, the system provides getAssociatedItem() and stores
+ * item info in `system.item.uuid` / `system.origin`.
+ * In DnD5e 5.2+, the system stored item info in `flags.dnd5e.item`.
+ * Both the attack roll and damage roll messages carry this information.
  * @param {...ChatMessage|null} messages  Messages to search (nulls are skipped).
  * @returns {Item|null}
  */
@@ -1104,8 +1175,12 @@ function _resolveWeaponItem(...messages) {
     for (const msg of messages) {
         if (!msg) continue;
 
-        // DnD5e 5.2+ stores item UUID in flags.dnd5e.item.uuid
-        const itemUuid = msg.getFlag("dnd5e", "item.uuid");
+        if (typeof msg.getAssociatedItem === "function") {
+            const item = msg.getAssociatedItem();
+            if (item) return item;
+        }
+
+        const itemUuid = msg.system?.item?.uuid ?? msg.system?.origin ?? msg.getFlag?.("dnd5e", "item.uuid");
         if (itemUuid) {
             try {
                 const item = fromUuidSync(itemUuid);
@@ -1146,12 +1221,17 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
     // Determine the damage type from the weapon
     // Try the activity's damage parts first, then the item's base damage
     let damageType = "bludgeoning"; // fallback
-    const activityId = attackMessage.getFlag("dnd5e", "activity.id");
-    if (activityId && item.system?.activities) {
-        const activity = item.system.activities.get?.(activityId) ?? item.system.activities[activityId];
+    const activity = (typeof attackMessage.getAssociatedActivity === "function" ? attackMessage.getAssociatedActivity() : null)
+        ?? (() => {
+            const activityId = attackMessage.system?.activity?.id ?? attackMessage.getFlag?.("dnd5e", "activity.id");
+            return activityId && item.system?.activities
+                ? (item.system.activities.get?.(activityId) ?? item.system.activities[activityId])
+                : null;
+        })();
+    if (activity) {
         const firstPart = activity?.damage?.parts?.[0];
         if (firstPart) {
-            // The types field is a Set in DnD5e 5.2+
+            // The types field is a Set in DnD5e 5.2+ / 6.0.0
             const types = firstPart.types;
             if (types instanceof Set) damageType = [...types][0] ?? damageType;
             else if (Array.isArray(types)) damageType = types[0] ?? damageType;
@@ -1285,17 +1365,19 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
             damagePrompt: true
         }
     };
-    if (originatingMessage?.id) {
-        flags[MODULE_ID].originatingMessageId = originatingMessage.id;
-        flags.dnd5e = { originatingMessage: originatingMessage.id };
-    }
-
-    await ChatMessage.create({
+    const messageData = {
         content,
         whisper: whisperUsers,
         speaker: Object.assign(ChatMessage.getSpeaker({ actor, token: speakerToken }), { alias: tokenName }),
         flags
-    });
+    };
+    if (originatingMessage?.id) {
+        flags[MODULE_ID].originatingMessageId = originatingMessage.id;
+        flags.dnd5e = { originatingMessage: originatingMessage.id };
+        messageData.system = { origin: originatingMessage.id };
+    }
+
+    await ChatMessage.create(messageData);
 }
 
 /**
@@ -1787,8 +1869,9 @@ function _bindApplyDamageButton(message, element) {
                 const hpBefore = actor.system.attributes.hp.value;
                 const tempBefore = actor.system.attributes.hp.temp || 0;
 
-                const origMsgId = message.flags?.dnd5e?.originatingMessage
-                    ?? message.flags?.[MODULE_ID]?.originatingMessageId;
+                const origMsgId = message.system?.origin
+                    ?? message.flags?.[MODULE_ID]?.originatingMessageId
+                    ?? message.flags?.dnd5e?.originatingMessage;
                 const originatingMessage = origMsgId ? game.messages.get(origMsgId) : message;
 
                 await actor.applyDamage(damages, {

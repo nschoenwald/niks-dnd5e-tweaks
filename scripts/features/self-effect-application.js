@@ -117,16 +117,20 @@ function _hasManualSelfTarget(actor, results) {
     const activeTokenUuids = new Set(activeTokens.map(t => t.document?.uuid || t.uuid));
     const activeTokenIds = new Set(activeTokens.map(t => t.id || t.document?.id));
 
-    // 1. Check chat message flags from the activity usage
-    const msgTargets = results?.message?.getFlag?.("dnd5e", "targets")
+    // 1. Check chat message flags / system targets from the activity usage
+    const msgTargets = results?.message?.system?.targets
+        || results?.message?.getFlag?.("dnd5e", "targets")
         || results?.message?.flags?.dnd5e?.targets;
     if (Array.isArray(msgTargets) && msgTargets.length > 0) {
-        const isSelfInMsg = msgTargets.some(t =>
-            t.uuid === actorUuid ||
-            (t.uuid && actorId && t.uuid.includes(actorId)) ||
-            activeTokenUuids.has(t.uuid) ||
-            (t.id && activeTokenIds.has(t.id))
-        );
+        const isSelfInMsg = msgTargets.some(t => {
+            const targetActorUuid = t.actor ?? t.uuid;
+            const targetTokenUuid = t.token ?? t.uuid;
+            return targetActorUuid === actorUuid ||
+                targetTokenUuid === actorUuid ||
+                (targetActorUuid && actorId && targetActorUuid.includes(actorId)) ||
+                activeTokenUuids.has(targetTokenUuid) ||
+                (t.id && activeTokenIds.has(t.id));
+        });
         if (isSelfInMsg) return true;
     }
 
@@ -150,17 +154,21 @@ function _cleanName(str) {
  * Retrieve applicable Active Effects for an activity or its parent item.
  *
  * @param {Activity} activity
- * @returns {ActiveEffect5e[]}
+ * @returns {Promise<ActiveEffect5e[]>}
  */
-function _getApplicableEffects(activity) {
+async function _getApplicableEffects(activity) {
     let effects = [];
     const item = activity.item;
     const itemName = item?.name || "Effect";
 
-    // 1. Check activity.applicableEffects first
-    const actEffects = activity.applicableEffects;
-    if (actEffects && actEffects.length > 0) {
-        effects = Array.from(actEffects);
+    // 1. Check activity.getApplicableEffects() first (DnD5e 6.0.0+)
+    if (typeof activity.getApplicableEffects === "function") {
+        const actEffects = await activity.getApplicableEffects();
+        if (actEffects && actEffects.length > 0) {
+            effects = Array.from(actEffects);
+        }
+    } else if (activity.applicableEffects && activity.applicableEffects.length > 0) {
+        effects = Array.from(activity.applicableEffects);
     }
 
     // 2. Fall back to ActiveEffects on the item itself
@@ -253,7 +261,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         if (!isIntrinsicSelf && !isManualSelf && !isAlwaysPrompt) return;
 
         // Retrieve applicable Active Effects from the activity or parent item.
-        const applicableEffects = _getApplicableEffects(activity);
+        const applicableEffects = await _getApplicableEffects(activity);
         if (!applicableEffects.length) return;
 
         // Filter out effects that are already active on the target actor

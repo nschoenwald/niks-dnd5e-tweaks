@@ -90,8 +90,10 @@ async function _onCreateChatMessage(message) {
         }
 
         // Only process attack rolls from attack activities
-        const rollType = message.getFlag("dnd5e", "roll.type");
-        const activityType = message.getFlag("dnd5e", "activity.type");
+        const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
+        const activity = message.getAssociatedActivity?.()
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "attack") return;
         if (activityType !== "attack") return;
 
@@ -113,10 +115,13 @@ async function _onCreateChatMessage(message) {
         }
 
         // Resolve the attacker actor
-        let attackerActor = null;
-        const subjectUuid = message.getFlag("dnd5e", "subject.uuid");
-        if (subjectUuid) {
-            attackerActor = fromUuidSync(subjectUuid);
+        let attackerActor = message.getAssociatedActor?.() ?? null;
+        if (!attackerActor) {
+            const subjectUuid = message.system?.item?.uuid ?? message.getFlag("dnd5e", "subject.uuid");
+            if (subjectUuid) {
+                const doc = fromUuidSync(subjectUuid);
+                attackerActor = doc?.actor ?? doc;
+            }
         }
         if (!attackerActor && message.speaker?.actor) {
             attackerActor = game.actors.get(message.speaker.actor);
@@ -136,11 +141,15 @@ async function _onCreateChatMessage(message) {
         }
 
         // Resolve targets — prefer originating (usage) message targets, fall back to attack message
-        const originatingId = message.getFlag("dnd5e", "originatingMessage");
-        const originatingMessage = originatingId ? game.messages.get(originatingId) : null;
-        const originTargets = originatingMessage?.getFlag("dnd5e", "targets");
-        const attackTargets = message.getFlag("dnd5e", "targets");
-        const targets = originTargets || attackTargets || [];
+        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
+            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
+            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
+        const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
+        const attackTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
+        const targets = (originTargets?.length ? originTargets : null)
+            || (attackTargets?.length ? attackTargets : null)
+            || [];
 
         if (!targets.length) {
             debug("Auto-Roll Attack Damage | No targets found, skipping");
@@ -170,8 +179,9 @@ async function _onCreateChatMessage(message) {
             if (isCritical) return true;
             let ac = target.ac;
             if (ac === undefined || ac === null) {
-                if (target.uuid) {
-                    const targetDoc = fromUuidSync(target.uuid);
+                const targetUuid = target.actor ?? target.token ?? target.uuid;
+                if (targetUuid) {
+                    const targetDoc = fromUuidSync(targetUuid);
                     const targetActor = targetDoc?.actor ?? targetDoc;
                     ac = targetActor?.system?.attributes?.ac?.value;
                 }
@@ -188,35 +198,39 @@ async function _onCreateChatMessage(message) {
         debug(`Auto-Roll Attack Damage | Attack by ${attackerActor.name} (role: ${role}) hit ${hitTargets.length} target(s) (total: ${attackTotal}, crit: ${isCritical}). ${autoRoll ? "Auto-rolling" : "Prompting for"} damage.`);
 
         // Resolve the item and activity
-        const activityId = message.getFlag("dnd5e", "activity.id");
-        const itemUuid = message.getFlag("dnd5e", "item.uuid")
-            ?? originatingMessage?.getFlag("dnd5e", "item.uuid");
+        let resolvedActivity = activity;
+        if (!resolvedActivity) {
+            const activityId = message.system?.activity?.id ?? message.getFlag("dnd5e", "activity.id");
+            const itemUuid = message.system?.item?.uuid
+                ?? originatingMessage?.system?.item?.uuid
+                ?? message.getFlag("dnd5e", "item.uuid")
+                ?? originatingMessage?.getFlag("dnd5e", "item.uuid");
 
-        let activity = null;
-        if (itemUuid) {
-            const item = fromUuidSync(itemUuid);
-            activity = item?.system?.activities?.get(activityId) ?? item?.activities?.get(activityId);
+            if (itemUuid) {
+                const item = fromUuidSync(itemUuid);
+                resolvedActivity = item?.system?.activities?.get(activityId) ?? item?.activities?.get(activityId);
+            }
+
+            if (!resolvedActivity && activityId) {
+                resolvedActivity = attackerActor.items
+                    .flatMap(i => [...(i.system.activities?.values() ?? [])])
+                    .find(a => a.id === activityId);
+            }
         }
 
-        if (!activity && activityId) {
-            activity = attackerActor.items
-                .flatMap(i => [...(i.system.activities?.values() ?? [])])
-                .find(a => a.id === activityId);
-        }
-
-        if (!activity) {
+        if (!resolvedActivity) {
             debug("Auto-Roll Attack Damage | Could not resolve activity, skipping");
             return;
         }
 
         // Verify the activity has damage parts to roll
-        if (!activity.damage?.parts?.length) {
+        if (!resolvedActivity.damage?.parts?.length) {
             debug("Auto-Roll Attack Damage | Activity has no damage parts, skipping");
             return;
         }
 
         // Trigger damage roll — either prompt (configure: true) or auto-roll (configure: false)
-        await activity.rollDamage(
+        await resolvedActivity.rollDamage(
             {
                 isCritical: isCritical,
                 attack: { isCritical: isCritical },
@@ -227,8 +241,10 @@ async function _onCreateChatMessage(message) {
             },
             {
                 data: {
-                    "flags.dnd5e.originatingMessage": originatingId ?? message.id,
-                    "flags.dnd5e.targets": targets
+                    system: {
+                        origin: originatingId ?? message.id,
+                        targets: targets
+                    }
                 }
             }
         );

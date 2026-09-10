@@ -129,8 +129,10 @@ export class ProneRotation {
      * Matches prone, unconscious, and dead statuses.
      */
     _isRotationEffect(effect) {
-        if (!effect.statuses) return false;
-        return effect.statuses.has("prone") || effect.statuses.has("unconscious") || effect.statuses.has("dead");
+        const statuses = effect.statuses;
+        if (statuses?.has("prone") || statuses?.has("unconscious") || statuses?.has("dead")) return true;
+        const type = effect.system?.type;
+        return type === "prone" || type === "unconscious" || type === "dead";
     }
 }
 

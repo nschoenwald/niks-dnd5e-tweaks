@@ -96,7 +96,7 @@ class AutoClearController {
     if (!combat) return;
 
     try {
-      // Prefer the core helper if present (v13.338+)
+      // Prefer the core helper if present
       if (typeof combat.clearMovementHistories === "function") {
         await combat.clearMovementHistories();
         return;

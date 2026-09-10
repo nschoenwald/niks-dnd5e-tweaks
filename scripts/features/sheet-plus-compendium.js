@@ -378,7 +378,7 @@ function _openCompendiumBrowserForItems() {
 
     new CompendiumBrowser({
         tab: "physical"
-    }).render(true);
+    }).render({ force: true });
 }
 
 function _openCompendiumBrowserForFeatures() {
@@ -392,7 +392,7 @@ function _openCompendiumBrowserForFeatures() {
 
     new CompendiumBrowser({
         tab: "feats"
-    }).render(true);
+    }).render({ force: true });
 }
 
 function _openCompendiumBrowserForSpells(actor, level) {
@@ -441,7 +441,7 @@ function _openCompendiumBrowserForSpells(actor, level) {
                 additional
             }
         }
-    }).render(true);
+    }).render({ force: true });
 }
 
 function _getSpellLevelFromElement(target) {
