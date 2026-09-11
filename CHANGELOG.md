@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.24.3] - 2026-09-11
+### Fixed
+- **Auto-End Concentration — DnD5e 6.0 Prompt Conflict**: Suppressed the system's native `actor.promptConcentrationEnd()` chat prompt when *Auto-End Concentration* is enabled. In DnD5e 6.0.0, applying a concentration-breaking condition (e.g., incapacitated, unconscious, dead) triggers both the system's manual "End Concentration" button prompt and the module's automatic concentration removal, resulting in a redundant, non-functional button. The module now wraps `Actor.prototype.promptConcentrationEnd` at init time and returns early when the feature is active, leaving the module's own chat notification as the sole feedback.
+
 ## [14.24.2] - 2026-09-10
 ### Changed
 - **Token Resizer Default**: Set the *Token Resizer Tool* setting to disabled by default (`default: false`) across both `scripts/main.js` and the Settings Dashboard schema in `scripts/settings-app.js`, while keeping it available for users who still wish to use it.

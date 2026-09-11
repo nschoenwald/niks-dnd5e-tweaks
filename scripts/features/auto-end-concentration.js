@@ -35,6 +35,12 @@ const _debounceTimers = new Map();
  * Uses the official `actor.concentration.effects` API and canonical
  * `actor.endConcentration()` method to identify and end active concentration effects.
  *
+ * In DnD5e 6.0+, the system natively calls `actor.promptConcentrationEnd()` when
+ * a condition that implies `incapacitated` (or `dead`) is applied to a concentrating
+ * actor. This creates a manual "End Concentration" button in chat. When our auto-end
+ * feature is enabled, we suppress this system prompt to avoid a redundant message
+ * appearing alongside our own automatic handling.
+ *
  * NOTE: This feature interacts with Auto-Status at 0 HP — when that
  * feature applies "unconscious" or "dead" at 0 HP (after its own 250ms
  * delay), the resulting createActiveEffect hook will trigger this feature.
@@ -44,7 +50,27 @@ const _debounceTimers = new Map();
 export function initAutoEndConcentration() {
     Hooks.on("createActiveEffect", _onCreateActiveEffect);
     Hooks.on("updateActiveEffect", _onUpdateActiveEffect);
+    _patchPromptConcentrationEnd();
     debug("Auto-End Concentration | Initialized");
+}
+
+/**
+ * Wraps `Actor.prototype.promptConcentrationEnd` to suppress the system's
+ * native "End Concentration" prompt chat message when our auto-end feature
+ * is enabled. Without this, both systems fire simultaneously: the system
+ * creates a manual button prompt (which does nothing after we've already
+ * auto-ended concentration) and our module creates its own notification.
+ */
+function _patchPromptConcentrationEnd() {
+    const original = Actor.prototype.promptConcentrationEnd;
+    Actor.prototype.promptConcentrationEnd = async function(...args) {
+        const enabled = game.settings.get(MODULE_ID, "enableAutoEndConcentration");
+        if (enabled) {
+            debug("Auto-End Concentration | Suppressed system promptConcentrationEnd (auto-end is active)");
+            return null;
+        }
+        return original.apply(this, args);
+    };
 }
 
 /**
