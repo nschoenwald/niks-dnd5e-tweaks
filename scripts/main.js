@@ -34,6 +34,7 @@ import { onSocketMessage as damagePromptSocketMessage } from "./features/player-
 import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
 import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
+import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -89,6 +90,53 @@ Hooks.once("init", () => {
             if (value) Hooks.callAll("nd5t.updateTabTitle");
             else document.title = game.world.title;
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableRollModeHighlight", {
+        name: "Roll Mode Highlight",
+        hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button in the roll dialog so it remains visible even after interacting with other fields.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "rollModeHighlightStyle", {
+        name: "↳ Roll Mode Highlight Style",
+        hint: "Visual style for the calculated roll mode highlight. Glow: pulsing box-shadow. Border: coloured inset border. Badge: small \"Recommended\" label. Fill: translucent background fill.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "glow",
+        choices: {
+            glow: "Glow",
+            border: "Border",
+            badge: "Badge",
+            fill: "Fill",
+            none: "None"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "rollModeHighlightNormal", {
+        name: "↳ Highlight Normal Mode Too",
+        hint: "When the system's calculated mode is Normal (no advantage or disadvantage), also apply the highlight to the Normal button. Disabled by default since Normal is already the obvious default.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "rollModeHighlightColor", {
+        name: "↳ Highlight Color",
+        hint: "Custom color for the calculated roll mode highlight. Defaults to the gold tone used for the Advantage button. This overrides the per-mode color for whichever button is highlighted.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "#c9a227",
+        restricted: true
     });
 
 
@@ -826,6 +874,9 @@ Hooks.once("setup", () => {
 
     // Utilities
     initAutoUnpauseOnLogin();
+
+    // UI helpers
+    initRollModeHighlight();
 });
 
 Hooks.once("ready", async () => {

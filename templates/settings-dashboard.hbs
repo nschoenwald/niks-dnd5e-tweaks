@@ -93,6 +93,11 @@
                                 </select>
                                 {{else if (eq this.type "Number")}}
                                 <input type="number" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-number-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                {{else if (eq this.type "Color")}}
+                                <div class="nd5t-color-group">
+                                    <input type="color" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-color-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                    <input type="text" name="{{this.key}}-text" value="{{this.value}}" class="nd5t-color-text" maxlength="7" pattern="#[0-9a-fA-F]{6}" placeholder="#c9a227" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                </div>
                                 {{else if (eq this.type "FilePicker")}}
                                 <div class="nd5t-file-picker-group">
                                     <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>

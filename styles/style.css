@@ -980,6 +980,41 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     background: rgba(255, 255, 255, 0.22);
 }
 
+/* Color Picker Group (swatch + hex text) */
+.nd5t-color-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nd5t-color-input {
+    width: 36px;
+    height: 28px;
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nd5t-color-text {
+    width: 72px;
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    text-align: center;
+    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--color-text-primary, #ffffff);
+}
+
+.nd5t-color-text:focus {
+    outline: none;
+    border-color: rgba(201, 162, 39, 0.7);
+}
+
 /* No Results State */
 .nd5t-no-results {
     display: flex;
@@ -1111,4 +1146,70 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
 .hit-points .nd5t-hp-scaler-btn[disabled] {
     opacity: 0.35;
     cursor: not-allowed;
+}
+
+/* ============================================================ */
+/*  Roll Mode Highlight                                          */
+/* ============================================================ */
+
+/* Colour tokens per mode — used by all four styles */
+/* These are overridden per-button by the user-configured color  */
+/* via an inline CSS custom property (--nd5t-rmh-color).         */
+.roll-configuration [data-nd5t-calculated-mode="advantage"]    { --nd5t-rmh-color: #c9a227; }
+.roll-configuration [data-nd5t-calculated-mode="disadvantage"] { --nd5t-rmh-color: #5b8dd9; }
+.roll-configuration [data-nd5t-calculated-mode="normal"]       { --nd5t-rmh-color: #8a9bb0; }
+
+/* --- Glow (default) ------------------------------------------ */
+/* Pulsing box-shadow in the mode's colour */
+
+@keyframes nd5t-rmh-pulse {
+    0%   { box-shadow: 0 0 4px 1px var(--nd5t-rmh-color); }
+    50%  { box-shadow: 0 0 10px 3px var(--nd5t-rmh-color); }
+    100% { box-shadow: 0 0 4px 1px var(--nd5t-rmh-color); }
+}
+
+.roll-configuration.nd5t-highlight-glow [data-nd5t-calculated-mode] {
+    animation: nd5t-rmh-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 6px 2px var(--nd5t-rmh-color);
+}
+
+/* --- Border --------------------------------------------------  */
+/* Solid 2px coloured inset border, no layout shift */
+
+.roll-configuration.nd5t-highlight-border [data-nd5t-calculated-mode] {
+    box-shadow: inset 0 0 0 2px var(--nd5t-rmh-color);
+}
+
+/* --- Badge --------------------------------------------------- */
+/* Small floating "✦ Recommended" label above the button */
+
+.roll-configuration.nd5t-highlight-badge [data-nd5t-calculated-mode] {
+    position: relative;
+}
+
+.roll-configuration.nd5t-highlight-badge [data-nd5t-calculated-mode]::before {
+    content: "✦ Recommended";
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    color: var(--nd5t-rmh-color);
+    white-space: nowrap;
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* --- Fill ---------------------------------------------------- */
+/* Translucent filled background in the mode's colour */
+
+.roll-configuration.nd5t-highlight-fill [data-nd5t-calculated-mode] {
+    background: color-mix(in srgb, var(--nd5t-rmh-color) 25%, transparent);
+    color: var(--nd5t-rmh-color);
+}
+
+.roll-configuration.nd5t-highlight-fill [data-nd5t-calculated-mode]:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--nd5t-rmh-color) 40%, transparent);
 }

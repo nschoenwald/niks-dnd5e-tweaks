@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.25.0] - 2026-09-11
+### Added
+- **Roll Mode Highlight**: When the DnD5e system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for a War Caster concentration save, Disadvantage from a condition), the matching button in the roll configuration dialog is now persistently highlighted. Previously, the system marked it with `autofocus` only — which disappears the moment the player types in the situational bonus field, changes the roll mode dropdown, or otherwise interacts with the dialog.
+  - The highlight is re-applied on every render and partial re-render of the dialog, including when formulae update from form changes.
+  - Four selectable visual styles (configurable in the Settings Dashboard under **UI & Visuals → Roll Dialogs**):
+    - **Glow** *(default)*: Pulsing gold/blue box-shadow that breathes at 2s intervals.
+    - **Border**: Solid 2px coloured inset border (no layout shift).
+    - **Badge**: Small floating "✦ Recommended" label appearing above the button.
+    - **Fill**: Translucent background fill in the mode's colour with a hover-darkening effect.
+  - Color-coded per mode: gold/amber for Advantage, blue for Disadvantage, grey for Normal.
+  - Optional **"Highlight Normal Mode Too"** sub-setting (default off): applies the highlight even when the calculated mode is Normal, for consistency.
+  - Configurable **"Highlight Color"** sub-setting: a color picker with a hex text field. Defaults to `#c9a227` (gold). When set, the chosen color overrides the per-mode defaults for whichever button is highlighted. The color picker and hex field stay in sync bidirectionally in the Settings Dashboard.
+  - Can be disabled entirely. Setting the style to "None" also suppresses all highlighting without disabling the feature globally.
+
 ## [14.24.4] - 2026-09-11
 ### Fixed
 - **Death Save Prompt — DnD5e 6.0 API Compatibility**:

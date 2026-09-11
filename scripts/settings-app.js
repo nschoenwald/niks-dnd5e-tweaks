@@ -178,6 +178,56 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         ]
                     },
                     {
+                        id: "rollDialogs",
+                        title: "Roll Dialogs",
+                        icon: "fa-solid fa-dice-d20",
+                        settings: [
+                            {
+                                key: "enableRollModeHighlight",
+                                name: "Roll Mode Highlight",
+                                hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button so it remains visible after interacting with other fields in the dialog.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "rollModeHighlightStyle",
+                                name: "↳ Highlight Style",
+                                hint: "Glow: pulsing gold/blue box-shadow. Border: coloured inset border. Badge: small \"Recommended\" label above the button. Fill: translucent background fill.",
+                                type: "Select",
+                                default: "glow",
+                                choices: [
+                                    { value: "glow",   label: "Glow (pulsing shadow)" },
+                                    { value: "border", label: "Border (inset outline)" },
+                                    { value: "badge",  label: "Badge (Recommended label)" },
+                                    { value: "fill",   label: "Fill (background)" },
+                                    { value: "none",   label: "None" }
+                                ],
+                                scope: "world",
+                                parentKey: "enableRollModeHighlight"
+                            },
+                            {
+                                key: "rollModeHighlightNormal",
+                                name: "↳ Highlight Normal Mode Too",
+                                hint: "When the system's calculated mode is Normal (no advantage or disadvantage), also highlight the Normal button. Off by default since Normal is already the obvious fallback.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world",
+                                parentKey: "enableRollModeHighlight"
+                            },
+                            {
+                                key: "rollModeHighlightColor",
+                                name: "↳ Highlight Color",
+                                hint: "Custom color for the calculated roll mode highlight. Overrides the per-mode default colors. Reset to #c9a227 to restore the default gold tone.",
+                                type: "Color",
+                                default: "#c9a227",
+                                scope: "world",
+                                parentKey: "enableRollModeHighlight"
+                            }
+                        ]
+                    },
+
+                    {
                         id: "compendiumSidebar",
                         title: "Compendium Sidebar",
                         icon: "fa-solid fa-book-bookmark",
@@ -203,6 +253,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                     }
                 ]
             },
+
             {
                 id: "canvasTokens",
                 label: "Canvas & Tokens",
@@ -821,7 +872,27 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             });
         });
 
-        // 5. Import File Input Change Handler
+        // 5. Color picker ↔ hex text input sync
+        const colorGroups = html.querySelectorAll(".nd5t-color-group");
+        colorGroups.forEach(group => {
+            const colorInput = group.querySelector(".nd5t-color-input");
+            const textInput  = group.querySelector(".nd5t-color-text");
+            if (!colorInput || !textInput) return;
+
+            // Color swatch → text
+            colorInput.addEventListener("input", () => {
+                textInput.value = colorInput.value;
+            });
+
+            // Text → color swatch (only on valid 6-digit hex)
+            textInput.addEventListener("input", () => {
+                const v = textInput.value.trim();
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) colorInput.value = v;
+            });
+        });
+
+        // 6. Import File Input Change Handler
+
         const fileImportInput = html.querySelector(".nd5t-file-import-input");
         if (fileImportInput) {
             fileImportInput.addEventListener("change", (e) => this.#onFileSelected(e));
