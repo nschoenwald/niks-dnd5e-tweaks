@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.24.4] - 2026-09-11
+### Fixed
+- **Death Save Prompt — DnD5e 6.0 API Compatibility**:
+  - Corrected `actor.rollDeathSave()` call in the button click handler to pass `event` in the `dialog` argument (`rollDeathSave({}, { event })`) instead of `config`, matching the 6.0 three-argument signature `rollDeathSave(config, dialog, message)`.
+  - Updated the GM fallback death save chat card HTML to use valid DnD5e 6.0 CSS classes. Removed the defunct `.item-card` wrapper and `.card-content` div (both removed in 6.0's v3 chat stylesheet); the card now uses `.dnd5e.chat-card` with `.card-header` and `.card-buttons` which are present in the v3 styles.
+
 ## [14.24.3] - 2026-09-11
 ### Fixed
 - **Auto-End Concentration — DnD5e 6.0 Prompt Conflict**: Suppressed the system's native `actor.promptConcentrationEnd()` chat prompt when *Auto-End Concentration* is enabled. In DnD5e 6.0.0, applying a concentration-breaking condition (e.g., incapacitated, unconscious, dead) triggers both the system's manual "End Concentration" button prompt and the module's automatic concentration removal, resulting in a redundant, non-functional button. The module now wraps `Actor.prototype.promptConcentrationEnd` at init time and returns early when the feature is active, leaving the module's own chat notification as the sole feedback.

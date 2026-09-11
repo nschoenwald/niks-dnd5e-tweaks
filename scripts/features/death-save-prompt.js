@@ -50,7 +50,7 @@ function _bindDeathSaveButton(message, element) {
             const speaker = message.speaker;
             const actor = ChatMessage.getSpeakerActor(speaker);
             if (actor) {
-                await actor.rollDeathSave({ event: event });
+                await actor.rollDeathSave({}, { event });
             } else {
                 ui.notifications.warn("Could not find actor for death save roll.");
                 button.disabled = false;
@@ -145,13 +145,11 @@ async function sendDeathSavePrompt(actor) {
     const whisperUsers = [...new Set([...owners, ...gms])];
 
     const content = `
-        <div class="dnd5e chat-card item-card nd5t-death-save-prompt">
-            <header class="card-header flexrow">
+        <div class="dnd5e chat-card nd5t-death-save-prompt">
+            <header class="card-header">
                 <h3>${actor.name}</h3>
             </header>
-            <div class="card-content">
-                <p><strong>${actor.name}</strong> starts their turn with 0 HP. Please roll a Death Saving Throw.</p>
-            </div>
+            <p><strong>${actor.name}</strong> starts their turn with 0 HP. Please roll a Death Saving Throw.</p>
             <div class="card-buttons">
                 <button data-action="nd5t-death-save">
                     <i class="fas fa-dice-d20"></i> Death Saving Throw
