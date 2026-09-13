@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.26.0] - 2026-09-13
+### Added
+- **Reliable Chat Log Auto-Scroll**: Resolves issues in DnD5e 6.0+ where the chat log fails to scroll completely to the bottom when new cards appear or elements expand.
+  - Monitors the chat scroll container with a `ResizeObserver` and smart scroll-distance detection (≤ 35px).
+  - Automatically compensates for asynchronous target list generation in `<recorded-targets>` (which previously populated targets lazily via `IntersectionObserver` after Foundry's initial scroll calculation).
+  - Keeps the chat pinned to the bottom during the DnD5e 250ms CSS Grid transitions (`grid-template-rows 250ms ease`) on collapsible trays (damage application, effect application) and card descriptions.
+  - Automatically scrolls to bottom when origin messages are re-rendered and resized by child messages (e.g., via `#refreshOrigin` on attack/damage rolls).
+  - Preserves user reading position: if the user has intentionally scrolled up to read past history, auto-scrolling is suppressed.
+  - When the current user sends a chat message, the log automatically snaps to the bottom so their action is visible.
+  - Fully supports both the primary sidebar chat log (`#chat`) and detached pop-out chat windows (`ChatPopout`).
+  - Configurable in the Settings Dashboard under **User Interface & Visuals → Chat Log** (enabled by default).
+
 ## [14.25.0] - 2026-09-11
 ### Added
 - **Roll Mode Highlight**: When the DnD5e system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for a War Caster concentration save, Disadvantage from a condition), the matching button in the roll configuration dialog is now persistently highlighted. Previously, the system marked it with `autofocus` only — which disappears the moment the player types in the situational bonus field, changes the roll mode dropdown, or otherwise interacts with the dialog.

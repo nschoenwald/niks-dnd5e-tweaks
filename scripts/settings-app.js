@@ -226,6 +226,21 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             }
                         ]
                     },
+                    {
+                        id: "chatLog",
+                        title: "Chat Log",
+                        icon: "fa-solid fa-comments",
+                        settings: [
+                            {
+                                key: "enableChatScrollFix",
+                                name: "Reliable Chat Log Auto-Scroll",
+                                hint: "Fixes the chat log failing to scroll completely to the bottom when new cards appear or expand. Keeps the chat log pinned during CSS transitions, asynchronous target resolution, collapsible tray toggles, and card updates.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            }
+                        ]
+                    },
 
                     {
                         id: "compendiumSidebar",

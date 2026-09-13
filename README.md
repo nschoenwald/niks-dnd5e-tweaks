@@ -31,6 +31,11 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **NPC Hit Point Scaling Buttons**: Adds easy plus (`+`) and minus (`-`) buttons to the NPC Hit Points configuration dialog (`HitPointsConfig`) to quickly scale a creature's hit dice count up or down. Automatically recalculates the creature's average Maximum Hit Points and health formula based on size-appropriate hit die (Tiny: d4, Small: d6, Medium: d8, Large: d10, Huge: d12, Gargantuan: d20) and Constitution modifier. Hold **Shift** while clicking to scale by 5 hit dice at a time. Enabled by default.
 * **Toolbar Limitation**: When the number of buttons in a given toolbar (such as Scene Controls) exceeds a configurable value, turns the toolbar scrollable and limits the displayed buttons to that number. Does not apply to the macro hotbar.
   * *↳ Max Displayed Toolbar Buttons* — controls the maximum number of buttons displayed before turning scrollable (default: **20**).
+* **Roll Mode Highlight**: When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button in the roll dialog so it remains visible even after interacting with other fields. Supports four visual styles (Glow, Border, Badge, Fill) and customizable highlight color. Enabled by default.
+  * *↳ Highlight Style* — choose between **Glow** (default), Border, Badge, Fill, or None.
+  * *↳ Highlight Normal Mode Too* — also highlight the Normal button when Normal is the calculated mode (default: false).
+  * *↳ Highlight Color* — custom color for the highlight (defaults to gold `#c9a227`).
+* **Reliable Chat Log Auto-Scroll**: Fixes the DnD5e chat log failing to scroll to the bottom when new cards appear or elements expand. Keeps the chat log pinned to the bottom during CSS transitions, asynchronous target resolution, collapsible tray toggles, and message card updates, while preserving user reading position when scrolled up. Enabled by default.
 
 
 ### Group 2: Canvas & Tokens

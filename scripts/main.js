@@ -35,6 +35,7 @@ import { initTemplateTargeting } from "./features/template-targeting.js";
 import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
 import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
 import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
+import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/chat-scroll-fix.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -137,6 +138,20 @@ Hooks.once("init", () => {
         type: String,
         default: "#c9a227",
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableChatScrollFix", {
+        name: "Reliable Chat Log Auto-Scroll",
+        hint: "Keeps the chat log pinned to the bottom during asynchronous target list resolution, CSS transitions, collapsible tray toggles, and card updates.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) enableChatScrollFix();
+            else disableChatScrollFix();
+        }
     });
 
 
@@ -877,6 +892,7 @@ Hooks.once("setup", () => {
 
     // UI helpers
     initRollModeHighlight();
+    initChatScrollFix();
 });
 
 Hooks.once("ready", async () => {
