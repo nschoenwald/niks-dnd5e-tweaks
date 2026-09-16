@@ -521,6 +521,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 parentKey: "enablePlayerDamagePrompt"
                             },
                             {
+                                key: "enableGrazeDamagePrompt",
+                                name: "Graze Damage Prompts (Always On)",
+                                hint: "When enabled, Graze weapon mastery damage prompts are sent even if the Player Damage Prompt feature is disabled. This lets you use Graze prompts independently of all other player damage prompts.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world",
+                                parentKey: "enablePlayerDamagePrompt"
+                            },
+                            {
                                 key: "enableHealingContextMenu",
                                 name: "Healing Roll Context Menu",
                                 hint: "Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat cards.",
@@ -1041,7 +1050,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                     // Enforce permission: non-authorized users can only save client/user-scoped settings
                     if (s.scope !== "client" && s.scope !== "user" && !canModify) continue;
 
-                    let formVal = formData.object[s.key];
+                    const rawVal = formData.object[s.key];
+
+                    // If the raw value is absent (undefined), the input was disabled
+                    // (e.g. a child setting whose parent is off) and was not submitted
+                    // by the browser. Skip it entirely to preserve the stored value.
+                    if (rawVal === undefined) continue;
+
+                    let formVal = rawVal;
                     if (s.type === "Boolean") {
                         formVal = Boolean(formVal);
                     } else if (s.type === "Number") {
@@ -1049,7 +1065,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                     }
 
                     const currentVal = game.settings.get(MODULE_ID, s.key);
-                    if (formVal !== undefined && formVal !== currentVal) {
+                    if (formVal !== currentVal) {
                         await game.settings.set(MODULE_ID, s.key, formVal);
                         hasChanges = true;
                         if (s.requiresReload) requiresReload = true;

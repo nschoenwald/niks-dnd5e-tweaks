@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.26.2] - 2026-09-16
+### Fixed
+- **Prone Rotation — dnd5e 6.0 Compatibility**: Corrected three bugs introduced by dnd5e 6.0.0's condition system changes:
+  - **`effect.active` check**: The create and delete handlers previously checked `effect.disabled` to skip inactive effects. In dnd5e 6.0, condition effects can be *suppressed* (`active=false`, `disabled=false`) when the actor has condition immunity (CI) — for example a creature immune to Prone. The handlers now check `!effect.active` instead, which correctly covers both disabled and suppressed effects. Without this fix, applying a condition to an immune token would still rotate it.
+  - **Removed dead `updateActiveEffect` handler**: The previous handler watched for `changes.disabled` to detect condition toggles. In dnd5e 6.0, conditions are **never toggled via `disabled`** — they are always applied and removed by creating and deleting the `ActiveEffect` document (via `ActiveEffect5e.manageStatusEffect`). The `changes.disabled` diff never fired for any standard condition workflow, making the entire `updateActiveEffect` hook dead code. It has been removed.
+  - **`_isRotationEffect` detection order**: The detection method now checks `effect.system?.type` (the canonical dnd5e 6.0 condition identifier set by `ConditionData`) first, then falls back to the core Foundry `effect.statuses` Set. Previously, `statuses` was checked first, which works correctly but is less direct for dnd5e 6.0 condition effects.
+
+## [14.26.1] - 2026-09-16
+### Added
+- **Player Damage Prompt — Graze Prompts (Always On)**: Added a new sub-setting *"Graze Damage Prompts (Always On)"* under the Player Damage Prompt section. When enabled, Graze weapon mastery damage prompts are sent even if the main *Player Damage Prompt* setting is disabled. This allows using Graze prompts independently of all other player damage prompt functionality.
+### Fixed
+- **Settings Dashboard — Child Setting Save Bug**: Disabled child settings (greyed out because their parent is off) were previously being saved as `false` when the form was submitted, because browsers omit disabled inputs from form data and the save logic coerced the missing value to `false`. Child settings whose inputs are disabled are now skipped entirely on save, preserving their stored values.
+
 ## [14.26.0] - 2026-09-13
 ### Added
 - **Reliable Chat Log Auto-Scroll**: Resolves issues in DnD5e 6.0+ where the chat log fails to scroll completely to the bottom when new cards appear or elements expand.

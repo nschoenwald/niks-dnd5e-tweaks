@@ -269,7 +269,8 @@ async function _onCreateChatMessage_Attack(message) {
         // Check if at least one damage prompt mode is enabled
         const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
         const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
-        if (!playerPromptEnabled && !gmPromptEnabled) return;
+        const grazePromptEnabled = game.settings.get(MODULE_ID, "enableGrazeDamagePrompt");
+        if (!playerPromptEnabled && !gmPromptEnabled && !grazePromptEnabled) return;
 
         // Only process attack rolls from attack activities
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
@@ -369,11 +370,11 @@ async function _onCreateChatMessage_Attack(message) {
             const playerOwned = _isPlayerOwned(actor);
             let whisperTargets;
 
-            if (playerOwned && playerPromptEnabled) {
+            if (playerOwned && (playerPromptEnabled || grazePromptEnabled)) {
                 // Player-owned target → whisper to the owning player(s)
                 // (+ maybe GM per visibility setting).
                 whisperTargets = _getWhisperTargets(actor);
-            } else if (!playerOwned && gmPromptEnabled) {
+            } else if (!playerOwned && (gmPromptEnabled || grazePromptEnabled)) {
                 // NPC target → whisper to GM only.
                 whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
             } else {

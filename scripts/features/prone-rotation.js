@@ -3,42 +3,37 @@ import { MODULE_ID, debug } from "../main.js";
 export class ProneRotation {
     constructor() {
         this._onCreateActiveEffect = this._onCreateActiveEffect.bind(this);
-        this._onUpdateActiveEffect = this._onUpdateActiveEffect.bind(this);
         this._onDeleteActiveEffect = this._onDeleteActiveEffect.bind(this);
         this._addListeners();
     }
 
     _addListeners() {
         Hooks.on("createActiveEffect", this._onCreateActiveEffect);
-        Hooks.on("updateActiveEffect", this._onUpdateActiveEffect);
         Hooks.on("deleteActiveEffect", this._onDeleteActiveEffect);
     }
 
     destroy() {
         Hooks.off("createActiveEffect", this._onCreateActiveEffect);
-        Hooks.off("updateActiveEffect", this._onUpdateActiveEffect);
         Hooks.off("deleteActiveEffect", this._onDeleteActiveEffect);
     }
 
     async _onCreateActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
-        if (!this._isRotationEffect(effect) || effect.disabled) return;
+        // In dnd5e 6.0, conditions are never toggled via `disabled`. Instead, condition effects
+        // can be suppressed (active=false, disabled=false) when the actor has condition immunity.
+        // Checking `effect.active` correctly skips both disabled and suppressed effects.
+        if (!this._isRotationEffect(effect) || !effect.active) return;
         const actor = this._resolveActor(effect);
         if (actor) this._handleRotation(actor, true, userId);
-    }
-
-    async _onUpdateActiveEffect(effect, changes, options, userId) {
-        if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
-        if (!this._isRotationEffect(effect)) return;
-        if (changes.disabled !== undefined) {
-            const actor = this._resolveActor(effect);
-            if (actor) this._handleRotation(actor, !changes.disabled, userId);
-        }
     }
 
     async _onDeleteActiveEffect(effect, options, userId) {
         if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
         if (!this._isRotationEffect(effect)) return;
+        // Only un-rotate if the effect was actually active. Suppressed condition effects
+        // (e.g. immune actor has a condition applied externally) should not control rotation,
+        // since they never caused a rotation in the first place.
+        if (!effect.active) return;
         const actor = this._resolveActor(effect);
         if (actor) this._handleRotation(actor, false, userId);
     }
@@ -102,7 +97,9 @@ export class ProneRotation {
             if (doc.rotation === targetRotation) continue;
 
             if (!isProne) {
-                // Don't un-rotate if the actor still has another rotation-triggering status
+                // Don't un-rotate if the actor still has another rotation-triggering status.
+                // actor.statuses is re-prepared after the deletion, so it reflects the current
+                // state without the just-deleted effect.
                 if (actor.statuses?.has("prone") || actor.statuses?.has("unconscious") || actor.statuses?.has("dead")) continue;
             }
 
@@ -127,12 +124,17 @@ export class ProneRotation {
     /**
      * Check whether the effect is one that should trigger rotation.
      * Matches prone, unconscious, and dead statuses.
+     *
+     * In dnd5e 6.0+, condition ActiveEffects store their canonical status ID in
+     * `effect.system.type` (via ConditionData). We check that first, then fall
+     * back to the core Foundry `effect.statuses` Set for any non-condition effects
+     * that may carry one of these status IDs.
      */
     _isRotationEffect(effect) {
-        const statuses = effect.statuses;
-        if (statuses?.has("prone") || statuses?.has("unconscious") || statuses?.has("dead")) return true;
         const type = effect.system?.type;
-        return type === "prone" || type === "unconscious" || type === "dead";
+        if (type === "prone" || type === "unconscious" || type === "dead") return true;
+        const statuses = effect.statuses;
+        return statuses?.has("prone") || statuses?.has("unconscious") || statuses?.has("dead");
     }
 }
 
@@ -150,4 +152,3 @@ export function disableProneRotation() {
         proneRotation = null;
     }
 }
-
