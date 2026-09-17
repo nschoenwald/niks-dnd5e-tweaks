@@ -617,6 +617,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "disableActiveEffectExpiry",
+                                name: "Disable Active Effect Expiry",
+                                hint: "Completely disables and suppresses the automatic expiration and deletion of Active Effects introduced by DnD5e (out of combat, at combat end, on rest, and turn-based special expiries). Effects remain active until manually toggled or removed.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world"
                             }
                         ]
                     },

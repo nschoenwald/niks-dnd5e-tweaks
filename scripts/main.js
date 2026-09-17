@@ -22,6 +22,7 @@ import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
 import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
 import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/auto-end-class-features.js";
+import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/disable-active-effect-expiry.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
 import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
@@ -720,6 +721,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "disableActiveEffectExpiry", {
+        name: "Disable Active Effect Expiry",
+        hint: "Completely disables and suppresses the automatic expiration and deletion of Active Effects introduced by DnD5e (out of combat, at combat end, on rest, and turn-based special expiries). Effects remain active until manually toggled or removed.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true,
+        onChange: (value) => onDisableActiveEffectExpiryChanged(value)
+    });
+
     // ── Phase 4: Health Thresholds & Incapacitation ─────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
@@ -884,6 +896,7 @@ Hooks.once("setup", () => {
     initPlayerDamagePrompt();
     initAutoEndConcentration();
     initAutoEndClassFeatures();
+    initDisableActiveEffectExpiry();
     initAutoRollConcentration();
     initMageSlayerConcentration();
     initSelfEffectApplication();

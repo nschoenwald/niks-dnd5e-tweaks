@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.27.0] - 2026-09-17
+### Added
+- **Disable Active Effect Expiry (DnD5e)**: Added a new setting under *Phase 3: Concentration & Ongoing Effects* that completely disables and suppresses the automatic expiration and deletion of `ActiveEffect` documents introduced by the DnD5e system.
+  - **Suppresses Duration Expiry**: Overrides `_prepareDuration` so `duration.expired` remains `false`. This prevents Foundry core's `super.isSuppressed` from deactivating effects when their duration elapses, keeping their changes actively applied and preventing them from being moved to the "Inactive (Expired)" sheet category.
+  - **Blocks Out-of-Combat Auto-Deletion**: Intercepts `ActiveEffect5e.prototype._onUpdate` to block `data.duration.expired` from triggering the system's `this.delete()` out-of-combat deletion logic.
+  - **Blocks Combat Exit Deletion**: Wraps `Combat5e.prototype._onExit` to bypass the system's batch deletion loop that previously purged expired and special-duration effects when combatants exited combat or combat ended.
+  - **Blocks Rest & Pseudo-Expiry Deletions**: Overrides `ActiveEffect5e.prototype.isExpiryEvent` to return `false`, preventing `Actor5e.prototype._onRestCompleted` from deleting effects with rest expiries, and silencing turn-based pseudo-expiries (`sourceStart`, `targetStart`, `sourceEnd`, `targetEnd`) and time advancement.
+  - **Foundry V14 Registry Compatibility**: Bypasses `ActiveEffectRegistry` in Foundry V14 by returning `false` from `isExpiryTrackable` and setting `CONFIG.ActiveEffect.expiryAction = null` when active.
+  - **Manual Deletion Preserved**: GMs and players can still manually remove or toggle effects at any time.
+  - Defaults to disabled (`false`).
+
 ## [14.26.2] - 2026-09-16
 ### Fixed
 - **Prone Rotation — dnd5e 6.0 Compatibility**: Corrected three bugs introduced by dnd5e 6.0.0's condition system changes:
