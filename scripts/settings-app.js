@@ -232,6 +232,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         icon: "fa-solid fa-comments",
                         settings: [
                             {
+                                key: "enableChatCardStyling",
+                                name: "Chat Card Styling Improvements",
+                                hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
                                 key: "enableChatScrollFix",
                                 name: "Reliable Chat Log Auto-Scroll",
                                 hint: "Fixes the chat log failing to scroll completely to the bottom when new cards appear or expand. Keeps the chat log pinned during CSS transitions, asynchronous target resolution, collapsible tray toggles, and card updates.",

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.28.0] - 2026-09-17
+### Added
+- **DnD5e Chat Card Styling Improvements**: Introduced a new feature providing visual enhancements for DnD5e chat cards:
+  - **Action Button Prominence**: Enlarges compact chat card action buttons with increased padding, bold uppercase typography, and flexible icon scaling.
+  - **Action Text Labels**: Appends concise text labels alongside icons for all primary actions: **Atk** (Attack), **Dmg** (Damage), **Save** (Saving Throw), **Check** (Ability Check), and **Heal** (Healing).
+  - **Action Color Coding**: Distinct, theme-tailored background tints, borders, and text colors for each action type in both Light Theme (warm tints, colored borders and text) and Dark Theme (rich dark tones with matching vibrant borders and pastel text).
+  - **Prevents Awkward Wrapping**: Prevents action button rows from awkwardly breaking across lines while leaving tag rows unaffected.
+  - **Distinct Roll Cards (Attack, Damage, Save, Check, Healing)**: Major roll card types are immediately distinguishable at a glance with color-coded accent borders, background gradient tints, subtitle chip badges, themed dice-roll buttons, and prepended micro-labels:
+    - **Attack Rolls**: Royal Violet left border, violet gradient tint, themed roll button, and prepended bold **"ATK "** label (e.g. **ATK 17**).
+    - **Damage Rolls**: Flame Orange left border, orange gradient tint, themed roll button, prepended bold **"DMG "** label (e.g. **DMG 9**), and simplified subtitle chip (**DAMAGE ROLL** instead of "Attack • Damage Roll").
+    - **Saving Throws**: Cobalt Blue left border, blue gradient tint, themed roll button, and prepended bold **"SAV "** label (e.g. **SAV 14**).
+    - **Ability Checks**: Azure / Cyan left border, azure gradient tint, themed roll button, and prepended bold **"CHK "** label (e.g. **CHK 18**).
+    - **Healing Rolls**: Forest Green left border, green gradient tint, themed roll button, and prepended bold **"HEAL "** label (e.g. **HEAL 12**).
+    - **Header Subtitle Badges**: Card header subtitles are styled into crisp uppercase chip badges matching each card's theme.
+  - **Whisper / Blind / Emote Styling**: Special message types now have strong, distinct visual treatments so they are immediately recognisable:
+    - **Whisper** (`.message.whisper`): Indigo left border, indigo background tint, and the *"Whispered to"* text promoted into a bold pill badge with a 🔒 lock icon.
+    - **Blind Roll** (`.message.blind`): Fuchsia/magenta left border, magenta tint, and a **"👁 BLIND"** chip badge appended to the message header.
+    - **Emote** (`.message.emote`): Amber left border, amber tint, and a **"✦ EMOTE"** chip badge appended to the message header.
+    - All three adapt to the active Light and Dark theme via OKLCH color tokens.
+  - **Configurable**: Configurable in the Settings Dashboard under **User Interface & Visuals → Chat Log** via *Chat Card Styling Improvements* (enabled by default, supports real-time hot-toggling without page reload).
+
 ## [14.27.0] - 2026-09-17
 ### Added
 - **Disable Active Effect Expiry (DnD5e)**: Added a new setting under *Phase 3: Concentration & Ongoing Effects* that completely disables and suppresses the automatic expiration and deletion of `ActiveEffect` documents introduced by the DnD5e system.

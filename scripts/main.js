@@ -37,6 +37,7 @@ import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap
 import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
 import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
 import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/chat-scroll-fix.js";
+import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/chat-card-styling.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -152,6 +153,20 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (value) enableChatScrollFix();
             else disableChatScrollFix();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "enableChatCardStyling", {
+        name: "Chat Card Styling Improvements",
+        hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) enableChatCardStyling();
+            else disableChatCardStyling();
         }
     });
 
@@ -916,6 +931,7 @@ Hooks.once("setup", () => {
     // UI helpers
     initRollModeHighlight();
     initChatScrollFix();
+    initChatCardStyling();
 });
 
 Hooks.once("ready", async () => {
@@ -927,6 +943,7 @@ Hooks.once("ready", async () => {
     if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
+    if (game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
 
     // ── Central socket dispatcher ──────────────────────────────────────
     // A single listener routes incoming socket messages to the correct
