@@ -1745,6 +1745,25 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5
     margin-inline-end: 2px;
 }
 
+/* Sub-type Micro-Label Overrides */
+/* Death Saving Throw — overrides "SAV " on death sub-type save cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
+    .message.nd5t-save-card[data-nd5t-card-subtype="death"] button.dice-roll .result::before {
+    content: "DEATH ";
+}
+
+/* Concentration Save — overrides "SAV " on concentration sub-type save cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
+    .message.nd5t-save-card[data-nd5t-card-subtype="concentration"] button.dice-roll .result::before {
+    content: "CONC ";
+}
+
+/* Initiative Roll — overrides "CHK " on initiative sub-type check cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
+    .message.nd5t-check-card[data-nd5t-card-subtype="initiative"] button.dice-roll .result::before {
+    content: "INIT ";
+}
+
 /* ─── Whisper / Blind / Emote Message Type Badges ─── */
 
 /* ── Shared Color Tokens (Dark / default) ── */

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.28.1] - 2026-09-19
+### Added
+- **Chat Card Styling — Extended Roll Card Styling (Save, Check, Healing)**: Extended the roll card visual treatment introduced in 14.28.0 to all remaining major roll types:
+  - **Saving Throws**: Cobalt Blue 4px left border, blue gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"SAV "** micro-label (e.g. **SAV 14**).
+  - **Ability Checks**: Azure / Cyan 4px left border, azure gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"CHK "** micro-label (e.g. **CHK 18**).
+  - **Healing Rolls**: Forest Green 4px left border, green gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"HEAL "** micro-label (e.g. **HEAL 12**).
+  - **Roll Sub-Type Labels**: Roll result buttons now show precise labels for special sub-types: **"DEATH "** for death saving throws, **"CONC "** for concentration saves, and **"INIT "** for initiative rolls.
+### Fixed
+- **Chat Card Styling — Whisper/Blind/Emote Selector Bug**: Fixed a CSS bug where chaining multiple `:not()` exclusions across two lines caused a descendant combinator to be inserted by the browser. This caused whisper, blind, and emote border/tint styles to incorrectly apply to child elements inside item cards (tag pills, buttons, header text), drawing stray vertical colored bars across card contents. Consolidated all exclusions into a single comma-separated `:not()` argument list.
+- **Prone Rotation — Unlinked Token Support & Status Update/Delete Fixes**:
+  - **Unlinked Tokens (`ActorDelta`)**: Resolved an issue where tokens representing unlinked actors (such as monsters and NPCs) failed to rotate when receiving the prone condition. In Foundry VTT, effects on unlinked tokens have an `ActorDelta` parent rather than an `Actor` document; `_resolveActor` now properly resolves synthetic actors from `ActorDelta` and extracts the `TokenDocument` directly.
+  - **`updateActiveEffect` Listener Restored**: Re-added support for detecting disabled/enabled toggles and status/type changes on existing `ActiveEffect` documents so modifying effects via sheets, macros, or automation modules properly rotates or un-rotates tokens.
+  - **Deletion Timing Race Condition**: In `_handleRotation`, when un-rotating on effect deletion, remaining active rotation effects are checked directly rather than relying on `actor.statuses` before it has finished re-preparing derived data.
+  - **Robust Status Format Detection**: `_isRotationEffect` now safely accommodates both `Set` and `Array` formats for `effect.statuses`.
+
 ## [14.28.0] - 2026-09-17
 ### Added
 - **DnD5e Chat Card Styling Improvements**: Introduced a new feature providing visual enhancements for DnD5e chat cards:
@@ -9,13 +24,10 @@ All notable changes to this project will be documented in this file.
   - **Action Text Labels**: Appends concise text labels alongside icons for all primary actions: **Atk** (Attack), **Dmg** (Damage), **Save** (Saving Throw), **Check** (Ability Check), and **Heal** (Healing).
   - **Action Color Coding**: Distinct, theme-tailored background tints, borders, and text colors for each action type in both Light Theme (warm tints, colored borders and text) and Dark Theme (rich dark tones with matching vibrant borders and pastel text).
   - **Prevents Awkward Wrapping**: Prevents action button rows from awkwardly breaking across lines while leaving tag rows unaffected.
-  - **Distinct Roll Cards (Attack, Damage, Save, Check, Healing)**: Major roll card types are immediately distinguishable at a glance with color-coded accent borders, background gradient tints, subtitle chip badges, themed dice-roll buttons, and prepended micro-labels:
-    - **Attack Rolls**: Royal Violet left border, violet gradient tint, themed roll button, and prepended bold **"ATK "** label (e.g. **ATK 17**).
-    - **Damage Rolls**: Flame Orange left border, orange gradient tint, themed roll button, prepended bold **"DMG "** label (e.g. **DMG 9**), and simplified subtitle chip (**DAMAGE ROLL** instead of "Attack • Damage Roll").
-    - **Saving Throws**: Cobalt Blue left border, blue gradient tint, themed roll button, and prepended bold **"SAV "** label (e.g. **SAV 14**).
-    - **Ability Checks**: Azure / Cyan left border, azure gradient tint, themed roll button, and prepended bold **"CHK "** label (e.g. **CHK 18**).
-    - **Healing Rolls**: Forest Green left border, green gradient tint, themed roll button, and prepended bold **"HEAL "** label (e.g. **HEAL 12**).
-    - **Header Subtitle Badges**: Card header subtitles are styled into crisp uppercase chip badges matching each card's theme.
+  - **Distinct Attack & Damage Cards**: Attack rolls and damage rolls are now immediately distinguishable at a glance:
+    - **Accent Borders & Gradients**: Attack cards feature a prominent 4px solid Royal Violet left border with a subtle violet gradient tint, while Damage cards feature a Flame Orange left border with a warm orange gradient tint.
+    - **Header Subtitle Badges**: Card header subtitles are styled into crisp uppercase chip badges matching each card's theme. For damage rolls, redundant activity prefixes (e.g. "Attack • Damage Roll") are cleanly simplified to just "Damage Roll" (rendered as **DAMAGE ROLL**).
+    - **Prepended "ATK" and "DMG" Labels**: Roll result buttons clearly identify what was rolled by prepending bold **"ATK "** (e.g. **ATK 17**) and **"DMG "** (e.g. **DMG 9**) before the roll total, with theme-tailored borders and backgrounds on the dice roll button.
   - **Whisper / Blind / Emote Styling**: Special message types now have strong, distinct visual treatments so they are immediately recognisable:
     - **Whisper** (`.message.whisper`): Indigo left border, indigo background tint, and the *"Whispered to"* text promoted into a bold pill badge with a 🔒 lock icon.
     - **Blind Roll** (`.message.blind`): Fuchsia/magenta left border, magenta tint, and a **"👁 BLIND"** chip badge appended to the message header.

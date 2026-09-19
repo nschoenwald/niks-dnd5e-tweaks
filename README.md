@@ -41,7 +41,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 
 ### Group 2: Canvas & Tokens
 
-* **Auto-Rotate Prone / Unconscious / Dead Tokens**: Automatically rotates tokens 90° clockwise when the Prone, Unconscious, or Dead condition is applied, and rotates them back when all rotation-triggering conditions are removed.
+* **Auto-Rotate Prone / Unconscious / Dead Tokens**: Automatically rotates tokens 90° clockwise when the Prone, Unconscious, or Dead condition is applied, and rotates them back when all rotation-triggering conditions are removed. Fully supports both linked player tokens and unlinked monster/NPC tokens (`ActorDelta`), as well as effect updates and condition toggles in DnD5e 6.0+ and Foundry V13/V14.
 * **Token Resizer Tool**: Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan). Updates token dimensions, actor size traits, and texture scaling (properly accounting for DnD5e dynamic token rings). Disabled by default.
 * **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold **Shift** while placing to temporarily override and place freely. Cones and rays are not affected.
 * **Auto-Clear Movement History**: Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).

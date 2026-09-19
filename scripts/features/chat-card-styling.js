@@ -80,6 +80,16 @@ function _tagMessageElement(message, root) {
     if (rollType && STYLED_ROLL_TYPES.has(rollType)) {
         root.dataset.nd5tCardType = rollType;
         root.classList.add(`nd5t-${rollType}-card`);
+
+        // Tag the sub-type (e.g. "death" / "concentration" for saves, "initiative" for checks)
+        // so CSS can use [data-nd5t-card-subtype] to apply precise micro-labels without adding
+        // extra JS-only card classes.
+        const subType = message.system?.type;
+        if (subType) {
+            root.dataset.nd5tCardSubtype = subType;
+        } else {
+            delete root.dataset.nd5tCardSubtype;
+        }
     }
     _applyCardBorders(message, root);
     _formatDamageSubtitle(message, root);
@@ -136,6 +146,7 @@ export function disableChatCardStyling() {
             }
         }
         delete msgEl.dataset.nd5tCardType;
+        delete msgEl.dataset.nd5tCardSubtype;
 
         // Restore inline borders
         msgEl.style.removeProperty("border-left");
