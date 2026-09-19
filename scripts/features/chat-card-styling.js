@@ -6,7 +6,7 @@ import { MODULE_ID, log } from "../main.js";
  * excluded — they don't have distinct roll-type visuals.
  * @type {Set<string>}
  */
-const STYLED_ROLL_TYPES = new Set(["attack", "damage", "check", "save", "healing"]);
+const STYLED_ROLL_TYPES = new Set(["attack", "damage", "check", "save", "healing", "hitdie", "recharge"]);
 
 /**
  * Format the subtitle of damage rolls so it only shows "Damage Roll"
@@ -16,7 +16,8 @@ const STYLED_ROLL_TYPES = new Set(["attack", "damage", "check", "save", "healing
  * @param {HTMLElement} root
  */
 function _formatDamageSubtitle(message, root) {
-    const rollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rollType = rawRollType?.toLowerCase();
     if (rollType !== "damage") return;
     const subtitleEl = root.querySelector(".card-header .name-stacked .subtitle");
     if (!subtitleEl) return;
@@ -39,7 +40,8 @@ function _formatDamageSubtitle(message, root) {
  * @param {HTMLElement} root
  */
 function _applyCardBorders(message, root) {
-    const rollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rollType = rawRollType?.toLowerCase();
     if (!STYLED_ROLL_TYPES.has(rollType)) return;
 
     // Guard: only stash the original border-color once so double-hook calls don't overwrite it.
@@ -75,7 +77,8 @@ function _applyCardBorders(message, root) {
  */
 function _tagMessageElement(message, root) {
     if (!root) return;
-    const rollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rollType = rawRollType?.toLowerCase();
     // Only add styled classes for known roll types — avoids nd5t-base-card, nd5t-usage-card, etc.
     if (rollType && STYLED_ROLL_TYPES.has(rollType)) {
         root.dataset.nd5tCardType = rollType;

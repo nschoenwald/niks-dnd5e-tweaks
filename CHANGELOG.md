@@ -4,10 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [14.28.1] - 2026-09-19
 ### Added
-- **Chat Card Styling — Extended Roll Card Styling (Save, Check, Healing)**: Extended the roll card visual treatment introduced in 14.28.0 to all remaining major roll types:
+- **Chat Card Styling — Extended Roll Card Styling (Save, Check, Healing, Hit Dice, Recharge)**: Extended the roll card visual treatment introduced in 14.28.0 to all remaining roll types:
   - **Saving Throws**: Cobalt Blue 4px left border, blue gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"SAV "** micro-label (e.g. **SAV 14**).
   - **Ability Checks**: Azure / Cyan 4px left border, azure gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"CHK "** micro-label (e.g. **CHK 18**).
   - **Healing Rolls**: Forest Green 4px left border, green gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"HEAL "** micro-label (e.g. **HEAL 12**).
+  - **Hit Dice Recovery Rolls**: Sage Green 4px left border, sage gradient tint, themed dice-roll button, chip badge for "ROLL HIT DICE" (supporting dnd5e flavor text), and prepended bold **"HD "** micro-label (e.g. **HD 7**).
+  - **Monster Ability Recharge Rolls**: Electric Gold 4px left border, gold gradient tint, themed dice-roll button, subtitle chip badge, and prepended bold **"RCH "** micro-label (e.g. **RCH 5**).
   - **Roll Sub-Type Labels**: Roll result buttons now show precise labels for special sub-types: **"DEATH "** for death saving throws, **"CONC "** for concentration saves, and **"INIT "** for initiative rolls.
 ### Fixed
 - **Chat Card Styling — Whisper/Blind/Emote Selector Bug**: Fixed a CSS bug where chaining multiple `:not()` exclusions across two lines caused a descendant combinator to be inserted by the browser. This caused whisper, blind, and emote border/tint styles to incorrectly apply to child elements inside item cards (tag pills, buttons, header text), drawing stray vertical colored bars across card contents. Consolidated all exclusions into a single comma-separated `:not()` argument list.
