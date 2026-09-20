@@ -215,21 +215,65 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     margin-right: 2px;
 }
 
-.nd5t-dmg-acid { color: #84cc16; }
-.nd5t-dmg-bludgeoning { color: #a3a3a3; }
-.nd5t-dmg-cold { color: #38bdf8; }
-.nd5t-dmg-fire { color: #f97316; }
-.nd5t-dmg-force { color: #a855f7; }
-.nd5t-dmg-lightning { color: #eab308; }
-.nd5t-dmg-necrotic { color: #94a3b8; }
-.nd5t-dmg-piercing { color: #cbd5e1; }
-.nd5t-dmg-poison { color: #22c55e; }
-.nd5t-dmg-psychic { color: #ec4899; }
-.nd5t-dmg-radiant { color: #f59e0b; }
-.nd5t-dmg-slashing { color: #ef4444; }
-.nd5t-dmg-thunder { color: #60a5fa; }
-.nd5t-dmg-healing { color: #10b981; }
-.nd5t-dmg-temphp { color: #14b8a6; }
+.nd5t-dmg-acid {
+    color: #84cc16;
+}
+
+.nd5t-dmg-bludgeoning {
+    color: #a3a3a3;
+}
+
+.nd5t-dmg-cold {
+    color: #38bdf8;
+}
+
+.nd5t-dmg-fire {
+    color: #f97316;
+}
+
+.nd5t-dmg-force {
+    color: #a855f7;
+}
+
+.nd5t-dmg-lightning {
+    color: #eab308;
+}
+
+.nd5t-dmg-necrotic {
+    color: #94a3b8;
+}
+
+.nd5t-dmg-piercing {
+    color: #cbd5e1;
+}
+
+.nd5t-dmg-poison {
+    color: #22c55e;
+}
+
+.nd5t-dmg-psychic {
+    color: #ec4899;
+}
+
+.nd5t-dmg-radiant {
+    color: #f59e0b;
+}
+
+.nd5t-dmg-slashing {
+    color: #ef4444;
+}
+
+.nd5t-dmg-thunder {
+    color: #60a5fa;
+}
+
+.nd5t-dmg-healing {
+    color: #10b981;
+}
+
+.nd5t-dmg-temphp {
+    color: #14b8a6;
+}
 
 /* ── Combat Experience Tracker ────────────────────────────────────── */
 
@@ -910,17 +954,17 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-.nd5t-switch input:checked + .nd5t-slider {
+.nd5t-switch input:checked+.nd5t-slider {
     background-color: #22c55e;
     border-color: #4ade80;
 }
 
-.nd5t-switch input:checked + .nd5t-slider:before {
+.nd5t-switch input:checked+.nd5t-slider:before {
     transform: translateX(18px);
     background-color: #ffffff;
 }
 
-.nd5t-switch input:focus + .nd5t-slider {
+.nd5t-switch input:focus+.nd5t-slider {
     box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
 }
 
@@ -1155,17 +1199,33 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
 /* Colour tokens per mode — used by all four styles */
 /* These are overridden per-button by the user-configured color  */
 /* via an inline CSS custom property (--nd5t-rmh-color).         */
-.roll-configuration [data-nd5t-calculated-mode="advantage"]    { --nd5t-rmh-color: #c9a227; }
-.roll-configuration [data-nd5t-calculated-mode="disadvantage"] { --nd5t-rmh-color: #5b8dd9; }
-.roll-configuration [data-nd5t-calculated-mode="normal"]       { --nd5t-rmh-color: #8a9bb0; }
+.roll-configuration [data-nd5t-calculated-mode="advantage"] {
+    --nd5t-rmh-color: #c9a227;
+}
+
+.roll-configuration [data-nd5t-calculated-mode="disadvantage"] {
+    --nd5t-rmh-color: #5b8dd9;
+}
+
+.roll-configuration [data-nd5t-calculated-mode="normal"] {
+    --nd5t-rmh-color: #8a9bb0;
+}
 
 /* --- Glow (default) ------------------------------------------ */
 /* Pulsing box-shadow in the mode's colour */
 
 @keyframes nd5t-rmh-pulse {
-    0%   { box-shadow: 0 0 4px 1px var(--nd5t-rmh-color); }
-    50%  { box-shadow: 0 0 10px 3px var(--nd5t-rmh-color); }
-    100% { box-shadow: 0 0 4px 1px var(--nd5t-rmh-color); }
+    0% {
+        box-shadow: 0 0 4px 1px var(--nd5t-rmh-color);
+    }
+
+    50% {
+        box-shadow: 0 0 10px 3px var(--nd5t-rmh-color);
+    }
+
+    100% {
+        box-shadow: 0 0 4px 1px var(--nd5t-rmh-color);
+    }
 }
 
 .roll-configuration.nd5t-highlight-glow [data-nd5t-calculated-mode] {
@@ -1292,10 +1352,13 @@ body.nd5t-chat-card-styling .theme-light .chat-popout .message.compact .icon-row
 body.nd5t-chat-card-styling.theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
 body.nd5t-chat-card-styling.theme-light .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-light .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"] {
-    --button-background-color: oklch(96% 0.015 295);   /* soft violet tint */
-    --button-border-color:     oklch(52% 0.15 295);    /* royal violet */
+    --button-background-color: oklch(96% 0.015 295);
+    /* soft violet tint */
+    --button-border-color: oklch(52% 0.15 295);
+    /* royal violet */
     --button-hover-border-color: oklch(38% 0.17 295);
-    color: oklch(35% 0.16 295);                        /* dark violet text */
+    color: oklch(35% 0.16 295);
+    /* dark violet text */
 }
 
 body.nd5t-chat-card-styling .theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
@@ -1303,10 +1366,13 @@ body.nd5t-chat-card-styling .theme-light .chat-popout .message.compact .icon-row
 body.nd5t-chat-card-styling.theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
 body.nd5t-chat-card-styling.theme-light .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-light .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"] {
-    --button-background-color: oklch(96% 0.02 50);     /* warm flame orange tint */
-    --button-border-color:     oklch(58% 0.15 50);     /* flame orange */
+    --button-background-color: oklch(96% 0.02 50);
+    /* warm flame orange tint */
+    --button-border-color: oklch(58% 0.15 50);
+    /* flame orange */
     --button-hover-border-color: oklch(45% 0.16 50);
-    color: oklch(38% 0.14 50);                         /* dark flame orange text */
+    color: oklch(38% 0.14 50);
+    /* dark flame orange text */
 }
 
 body.nd5t-chat-card-styling .theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
@@ -1314,10 +1380,13 @@ body.nd5t-chat-card-styling .theme-light .chat-popout .message.compact .icon-row
 body.nd5t-chat-card-styling.theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
 body.nd5t-chat-card-styling.theme-light .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-light .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"] {
-    --button-background-color: oklch(96% 0.018 240);  /* cool blue tint */
-    --button-border-color:     oklch(52% 0.1 240);    /* medium blue */
+    --button-background-color: oklch(96% 0.018 240);
+    /* cool blue tint */
+    --button-border-color: oklch(52% 0.1 240);
+    /* medium blue */
     --button-hover-border-color: oklch(40% 0.12 240);
-    color: oklch(35% 0.12 240);                       /* dark blue text */
+    color: oklch(35% 0.12 240);
+    /* dark blue text */
 }
 
 body.nd5t-chat-card-styling .theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
@@ -1325,10 +1394,13 @@ body.nd5t-chat-card-styling .theme-light .chat-popout .message.compact .icon-row
 body.nd5t-chat-card-styling.theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
 body.nd5t-chat-card-styling.theme-light .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-light .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"] {
-    --button-background-color: oklch(96% 0.018 195);  /* soft teal tint */
-    --button-border-color:     oklch(50% 0.12 195);   /* teal border */
-    --button-hover-border-color: oklch(38% 0.14 195);
-    color: oklch(32% 0.12 195);                       /* dark teal text */
+    --button-background-color: oklch(96% 0.018 75);
+    /* soft bronze tint */
+    --button-border-color: oklch(52% 0.12 75);
+    /* bronze border */
+    --button-hover-border-color: oklch(40% 0.13 75);
+    color: oklch(34% 0.12 75);
+    /* dark bronze text */
 }
 
 body.nd5t-chat-card-styling .theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
@@ -1336,8 +1408,9 @@ body.nd5t-chat-card-styling .theme-light .chat-popout .message.compact .icon-row
 body.nd5t-chat-card-styling.theme-light .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
 body.nd5t-chat-card-styling.theme-light .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-light .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"] {
-    --button-background-color: oklch(96% 0.02 145);   /* green tint */
-    --button-border-color:     oklch(45% 0.1 145);
+    --button-background-color: oklch(96% 0.02 145);
+    /* green tint */
+    --button-border-color: oklch(45% 0.1 145);
     --button-hover-border-color: oklch(35% 0.12 145);
     color: oklch(30% 0.1 145);
 }
@@ -1350,10 +1423,13 @@ body.nd5t-chat-card-styling.theme-dark .chat-log .message.compact .icon-row>ul>l
 body.nd5t-chat-card-styling.theme-dark .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
 body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.theme-light) .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"] {
-    --button-background-color: oklch(22% 0.06 295);    /* dark violet bg */
-    --button-border-color:     oklch(48% 0.16 295);    /* violet border */
+    --button-background-color: oklch(22% 0.06 295);
+    /* dark violet bg */
+    --button-border-color: oklch(48% 0.16 295);
+    /* violet border */
     --button-hover-border-color: oklch(65% 0.16 295);
-    color: oklch(80% 0.12 295);                        /* light lavender text */
+    color: oklch(80% 0.12 295);
+    /* light lavender text */
 }
 
 body.nd5t-chat-card-styling .theme-dark .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
@@ -1362,10 +1438,13 @@ body.nd5t-chat-card-styling.theme-dark .chat-log .message.compact .icon-row>ul>l
 body.nd5t-chat-card-styling.theme-dark .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
 body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.theme-light) .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"] {
-    --button-background-color: oklch(22% 0.06 50);     /* dark flame orange bg */
-    --button-border-color:     oklch(50% 0.16 50);     /* flame orange border */
+    --button-background-color: oklch(22% 0.06 50);
+    /* dark flame orange bg */
+    --button-border-color: oklch(50% 0.16 50);
+    /* flame orange border */
     --button-hover-border-color: oklch(68% 0.16 50);
-    color: oklch(80% 0.12 50);                         /* radiant orange text */
+    color: oklch(80% 0.12 50);
+    /* radiant orange text */
 }
 
 body.nd5t-chat-card-styling .theme-dark .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
@@ -1374,10 +1453,13 @@ body.nd5t-chat-card-styling.theme-dark .chat-log .message.compact .icon-row>ul>l
 body.nd5t-chat-card-styling.theme-dark .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
 body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.theme-light) .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"] {
-    --button-background-color: oklch(22% 0.04 240);   /* dark blue bg */
-    --button-border-color:     oklch(45% 0.1 240);    /* blue border */
+    --button-background-color: oklch(22% 0.04 240);
+    /* dark blue bg */
+    --button-border-color: oklch(45% 0.1 240);
+    /* blue border */
     --button-hover-border-color: oklch(62% 0.12 240);
-    color: oklch(75% 0.1 240);                        /* light blue text */
+    color: oklch(75% 0.1 240);
+    /* light blue text */
 }
 
 body.nd5t-chat-card-styling .theme-dark .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
@@ -1386,10 +1468,13 @@ body.nd5t-chat-card-styling.theme-dark .chat-log .message.compact .icon-row>ul>l
 body.nd5t-chat-card-styling.theme-dark .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
 body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.theme-light) .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"] {
-    --button-background-color: oklch(22% 0.05 195);   /* dark teal bg */
-    --button-border-color:     oklch(45% 0.12 195);   /* teal border */
-    --button-hover-border-color: oklch(62% 0.14 195);
-    color: oklch(76% 0.12 195);                       /* light teal text */
+    --button-background-color: oklch(22% 0.05 75);
+    /* dark bronze bg */
+    --button-border-color: oklch(48% 0.12 75);
+    /* bronze border */
+    --button-hover-border-color: oklch(65% 0.13 75);
+    color: oklch(80% 0.11 75);
+    /* warm bronze text */
 }
 
 body.nd5t-chat-card-styling .theme-dark .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
@@ -1398,8 +1483,9 @@ body.nd5t-chat-card-styling.theme-dark .chat-log .message.compact .icon-row>ul>l
 body.nd5t-chat-card-styling.theme-dark .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
 body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.theme-light) .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"] {
-    --button-background-color: oklch(20% 0.05 145);   /* dark green bg */
-    --button-border-color:     oklch(40% 0.1 145);
+    --button-background-color: oklch(20% 0.05 145);
+    /* dark green bg */
+    --button-border-color: oklch(40% 0.1 145);
     --button-hover-border-color: oklch(58% 0.12 145);
     color: oklch(72% 0.1 145);
 }
@@ -1408,136 +1494,136 @@ body.nd5t-chat-card-styling:not(.theme-light) :is(.chat-log, .chat-popout):not(.
 
 /* Default / Dark Theme Color Tokens */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message {
-    --nd5t-attack-border-color:  oklch(50% 0.17 295);
-    --nd5t-attack-tint-color:    oklch(45% 0.15 295 / 0.22);
-    --nd5t-attack-label-color:   oklch(78% 0.14 295);
-    --nd5t-attack-btn-border:    oklch(40% 0.12 295);
-    --nd5t-attack-btn-bg:        oklch(20% 0.05 295);
-    --nd5t-attack-badge-bg:      oklch(24% 0.07 295);
-    --nd5t-attack-badge-border:  oklch(48% 0.15 295);
-    --nd5t-attack-badge-color:   oklch(82% 0.12 295);
+    --nd5t-attack-border-color: oklch(50% 0.17 295);
+    --nd5t-attack-tint-color: oklch(45% 0.15 295 / 0.22);
+    --nd5t-attack-label-color: oklch(78% 0.14 295);
+    --nd5t-attack-btn-border: oklch(40% 0.12 295);
+    --nd5t-attack-btn-bg: oklch(20% 0.05 295);
+    --nd5t-attack-badge-bg: oklch(24% 0.07 295);
+    --nd5t-attack-badge-border: oklch(48% 0.15 295);
+    --nd5t-attack-badge-color: oklch(82% 0.12 295);
 
-    --nd5t-damage-border-color:  oklch(54% 0.17 50);
-    --nd5t-damage-tint-color:    oklch(45% 0.15 50 / 0.22);
-    --nd5t-damage-label-color:   oklch(78% 0.13 50);
-    --nd5t-damage-btn-border:    oklch(42% 0.12 50);
-    --nd5t-damage-btn-bg:        oklch(20% 0.05 50);
-    --nd5t-damage-badge-bg:      oklch(24% 0.07 50);
-    --nd5t-damage-badge-border:  oklch(50% 0.15 50);
-    --nd5t-damage-badge-color:   oklch(82% 0.11 50);
+    --nd5t-damage-border-color: oklch(54% 0.17 50);
+    --nd5t-damage-tint-color: oklch(45% 0.15 50 / 0.22);
+    --nd5t-damage-label-color: oklch(78% 0.13 50);
+    --nd5t-damage-btn-border: oklch(42% 0.12 50);
+    --nd5t-damage-btn-bg: oklch(20% 0.05 50);
+    --nd5t-damage-badge-bg: oklch(24% 0.07 50);
+    --nd5t-damage-badge-border: oklch(50% 0.15 50);
+    --nd5t-damage-badge-color: oklch(82% 0.11 50);
 
-    --nd5t-save-border-color:    oklch(48% 0.12 240);
-    --nd5t-save-tint-color:      oklch(42% 0.10 240 / 0.22);
-    --nd5t-save-label-color:     oklch(75% 0.10 240);
-    --nd5t-save-btn-border:      oklch(38% 0.10 240);
-    --nd5t-save-btn-bg:          oklch(20% 0.04 240);
-    --nd5t-save-badge-bg:        oklch(22% 0.06 240);
-    --nd5t-save-badge-border:    oklch(45% 0.10 240);
-    --nd5t-save-badge-color:     oklch(78% 0.10 240);
+    --nd5t-save-border-color: oklch(48% 0.12 240);
+    --nd5t-save-tint-color: oklch(42% 0.10 240 / 0.22);
+    --nd5t-save-label-color: oklch(75% 0.10 240);
+    --nd5t-save-btn-border: oklch(38% 0.10 240);
+    --nd5t-save-btn-bg: oklch(20% 0.04 240);
+    --nd5t-save-badge-bg: oklch(22% 0.06 240);
+    --nd5t-save-badge-border: oklch(45% 0.10 240);
+    --nd5t-save-badge-color: oklch(78% 0.10 240);
 
-    --nd5t-check-border-color:   oklch(48% 0.13 195);
-    --nd5t-check-tint-color:     oklch(42% 0.11 195 / 0.22);
-    --nd5t-check-label-color:    oklch(75% 0.12 195);
-    --nd5t-check-btn-border:     oklch(38% 0.12 195);
-    --nd5t-check-btn-bg:         oklch(20% 0.05 195);
-    --nd5t-check-badge-bg:       oklch(22% 0.06 195);
-    --nd5t-check-badge-border:   oklch(45% 0.12 195);
-    --nd5t-check-badge-color:    oklch(78% 0.12 195);
+    --nd5t-check-border-color: oklch(54% 0.13 75);
+    --nd5t-check-tint-color: oklch(44% 0.11 75 / 0.20);
+    --nd5t-check-label-color: oklch(80% 0.12 75);
+    --nd5t-check-btn-border: oklch(44% 0.11 75);
+    --nd5t-check-btn-bg: oklch(20% 0.04 75);
+    --nd5t-check-badge-bg: oklch(24% 0.06 75);
+    --nd5t-check-badge-border: oklch(50% 0.12 75);
+    --nd5t-check-badge-color: oklch(82% 0.11 75);
 
     --nd5t-healing-border-color: oklch(44% 0.12 145);
-    --nd5t-healing-tint-color:   oklch(38% 0.10 145 / 0.22);
-    --nd5t-healing-label-color:  oklch(72% 0.10 145);
-    --nd5t-healing-btn-border:   oklch(36% 0.10 145);
-    --nd5t-healing-btn-bg:       oklch(18% 0.05 145);
-    --nd5t-healing-badge-bg:     oklch(20% 0.06 145);
+    --nd5t-healing-tint-color: oklch(38% 0.10 145 / 0.22);
+    --nd5t-healing-label-color: oklch(72% 0.10 145);
+    --nd5t-healing-btn-border: oklch(36% 0.10 145);
+    --nd5t-healing-btn-bg: oklch(18% 0.05 145);
+    --nd5t-healing-badge-bg: oklch(20% 0.06 145);
     --nd5t-healing-badge-border: oklch(42% 0.10 145);
-    --nd5t-healing-badge-color:  oklch(75% 0.10 145);
+    --nd5t-healing-badge-color: oklch(75% 0.10 145);
 
-    --nd5t-hitdie-border-color:  oklch(46% 0.12 155);
-    --nd5t-hitdie-tint-color:    oklch(40% 0.10 155 / 0.22);
-    --nd5t-hitdie-label-color:   oklch(74% 0.11 155);
-    --nd5t-hitdie-btn-border:    oklch(38% 0.10 155);
-    --nd5t-hitdie-btn-bg:        oklch(18% 0.05 155);
-    --nd5t-hitdie-badge-bg:      oklch(20% 0.06 155);
-    --nd5t-hitdie-badge-border:  oklch(44% 0.10 155);
-    --nd5t-hitdie-badge-color:   oklch(76% 0.11 155);
+    --nd5t-hitdie-border-color: oklch(46% 0.12 155);
+    --nd5t-hitdie-tint-color: oklch(40% 0.10 155 / 0.22);
+    --nd5t-hitdie-label-color: oklch(74% 0.11 155);
+    --nd5t-hitdie-btn-border: oklch(38% 0.10 155);
+    --nd5t-hitdie-btn-bg: oklch(18% 0.05 155);
+    --nd5t-hitdie-badge-bg: oklch(20% 0.06 155);
+    --nd5t-hitdie-badge-border: oklch(44% 0.10 155);
+    --nd5t-hitdie-badge-color: oklch(76% 0.11 155);
 
-    --nd5t-recharge-border-color:  oklch(56% 0.16 90);
-    --nd5t-recharge-tint-color:    oklch(46% 0.13 90 / 0.22);
-    --nd5t-recharge-label-color:   oklch(80% 0.14 90);
-    --nd5t-recharge-btn-border:    oklch(44% 0.12 90);
-    --nd5t-recharge-btn-bg:        oklch(20% 0.05 90);
-    --nd5t-recharge-badge-bg:      oklch(24% 0.07 90);
-    --nd5t-recharge-badge-border:  oklch(52% 0.14 90);
-    --nd5t-recharge-badge-color:   oklch(84% 0.12 90);
+    --nd5t-recharge-border-color: oklch(56% 0.16 90);
+    --nd5t-recharge-tint-color: oklch(46% 0.13 90 / 0.22);
+    --nd5t-recharge-label-color: oklch(80% 0.14 90);
+    --nd5t-recharge-btn-border: oklch(44% 0.12 90);
+    --nd5t-recharge-btn-bg: oklch(20% 0.05 90);
+    --nd5t-recharge-badge-bg: oklch(24% 0.07 90);
+    --nd5t-recharge-badge-border: oklch(52% 0.14 90);
+    --nd5t-recharge-badge-color: oklch(84% 0.12 90);
 }
 
 /* Light Theme Color Tokens */
 body.nd5t-chat-card-styling :is(.theme-light, .theme-light *) :is(#chat-log, .chat-log, .chat-popout) .message,
 body.nd5t-chat-card-styling.theme-light :is(#chat-log, .chat-log, .chat-popout) .message,
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-light .message {
-    --nd5t-attack-border-color:  oklch(52% 0.15 295);
-    --nd5t-attack-tint-color:    oklch(60% 0.18 295 / 0.09);
-    --nd5t-attack-label-color:   oklch(38% 0.16 295);
-    --nd5t-attack-btn-border:    oklch(75% 0.09 295);
-    --nd5t-attack-btn-bg:        oklch(97% 0.015 295);
-    --nd5t-attack-badge-bg:      oklch(94% 0.025 295);
-    --nd5t-attack-badge-border:  oklch(65% 0.13 295);
-    --nd5t-attack-badge-color:   oklch(35% 0.15 295);
+    --nd5t-attack-border-color: oklch(52% 0.15 295);
+    --nd5t-attack-tint-color: oklch(60% 0.18 295 / 0.09);
+    --nd5t-attack-label-color: oklch(38% 0.16 295);
+    --nd5t-attack-btn-border: oklch(75% 0.09 295);
+    --nd5t-attack-btn-bg: oklch(97% 0.015 295);
+    --nd5t-attack-badge-bg: oklch(94% 0.025 295);
+    --nd5t-attack-badge-border: oklch(65% 0.13 295);
+    --nd5t-attack-badge-color: oklch(35% 0.15 295);
 
-    --nd5t-damage-border-color:  oklch(58% 0.15 50);
-    --nd5t-damage-tint-color:    oklch(65% 0.18 50 / 0.11);
-    --nd5t-damage-label-color:   oklch(40% 0.15 50);
-    --nd5t-damage-btn-border:    oklch(75% 0.09 50);
-    --nd5t-damage-btn-bg:        oklch(97% 0.02 50);
-    --nd5t-damage-badge-bg:      oklch(94% 0.035 50);
-    --nd5t-damage-badge-border:  oklch(65% 0.13 50);
-    --nd5t-damage-badge-color:   oklch(36% 0.14 50);
+    --nd5t-damage-border-color: oklch(58% 0.15 50);
+    --nd5t-damage-tint-color: oklch(65% 0.18 50 / 0.11);
+    --nd5t-damage-label-color: oklch(40% 0.15 50);
+    --nd5t-damage-btn-border: oklch(75% 0.09 50);
+    --nd5t-damage-btn-bg: oklch(97% 0.02 50);
+    --nd5t-damage-badge-bg: oklch(94% 0.035 50);
+    --nd5t-damage-badge-border: oklch(65% 0.13 50);
+    --nd5t-damage-badge-color: oklch(36% 0.14 50);
 
-    --nd5t-save-border-color:    oklch(50% 0.10 240);
-    --nd5t-save-tint-color:      oklch(58% 0.12 240 / 0.09);
-    --nd5t-save-label-color:     oklch(35% 0.12 240);
-    --nd5t-save-btn-border:      oklch(70% 0.08 240);
-    --nd5t-save-btn-bg:          oklch(97% 0.015 240);
-    --nd5t-save-badge-bg:        oklch(94% 0.025 240);
-    --nd5t-save-badge-border:    oklch(62% 0.10 240);
-    --nd5t-save-badge-color:     oklch(32% 0.12 240);
+    --nd5t-save-border-color: oklch(50% 0.10 240);
+    --nd5t-save-tint-color: oklch(58% 0.12 240 / 0.09);
+    --nd5t-save-label-color: oklch(35% 0.12 240);
+    --nd5t-save-btn-border: oklch(70% 0.08 240);
+    --nd5t-save-btn-bg: oklch(97% 0.015 240);
+    --nd5t-save-badge-bg: oklch(94% 0.025 240);
+    --nd5t-save-badge-border: oklch(62% 0.10 240);
+    --nd5t-save-badge-color: oklch(32% 0.12 240);
 
-    --nd5t-check-border-color:   oklch(50% 0.12 195);
-    --nd5t-check-tint-color:     oklch(58% 0.14 195 / 0.09);
-    --nd5t-check-label-color:    oklch(32% 0.12 195);
-    --nd5t-check-btn-border:     oklch(72% 0.09 195);
-    --nd5t-check-btn-bg:         oklch(97% 0.015 195);
-    --nd5t-check-badge-bg:       oklch(94% 0.025 195);
-    --nd5t-check-badge-border:   oklch(62% 0.12 195);
-    --nd5t-check-badge-color:    oklch(30% 0.12 195);
+    --nd5t-check-border-color: oklch(52% 0.12 75);
+    --nd5t-check-tint-color: oklch(62% 0.13 75 / 0.10);
+    --nd5t-check-label-color: oklch(35% 0.12 75);
+    --nd5t-check-btn-border: oklch(72% 0.08 75);
+    --nd5t-check-btn-bg: oklch(97% 0.015 75);
+    --nd5t-check-badge-bg: oklch(94% 0.025 75);
+    --nd5t-check-badge-border: oklch(62% 0.10 75);
+    --nd5t-check-badge-color: oklch(32% 0.11 75);
 
     --nd5t-healing-border-color: oklch(44% 0.12 145);
-    --nd5t-healing-tint-color:   oklch(55% 0.14 145 / 0.10);
-    --nd5t-healing-label-color:  oklch(30% 0.10 145);
-    --nd5t-healing-btn-border:   oklch(68% 0.08 145);
-    --nd5t-healing-btn-bg:       oklch(97% 0.015 145);
-    --nd5t-healing-badge-bg:     oklch(94% 0.030 145);
+    --nd5t-healing-tint-color: oklch(55% 0.14 145 / 0.10);
+    --nd5t-healing-label-color: oklch(30% 0.10 145);
+    --nd5t-healing-btn-border: oklch(68% 0.08 145);
+    --nd5t-healing-btn-bg: oklch(97% 0.015 145);
+    --nd5t-healing-badge-bg: oklch(94% 0.030 145);
     --nd5t-healing-badge-border: oklch(58% 0.10 145);
-    --nd5t-healing-badge-color:  oklch(28% 0.10 145);
+    --nd5t-healing-badge-color: oklch(28% 0.10 145);
 
-    --nd5t-hitdie-border-color:  oklch(46% 0.12 155);
-    --nd5t-hitdie-tint-color:    oklch(56% 0.13 155 / 0.10);
-    --nd5t-hitdie-label-color:   oklch(30% 0.11 155);
-    --nd5t-hitdie-btn-border:    oklch(68% 0.08 155);
-    --nd5t-hitdie-btn-bg:        oklch(97% 0.015 155);
-    --nd5t-hitdie-badge-bg:      oklch(94% 0.030 155);
-    --nd5t-hitdie-badge-border:  oklch(58% 0.10 155);
-    --nd5t-hitdie-badge-color:   oklch(28% 0.11 155);
+    --nd5t-hitdie-border-color: oklch(46% 0.12 155);
+    --nd5t-hitdie-tint-color: oklch(56% 0.13 155 / 0.10);
+    --nd5t-hitdie-label-color: oklch(30% 0.11 155);
+    --nd5t-hitdie-btn-border: oklch(68% 0.08 155);
+    --nd5t-hitdie-btn-bg: oklch(97% 0.015 155);
+    --nd5t-hitdie-badge-bg: oklch(94% 0.030 155);
+    --nd5t-hitdie-badge-border: oklch(58% 0.10 155);
+    --nd5t-hitdie-badge-color: oklch(28% 0.11 155);
 
-    --nd5t-recharge-border-color:  oklch(54% 0.15 90);
-    --nd5t-recharge-tint-color:    oklch(65% 0.16 90 / 0.11);
-    --nd5t-recharge-label-color:   oklch(38% 0.14 90);
-    --nd5t-recharge-btn-border:    oklch(74% 0.09 90);
-    --nd5t-recharge-btn-bg:        oklch(97% 0.02 90);
-    --nd5t-recharge-badge-bg:      oklch(94% 0.035 90);
-    --nd5t-recharge-badge-border:  oklch(62% 0.13 90);
-    --nd5t-recharge-badge-color:   oklch(32% 0.13 90);
+    --nd5t-recharge-border-color: oklch(54% 0.15 90);
+    --nd5t-recharge-tint-color: oklch(65% 0.16 90 / 0.11);
+    --nd5t-recharge-label-color: oklch(38% 0.14 90);
+    --nd5t-recharge-btn-border: oklch(74% 0.09 90);
+    --nd5t-recharge-btn-bg: oklch(97% 0.02 90);
+    --nd5t-recharge-badge-bg: oklch(94% 0.035 90);
+    --nd5t-recharge-badge-border: oklch(62% 0.13 90);
+    --nd5t-recharge-badge-color: oklch(32% 0.13 90);
 }
 
 /* Attack Card: Accent border & gradient tint */
@@ -1601,6 +1687,91 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5
     background-color: var(--nd5t-damage-badge-bg);
     border: 1px solid var(--nd5t-damage-badge-border);
     color: var(--nd5t-damage-badge-color);
+}
+
+/* ── D20 Multi-Die Display (Advantage / Disadvantage / Elven Accuracy) ── */
+/*
+ * When a d20 roll has advantage, disadvantage, or Elven Accuracy (3 dice),
+ * nd5t replaces .d20die with a .nd5t-d20-multi span that occupies the same
+ * position:absolute slot (inset-inline-end: 8px) inside the button.
+ *
+ * Each .nd5t-d20-badge is an enlarged 22x24 box matching the enlarged FA hexagon (20px).
+ * The hexagon icon (d20 shadow) and roll number are both absolutely
+ * positioned with inset: 0 and flexbox-centered, ensuring the number is
+ * always visible (z-index: 2) and perfectly centered within the hexagon
+ * with generous breathing room around 2-digit numbers.
+ *
+ *   .nd5t-d20-active     → kept die, full prominence
+ *   .nd5t-d20-discarded  → thrown-away die, dimmed & slightly smaller
+ */
+
+/* Takes the same absolute slot as the original .d20die */
+body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-multi) {
+    position: absolute;
+    inset-inline-end: 8px;
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    padding-block-start: 0;
+}
+
+body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* Badge container: enlarged 22x24 box matching the FA hexagon */
+body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) {
+    position: relative;
+    display: inline-block;
+    width: 22px;
+    height: 24px;
+}
+
+/* Hex icon — enlarged for generous breathing room around 2-digit numbers */
+body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) > i {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dnd5e-chat-color-die);
+    font-size: 20px;
+    line-height: 1;
+    z-index: 1;
+}
+
+/* Number — flex-centered over the hex icon, guaranteed on top */
+body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) .roll {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dnd5e-color-black, #000);
+    font-size: var(--font-size-12, 12px);
+    font-weight: bold;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    padding-block-start: 1px;
+    z-index: 2;
+    text-align: center;
+}
+
+/* Critical & Fumble coloring on active die */
+body.nd5t-chat-card-styling button.dice-roll.critical :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) > i {
+    color: var(--color-level-success, #22c55e);
+}
+
+body.nd5t-chat-card-styling button.dice-roll.fumble :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) > i {
+    color: var(--color-level-error, #ef4444);
+}
+
+/* Discarded badge: dim whole badge and slightly shrink */
+body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-badge.nd5t-d20-discarded {
+    opacity: 0.45;
+    scale: 0.82;
+    transform-origin: center;
 }
 
 /* Dice Roll Button: Themed border & background */
@@ -1825,7 +1996,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5
 
 /* Prepended Micro-Labels — Save / Check / Healing / Hit Die / Recharge */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-save-card button.dice-roll .result::before {
-    content: "SAV ";
+    content: "SAVE ";
     font-family: var(--dnd5e-font-roboto-condensed);
     font-size: var(--font-size-11, 11px);
     font-weight: bold;
@@ -1880,21 +2051,18 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5
 }
 
 /* Sub-type Micro-Label Overrides */
-/* Death Saving Throw — overrides "SAV " on death sub-type save cards */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.nd5t-save-card[data-nd5t-card-subtype="death"] button.dice-roll .result::before {
+/* Death Saving Throw — overrides "SAVE " on death sub-type save cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-card-subtype="death"] button.dice-roll .result::before {
     content: "DEATH ";
 }
 
-/* Concentration Save — overrides "SAV " on concentration sub-type save cards */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.nd5t-save-card[data-nd5t-card-subtype="concentration"] button.dice-roll .result::before {
+/* Concentration Save — overrides "SAVE " on concentration sub-type save cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-card-subtype="concentration"] button.dice-roll .result::before {
     content: "CONC ";
 }
 
 /* Initiative Roll — overrides "CHK " on initiative sub-type check cards */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.nd5t-check-card[data-nd5t-card-subtype="initiative"] button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-check-card[data-nd5t-card-subtype="initiative"] button.dice-roll .result::before {
     content: "INIT ";
 }
 
@@ -1903,22 +2071,22 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
 /* ── Shared Color Tokens (Dark / default) ── */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message {
     --nd5t-whisper-border-color: oklch(52% 0.22 270);
-    --nd5t-whisper-tint-color:   oklch(42% 0.20 270 / 0.20);
-    --nd5t-whisper-badge-bg:     oklch(24% 0.10 270);
+    --nd5t-whisper-tint-color: oklch(42% 0.20 270 / 0.20);
+    --nd5t-whisper-badge-bg: oklch(24% 0.10 270);
     --nd5t-whisper-badge-border: oklch(50% 0.22 270);
-    --nd5t-whisper-badge-color:  oklch(84% 0.14 270);
+    --nd5t-whisper-badge-color: oklch(84% 0.14 270);
 
-    --nd5t-blind-border-color:   oklch(54% 0.22 320);
-    --nd5t-blind-tint-color:     oklch(40% 0.18 320 / 0.20);
-    --nd5t-blind-badge-bg:       oklch(22% 0.10 320);
-    --nd5t-blind-badge-border:   oklch(48% 0.22 320);
-    --nd5t-blind-badge-color:    oklch(84% 0.14 320);
+    --nd5t-blind-border-color: oklch(54% 0.22 320);
+    --nd5t-blind-tint-color: oklch(40% 0.18 320 / 0.20);
+    --nd5t-blind-badge-bg: oklch(22% 0.10 320);
+    --nd5t-blind-badge-border: oklch(48% 0.22 320);
+    --nd5t-blind-badge-color: oklch(84% 0.14 320);
 
-    --nd5t-emote-border-color:   oklch(62% 0.16 65);
-    --nd5t-emote-tint-color:     oklch(48% 0.14 65 / 0.20);
-    --nd5t-emote-badge-bg:       oklch(26% 0.08 65);
-    --nd5t-emote-badge-border:   oklch(55% 0.16 65);
-    --nd5t-emote-badge-color:    oklch(84% 0.14 65);
+    --nd5t-emote-border-color: oklch(62% 0.16 65);
+    --nd5t-emote-tint-color: oklch(48% 0.14 65 / 0.20);
+    --nd5t-emote-badge-bg: oklch(26% 0.08 65);
+    --nd5t-emote-badge-border: oklch(55% 0.16 65);
+    --nd5t-emote-badge-color: oklch(84% 0.14 65);
 }
 
 /* ── Light Theme Overrides ── */
@@ -1926,22 +2094,22 @@ body.nd5t-chat-card-styling :is(.theme-light, .theme-light *) :is(#chat-log, .ch
 body.nd5t-chat-card-styling.theme-light :is(#chat-log, .chat-log, .chat-popout) .message,
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-light .message {
     --nd5t-whisper-border-color: oklch(50% 0.22 270);
-    --nd5t-whisper-tint-color:   oklch(55% 0.20 270 / 0.09);
-    --nd5t-whisper-badge-bg:     oklch(95% 0.04 270);
+    --nd5t-whisper-tint-color: oklch(55% 0.20 270 / 0.09);
+    --nd5t-whisper-badge-bg: oklch(95% 0.04 270);
     --nd5t-whisper-badge-border: oklch(60% 0.20 270);
-    --nd5t-whisper-badge-color:  oklch(34% 0.20 270);
+    --nd5t-whisper-badge-color: oklch(34% 0.20 270);
 
-    --nd5t-blind-border-color:   oklch(52% 0.22 320);
-    --nd5t-blind-tint-color:     oklch(55% 0.18 320 / 0.10);
-    --nd5t-blind-badge-bg:       oklch(96% 0.04 320);
-    --nd5t-blind-badge-border:   oklch(55% 0.22 320);
-    --nd5t-blind-badge-color:    oklch(34% 0.20 320);
+    --nd5t-blind-border-color: oklch(52% 0.22 320);
+    --nd5t-blind-tint-color: oklch(55% 0.18 320 / 0.10);
+    --nd5t-blind-badge-bg: oklch(96% 0.04 320);
+    --nd5t-blind-badge-border: oklch(55% 0.22 320);
+    --nd5t-blind-badge-color: oklch(34% 0.20 320);
 
-    --nd5t-emote-border-color:   oklch(58% 0.16 65);
-    --nd5t-emote-tint-color:     oklch(65% 0.15 65 / 0.12);
-    --nd5t-emote-badge-bg:       oklch(97% 0.04 65);
-    --nd5t-emote-badge-border:   oklch(60% 0.16 65);
-    --nd5t-emote-badge-color:    oklch(36% 0.16 65);
+    --nd5t-emote-border-color: oklch(58% 0.16 65);
+    --nd5t-emote-tint-color: oklch(65% 0.15 65 / 0.12);
+    --nd5t-emote-badge-bg: oklch(97% 0.04 65);
+    --nd5t-emote-badge-border: oklch(60% 0.16 65);
+    --nd5t-emote-badge-color: oklch(36% 0.16 65);
 }
 
 /*
@@ -1956,8 +2124,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-light 
  *                          is layered on top of the roll tint via a second background-image
  *                          gradient on the combined-card selectors below.
  */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
     border-left: 4px solid var(--nd5t-whisper-border-color) !important;
     border-left-color: var(--nd5t-whisper-border-color) !important;
     border-left-width: 4px !important;
@@ -1968,56 +2135,49 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
 }
 
 /* Whispered roll cards: keep roll accent border, layer whisper tint on top of roll tint */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-attack-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-attack-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-attack-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-damage-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-damage-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-damage-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-save-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-save-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-save-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-check-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-check-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-check-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-healing-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-healing-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-healing-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-hitdie-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-hitdie-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-hitdie-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper.nd5t-recharge-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper.nd5t-recharge-card {
     border-block-end-color: var(--nd5t-whisper-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-whisper-tint-color), transparent 30%),
@@ -2030,13 +2190,11 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
  * But attack and damage roll cards are excluded from that rule (to avoid border conflicts),
  * so they would have no visible whisper indicator. Add an explicit ::after badge instead.
  */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header {
     position: relative;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header::after {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header::after {
     content: "🔒 WHISPER";
     display: inline-flex;
     align-items: center;
@@ -2061,8 +2219,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
  * Excludes tiny-monitor-msg for the same reason as whisper.
  * Blind rolls that are also typed cards keep the roll accent border.
  */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
     border-left: 4px solid var(--nd5t-blind-border-color) !important;
     border-left-color: var(--nd5t-blind-border-color) !important;
     border-left-width: 4px !important;
@@ -2072,56 +2229,49 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
     background-image: linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-attack-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-attack-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-attack-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-damage-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-damage-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-damage-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-save-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-save-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-save-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-check-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-check-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-check-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-healing-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-healing-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-healing-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-hitdie-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-hitdie-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-hitdie-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind.nd5t-recharge-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind.nd5t-recharge-card {
     border-block-end-color: var(--nd5t-blind-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-blind-tint-color), transparent 30%),
@@ -2133,8 +2283,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
  * Excludes tiny-monitor-msg.
  * Emote attack/damage cards: same compositing pattern.
  */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
     border-left: 4px solid var(--nd5t-emote-border-color) !important;
     border-left-color: var(--nd5t-emote-border-color) !important;
     border-left-width: 4px !important;
@@ -2144,56 +2293,49 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
     background-image: linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-attack-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-attack-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-attack-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-damage-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-damage-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-damage-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-save-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-save-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-save-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-check-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-check-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-check-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-healing-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-healing-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-healing-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-hitdie-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-hitdie-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
         linear-gradient(to right, var(--nd5t-hitdie-tint-color), transparent 50%) !important;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote.nd5t-recharge-card {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote.nd5t-recharge-card {
     border-block-end-color: var(--nd5t-emote-border-color) !important;
     background-image:
         linear-gradient(to right, var(--nd5t-emote-tint-color), transparent 30%),
@@ -2202,8 +2344,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
 
 /* ── Whisper badge: style the existing .whisper-to element ── */
 /* Excluded for tiny-monitor-msg: their header is hidden entirely (display:none !important) */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -2220,8 +2361,7 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
     color: var(--nd5t-whisper-badge-color);
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to::before {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to::before {
     content: "🔒";
     font-style: normal;
     font-size: 0.9em;
@@ -2230,13 +2370,11 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
 
 /* ── Blind badge: inject via ::after on .message-header ── */
 /* Excluded for tiny-monitor-msg: header is hidden */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind:not(.tiny-monitor-msg) .message-header {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg) .message-header {
     position: relative;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.blind:not(.tiny-monitor-msg) .message-header::after {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg) .message-header::after {
     content: "👁 BLIND";
     display: inline-flex;
     align-items: center;
@@ -2258,13 +2396,11 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
 
 /* ── Emote badge: inject via ::after on .message-header ── */
 /* Excluded for tiny-monitor-msg: header is hidden */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote:not(.tiny-monitor-msg) .message-header {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg) .message-header {
     position: relative;
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout)
-    .message.emote:not(.tiny-monitor-msg) .message-header::after {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg) .message-header::after {
     content: "✦ EMOTE";
     display: inline-flex;
     align-items: center;

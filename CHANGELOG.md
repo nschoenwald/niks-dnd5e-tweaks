@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.28.2] - 2026-09-20
+### Added
+- **Chat Card Styling — Show All d20 Dice for Advantage / Disadvantage / Elven Accuracy**: The d20 indicator badge on roll cards now shows every individual die rolled, not just the final kept result.
+  - **Advantage**: Both d20 results are shown side by side — the kept die is bold and full-brightness, the discarded die is slightly smaller and dimmed/faded (e.g. **17** 9).
+  - **Disadvantage**: Same layout — kept die prominently displayed, discarded die de-emphasized.
+  - **Elven Accuracy** (3d20): All three dice are displayed, with the single kept die highlighted and the two discarded dice faded.
+  - **Enlarged d20 Shadow & Centering**: The d20 hexagon shadow icon has been enlarged to 20px (in a 22×24px box) with pixel-perfect flexbox centering, providing generous breathing room for 2-digit numbers without crowding the hexagon edges. Both single-die and multi-die rolls share this improved layout.
+- **Chat Card Styling — Saving Throw Micro-Label**: Updated the prepended micro-label on Saving Throw result buttons from **"SAV "** to **"SAVE "** (e.g. **SAVE 14**) for improved clarity.
+- **Chat Card Styling — Distinct Ability Check Palette (Warm Bronze)**: Shifted Ability Check color tokens and action button styling from Cyan/Azure (195°) to Warm Bronze / Ochre (75°). This breaks Ability Checks out of the blue spectrum entirely, creating clear visual separation from Cobalt Blue Saving Throws (240°) so both card types are immediately recognizable at a glance.
+
 ## [14.28.1] - 2026-09-19
 ### Added
 - **Chat Card Styling — Extended Roll Card Styling (Save, Check, Healing, Hit Dice, Recharge)**: Extended the roll card visual treatment introduced in 14.28.0 to all remaining roll types:

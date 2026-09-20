@@ -99,6 +99,98 @@ function _tagMessageElement(message, root) {
 }
 
 /**
+ * Expand the d20 die indicator in roll buttons to show ALL individual dice,
+ * not just the final kept result. This makes advantage / disadvantage / Elven
+ * Accuracy (3d20) immediately visible in the chat card.
+ *
+ * The dnd5e system renders .d20die as position:absolute at inset-inline-end:8px
+ * inside the button. Cloning that element produces stacked copies at the same
+ * position. Instead, we replace the single .d20die with a custom
+ * .nd5t-d20-multi span (also absolutely positioned at the same anchor) that
+ * holds one badge per die — each badge is a hex icon + number pair in its own
+ * inline-flex row.
+ *
+ * Idempotent: the data-nd5t-d20-expanded attribute prevents double-processing.
+ *
+ * @param {ChatMessage} message
+ * @param {HTMLElement} root
+ */
+function _expandD20DieDisplay(message, root) {
+    if (!root) return;
+    if (!message?.rolls?.length) return;
+
+    const diceButtons = root.querySelectorAll("button.dice-roll");
+    if (!diceButtons.length) return;
+
+    let rollIndex = 0;
+    for (const btn of diceButtons) {
+        // Guard: skip already-expanded buttons.
+        if (btn.dataset.nd5tD20Expanded) {
+            rollIndex++;
+            continue;
+        }
+
+        const originalD20Span = btn.querySelector(".d20die");
+        if (!originalD20Span) {
+            rollIndex++;
+            continue;
+        }
+
+        const roll = message.rolls[rollIndex];
+        rollIndex++;
+
+        // Only D20Roll instances expose .d20.
+        const d20Die = roll?.d20;
+        if (!d20Die) continue;
+
+        const allResults = d20Die.results;
+        if (!allResults || allResults.length <= 1) continue;
+
+        // Sort: active (kept) die first, discarded after.
+        const sorted = [...allResults].sort((a, b) => {
+            const aActive = a.active ?? !a.discarded;
+            const bActive = b.active ?? !b.discarded;
+            if (aActive && !bActive) return -1;
+            if (!aActive && bActive) return 1;
+            return 0;
+        });
+
+        // Build a replacement multi-die element. This sits at the same
+        // position as the original .d20die (position:absolute, inset-inline-end).
+        const multi = document.createElement("span");
+        multi.className = "nd5t-d20-multi";
+
+        for (let i = 0; i < sorted.length; i++) {
+            const r = sorted[i];
+            const isActive = r.active ?? !r.discarded;
+
+            const badge = document.createElement("span");
+            badge.className = "nd5t-d20-badge" + (isActive ? " nd5t-d20-active" : " nd5t-d20-discarded");
+
+            // Hex icon — same classes as the original .d20die > i
+            const icon = document.createElement("i");
+            icon.className = "fa-fw fa-solid fa-hexagon fa-rotate-90";
+            icon.setAttribute("inert", "");
+
+            // Number span
+            const rollSpan = document.createElement("span");
+            rollSpan.className = "roll";
+            rollSpan.textContent = r.result;
+
+            badge.appendChild(icon);
+            badge.appendChild(rollSpan);
+            multi.appendChild(badge);
+        }
+
+        // Replace the original .d20die with our multi element.
+        originalD20Span.replaceWith(multi);
+
+        btn.dataset.nd5tD20Expanded = "1";
+    }
+}
+
+
+/**
  * Scan all chat message elements in the current DOM and tag/format them.
  */
 function _tagExistingMessages() {
@@ -191,6 +283,9 @@ export function initChatCardStyling() {
         if (!game.settings.get(MODULE_ID, "enableChatCardStyling")) return;
         const root = html instanceof HTMLElement ? html : html?.[0];
         _tagMessageElement(message, root);
+        // Expand multi-die displays (advantage / disadvantage / Elven Accuracy)
+        // after the system has injected .d20die spans into the button.
+        _expandD20DieDisplay(message, root);
     });
 
     // Re-tag messages once game is ready (chat log populated with historical messages).
