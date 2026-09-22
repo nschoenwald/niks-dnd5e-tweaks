@@ -57,9 +57,25 @@ export function debug(message, ...args) {
     }
 }
 
-// Optimization: keep track of whether scene nav was initialized to avoid dual binds if toggled.
-// Most of the basic render hooks can safely just be required to reload or left enabled.
-// Cursor Hints, Prone Rotation, and Movement History already support hot-toggling.
+/**
+ * Checks whether a feature is active, taking into account both the GM's world-level
+ * master setting and the player's personal client-level override setting.
+ *
+ * @param {string} worldKey - The world-scoped master setting key.
+ * @param {string} [clientKey] - The optional client-scoped override setting key.
+ * @returns {boolean} True if the feature is enabled by the GM and not disabled by the client.
+ */
+export function isFeatureActive(worldKey, clientKey) {
+    try {
+        if (!game.settings.get(MODULE_ID, worldKey)) return false;
+        if (clientKey) {
+            if (!game.settings.get(MODULE_ID, clientKey)) return false;
+        }
+    } catch {
+        return false;
+    }
+    return true;
+}
 
 Hooks.once("init", () => {
 
@@ -73,7 +89,161 @@ Hooks.once("init", () => {
         hint: "Open the comprehensive settings dashboard with categorized tabs, search, and backup options.",
         icon: "fa-solid fa-sliders",
         type: NiksTweaksSettingsApp,
-        restricted: true
+        restricted: false
+    });
+
+    // ==========================================
+    // GROUP 0: Client & Personal Settings
+    // ==========================================
+
+    game.settings.register(MODULE_ID, "clientEnableSheetPlusCompendium", {
+        name: "Item/Spell Add: Choice Dialog (Personal)",
+        hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser (if enabled by the GM). Turn off to always create items directly.",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAttackDamagePrompt", {
+        name: "Prompt for Attack Damage (Personal)",
+        hint: "Automatically opens the damage dialog when your attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAutoRollAttackDamage", {
+        name: "Auto-Roll Attack Damage (Personal)",
+        hint: "Automatically rolls damage immediately when your attack roll hits target AC (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAutoRollSaveDamage", {
+        name: "Auto-Open Damage for Saves (Personal)",
+        hint: "Automatically opens the damage roll dialog when you use a Save-type activity with damage (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableInitiativePrompt", {
+        name: "Prompt for Initiative (Personal)",
+        hint: "Prompts you with the initiative roll dialog when your token is added to combat (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAutoRollInitiative", {
+        name: "Auto-Roll Initiative (Personal)",
+        hint: "Automatically rolls initiative immediately when your token is added to combat (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableSelfEffectApplication", {
+        name: "Self Effect Application Prompt (Personal)",
+        hint: "Whispers an Apply button when you use an ability that grants Active Effects to yourself (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableDeathSavePrompt", {
+        name: "Prompt for Death Saves (Personal)",
+        hint: "Automatically opens the death save roll dialog when you start your combat turn at 0 HP (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableCursorHints", {
+        name: "Cursor Keyboard Hints (Personal)",
+        hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: (value) => {
+            if (value && game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
+            else disableCursorHints();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableRollModeHighlight", {
+        name: "Roll Mode Highlight (Personal)",
+        hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableChatCardStyling", {
+        name: "Chat Card Styling Improvements (Personal)",
+        hint: "Applies enhanced action buttons, badges, and color coding to chat cards on your screen (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: (value) => {
+            if (value && game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
+            else disableChatCardStyling();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableSceneNavName", {
+        name: "Sync Browser Tab Title (Personal)",
+        hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => {
+            Hooks.callAll("nd5t.updateTabTitle");
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableSheetPopoutButton", {
+        name: "Sheet Pop-out Button (Personal)",
+        hint: "Shows the ↗ pop-out button on character and item sheet headers (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: (value) => {
+            if (value && game.settings.get(MODULE_ID, "enableSheetPopoutButton")) initSheetPopoutButton();
+            else disableSheetPopoutButton();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableTemplateTargeting", {
+        name: "Auto-Target Tokens in Spell Templates (Personal)",
+        hint: "Automatically targets tokens inside spell templates placed by you (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableTemplateGridSnap", {
+        name: "Snap Templates to Grid Intersections (Personal)",
+        hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
     });
 
     // ==========================================
@@ -89,8 +259,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            // Scene Nav Name keeps its own internal initialized state and handles title reset.
-            if (value) Hooks.callAll("nd5t.updateTabTitle");
+            if (value && game.settings.get(MODULE_ID, "clientEnableSceneNavName")) Hooks.callAll("nd5t.updateTabTitle");
             else document.title = game.world.title;
         }
     });
@@ -165,7 +334,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (value) enableChatCardStyling();
+            if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
         }
     });
@@ -180,7 +349,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (value) enableCursorHints();
+            if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
             else disableCursorHints();
         }
     });
@@ -258,7 +427,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (value) initSheetPopoutButton();
+            if (isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) initSheetPopoutButton();
             else disableSheetPopoutButton();
         }
     });
@@ -940,10 +1109,10 @@ Hooks.once("ready", async () => {
     if (game.user.isGM) await runMigrations();
 
     // Features that can run at ready or need the game to be fully loaded
-    if (game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
+    if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
-    if (game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
+    if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
 
     // ── Central socket dispatcher ──────────────────────────────────────
     // A single listener routes incoming socket messages to the correct

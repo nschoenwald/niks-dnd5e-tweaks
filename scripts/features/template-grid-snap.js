@@ -1,4 +1,4 @@
-import { MODULE_ID, debug, log } from "../main.js";
+import { MODULE_ID, debug, log, isFeatureActive } from "../main.js";
 
 /**
  * Enforces placing circle and square/rectangle measured templates on grid intersections (vertices)
@@ -59,7 +59,7 @@ function _wrapShapeSnappedPoint(ShapeClass) {
     const original = ShapeClass.prototype._getSnappedPoint;
 
     const wrapped = function(point) {
-        if (!game.settings.get(MODULE_ID, "enableTemplateGridSnap")) {
+        if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) {
             return original.call(this, point);
         }
 
@@ -132,7 +132,7 @@ export function initTemplateGridSnap() {
  * @param {object[]} templateData  Data objects for the regions about to be created.
  */
 function _onCreateMeasuredTemplate(activity, templateData) {
-    if (!game.settings.get(MODULE_ID, "enableTemplateGridSnap")) return;
+    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
     if (_isShiftHeld()) {
         debug("Shift held — skipping template snap in dnd5e.createMeasuredTemplate");
         return;
@@ -179,7 +179,8 @@ function _onCreateMeasuredTemplate(activity, templateData) {
  * @param {string} userId            The ID of the requesting user.
  */
 function _onPreCreateRegion(document, data, options, userId) {
-    if (!game.settings.get(MODULE_ID, "enableTemplateGridSnap")) return;
+    if (userId && userId !== game.user.id) return;
+    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
 
     // Only process regions created as spell/item templates
     const isTemplate = document.flags?.core?.MeasuredTemplate
@@ -238,7 +239,8 @@ function _onPreCreateRegion(document, data, options, userId) {
  * @param {string} userId
  */
 function _onPreCreateMeasuredTemplate(document, data, options, userId) {
-    if (!game.settings.get(MODULE_ID, "enableTemplateGridSnap")) return;
+    if (userId && userId !== game.user.id) return;
+    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
 
     const type = document.t;
     if (type !== "circle" && type !== "rect") return;
@@ -272,7 +274,7 @@ function _onPreCreateMeasuredTemplate(document, data, options, userId) {
  * @param {AbilityTemplate[]} templates    The template instances being placed.
  */
 function _onCreateActivityTemplate(activity, templates) {
-    if (!game.settings.get(MODULE_ID, "enableTemplateGridSnap")) return;
+    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
 
     for (const template of templates) {
         const type = template.document.t;

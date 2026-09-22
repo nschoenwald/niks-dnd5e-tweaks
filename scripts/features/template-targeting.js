@@ -1,4 +1,4 @@
-import { MODULE_ID, debug, log } from "../main.js";
+import { MODULE_ID, debug, log, isFeatureActive } from "../main.js";
 
 /**
  * Template Auto-Targeting
@@ -63,7 +63,7 @@ export function initTemplateTargeting() {
  * @param {AbilityTemplate[]} templates The template instances being placed.
  */
 function _onCreateActivityTemplate(activity, templates) {
-    if (!game.settings.get(MODULE_ID, "enableTemplateTargeting")) return;
+    if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
 
     debug(`Template Targeting | dnd5e.createActivityTemplate fired for activity ${activity?.name ?? "(unknown)"}, wrapping ${templates.length} template(s)`);
 
@@ -102,7 +102,7 @@ function _onCreateActivityTemplate(activity, templates) {
  */
 function _onCreateRegion(regionDoc, options, userId) {
     // Guard 1: setting enabled
-    if (!game.settings.get(MODULE_ID, "enableTemplateTargeting")) {
+    if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) {
         debug("Template Targeting | createRegion: setting disabled, skipping");
         return;
     }

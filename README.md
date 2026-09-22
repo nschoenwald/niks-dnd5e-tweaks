@@ -14,9 +14,38 @@ A consolidated collection of small quality-of-life tweaks for Foundry VTT and th
 See below for compatibility with other modules (especially midi-qol).
 ---
 
-## Features
+## Settings Dashboard & Personal Preferences
 
-All features can be toggled on or off individually within the Foundry VTT Module Settings menu. 
+All features can be configured within the comprehensive **Settings Dashboard** (accessible via the module settings button in Foundry's Configure Settings menu by both GMs and players).
+
+- **World Settings (GM Only)**: GMs can configure global defaults and module master toggles across UI & Visuals, Canvas & Tokens, Combat & Automation, Restrictions & Rules, and Utilities.
+- **Personal Preferences (All Users & Players)**: Players and GMs have a dedicated **Personal Preferences** tab containing client-side overrides (`scope: "client"`). When a feature is enabled globally by the GM, individual users can toggle prompts, auto-rolls, interface tweaks, or templates on or off specifically for their own client without affecting anyone else. When non-GM players open the dashboard, it automatically opens directly to Personal Preferences, and the "Reset Defaults" action resets only their personal client settings.
+
+### Covered Personal Preferences
+1. **Workflow & Action Prompts**:
+   - *Item/Spell Add: Choice Dialog* — prompt to choose between creating an item or browsing the compendium.
+   - *Prompt for Attack Damage* — automatically open the damage dialog when your attack roll hits AC.
+   - *Auto-Roll Attack Damage* — automatically roll damage immediately on hit.
+   - *Auto-Open Damage for Saves* — automatically open damage dialog on Save-type activities.
+   - *Prompt for Initiative* — prompt with initiative dialog when your token enters combat.
+   - *Auto-Roll Initiative* — automatically roll initiative immediately when added to combat.
+   - *Self Effect Application Prompt* — whisper an Apply button when using self-buff abilities.
+   - *Prompt for Death Saves* — automatically open the death save dialog when starting your turn at 0 HP.
+   - *Suppress Damage Prompts* — hide incoming player damage prompt whisper cards in chat.
+2. **Interface & Visual Enhancements**:
+   - *Cursor Keyboard Hints* — display floating Alt/Shift/Ctrl modifier badges near your cursor.
+   - *Roll Mode Highlight* — highlight the recommended Advantage/Disadvantage button in d20 roll dialogs.
+   - *Chat Card Styling Improvements* — apply enhanced action buttons, badges, and color coding to chat cards.
+   - *Sync Browser Tab Title* — sync your browser tab title with the viewed scene name.
+   - *Sheet Pop-out Button* — show the ↗ pop-out button on character and item sheet headers.
+   - *Toolbar Limitation & Max Displayed Buttons* — make scene control toolbars scrollable when exceeding the limit.
+3. **Canvas & Templates**:
+   - *Auto-Target Tokens in Spell Templates* — automatically target tokens inside templates placed by you.
+   - *Snap Templates to Grid Intersections* — snap circle and square templates to grid vertices when placed by you.
+
+---
+
+## Features 
 
 ### Group 1: User Interface & Visuals
 * **Sync Browser Tab Title**: Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.
@@ -27,7 +56,7 @@ All features can be toggled on or off individually within the Foundry VTT Module
 * **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Especially useful when detaching windows, where the prefix otherwise consumes all visible space in the OS taskbar.
   * *↳ Sheet Title Format* — controls how titles are displayed (choices: **Name Only** (default), Type: Name, Name (Type)).
 * **Sheet Pop-out Button**: Adds a one-click **↗ pop-out button** to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry V14's native pop-out functionality — without going through the three-dot menu. The button is hidden automatically when the sheet is already detached. Enabled by default.
-* **Item/Spell/Feature Add: Choice Dialog**: When clicking any '+' button (page-level or sub-category section header) on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class and level for spells, feats for features, and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
+* **Item/Spell/Feature Add: Choice Dialog**: When clicking any '+' button (page-level or sub-category section header) on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class/subclass and level for spells — including Wizard for Eldritch Knight and Arcane Trickster, and Sorcerer for Warrior of the Mystic Arts; feats for features; and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
 * **NPC Hit Point Scaling Buttons**: Adds easy plus (`+`) and minus (`-`) buttons to the NPC Hit Points configuration dialog (`HitPointsConfig`) to quickly scale a creature's hit dice count up or down. Automatically recalculates the creature's average Maximum Hit Points and health formula based on size-appropriate hit die (Tiny: d4, Small: d6, Medium: d8, Large: d10, Huge: d12, Gargantuan: d20) and Constitution modifier. Hold **Shift** while clicking to scale by 5 hit dice at a time. Enabled by default.
 * **Toolbar Limitation**: When the number of buttons in a given toolbar (such as Scene Controls) exceeds a configurable value, turns the toolbar scrollable and limits the displayed buttons to that number. Does not apply to the macro hotbar.
   * *↳ Max Displayed Toolbar Buttons* — controls the maximum number of buttons displayed before turning scrollable (default: **20**).

@@ -1,4 +1,4 @@
-import { MODULE_ID, debug } from "../main.js";
+import { MODULE_ID, debug, isFeatureActive } from "../main.js";
 
 /**
  * Roll Mode Highlight
@@ -66,7 +66,7 @@ function _getCalculatedAction(app) {
  */
 function _onRenderDialog(app, element) {
     try {
-        const enabled = game.settings.get(MODULE_ID, "enableRollModeHighlight");
+        const enabled = isFeatureActive("enableRollModeHighlight", "clientEnableRollModeHighlight");
         if (!enabled) return;
 
         const style = game.settings.get(MODULE_ID, "rollModeHighlightStyle");

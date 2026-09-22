@@ -45,13 +45,187 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     /**
      * Active tab tracking (client-side state during the session)
      */
-    #activeTab = "uiVisuals";
+    #activeTab = null;
 
     /**
      * Settings definition schema categorized for the dashboard
      */
     static get SETTINGS_SCHEMA() {
         return [
+            {
+                id: "personalPreferences",
+                label: "Personal Preferences",
+                icon: "fa-solid fa-user-gear",
+                description: "Client-side settings that apply only to your own browser session. Customize prompts, workflows, and visual features to your liking without affecting other players or the GM.",
+                sections: [
+                    {
+                        id: "clientWorkflow",
+                        title: "Workflow & Action Prompts",
+                        icon: "fa-solid fa-bolt",
+                        settings: [
+                            {
+                                key: "clientEnableSheetPlusCompendium",
+                                name: "Item/Spell Add: Choice Dialog",
+                                hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser (if enabled by the GM). Turn off to always create items directly.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableAttackDamagePrompt",
+                                name: "Prompt for Attack Damage",
+                                hint: "Automatically opens the damage dialog when your attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableAutoRollAttackDamage",
+                                name: "Auto-Roll Attack Damage",
+                                hint: "Automatically rolls damage immediately when your attack roll hits target AC (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableAutoRollSaveDamage",
+                                name: "Auto-Open Damage for Saves",
+                                hint: "Automatically opens the damage roll dialog when you use a Save-type activity with damage (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableInitiativePrompt",
+                                name: "Prompt for Initiative",
+                                hint: "Prompts you with the initiative roll dialog when your token is added to combat (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableAutoRollInitiative",
+                                name: "Auto-Roll Initiative",
+                                hint: "Automatically rolls initiative immediately when your token is added to combat (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableSelfEffectApplication",
+                                name: "Self Effect Application Prompt",
+                                hint: "Whispers an Apply button when you use an ability that grants Active Effects to yourself (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableDeathSavePrompt",
+                                name: "Prompt for Death Saves",
+                                hint: "Automatically opens the death save roll dialog when you start your combat turn at 0 HP (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "suppressDamagePrompt",
+                                name: "Suppress Damage Prompts",
+                                hint: "Hide incoming player damage prompt whispers in chat for yourself.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "client"
+                            }
+                        ]
+                    },
+                    {
+                        id: "clientVisuals",
+                        title: "Interface & Visual Enhancements",
+                        icon: "fa-solid fa-wand-magic-sparkles",
+                        settings: [
+                            {
+                                key: "clientEnableCursorHints",
+                                name: "Cursor Keyboard Hints",
+                                hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableRollModeHighlight",
+                                name: "Roll Mode Highlight",
+                                hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableChatCardStyling",
+                                name: "Chat Card Styling Improvements",
+                                hint: "Applies enhanced action buttons, badges, and color coding to chat cards on your screen (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableSceneNavName",
+                                name: "Sync Browser Tab Title",
+                                hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableSheetPopoutButton",
+                                name: "Sheet Pop-out Button",
+                                hint: "Shows the ↗ pop-out button on character and item sheet headers (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "enableToolbarLimitation",
+                                name: "Toolbar Limitation",
+                                hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "toolbarButtonLimit",
+                                name: "Max Displayed Toolbar Buttons",
+                                hint: "The maximum number of buttons to display in a toolbar before scrolling.",
+                                type: "Number",
+                                default: 20,
+                                scope: "client",
+                                parentKey: "enableToolbarLimitation"
+                            }
+                        ]
+                    },
+                    {
+                        id: "clientCanvas",
+                        title: "Canvas & Templates",
+                        icon: "fa-solid fa-shapes",
+                        settings: [
+                            {
+                                key: "clientEnableTemplateTargeting",
+                                name: "Auto-Target Tokens in Spell Templates",
+                                hint: "Automatically targets tokens inside spell templates placed by you (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableTemplateGridSnap",
+                                name: "Snap Templates to Grid Intersections",
+                                hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            }
+                        ]
+                    }
+                ]
+            },
             {
                 id: "uiVisuals",
                 label: "UI & Visuals",
@@ -157,23 +331,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
-                            },
-                            {
-                                key: "enableToolbarLimitation",
-                                name: "Toolbar Limitation",
-                                hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable and limits its visible height.",
-                                type: "Boolean",
-                                default: true,
-                                scope: "client"
-                            },
-                            {
-                                key: "toolbarButtonLimit",
-                                name: "Max Displayed Toolbar Buttons",
-                                hint: "The maximum number of buttons to display in a toolbar before scrolling.",
-                                type: "Number",
-                                default: 20,
-                                scope: "client",
-                                parentKey: "enableToolbarLimitation"
                             }
                         ]
                     },
@@ -511,15 +668,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 parentKey: "enablePlayerDamagePrompt"
                             },
                             {
-                                key: "suppressDamagePrompt",
-                                name: "Suppress Damage Prompts (Personal)",
-                                hint: "Hide damage prompt whispers in chat for yourself (per-user client setting).",
-                                type: "Boolean",
-                                default: false,
-                                scope: "client",
-                                parentKey: "enablePlayerDamagePrompt"
-                            },
-                            {
                                 key: "waitForDiceSoNice",
                                 name: "Wait for Dice So Nice",
                                 hint: "Delays damage prompt whispers until Dice So Nice 3D dice finish rolling.",
@@ -781,6 +929,9 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     /** @override */
     async _prepareContext(options) {
         const canModify = game.user.can("SETTINGS_MODIFY");
+        if (!this.#activeTab) {
+            this.#activeTab = canModify ? "uiVisuals" : "personalPreferences";
+        }
 
         const tabs = NiksTweaksSettingsApp.SETTINGS_SCHEMA.map(tab => {
             const isActiveTab = tab.id === this.#activeTab;
@@ -1099,17 +1250,16 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     }
 
     /**
-     * Resets all settings to their default values
+     * Resets all settings to their default values (world + client for GMs, client-only for non-GMs)
      */
     static async #onResetDefaults(event, target) {
-        if (!game.user.can("SETTINGS_MODIFY")) {
-            ui.notifications.error("You do not have permission to modify world settings.");
-            return;
-        }
+        const canModify = game.user.can("SETTINGS_MODIFY");
 
         const confirmed = await foundry.applications.api.DialogV2.confirm({
             window: { title: "Reset Settings to Default" },
-            content: "<p>Are you sure you want to reset all <strong>Nik's D&D 5e Tweaks</strong> settings to their default values?</p>",
+            content: canModify
+                ? "<p>Are you sure you want to reset all <strong>Nik's D&D 5e Tweaks</strong> settings to their default values?</p>"
+                : "<p>Are you sure you want to reset your personal <strong>Nik's D&D 5e Tweaks</strong> preferences to their default values?</p>",
             modal: true
         });
 
@@ -1119,6 +1269,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         for (const tab of NiksTweaksSettingsApp.SETTINGS_SCHEMA) {
             for (const sec of tab.sections) {
                 for (const s of sec.settings) {
+                    if (!canModify && s.scope !== "client" && s.scope !== "user") continue;
                     const currentVal = game.settings.get(MODULE_ID, s.key);
                     if (currentVal !== s.default) {
                         await game.settings.set(MODULE_ID, s.key, s.default);
@@ -1128,7 +1279,9 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             }
         }
 
-        ui.notifications.info("Nik's D&D 5e Tweaks settings have been reset to default values.");
+        ui.notifications.info(canModify
+            ? "Nik's D&D 5e Tweaks settings have been reset to default values."
+            : "Your personal preferences have been reset to default values.");
         if (requiresReload) {
             SettingsConfig.reloadConfirm();
         }

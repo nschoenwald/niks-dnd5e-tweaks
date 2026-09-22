@@ -1,4 +1,4 @@
-import { MODULE_ID, log, debug } from "../main.js";
+import { MODULE_ID, log, debug, isFeatureActive } from "../main.js";
 
 /**
  * Item, Spell & Feature Add: Choice Dialog & Compendium Filter
@@ -73,7 +73,7 @@ function _attachPlusButtonInterceptor(app, html) {
     debug(`Attaching plus button interceptor to Actor Sheet: "${actor.name}" (${actor.id})`);
 
     rootElement.addEventListener("click", async (event) => {
-        if (!game.settings.get(MODULE_ID, "enableSheetPlusCompendium")) return;
+        if (!isFeatureActive("enableSheetPlusCompendium", "clientEnableSheetPlusCompendium")) return;
 
         // Bypass if event was dispatched internally to execute standard creation
         if (event.nd5tBypass) return;
@@ -406,18 +406,73 @@ function _openCompendiumBrowserForSpells(actor, level) {
 
     const additional = {};
 
-    // 1. Filter by Class spell list(s)
+    // 1. Filter by Class and Subclass spell list(s)
+    const spelllist = {};
+
+    // Known subclass -> spell list mappings (e.g. third-casters or custom martial casting subclasses)
+    const SUBCLASS_SPELL_LISTS = {
+        "eldritch-knight": "wizard",
+        "eldritchknight": "wizard",
+        "arcane-trickster": "wizard",
+        "arcanetrickster": "wizard",
+        "warrior-of-the-mystic-arts": "sorcerer",
+        "warriorofthemysticarts": "sorcerer"
+    };
+
+    // Standard classes that have their own dedicated spell lists in 5e
+    const STANDARD_SPELLCASTING_CLASSES = new Set([
+        "artificer", "bard", "cleric", "druid", "paladin", "ranger", "sorcerer", "warlock", "wizard"
+    ]);
+
+    const isKnownSpellList = (identifier) => {
+        if (!identifier) return false;
+        if (dnd5e?.registry?.spellLists) {
+            return !!(dnd5e.registry.spellLists.forType("class", identifier) || dnd5e.registry.spellLists.forType(`class:${identifier}`));
+        }
+        return STANDARD_SPELLCASTING_CLASSES.has(identifier);
+    };
+
+    // Add class spell lists
     if (actor?.itemTypes?.class?.length) {
-        const spelllist = {};
         for (const classItem of actor.itemTypes.class) {
-            const identifier = classItem.system?.identifier || classItem.name?.slugify({ strict: true });
-            if (identifier) {
+            const identifier = classItem.system?.identifier || classItem.identifier || classItem.name?.slugify({ strict: true });
+            if (identifier && isKnownSpellList(identifier)) {
                 spelllist[`class:${identifier}`] = 1;
             }
         }
-        if (!foundry.utils.isEmpty(spelllist)) {
-            additional.spelllist = spelllist;
+    }
+
+    // Add subclass spell lists (e.g. Eldritch Knight / Arcane Trickster -> Wizard, Warrior of the Mystic Arts -> Sorcerer)
+    const subclasses = new Set(actor?.itemTypes?.subclass || []);
+    if (actor?.itemTypes?.class) {
+        for (const cls of actor.itemTypes.class) {
+            if (cls.subclass) subclasses.add(cls.subclass);
+            if (typeof cls.system?.subclass === "string" && cls.system.subclass) {
+                const subSlug = cls.system.subclass.slugify({ strict: true }).toLowerCase();
+                const targetSpellList = SUBCLASS_SPELL_LISTS[subSlug] || SUBCLASS_SPELL_LISTS[subSlug.replace(/-/g, "")];
+                if (targetSpellList) spelllist[`class:${targetSpellList}`] = 1;
+            }
         }
+    }
+
+    for (const sub of subclasses) {
+        const id1 = (sub.system?.identifier || "").toLowerCase();
+        const id2 = (sub.identifier || "").toLowerCase();
+        const id3 = (sub.name || "").slugify({ strict: true }).toLowerCase();
+        const id4 = id3.replace(/-/g, "");
+
+        const targetSpellList = SUBCLASS_SPELL_LISTS[id1]
+            || SUBCLASS_SPELL_LISTS[id2]
+            || SUBCLASS_SPELL_LISTS[id3]
+            || SUBCLASS_SPELL_LISTS[id4];
+
+        if (targetSpellList) {
+            spelllist[`class:${targetSpellList}`] = 1;
+        }
+    }
+
+    if (!foundry.utils.isEmpty(spelllist)) {
+        additional.spelllist = spelllist;
     }
 
     // 2. Filter by Spell Level

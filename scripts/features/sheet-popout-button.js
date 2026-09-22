@@ -1,4 +1,4 @@
-import { MODULE_ID, log, debug } from "../main.js";
+import { MODULE_ID, log, debug, isFeatureActive } from "../main.js";
 
 /**
  * Sheet Pop-out Button
@@ -22,7 +22,7 @@ import { MODULE_ID, log, debug } from "../main.js";
 let _hookId = null;
 
 export function initSheetPopoutButton() {
-    if (!game.settings.get(MODULE_ID, "enableSheetPopoutButton")) return;
+    if (!isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) return;
 
     _hookId = Hooks.on("renderApplicationV2", (app, _element) => {
         _injectPopoutButton(app);

@@ -44,6 +44,7 @@ function _getActorRole(actor, combatant) {
  * @returns {boolean}
  */
 function _shouldAutoRoll(role) {
+    if (!game.settings.get(MODULE_ID, "clientEnableAutoRollInitiative")) return false;
     const setting = game.settings.get(MODULE_ID, "autoRollInitiative");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;
@@ -57,6 +58,7 @@ function _shouldAutoRoll(role) {
  * @returns {boolean}
  */
 function _shouldPrompt(role) {
+    if (!game.settings.get(MODULE_ID, "clientEnableInitiativePrompt")) return false;
     const setting = game.settings.get(MODULE_ID, "promptForInitiative");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;

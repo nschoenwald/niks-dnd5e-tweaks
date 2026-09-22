@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.28.5] - 2026-09-22
+### Added
+- **Personal Preferences & Client-Side Feature Toggles**: Added a dedicated **Personal Preferences** section in the settings dashboard for players and GMs, allowing individual users to toggle features on or off for their own browser session (`scope: "client"`) without modifying world settings or affecting other players.
+  - **Unrestricted Dashboard Access**: The settings dashboard (`NiksTweaksSettingsApp`) is now accessible to all players (`restricted: false`), automatically opening to the Personal Preferences tab when launched by non-GM players while keeping GM-only world settings disabled for security.
+  - **Covered Features**:
+    - *Workflow & Action Prompts*: Item/Spell Add Choice Dialog, Prompt for Attack Damage, Auto-Roll Attack Damage, Auto-Open Damage for Saves, Prompt for Initiative, Auto-Roll Initiative, Self Effect Application Prompt, Prompt for Death Saves, and Suppress Incoming Damage Prompts.
+    - *Interface & Visual Enhancements*: Cursor Keyboard Hints, Roll Mode Highlight, Chat Card Styling Improvements, Sync Browser Tab Title, Sheet Pop-out Button, and Toolbar Limitation & Button Limit.
+    - *Canvas & Templates*: Auto-Target Tokens in Spell Templates and Snap Templates to Grid Intersections.
+  - **Client-Side Reset Defaults**: Non-GM players can now use the "Reset Defaults" action in the dashboard footer to safely restore their own personal client preferences to defaults without touching any world configuration.
+
+### Changed
+- **Sheet Plus Button — Subclass Spell List Filtering (Eldritch Knight, Arcane Trickster, Warrior of the Mystic Arts)**: When opening the Compendium Browser from an actor sheet's Spells tab, the spell list filter now automatically resolves and filters the appropriate class spell lists for casting subclasses whose parent classes do not have native spell lists. Characters with `eldritch-knight` or `arcane-trickster` subclasses are now automatically filtered to the **Wizard** spell list, and `warrior-of-the-mystic-arts` is filtered to the **Sorcerer** spell list. Non-spellcasting parent classes (Fighter, Rogue, Monk) without native spell lists are omitted from the filter query to ensure clean results.
+
 ## [14.28.4] - 2026-09-22
 ### Changed
 - **Self Effect Application Prompt — Trigger Only for Activities with Assigned Effects**: The self effect application prompt now strictly triggers when the used activity actually has Active Effects assigned to it. Previously, when an activity lacked assigned effects, effect resolution fell back to all non-transfer effects on the parent item, unintentionally triggering self-effect prompt cards for secondary activities or actions that were not configured to apply those effects (e.g. an attack activity on an item that also carried a self-buff activity).

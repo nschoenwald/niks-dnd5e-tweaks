@@ -1,4 +1,4 @@
-import { MODULE_ID, debug } from "../main.js";
+import { MODULE_ID, debug, isFeatureActive } from "../main.js";
 
 let baseTitle = document.title;
 let initialized = false;
@@ -73,7 +73,7 @@ const applyTabTitle = (() => {
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
       raf = null;
-      if (!game.settings.get(MODULE_ID, "enableSceneNavName")) {
+      if (!isFeatureActive("enableSceneNavName", "clientEnableSceneNavName")) {
           if (document.title !== baseTitle) document.title = baseTitle;
           return;
       }

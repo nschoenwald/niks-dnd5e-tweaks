@@ -1,4 +1,4 @@
-import { MODULE_ID, debug } from "../main.js";
+import { MODULE_ID, debug, isFeatureActive } from "../main.js";
 
 /**
  * Initialize the Death Save Prompt feature.
@@ -71,7 +71,7 @@ function _bindDeathSaveButton(message, element) {
  * @param {Combat} combat - The current combat.
  */
 async function handleDeathSavePrompt(combat) {
-    if (!game.settings.get(MODULE_ID, "enableDeathSavePrompt")) return;
+    if (!isFeatureActive("enableDeathSavePrompt", "clientEnableDeathSavePrompt")) return;
 
     const combatant = combat.combatant;
     const actor = combatant?.actor;

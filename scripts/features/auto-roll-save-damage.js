@@ -1,4 +1,4 @@
-import { MODULE_ID, debug, log } from "../main.js";
+import { MODULE_ID, debug, log, isFeatureActive } from "../main.js";
 
 /**
  * Auto-Roll Save Damage
@@ -25,7 +25,7 @@ let _hookId = null;
  * @param {object} results          Final details on the activation.
  */
 function _onPostUseActivity(activity, usageConfig, results) {
-    if (!game.settings.get(MODULE_ID, "enableAutoRollSaveDamage")) return;
+    if (!isFeatureActive("enableAutoRollSaveDamage", "clientEnableAutoRollSaveDamage")) return;
 
     // Only act on Save-type activities that actually have damage parts
     if (activity.type !== "save") return;

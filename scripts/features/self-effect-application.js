@@ -1,4 +1,4 @@
-import { MODULE_ID, debug } from "../main.js";
+import { MODULE_ID, debug, isFeatureActive } from "../main.js";
 
 /**
  * Self Effect Application
@@ -257,7 +257,7 @@ function _isAlwaysPromptFeature(activity) {
 
 async function _onPostUseActivity(activity, usageConfig, results) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableSelfEffectApplication")) return;
+        if (!isFeatureActive("enableSelfEffectApplication", "clientEnableSelfEffectApplication")) return;
 
         // Skip if midi-qol is active and configured to auto-apply item active effects
         if (game.modules.get("midi-qol")?.active) {

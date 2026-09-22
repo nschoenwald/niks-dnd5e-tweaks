@@ -1,4 +1,4 @@
-import { MODULE_ID, log } from "../main.js";
+import { MODULE_ID, log, isFeatureActive } from "../main.js";
 
 /**
  * Roll types that this feature applies card-specific styling to.
@@ -265,14 +265,14 @@ export function disableChatCardStyling() {
  * Initialize Chat Card Styling Improvements feature.
  */
 export function initChatCardStyling() {
-    if (game.settings.get(MODULE_ID, "enableChatCardStyling")) {
+    if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
         enableChatCardStyling();
     }
 
     // Tag and format messages as they are rendered in HTML.
     // Both hooks call _tagMessageElement; the dataset guards inside make double-runs safe.
     Hooks.on("renderChatMessageHTML", (message, html) => {
-        if (!game.settings.get(MODULE_ID, "enableChatCardStyling")) return;
+        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
         const root = html instanceof HTMLElement ? html : html?.[0];
         _tagMessageElement(message, root);
     });
@@ -280,7 +280,7 @@ export function initChatCardStyling() {
     // dnd5e.renderChatMessage fires after system card templates (damage-card.hbs, etc.)
     // have rendered, ensuring the subtitle element exists when we try to format it.
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
-        if (!game.settings.get(MODULE_ID, "enableChatCardStyling")) return;
+        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
         const root = html instanceof HTMLElement ? html : html?.[0];
         _tagMessageElement(message, root);
         // Expand multi-die displays (advantage / disadvantage / Elven Accuracy)
@@ -293,14 +293,14 @@ export function initChatCardStyling() {
     // but the ready hook is needed for the case where the chat log finishes rendering
     // after initChatCardStyling runs (e.g., late-loading or deferred chat population).
     Hooks.once("ready", () => {
-        if (game.settings.get(MODULE_ID, "enableChatCardStyling")) {
+        if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
             _tagExistingMessages();
         }
     });
 
     // Ensure popouts in detached windows also receive the styling class.
     Hooks.on("renderChatPopout", (app, element) => {
-        if (!game.settings.get(MODULE_ID, "enableChatCardStyling")) return;
+        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
         const el = element instanceof HTMLElement ? element : element?.[0];
         const doc = el?.ownerDocument;
         if (doc && !doc.body.classList.contains("nd5t-chat-card-styling")) {
