@@ -24,7 +24,7 @@ import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/auto-end-class-features.js";
 import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/disable-active-effect-expiry.js";
 import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
-import { initMageSlayerConcentration } from "./features/mage-slayer-concentration.js";
+import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/mage-slayer-concentration.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
 import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/sheet-popout-button.js";
@@ -953,6 +953,7 @@ Hooks.once("ready", async () => {
     game.socket.on(`module.${MODULE_ID}`, (data) => {
         damagePromptSocketMessage(data);
         selfEffectSocketMessage(data);
+        mageSlayerSocketMessage(data);
     });
     log("Central socket dispatcher registered");
 

@@ -61,8 +61,9 @@ export function hasBoonOfTheIronMind(actor) {
 let _challengeConcentrationPatched = false;
 
 /**
- * Patch Actor5e.prototype.challengeConcentration to suppress the system's concentration
- * challenge chat card prompt for actors that possess the Boon of the Iron Mind feat.
+ * Patch Actor5e.prototype.challengeConcentration to:
+ * 1. Suppress the system's concentration challenge prompt for actors with Boon of the Iron Mind.
+ * 2. When a connected player owner is online, whisper the challenge prompt ONLY to connected player owners (not GM).
  */
 function _patchChallengeConcentration() {
     if (_challengeConcentrationPatched) return;
@@ -70,12 +71,32 @@ function _patchChallengeConcentration() {
     if (!ActorClass?.prototype?.challengeConcentration) return;
 
     const originalChallengeConcentration = ActorClass.prototype.challengeConcentration;
-    ActorClass.prototype.challengeConcentration = async function (...args) {
-        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
-            debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping concentration challenge prompt.`);
-            return null;
+    ActorClass.prototype.challengeConcentration = async function (options = {}, ...args) {
+        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration")) {
+            if (hasBoonOfTheIronMind(this)) {
+                debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping concentration challenge prompt.`);
+                return null;
+            }
+
+            const connectedOwners = game.users.filter(u => !u.isGM && u.active && this.testUserPermission(u, "OWNER"));
+            if (connectedOwners.length > 0) {
+                const isConcentrating = this.concentration?.effects?.size > 0;
+                if (!isConcentrating) return null;
+
+                const dc = options?.dc ?? 10;
+                const button = { dc, format: "short", type: "concentration" };
+                if (options?.ability in CONFIG.DND5E.abilities) button.ability = options.ability;
+
+                debug(`Auto-Roll Concentration | Whispering concentration challenge prompt for ${this.name} only to connected player owner(s).`);
+                return ChatMessage.implementation.create({
+                    speaker: ChatMessage.implementation.getSpeaker({ actor: this }),
+                    system: { broadcast: false, buttons: [button] },
+                    type: "prompt",
+                    whisper: connectedOwners.map(u => u.id)
+                });
+            }
         }
-        return originalChallengeConcentration.apply(this, args);
+        return originalChallengeConcentration.call(this, options, ...args);
     };
     _challengeConcentrationPatched = true;
 }
@@ -190,13 +211,21 @@ async function _onDamageActor(actor, changes, update, userId) {
         const isConcentrating = actor.concentration?.effects?.size > 0;
         if (!isConcentrating) return;
 
-        if (game.userId === userId) {
-            if (!actor.isOwner) return;
+        // Determine which client is responsible for rolling / prompting concentration.
+        // If the actor has any active non-GM owner connected, that player's client must handle it.
+        // Even if the GM applies damage, the prompt pops up for the player and NOT the GM.
+        // If no player owner is connected (or for NPCs), the primary active GM handles it.
+        const connectedOwners = game.users
+            .filter(u => !u.isGM && u.active && actor.testUserPermission(u, "OWNER"))
+            .sort((a, b) => a.id.localeCompare(b.id));
+        const hasConnectedOwner = connectedOwners.length > 0;
+
+        if (hasConnectedOwner) {
+            const isPrimaryOwner = connectedOwners[0].id === game.userId;
+            if (!isPrimaryOwner) return;
         } else {
             const primaryGM = game.users.primaryGM ?? game.users.activeGM;
             if (!primaryGM?.isSelf) return;
-            const updatingUser = game.users.get(userId);
-            if (updatingUser && actor.testUserPermission(updatingUser, "OWNER")) return;
         }
 
         const dc = typeof actor.getConcentrationDC === "function"

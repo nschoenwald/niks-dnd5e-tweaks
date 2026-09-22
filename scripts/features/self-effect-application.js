@@ -151,7 +151,7 @@ function _cleanName(str) {
 }
 
 /**
- * Retrieve applicable Active Effects for an activity or its parent item.
+ * Retrieve applicable Active Effects that are explicitly assigned to the used activity.
  *
  * @param {Activity} activity
  * @returns {Promise<ActiveEffect5e[]>}
@@ -161,27 +161,54 @@ async function _getApplicableEffects(activity) {
     const item = activity.item;
     const itemName = item?.name || "Effect";
 
-    // 1. Check activity.getApplicableEffects() first (DnD5e 6.0.0+)
+    // 1. Primary: DnD5e 6.0.0+ activity.getApplicableEffects()
     if (typeof activity.getApplicableEffects === "function") {
         const actEffects = await activity.getApplicableEffects();
         if (actEffects && actEffects.length > 0) {
-            effects = Array.from(actEffects);
+            effects = Array.from(actEffects).filter(Boolean);
         }
-    } else if (activity.applicableEffects && activity.applicableEffects.length > 0) {
-        effects = Array.from(activity.applicableEffects);
     }
 
-    // 2. Fall back to ActiveEffects on the item itself
-    if (!effects.length && item) {
-        if (item.effects?.size > 0 || item.effects?.length > 0) {
-            const itemEffects = Array.from(item.effects.values ? item.effects.values() : item.effects);
-            const nonTransfer = itemEffects.filter(e => !e.transfer);
-            effects = nonTransfer.length > 0 ? nonTransfer : itemEffects;
+    // 2. Secondary: If getApplicableEffects() wasn't present or returned nothing,
+    // resolve explicitly assigned effects from activity.applicableEffects or activity.effects.
+    if (!effects.length) {
+        const assignedEntries = activity.applicableEffects ?? activity.effects;
+        const entryList = Array.isArray(assignedEntries)
+            ? assignedEntries
+            : (assignedEntries && typeof assignedEntries[Symbol.iterator] === "function" ? Array.from(assignedEntries) : []);
+
+        if (entryList.length > 0) {
+            for (const entry of entryList) {
+                if (!entry) continue;
+                // Direct ActiveEffect document (DnD5e 5.x)
+                if (entry instanceof foundry.abstract.Document || entry.statuses || entry.changes) {
+                    effects.push(entry);
+                    continue;
+                }
+                // AppliedEffectField / EffectApplicationData
+                let doc = null;
+                if (typeof entry.getEffect === "function") {
+                    try { doc = await entry.getEffect(); } catch (_) {}
+                }
+                if (!doc && entry.effect) {
+                    doc = entry.effect;
+                }
+                if (!doc && entry._id && item?.effects) {
+                    doc = item.effects.get(entry._id);
+                }
+                if (!doc && entry.uuid) {
+                    try { doc = await fromUuid(entry.uuid); } catch (_) {}
+                }
+                if (doc) effects.push(doc);
+            }
         }
     }
+
+    // Filter to valid non-transfer effects
+    effects = effects.filter(e => e && !e.transfer);
 
     // Replace generic activity effect names (like "use", "cast", "utility", "effect") with the Item Name
-    if (itemName) {
+    if (itemName && effects.length > 0) {
         effects = effects.map(e => {
             const eName = (e.name ?? e.label ?? "").trim().toLowerCase();
             if (!eName || eName === "use" || eName === "cast" || eName === "utility" || eName === "effect") {
@@ -260,9 +287,12 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         if (!isIntrinsicSelf && !isManualSelf && !isAlwaysPrompt) return;
 
-        // Retrieve applicable Active Effects from the activity or parent item.
+        // Retrieve applicable Active Effects explicitly assigned to this activity.
         const applicableEffects = await _getApplicableEffects(activity);
-        if (!applicableEffects.length) return;
+        if (!applicableEffects.length) {
+            debug(`Self Effect Application | Activity "${activity.name || activity.id}" on "${activity.item?.name}" has no applicable effects assigned to it — skipping prompt card.`);
+            return;
+        }
 
         // Filter out effects that are already active on the target actor
         const unappliedEffects = applicableEffects.filter(effect => {

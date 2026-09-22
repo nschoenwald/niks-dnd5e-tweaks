@@ -179,6 +179,14 @@ function _processDamageForMageSlayer(defenderActor, amount, options) {
         const now = Date.now();
         if (defenderActor.id) _pendingMageSlayerDisadvantage.set(defenderActor.id, now);
         if (defenderActor.uuid) _pendingMageSlayerDisadvantage.set(defenderActor.uuid, now);
+
+        // Sync flag to other clients so the player client has it when rolling
+        game.socket.emit(`module.${MODULE_ID}`, {
+            type: "mageSlayerConcentrationDisadvantage",
+            actorId: defenderActor.id,
+            actorUuid: defenderActor.uuid,
+            timestamp: now
+        });
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error processing Mage Slayer damage:`, err);
     }
@@ -247,5 +255,17 @@ export function initMageSlayerConcentration() {
     Hooks.on("dnd5e.applyDamage", _onApplyDamage);
     Hooks.on("dnd5e.preRollConcentration", _onPreRollConcentration);
     debug("Mage Slayer Concentration | Initialized");
+}
+
+/**
+ * Handle incoming socket messages for Mage Slayer concentration disadvantage.
+ * @param {object} data
+ */
+export function onSocketMessage(data) {
+    if (data?.type !== "mageSlayerConcentrationDisadvantage") return;
+    const now = data.timestamp || Date.now();
+    if (data.actorId) _pendingMageSlayerDisadvantage.set(data.actorId, now);
+    if (data.actorUuid) _pendingMageSlayerDisadvantage.set(data.actorUuid, now);
+    debug(`Mage Slayer | Received socket disadvantage flag for actor ${data.actorId || data.actorUuid}`);
 }
 
