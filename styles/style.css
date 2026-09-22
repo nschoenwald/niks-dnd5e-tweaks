@@ -1712,6 +1712,7 @@ body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-multi) {
     inset-block-start: 50%;
     transform: translateY(-50%);
     padding-block-start: 0;
+    margin: 0;
 }
 
 body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
@@ -1720,12 +1721,21 @@ body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
     gap: 3px;
 }
 
-/* Badge container: enlarged 22x24 box matching the FA hexagon */
-body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) {
+/* Single die: absolute container matching the FA hexagon dimensions */
+body.nd5t-chat-card-styling button.dice-roll .d20die {
+    position: absolute;
+    width: 22px;
+    height: 24px;
+    box-sizing: border-box;
+}
+
+/* Multi-die badge: relative flex item inside .nd5t-d20-multi */
+body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-badge {
     position: relative;
     display: inline-block;
     width: 22px;
     height: 24px;
+    box-sizing: border-box;
 }
 
 /* Hex icon — enlarged for generous breathing room around 2-digit numbers */

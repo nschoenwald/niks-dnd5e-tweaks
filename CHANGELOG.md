@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.28.3] - 2026-09-22
+### Fixed
+- **Chat Card Styling — Single-Die d20 Badge Alignment on Windows / High-DPI Displays**: Fixed an issue where the single-die d20 hexagon badge popped out of the top-right frame of dice roll buttons on Windows Chrome (notably on 1440p displays). An unintended `position: relative` override caused `.d20die` to become an in-flow flex item and offset vertically when `inset-block-start: 50%` resolved against indefinite parent button heights. `.d20die` now strictly retains `position: absolute;` with zeroed margins and box sizing, ensuring rock-solid vertical centering and frame containment across all platforms and display scalings.
+
 ## [14.28.2] - 2026-09-20
 ### Added
 - **Chat Card Styling — Show All d20 Dice for Advantage / Disadvantage / Elven Accuracy**: The d20 indicator badge on roll cards now shows every individual die rolled, not just the final kept result.
