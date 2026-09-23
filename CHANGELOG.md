@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.29.2] - 2026-09-23
+### Fixed
+- **Prone Token Rotation — Lock Rotation Edge Case & State Restoration**: Fixed an edge case where tokens with "Lock Rotation" enabled in their token configuration failed to visually rotate when knocked Prone if their document already had `rotation: 90` stored in the database. The rotation check now accounts for `lockRotation` state instead of early-exiting on stored rotation angles alone, ensuring locked tokens are unlocked and visibly tilt to 90° on canvas. Additionally, tokens that originally had "Lock Rotation" enabled now automatically have their rotation re-locked upon standing up from Prone, preserving top-down pog orientation.
+
 ## [14.29.1] - 2026-09-23
 ### Changed
 - **Retroactive Advantage — Dice So Nice (DSN) New-Dice Only Trigger**: 3D dice animations now only trigger when newly evaluated dice are rolled (such as transitioning from Normal to Advantage/Disadvantage, or adding a third die for Elven Accuracy). When switching between modes using previously rolled and cached dice (e.g. toggling from Advantage to Disadvantage or returning to Normal), 3D dice animations are skipped entirely to avoid redundant or disruptive rolling animations.

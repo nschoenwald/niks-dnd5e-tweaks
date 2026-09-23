@@ -150,7 +150,13 @@ export class ProneRotation {
             }
 
             const targetRotation = isProne ? 90 : 0;
-            if (doc.rotation === targetRotation) continue;
+            const needsRotation = doc.rotation !== targetRotation;
+            const needsUnlock = isProne && doc.lockRotation;
+            const hadProneLock = !isProne && Boolean(doc.getFlag(MODULE_ID, "proneLockRotation"));
+            const needsRelock = hadProneLock && !doc.lockRotation;
+
+            // Only skip if neither the rotation angle nor the lockRotation state needs updating
+            if (!needsRotation && !needsUnlock && !needsRelock) continue;
 
             if (!isProne && actor) {
                 // Don't un-rotate if the actor still has another rotation-triggering active effect.
@@ -162,10 +168,14 @@ export class ProneRotation {
                 if (hasOtherActiveRotationEffect) continue;
             }
 
-            debug(`  ${doc.name} (${doc.id}): ${doc.rotation}° → ${targetRotation}°`);
+            debug(`  ${doc.name} (${doc.id}): ${doc.rotation}° → ${targetRotation}° (lockRotation: ${doc.lockRotation})`);
             const update = { _id: doc.id, rotation: targetRotation };
             if (isProne && doc.lockRotation) {
                 update.lockRotation = false;
+                update[`flags.${MODULE_ID}.proneLockRotation`] = true;
+            } else if (!isProne && hadProneLock) {
+                update.lockRotation = true;
+                update[`flags.${MODULE_ID}.proneLockRotation`] = null;
             }
 
             if (!sceneUpdates.has(scene)) sceneUpdates.set(scene, []);
