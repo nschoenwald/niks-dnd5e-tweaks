@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.29.0] - 2026-09-23
+### Added
+- **Retroactive Advantage / Disadvantage**: Added retroactive roll mode adjustments directly from chat cards with full native support for DnD5e v6 and Foundry V13 & V14.
+  - **Segmented Roll Mode Buttons**: Injects `[ ADV ] [ NORMAL ] [ DISADV ]` segmented action buttons with full tooltips directly below the dice roll on d20 check, save, and attack roll chat cards, matching DnD5e's roll dialog button order (Advantage on the left, Normal in the middle, Disadvantage on the right), highlighting and disabling the currently active mode with authentic DnD5e ribbon gradients.
+  - **Light & Dark Mode Theme Support**: Full native compatibility with Foundry V13+ and DnD5e v6 light and dark modes. Non-selected buttons feature crisp, high-contrast dark charcoal text and borders in Light Mode (`#191813` on parchment) and subtle silver text and borders in Dark Mode (`#f0f4f8` on denim), while preserving the highlighted crimson ribbon gradient for the active mode across all themes.
+  - **Hover-Only Visibility**: The buttons remain completely collapsed and invisible to minimize chat clutter, smoothly expanding into view only when hovering over the chat card or when navigating via keyboard focus without causing layout shift for the roll above. A configurable setting (`Show Only on Hover`, enabled by default) allows users to keep buttons always visible if preferred.
+  - **Anti-Exploit Die Value Preservation**: Original rolled die results are cached directly on the roll instance (`nd5tOriginalResults`) so toggling back and forth between Normal, Advantage, and Disadvantage never rolls new random dice for already-rolled slots, completely preventing re-roll abuse. Full support for Elven Accuracy (3 dice) and Halfling Lucky.
+  - **Dynamic Attack Target Hit/Miss Recalculation**: Updating the roll dynamically refreshes attack target evaluation (`evaluatedTargets`), automatically recalculating target hit/miss pills, critical hits, and fumble highlights across all connected clients.
+  - **Player Authorization & GM Socket Dispatch**: Players can modify their own rolls even if they lack database update permissions for `ChatMessage` documents in core Foundry. If `message.canUserModify` is false, the request is dispatched via socket to the active GM, who verifies author/actor ownership and applies the roll update securely. Unauthorized users cannot modify other players' rolls.
+  - **Dice So Nice (DSN) Integration**: Automatically triggers 3D dice rolls via `game.dice3d` when new dice are evaluated.
+  - **Personal Preferences Integration**: Added a personal client setting (`clientEnableRetroactiveAdvantage`) under Personal Preferences, allowing individual players to toggle the retroactive advantage buttons on or off for their own screen.
+
 ## [14.28.5] - 2026-09-22
 ### Added
 - **Personal Preferences & Client-Side Feature Toggles**: Added a dedicated **Personal Preferences** section in the settings dashboard for players and GMs, allowing individual users to toggle features on or off for their own browser session (`scope: "client"`) without modifying world settings or affecting other players.

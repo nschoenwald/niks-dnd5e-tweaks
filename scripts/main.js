@@ -38,6 +38,7 @@ import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
 import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
 import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/chat-scroll-fix.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/chat-card-styling.js";
+import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/retroactive-advantage.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -203,6 +204,15 @@ Hooks.once("init", () => {
         }
     });
 
+    game.settings.register(MODULE_ID, "clientEnableRetroactiveAdvantage", {
+        name: "Retroactive Advantage/Disadvantage (Personal)",
+        hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
     game.settings.register(MODULE_ID, "clientEnableSceneNavName", {
         name: "Sync Browser Tab Title (Personal)",
         hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
@@ -337,6 +347,26 @@ Hooks.once("init", () => {
             if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableRetroactiveAdvantage", {
+        name: "Retroactive Advantage/Disadvantage",
+        hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "retroactiveAdvantageHoverOnly", {
+        name: "Retroactive Advantage: Show Only on Hover",
+        hint: "Only display the retroactive advantage buttons when hovering over the chat card.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
 
@@ -1101,6 +1131,7 @@ Hooks.once("setup", () => {
     initRollModeHighlight();
     initChatScrollFix();
     initChatCardStyling();
+    initRetroactiveAdvantage();
 });
 
 Hooks.once("ready", async () => {
@@ -1123,6 +1154,7 @@ Hooks.once("ready", async () => {
         damagePromptSocketMessage(data);
         selfEffectSocketMessage(data);
         mageSlayerSocketMessage(data);
+        retroactiveAdvantageSocketMessage(data);
     });
     log("Central socket dispatcher registered");
 

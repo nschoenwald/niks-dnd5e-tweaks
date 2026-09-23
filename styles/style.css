@@ -2429,3 +2429,147 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emo
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* ==========================================================================
+   Retroactive Advantage / Disadvantage
+   ========================================================================== */
+
+.nd5t-retro-advantage {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    gap: 0 !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-family: var(--dnd5e-font-roboto-condensed, "Roboto Condensed", sans-serif) !important;
+    font-size: var(--font-size-10, 10px) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    line-height: 20px !important;
+    padding: 0 4px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn:first-child {
+    border-radius: 4px 0 0 4px !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn:not(:first-child) {
+    border-left: none !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn:last-child {
+    border-radius: 0 4px 4px 0 !important;
+}
+
+/* --- Active / Current Advantage Mode (Both Themes) --- */
+.nd5t-retro-advantage button.nd5t-retro-btn:disabled,
+.nd5t-retro-advantage button.nd5t-retro-btn.active {
+    background: linear-gradient(to right, var(--dnd5e-color-hd-1, #6b1414), var(--dnd5e-color-hd-2, #3b0000)) !important;
+    color: #ffffff !important;
+    cursor: default !important;
+    border: 1px solid rgba(0, 0, 0, 0.45) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn:disabled:not(:first-child),
+.nd5t-retro-advantage button.nd5t-retro-btn.active:not(:first-child) {
+    border-left: none !important;
+}
+
+/* --- Light Mode (Default for all DnD5e chat cards & when in nd5t-theme-light) --- */
+.nd5t-retro-advantage button.nd5t-retro-btn:not(:disabled):not(.active),
+.nd5t-retro-advantage.nd5t-theme-light button.nd5t-retro-btn:not(:disabled):not(.active),
+:is(.theme-light, .theme-light *) .nd5t-retro-advantage button.nd5t-retro-btn:not(:disabled):not(.active),
+:is(.chat-log, .chat-popout, .message, .chat-message).theme-light .nd5t-retro-advantage button.nd5t-retro-btn:not(:disabled):not(.active) {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.25) !important;
+    color: #111111 !important;
+}
+
+.nd5t-retro-advantage button.nd5t-retro-btn:hover:not(:disabled),
+.nd5t-retro-advantage.nd5t-theme-light button.nd5t-retro-btn:hover:not(:disabled),
+:is(.theme-light, .theme-light *) .nd5t-retro-advantage button.nd5t-retro-btn:hover:not(:disabled),
+:is(.chat-log, .chat-popout, .message, .chat-message).theme-light .nd5t-retro-advantage button.nd5t-retro-btn:hover:not(:disabled) {
+    background: rgba(181, 147, 51, 0.22) !important;
+    border-color: #9f822a !important;
+    color: #000000 !important;
+    box-shadow: 0 0 5px rgba(181, 147, 51, 0.4) !important;
+}
+
+/* --- Dark Mode (Active ONLY when nd5t-theme-dark is set or chat-log/chat-popout has theme-dark) --- */
+.nd5t-retro-advantage.nd5t-theme-dark button.nd5t-retro-btn:not(:disabled):not(.active),
+:is(.chat-log, .chat-popout, .message, .chat-message, .chat-card).theme-dark:not(.theme-light) .nd5t-retro-advantage:not(.nd5t-theme-light) button.nd5t-retro-btn:not(:disabled):not(.active) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: var(--dnd5e-color-blue-white, #f0f4f8) !important;
+}
+
+.nd5t-retro-advantage.nd5t-theme-dark button.nd5t-retro-btn:hover:not(:disabled),
+:is(.chat-log, .chat-popout, .message, .chat-message, .chat-card).theme-dark:not(.theme-light) .nd5t-retro-advantage:not(.nd5t-theme-light) button.nd5t-retro-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: var(--dnd5e-color-gold, #c9a227) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 5px rgba(201, 162, 39, 0.45) !important;
+}
+
+.nd5t-retro-advantage.nd5t-theme-dark button.nd5t-retro-btn:disabled,
+.nd5t-retro-advantage.nd5t-theme-dark button.nd5t-retro-btn.active,
+:is(.chat-log, .chat-popout, .message, .chat-message, .chat-card).theme-dark:not(.theme-light) .nd5t-retro-advantage:not(.nd5t-theme-light) button.nd5t-retro-btn:disabled,
+:is(.chat-log, .chat-popout, .message, .chat-message, .chat-card).theme-dark:not(.theme-light) .nd5t-retro-advantage:not(.nd5t-theme-light) button.nd5t-retro-btn.active {
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Hover reveal transition */
+.message .nd5t-retro-advantage.nd5t-hover-only,
+.chat-message .nd5t-retro-advantage.nd5t-hover-only {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin 0.2s ease !important;
+}
+
+.message:hover .nd5t-retro-advantage.nd5t-hover-only,
+.chat-message:hover .nd5t-retro-advantage.nd5t-hover-only,
+.nd5t-retro-advantage.nd5t-hover-only:focus-within {
+    max-height: 2.2rem !important;
+    opacity: 1 !important;
+    margin-top: 0.375rem !important;
+    margin-bottom: 0 !important;
+    pointer-events: auto !important;
+}
+
+.message .nd5t-retro-advantage:not(.nd5t-hover-only),
+.chat-message .nd5t-retro-advantage:not(.nd5t-hover-only) {
+    max-height: 2.2rem !important;
+    opacity: 1 !important;
+    margin-top: 0.375rem !important;
+    margin-bottom: 0 !important;
+}

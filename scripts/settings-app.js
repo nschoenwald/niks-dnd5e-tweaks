@@ -167,6 +167,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableRetroactiveAdvantage",
+                                name: "Retroactive Advantage/Disadvantage",
+                                hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableSceneNavName",
                                 name: "Sync Browser Tab Title",
                                 hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
@@ -388,6 +396,23 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         title: "Chat Log",
                         icon: "fa-solid fa-comments",
                         settings: [
+                            {
+                                key: "enableRetroactiveAdvantage",
+                                name: "Retroactive Advantage/Disadvantage",
+                                hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "retroactiveAdvantageHoverOnly",
+                                name: "Show Only on Hover",
+                                hint: "Only display the retroactive advantage buttons when hovering over the chat card.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableRetroactiveAdvantage"
+                            },
                             {
                                 key: "enableChatCardStyling",
                                 name: "Chat Card Styling Improvements",
