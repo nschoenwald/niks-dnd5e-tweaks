@@ -48,6 +48,8 @@ export async function constructD20(roll, mode) {
 
     await newRoll.d20.evaluate({ allowInteractive: false });
 
+    let newResults = [];
+
     if (mode === 0) {
         // Normal mode: only the first die result is kept
         newRoll.d20.results = [{ result: cachedValues[0] ?? currentValues[0] ?? newRoll.d20.results[0]?.result ?? 10, active: true, discarded: false }];
@@ -55,7 +57,11 @@ export async function constructD20(roll, mode) {
         // Advantage or Disadvantage: populate with cached dice where available,
         // or record newly evaluated dice into cachedValues
         const results = newRoll.d20.results.map((r, i) => {
-            const val = cachedValues[i] !== undefined ? cachedValues[i] : r.result;
+            const isCached = cachedValues[i] !== undefined;
+            const val = isCached ? cachedValues[i] : r.result;
+            if (!isCached) {
+                newResults.push({ ...r, result: val });
+            }
             cachedValues[i] = val;
             return { ...r, result: val, active: false, discarded: true };
         });
@@ -81,6 +87,7 @@ export async function constructD20(roll, mode) {
     }
 
     newRoll.options.nd5tOriginalResults = cachedValues;
+    newRoll._nd5tNewResults = newResults;
     newRoll._total = newRoll._evaluateTotal();
     return newRoll;
 }
@@ -103,10 +110,18 @@ export async function updateMessageRoll(message, mode, rollIndex = 0) {
 
     const newRoll = await constructD20(roll, mode);
 
-    // Dice So Nice 3D animation support
-    if (game.dice3d) {
+    // Dice So Nice 3D animation support: only animate newly rolled dice, not cached dice
+    if (game.dice3d && newRoll._nd5tNewResults?.length > 0) {
+        const DieClass = CONFIG.Dice.terms.d ?? foundry.dice.terms.Die;
+        const newDieTerm = new DieClass({
+            faces: 20,
+            number: newRoll._nd5tNewResults.length,
+            results: newRoll._nd5tNewResults.map(res => ({ ...res, active: true, discarded: false }))
+        });
+        newDieTerm._evaluated = true;
+        const dsnRoll = Roll.fromTerms([newDieTerm]);
         const users = message.whisper?.length ? message.whisper : null;
-        game.dice3d.showForRoll(newRoll, game.user, true, users, false, message.id, message.speaker);
+        game.dice3d.showForRoll(dsnRoll, game.user, true, users, message.blind ?? false, message.id, message.speaker);
     }
 
     const rolls = [...message.rolls];

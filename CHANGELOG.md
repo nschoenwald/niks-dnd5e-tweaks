@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.29.1] - 2026-09-23
+### Changed
+- **Retroactive Advantage — Dice So Nice (DSN) New-Dice Only Trigger**: 3D dice animations now only trigger when newly evaluated dice are rolled (such as transitioning from Normal to Advantage/Disadvantage, or adding a third die for Elven Accuracy). When switching between modes using previously rolled and cached dice (e.g. toggling from Advantage to Disadvantage or returning to Normal), 3D dice animations are skipped entirely to avoid redundant or disruptive rolling animations.
+
 ## [14.29.0] - 2026-09-23
 ### Added
 - **Retroactive Advantage / Disadvantage**: Added retroactive roll mode adjustments directly from chat cards with full native support for DnD5e v6 and Foundry V13 & V14.
