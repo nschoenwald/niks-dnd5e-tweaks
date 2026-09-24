@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.30.0] - 2026-09-24
+### Added
+- **Hide Private GM Rolls from Players**:
+  - Added a new feature that completely hides whispered, private, and blind rolls authored by the GM from non-GM players in the chat log.
+  - In vanilla Foundry VTT, when a GM makes a private GM roll (`/gmroll`), blind roll (`/blindroll`), self roll (`/selfroll`), or rolls an NPC ability card with a private roll mode, core Foundry forces the message to be visible to all clients (`if ( this.isRoll ) return true;`) and displays an empty card with hidden contents (`???`), alerting players that a secret roll took place behind the DM screen.
+  - This feature patches `ChatMessage.prototype.visible` so that non-recipient players never see the card at all in their chat log. Rolls whispered to specific players remain fully visible to those designated recipients, and GMs continue to see all private and blind rolls as normal.
+  - Configurable via a world setting (**Hide Private GM Rolls from Players**) under the **Chat Log** category, enabled by default. Re-rendering of the chat log occurs dynamically whenever the setting is toggled.
+
 ## [14.29.3] - 2026-09-24
 ### Added
 - **Chat Card Styling — Unified Badges & Styling for Whispers, Blind Rolls, and Private Rolls on All Chat Messages**:

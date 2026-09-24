@@ -428,6 +428,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableHidePrivateGMRolls",
+                                name: "Hide Private GM Rolls from Players",
+                                hint: "Completely hides whispered, private, and blind rolls made by the GM from players in the chat log, rather than displaying an empty placeholder card with hidden contents.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             }
                         ]
                     },

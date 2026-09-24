@@ -39,6 +39,7 @@ import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
 import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/chat-scroll-fix.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/chat-card-styling.js";
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/retroactive-advantage.js";
+import { initHidePrivateGMRolls } from "./features/hide-private-gm-rolls.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -367,6 +368,20 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableHidePrivateGMRolls", {
+        name: "Hide Private GM Rolls from Players",
+        hint: "Completely hides whispered, private, and blind rolls made by the GM from players in the chat log, rather than displaying an empty placeholder card with hidden contents.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            ui.chat?.render(true);
+            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
+        }
     });
 
 
@@ -1132,6 +1147,7 @@ Hooks.once("setup", () => {
     initChatScrollFix();
     initChatCardStyling();
     initRetroactiveAdvantage();
+    initHidePrivateGMRolls();
 });
 
 Hooks.once("ready", async () => {
