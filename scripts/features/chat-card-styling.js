@@ -42,13 +42,20 @@ function _formatDamageSubtitle(message, root) {
 function _applyCardBorders(message, root) {
     const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
     const rollType = rawRollType?.toLowerCase();
-    if (!STYLED_ROLL_TYPES.has(rollType)) return;
+    const isStyledRoll = Boolean(rollType && STYLED_ROLL_TYPES.has(rollType));
+    const isWhisper = Boolean(message.whisper?.length);
+    const isBlind = Boolean(message.blind);
+    const isEmote = message.style === CONST.CHAT_MESSAGE_STYLES?.EMOTE;
 
     // Guard: only stash the original border-color once so double-hook calls don't overwrite it.
     if (root.style.borderColor && !root.dataset.originalBorderColor) {
         root.dataset.originalBorderColor = root.style.borderColor;
     }
-    root.style.removeProperty("border-color");
+    if (isStyledRoll || isWhisper || isBlind || isEmote) {
+        root.style.removeProperty("border-color");
+    }
+
+    if (!isStyledRoll) return;
 
     const accentVar = `var(--nd5t-${rollType}-border-color)`;
     const goldVar = "var(--dnd5e-color-gold, #c9a227)";
@@ -65,7 +72,8 @@ function _applyCardBorders(message, root) {
 
 /**
  * Tag a rendered chat message element with its roll/card type
- * (e.g. nd5t-attack-card, nd5t-damage-card), apply border styling, and format subtitle.
+ * (e.g. nd5t-attack-card, nd5t-damage-card), visibility type (blind, private, whisper),
+ * apply border styling, and format subtitle.
  *
  * Both renderChatMessageHTML and dnd5e.renderChatMessage call this for the same message.
  * This is intentional: renderChatMessageHTML fires early (before card templates fill in
@@ -79,8 +87,10 @@ function _tagMessageElement(message, root) {
     if (!root) return;
     const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
     const rollType = rawRollType?.toLowerCase();
+    const isStyledRoll = Boolean(rollType && STYLED_ROLL_TYPES.has(rollType));
+
     // Only add styled classes for known roll types — avoids nd5t-base-card, nd5t-usage-card, etc.
-    if (rollType && STYLED_ROLL_TYPES.has(rollType)) {
+    if (isStyledRoll) {
         root.dataset.nd5tCardType = rollType;
         root.classList.add(`nd5t-${rollType}-card`);
 
@@ -94,6 +104,34 @@ function _tagMessageElement(message, root) {
             delete root.dataset.nd5tCardSubtype;
         }
     }
+
+    // Determine message visibility type (blind roll, private roll, whisper, emote)
+    const isBlind = Boolean(message.blind);
+    const isWhisper = Boolean(message.whisper?.length);
+    const isRoll = Boolean(message.isRoll || message.rolls?.length > 0 || isStyledRoll);
+
+    if (isBlind) {
+        root.dataset.nd5tVisibility = "blind";
+        root.classList.add("nd5t-blind-card");
+        root.classList.remove("nd5t-private-roll", "nd5t-whisper-card");
+    } else if (isWhisper) {
+        if (isRoll) {
+            root.dataset.nd5tVisibility = "private";
+            root.classList.add("nd5t-private-roll");
+            root.classList.remove("nd5t-whisper-card", "nd5t-blind-card");
+        } else {
+            root.dataset.nd5tVisibility = "whisper";
+            root.classList.add("nd5t-whisper-card");
+            root.classList.remove("nd5t-private-roll", "nd5t-blind-card");
+        }
+    } else if (message.style === CONST.CHAT_MESSAGE_STYLES?.EMOTE) {
+        root.dataset.nd5tVisibility = "emote";
+        root.classList.remove("nd5t-private-roll", "nd5t-whisper-card", "nd5t-blind-card");
+    } else {
+        delete root.dataset.nd5tVisibility;
+        root.classList.remove("nd5t-private-roll", "nd5t-whisper-card", "nd5t-blind-card");
+    }
+
     _applyCardBorders(message, root);
     _formatDamageSubtitle(message, root);
 }
@@ -234,14 +272,15 @@ export function disableChatCardStyling() {
             delete subtitleEl.dataset.originalSubtitle;
         }
 
-        // Remove card-type classes and data attribute
+        // Remove card-type and visibility classes and data attributes
         for (const cls of [...msgEl.classList]) {
-            if (cls.startsWith("nd5t-") && cls.endsWith("-card")) {
+            if ((cls.startsWith("nd5t-") && cls.endsWith("-card")) || cls === "nd5t-private-roll") {
                 msgEl.classList.remove(cls);
             }
         }
         delete msgEl.dataset.nd5tCardType;
         delete msgEl.dataset.nd5tCardSubtype;
+        delete msgEl.dataset.nd5tVisibility;
 
         // Restore inline borders
         msgEl.style.removeProperty("border-left");

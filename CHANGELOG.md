@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.29.3] - 2026-09-24
+### Added
+- **Chat Card Styling — Unified Badges & Styling for Whispers, Blind Rolls, and Private Rolls on All Chat Messages**:
+  - Extended whisper, blind roll, private roll, and emote styling and chip badges from DnD5e v6 cards to all chat messages, including normal text messages, standard dice rolls (`/r`, `/gmroll`, `/blindroll`, `/selfroll`), and non-roll cards (item cards, activity usage, etc.).
+  - **Private Rolls**: Non-blind rolls whispered to GMs or self now display an explicit **"🔒 PRIVATE"** chip badge in the message header alongside the indigo 4px left border, indigo bottom accent, and gradient background tint.
+  - **Whispers**: Text whispers (`/w`, `/gm`) and whispered cards display an explicit **"🔒 WHISPER"** chip badge in the header alongside the indigo border and background tint, preserving recipient details in the sender subtitle.
+  - **Blind Rolls**: Blind rolls (`/blindroll` or Blind GM Roll mode) display an explicit **"👁 BLIND"** chip badge in the header alongside the fuchsia/magenta 4px left border, magenta bottom accent, and background tint.
+  - **Emotes**: Emotes (`/em`) display a **"✦ EMOTE"** chip badge in the header alongside the amber 4px left border, amber bottom accent, and background tint.
+  - **Header Alignment & Flavor Text Containment**: Standardized flex ordering (`order`) in `.message-header` so badges sit seamlessly on the top row alongside sender and metadata across both `.compact` DnD5e cards and standard chat messages, cleanly separating multi-line roll flavor text onto its own row below without displacing badges.
+
 ## [14.29.2] - 2026-09-23
 ### Fixed
 - **Prone Token Rotation — Lock Rotation Edge Case & State Restoration**: Fixed an edge case where tokens with "Lock Rotation" enabled in their token configuration failed to visually rotate when knocked Prone if their document already had `rotation: 90` stored in the database. The rotation check now accounts for `lockRotation` state instead of early-exiting on stored rotation angles alone, ensuring locked tokens are unlocked and visibly tilt to 90° on canvas. Additionally, tokens that originally had "Lock Rotation" enabled now automatically have their rotation re-locked upon standing up from Prone, preserving top-down pog orientation.

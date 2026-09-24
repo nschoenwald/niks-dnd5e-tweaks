@@ -2134,7 +2134,11 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-light 
  *                          is layered on top of the roll tint via a second background-image
  *                          gradient on the combined-card selectors below.
  */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg, .blind, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+    border-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-top-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-right-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-bottom-color: var(--dnd5e-color-gold, #c9a227) !important;
     border-left: 4px solid var(--nd5t-whisper-border-color) !important;
     border-left-color: var(--nd5t-whisper-border-color) !important;
     border-left-width: 4px !important;
@@ -2195,41 +2199,15 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whi
 }
 
 /*
- * ── Whisper badge on roll cards ──
- * For plain whispered messages we style the existing .whisper-to element.
- * But attack and damage roll cards are excluded from that rule (to avoid border conflicts),
- * so they would have no visible whisper indicator. Add an explicit ::after badge instead.
- */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header {
-    position: relative;
-}
-
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:is(.nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card):not(.tiny-monitor-msg) .message-header::after {
-    content: "🔒 WHISPER";
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: var(--font-size-10, 10px);
-    font-weight: bold;
-    font-family: var(--dnd5e-font-roboto-condensed);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.4;
-    background-color: var(--nd5t-whisper-badge-bg);
-    border: 1px solid var(--nd5t-whisper-badge-border);
-    color: var(--nd5t-whisper-badge-color);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-/*
  * ── Blind: Fuchsia left border + tint ──
  * Excludes tiny-monitor-msg for the same reason as whisper.
  * Blind rolls that are also typed cards keep the roll accent border.
  */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+    border-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-top-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-right-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-bottom-color: var(--dnd5e-color-gold, #c9a227) !important;
     border-left: 4px solid var(--nd5t-blind-border-color) !important;
     border-left-color: var(--nd5t-blind-border-color) !important;
     border-left-width: 4px !important;
@@ -2294,6 +2272,10 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.bli
  * Emote attack/damage cards: same compositing pattern.
  */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg, .nd5t-attack-card, .nd5t-damage-card, .nd5t-save-card, .nd5t-check-card, .nd5t-healing-card, .nd5t-hitdie-card, .nd5t-recharge-card) {
+    border-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-top-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-right-color: var(--dnd5e-color-gold, #c9a227) !important;
+    border-bottom-color: var(--dnd5e-color-gold, #c9a227) !important;
     border-left: 4px solid var(--nd5t-emote-border-color) !important;
     border-left-color: var(--nd5t-emote-border-color) !important;
     border-left-width: 4px !important;
@@ -2352,82 +2334,93 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emo
         linear-gradient(to right, var(--nd5t-recharge-tint-color), transparent 50%) !important;
 }
 
-/* ── Whisper badge: style the existing .whisper-to element ── */
-/* Excluded for tiny-monitor-msg: their header is hidden entirely (display:none !important) */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to {
+/* ─── Message Type Badges (Whisper / Private Roll / Blind Roll / Emote) ─── */
+
+/* Ensure message header flex container aligns badges cleanly alongside sender and metadata */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:not(.tiny-monitor-msg):is(.whisper, .blind, .emote) .message-header {
+    position: relative;
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:not(.tiny-monitor-msg):is(.whisper, .blind, .emote) .message-header .message-sender {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:not(.tiny-monitor-msg):is(.whisper, .blind, .emote) .message-header .message-metadata {
+    order: 2;
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    transform: none;
+}
+
+/* Base style for header ::after badge */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:not(.tiny-monitor-msg):is(.whisper, .blind, .emote) .message-header::after {
+    order: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     padding: 1px 6px;
+    margin-inline-start: 4px;
     border-radius: 3px;
     font-size: var(--font-size-10, 10px);
     font-weight: bold;
-    font-style: normal;
+    font-family: var(--dnd5e-font-roboto-condensed);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     line-height: 1.4;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Push any trailing flavor text to its own full-width row below the header */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:not(.tiny-monitor-msg):is(.whisper, .blind, .emote) .message-header .flavor-text {
+    order: 4;
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+/* ── 1. Blind badge: highest priority when blind ── */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg) .message-header::after {
+    content: "👁 BLIND";
+    background-color: var(--nd5t-blind-badge-bg);
+    border: 1px solid var(--nd5t-blind-badge-border);
+    color: var(--nd5t-blind-badge-color);
+}
+
+/* ── 2. Private roll badge: for rolls whispered to GM / self (non-blind) ── */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message:is(.nd5t-private-roll, [data-nd5t-visibility="private"]):not(.tiny-monitor-msg, .blind) .message-header::after {
+    content: "🔒 PRIVATE";
     background-color: var(--nd5t-whisper-badge-bg);
     border: 1px solid var(--nd5t-whisper-badge-border);
     color: var(--nd5t-whisper-badge-color);
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to::before {
-    content: "🔒";
-    font-style: normal;
-    font-size: 0.9em;
-    line-height: 1;
+/* ── 3. Whisper badge: for text messages or non-rolls whispered to recipients ── */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg, .blind, .nd5t-private-roll, [data-nd5t-visibility="private"]) .message-header::after {
+    content: "🔒 WHISPER";
+    background-color: var(--nd5t-whisper-badge-bg);
+    border: 1px solid var(--nd5t-whisper-badge-border);
+    color: var(--nd5t-whisper-badge-color);
 }
 
-/* ── Blind badge: inject via ::after on .message-header ── */
-/* Excluded for tiny-monitor-msg: header is hidden */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg) .message-header {
-    position: relative;
-}
-
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.blind:not(.tiny-monitor-msg) .message-header::after {
-    content: "👁 BLIND";
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: var(--font-size-10, 10px);
-    font-weight: bold;
-    font-family: var(--dnd5e-font-roboto-condensed);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.4;
-    background-color: var(--nd5t-blind-badge-bg);
-    border: 1px solid var(--nd5t-blind-badge-border);
-    color: var(--nd5t-blind-badge-color);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-/* ── Emote badge: inject via ::after on .message-header ── */
-/* Excluded for tiny-monitor-msg: header is hidden */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg) .message-header {
-    position: relative;
-}
-
+/* ── 4. Emote badge ── */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.emote:not(.tiny-monitor-msg) .message-header::after {
     content: "✦ EMOTE";
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: var(--font-size-10, 10px);
-    font-weight: bold;
-    font-family: var(--dnd5e-font-roboto-condensed);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.4;
     background-color: var(--nd5t-emote-badge-bg);
     border: 1px solid var(--nd5t-emote-badge-border);
     color: var(--nd5t-emote-badge-color);
-    white-space: nowrap;
-    flex-shrink: 0;
+}
+
+/* Hide raw .whisper-to element in header to prevent duplicate text with ::after badge */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to {
+    display: none !important;
 }
 
 /* ==========================================================================
