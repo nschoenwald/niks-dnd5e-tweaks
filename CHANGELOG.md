@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
   - **Blind Rolls**: Blind rolls (`/blindroll` or Blind GM Roll mode) display an explicit **"👁 BLIND"** chip badge in the header alongside the fuchsia/magenta 4px left border, magenta bottom accent, and background tint.
   - **Emotes**: Emotes (`/em`) display a **"✦ EMOTE"** chip badge in the header alongside the amber 4px left border, amber bottom accent, and background tint.
   - **Header Alignment & Flavor Text Containment**: Standardized flex ordering (`order`) in `.message-header` so badges sit seamlessly on the top row alongside sender and metadata across both `.compact` DnD5e cards and standard chat messages, cleanly separating multi-line roll flavor text onto its own row below without displacing badges.
+- **Self Effect Application Prompt — Hardcoded Blacklist (Smite Exclusions)**:
+  - Added a hardcoded blacklist (`SELF_EFFECT_BLACKLIST`) to prevent unwanted self-effect application prompts on features, spells, and rolls that are not intended to trigger self-buff cards.
+  - Added `"Smite"` to the blacklist: any roll, activity, item, or effect whose name or identifier includes `"Smite"` (case-insensitive, e.g. *Divine Smite*, *Thunderous Smite*, *Wrathful Smite*, *Banishing Smite*, *Blinding Smite*, *Branding Smite*, *Searing Smite*, *Shining Smite*, *Staggering Smite*) is strictly excluded from triggering the self-effect application prompt.
 
 ## [14.29.2] - 2026-09-23
 ### Fixed

@@ -151,6 +151,42 @@ function _cleanName(str) {
 }
 
 /**
+ * Hardcoded blacklist of terms for self effect application.
+ * Any activity, item, roll, or usage whose name or identifier includes any of these
+ * terms (case-insensitive) will not trigger the self effect application.
+ *
+ * @type {string[]}
+ */
+const SELF_EFFECT_BLACKLIST = [
+    "smite"
+];
+
+/**
+ * Check whether an individual ActiveEffect matches the hardcoded blacklist.
+ *
+ * @param {ActiveEffect5e} effect
+ * @returns {boolean}
+ */
+function _isEffectBlacklisted(effect) {
+    if (!effect) return false;
+    const candidates = [
+        effect.name,
+        effect.label,
+        effect.statuses ? Array.from(effect.statuses).join(" ") : ""
+    ];
+    for (const term of SELF_EFFECT_BLACKLIST) {
+        const cleanTerm = term.trim().toLowerCase();
+        if (!cleanTerm) continue;
+        for (const candidate of candidates) {
+            if (typeof candidate === "string" && candidate.toLowerCase().includes(cleanTerm)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
  * Retrieve applicable Active Effects that are explicitly assigned to the used activity.
  *
  * @param {Activity} activity
@@ -204,8 +240,8 @@ async function _getApplicableEffects(activity) {
         }
     }
 
-    // Filter to valid non-transfer effects
-    effects = effects.filter(e => e && !e.transfer);
+    // Filter to valid non-transfer effects that are not blacklisted
+    effects = effects.filter(e => e && !e.transfer && !_isEffectBlacklisted(e));
 
     // Replace generic activity effect names (like "use", "cast", "utility", "effect") with the Item Name
     if (itemName && effects.length > 0) {
@@ -224,6 +260,58 @@ async function _getApplicableEffects(activity) {
     }
 
     return effects;
+}
+
+/**
+ * Check whether an activity, its parent item, or associated roll / usage matches
+ * the hardcoded blacklist for self effect application.
+ *
+ * @param {Activity} activity
+ * @param {ActivityUsageResults} [results]
+ * @returns {boolean}
+ */
+function _isBlacklisted(activity, results) {
+    if (!activity) return false;
+
+    const candidates = [
+        activity.name,
+        activity.identifier,
+        activity.id,
+        activity.item?.name,
+        activity.item?.identifier,
+        activity.item?.system?.identifier,
+        results?.message?.flavor,
+        results?.message?.system?.title,
+        results?.message?.flags?.dnd5e?.item?.name,
+        results?.message?.flags?.dnd5e?.item?.identifier,
+        results?.message?.flags?.dnd5e?.activity?.name,
+        results?.message?.flags?.dnd5e?.activity?.identifier
+    ];
+
+    const rollCollections = [results?.rolls, results?.message?.rolls, results?.updates?.rolls];
+    for (const collection of rollCollections) {
+        if (!Array.isArray(collection)) continue;
+        for (const r of collection) {
+            if (!r) continue;
+            if (typeof r.options?.flavor === "string") candidates.push(r.options.flavor);
+            if (typeof r.options?.title === "string") candidates.push(r.options.title);
+            if (typeof r.options?.type === "string") candidates.push(r.options.type);
+            if (typeof r.options?.item?.name === "string") candidates.push(r.options.item.name);
+        }
+    }
+
+    for (const term of SELF_EFFECT_BLACKLIST) {
+        const cleanTerm = term.trim().toLowerCase();
+        if (!cleanTerm) continue;
+
+        for (const candidate of candidates) {
+            if (typeof candidate === "string" && candidate.toLowerCase().includes(cleanTerm)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -271,6 +359,12 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         const actor = activity.item?.actor;
         if (!actor) return;
+
+        // Skip activities, items, or rolls that match the hardcoded blacklist (e.g. Smite)
+        if (_isBlacklisted(activity, results)) {
+            debug(`Self Effect Application | Activity "${activity.name || activity.id}" on "${activity.item?.name}" matches hardcoded blacklist — skipping self-effect prompt.`);
+            return;
+        }
 
         // Skip activities that place an area-of-effect template — they are
         // never self-targeted for the purpose of this feature.
