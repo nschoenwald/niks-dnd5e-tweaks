@@ -41,7 +41,7 @@ import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } fr
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/retroactive-advantage.js";
 import { initHidePrivateGMRolls } from "./features/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/auto-collapse-damage-trays.js";
-import { initSuppressBloodiedDead } from "./features/suppress-bloodied-dead.js";
+import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./features/suppress-bloodied-dead.js";
 import { initAutoanimationsTeleportUI } from "./features/autoanimations-teleport-ui.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
@@ -403,7 +403,11 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true,
-        restricted: true
+        restricted: true,
+        onChange: () => {
+            ui.chat?.render(true);
+            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
+        }
     });
 
 
@@ -1082,7 +1086,19 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true,
-        restricted: true
+        restricted: true,
+        onChange: (value) => {
+            if (!game.user?.isActiveGM) return;
+            for (const token of canvas.tokens?.placeables ?? []) {
+                const actor = token.actor;
+                if (!actor) continue;
+                if (value) {
+                    if (isActorDead(actor)) removeBloodiedEffect(actor);
+                } else {
+                    if (typeof actor.updateBloodied === "function") actor.updateBloodied();
+                }
+            }
+        }
     });
 
     // ── Phase 5: Encounter Conclusion ──────────────────────────────────

@@ -77,12 +77,12 @@ function onAAPreDataSanitize(handler, data) {
     // Only activate for the controlling player or GM
     if (!sourceToken.isOwner && !game.user.isGM) return;
 
-    debug("Detected incoming Autoanimations Teleportation preset in preDataSanitize", handler, data);
-
     const range = data.data?.options?.range ?? data.options?.range ?? 30;
     const checkCollision = data.data?.options?.checkCollision ?? data.options?.checkCollision ?? false;
     const measureType = data.data?.options?.measureType ?? data.options?.measureType ?? "circle";
     const itemName = handler.itemName || handler.item?.name || "Teleport";
+
+    debug(`Detected Autoanimations Teleportation preset for "${itemName}" (range: ${range}, collision: ${checkCollision}, measure: ${measureType})`);
 
     startTeleportSession({
         sourceToken,
@@ -124,7 +124,7 @@ function setupStageInterception(ownPointerDownHandler) {
     const intercept = function(event, fn, context) {
         if (event === "pointerdown" && fn !== ownPointerDownHandler && !capturedAAListener) {
             capturedAAListener = fn;
-            debug("Captured Autoanimations pointerdown listener on stage", fn);
+            debug("Captured Autoanimations pointerdown listener on stage");
             restoreStageInterception();
         }
         return originalAddListener.call(this, event, fn, context);
@@ -214,7 +214,7 @@ function startTeleportSession({ sourceToken, item, itemName, range, checkCollisi
             updateGhostAndHud(canvas.mousePosition);
         }
     } catch (err) {
-        console.error("Nik's DnD5e Tweaks | Failed to start Teleport UI session:", err);
+        console.error(`Nik's DnD5e Tweaks | Failed to start Teleport UI session: ${err?.message || err}`);
         ui.notifications?.error(`Teleport UI Error: ${err.message}`);
         cleanupSession(false);
     }
@@ -253,6 +253,10 @@ function createTeleportHud({ itemName, range }) {
             </div>
         </div>
     `;
+
+    hud.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+    });
 
     const cancelBtn = hud.querySelector(".nd5t-teleport-cancel-btn");
     if (cancelBtn) {
@@ -593,8 +597,7 @@ function createGhostToken(sourceToken) {
 
         return { container, sprite, indicator, bkgGraphics, bkgSprite, ringGraphics, ringSprite, colorBandGraphics, ringColor, bkgColor };
     } catch (err) {
-        console.error("Nik's DnD5e Tweaks | Failed to create ghost token preview:", err);
-        console.groupEnd();
+        console.error(`Nik's DnD5e Tweaks | Failed to create ghost token preview: ${err?.message || err}`);
         ui.notifications?.error(`Preview creation error: ${err.message}`);
         return null;
     }
@@ -618,7 +621,7 @@ function onPointerMove() {
             updateGhostAndHud(mousePos);
         } catch (err) {
             if (!lastMoveErrorLogged) {
-                console.error("Nik's DnD5e Tweaks | Error updating teleport destination preview:", err);
+                console.error(`Nik's DnD5e Tweaks | Error updating teleport destination preview: ${err?.message || err}`);
                 ui.notifications?.error(`Teleport Preview Error: ${err.message}`);
                 lastMoveErrorLogged = true;
             }
@@ -853,7 +856,7 @@ export function cancelTeleport() {
             canvas.app.stage.removeListener("pointerdown", capturedAAListener);
             debug("Removed Autoanimations listener from canvas stage");
         } catch (err) {
-            console.warn("Nik's DnD5e Tweaks | Failed to remove A-A stage listener", err);
+            console.warn(`Nik's DnD5e Tweaks | Failed to remove A-A stage listener: ${err?.message || err}`);
         }
         capturedAAListener = null;
     }
@@ -864,7 +867,7 @@ export function cancelTeleport() {
             Sequencer.EffectManager.endEffects({ name: "teleportation" });
             debug("Ended Sequencer teleportation border effects");
         } catch (err) {
-            console.warn("Nik's DnD5e Tweaks | Failed to end Sequencer teleportation effects", err);
+            console.warn(`Nik's DnD5e Tweaks | Failed to end Sequencer teleportation effects: ${err?.message || err}`);
         }
     }
 
@@ -897,7 +900,7 @@ function cleanupSession(isCancel = false) {
             }
             ghost.container.destroy({ children: true, texture: false, baseTexture: false });
         } catch (err) {
-            console.warn("Nik's DnD5e Tweaks | Failed to destroy ghost token container", err);
+            console.warn(`Nik's DnD5e Tweaks | Failed to destroy ghost token container: ${err?.message || err}`);
         }
     }
 

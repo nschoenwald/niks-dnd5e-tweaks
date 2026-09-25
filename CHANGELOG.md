@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.1] - 2026-09-25
+### Fixed
+- **Suppress Bloodied on Dead Tokens — Non-Bloodied Death & Recursion Fix**:
+  - Fixed an error (`ActiveEffect "dnd5ebloodied000" does not exist!`) that occurred when a token died without having been bloodied first (e.g. dropping from above 50% HP directly to 0 HP).
+  - Patched `Actor5e.prototype.updateBloodied` and `preCreateActiveEffect` to prevent generating the bloodied condition when an actor is already dead or in the process of dying at 0 HP (`willActorBeDead`), avoiding race conditions where the system attempts to create and delete the bloodied condition at the same time.
+  - Added per-actor in-flight deletion tracking (`${actorUuid}:${effectId}`) to `removeBloodiedEffect` to prevent multiple concurrent hook triggers from issuing duplicate deletion requests, while safely allowing simultaneous multi-target AoE deaths without cross-actor collision on DnD5e's static effect ID.
+  - Added creature guard (`actor.system?.isCreature !== false`) in `willActorBeDead` to ensure non-creature documents (such as vehicles and group actors) are never misidentified as dying actors.
+  - Added dynamic re-evaluation `onChange` handler for `enableSuppressBloodiedWhileDead` that refreshes all canvas token bloodied states immediately when the setting is toggled.
+  - Fixed an infinite recursion bug where `isActorDead` evaluated `e.isSuppressed`, which in turn invoked `isActorDead`, causing a `Maximum call stack size exceeded` RangeError that severely slowed down the browser developer console with massive call stacks. Removed `isSuppressed` checks from dead condition detection and added a re-entrancy lock to `ActiveEffect5e.prototype.isSuppressed`.
+- **Automated Animations Teleport UI — Console & Interaction Polish**:
+  - Replaced verbose object dumping in teleport targeting debug logs (which logged entire Automated Animations workflow handler and configuration object trees to the console) with concise, formatted string summaries.
+  - Formatted all error and warning logs in the teleport UI module to log clean error messages rather than full error objects.
+  - Raised `#nd5t-teleport-hud` `z-index` to 10000 so the floating teleport HUD banner is never obscured behind open character sheets or ApplicationV2 dialog windows.
+  - Added `pointerdown` propagation stop on the teleport HUD banner to prevent accidental stage clicks when interacting with the banner.
+  - Removed stray `console.groupEnd()` call in preview creation error handling.
+- **Auto-Collapse Hostile Damage Trays & Chat Card Visibility — Robustness Polish**:
+  - Normalized `HTMLElement` handling in `auto-collapse-damage-trays.js` and `hide-private-gm-rolls.js` to safeguard against modules passing jQuery-wrapped elements.
+  - Narrowed collapsed tray targeting to damage trays (`damage-application .card-tray, .card-tray.damage-tray`), ensuring other card trays (e.g. effect trays) are not inadvertently collapsed.
+  - Added dynamic re-render `onChange` callback to `enableAutoCollapseHostileDamageTrays` so chat cards immediately reflect setting changes without requiring a page refresh.
+
 ## [14.32.0] - 2026-09-25
 ### Added
 - **Enhanced Teleport Targeting UI for Automated Animations**:

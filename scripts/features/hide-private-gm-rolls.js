@@ -88,8 +88,11 @@ export function initHidePrivateGMRolls() {
         if (!game.settings.get(MODULE_ID, "enableHidePrivateGMRolls")) return;
         if (game.user?.isGM) return;
         if (!message.visible) {
-            html.style.display = "none";
-            html.remove();
+            const el = html instanceof HTMLElement ? html : html?.[0];
+            if (el) {
+                el.style.display = "none";
+                el.remove?.();
+            }
         }
     });
 

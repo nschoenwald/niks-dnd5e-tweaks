@@ -1849,7 +1849,8 @@ function _setPromptStateUnapplied(prompt) {
  * @param {HTMLElement}  element
  */
 function _bindApplyDamageButton(message, element) {
-    const prompt = element.querySelector(".nd5t-damage-prompt");
+    const el = element instanceof HTMLElement ? element : element?.[0];
+    const prompt = el?.querySelector?.(".nd5t-damage-prompt");
     if (!prompt) return;
 
     // Prevent double binding if render hooks fire multiple times on the same element
@@ -1858,8 +1859,10 @@ function _bindApplyDamageButton(message, element) {
 
     // Allow individual players to suppress damage prompts (defense-in-depth)
     if (!game.user.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
-        element.style.display = "none";
-        element.remove();
+        if (el) {
+            el.style.display = "none";
+            el.remove?.();
+        }
         return;
     }
 

@@ -29,10 +29,12 @@ export function shouldCollapseHostileDamageTray(message, html) {
     const allowPlayerDamage = Boolean(game.settings.get("dnd5e", "allowPlayerDamageTray"));
     if (!allowPlayerDamage) return false;
 
+    const el = html instanceof HTMLElement ? html : html?.[0] instanceof HTMLElement ? html[0] : null;
+
     // Check if the message is a damage roll or contains a damage application tray
     const isDamageRoll = message.type === "damage"
         || message.flags?.dnd5e?.roll?.type === "damage"
-        || Boolean(html?.querySelector?.("damage-application"));
+        || Boolean(el?.querySelector?.("damage-application"));
     if (!isDamageRoll) return false;
 
     // Determine the source actor and token
@@ -60,7 +62,7 @@ export function shouldCollapseHostileDamageTray(message, html) {
     if (!isHostile) return false;
 
     // Gather targets
-    const targetActors = _resolveDamageTargets(message, html);
+    const targetActors = _resolveDamageTargets(message, el);
     if (!targetActors.length) return false;
 
     // Check if targets include player characters
@@ -79,6 +81,7 @@ export function shouldCollapseHostileDamageTray(message, html) {
  * @returns {Actor5e[]}
  */
 function _resolveDamageTargets(message, html) {
+    const el = html instanceof HTMLElement ? html : html?.[0] instanceof HTMLElement ? html[0] : null;
     const actors = new Set();
 
     // 1. Direct message targets in system.targets
@@ -104,12 +107,12 @@ function _resolveDamageTargets(message, html) {
     }
 
     // 3. Targets recorded in the DOM (<recorded-targets> pills/options)
-    if (!actors.size && html) {
-        const targetElements = html.querySelectorAll(
+    if (!actors.size && el) {
+        const targetElements = el.querySelectorAll(
             "damage-application recorded-targets option, damage-application recorded-targets target-pill"
         );
-        for (const el of targetElements) {
-            const val = el.value ?? el.dataset?.uuid ?? el.getAttribute("value");
+        for (const item of targetElements) {
+            const val = item.value ?? item.dataset?.uuid ?? item.getAttribute("value");
             if (val) {
                 try {
                     const doc = fromUuidSync(val, { strict: false });
@@ -163,12 +166,15 @@ function _resolveTargetDescriptor(descriptor) {
  * @param {HTMLElement} html
  */
 function _collapseTrayElement(message, html) {
+    const el = html instanceof HTMLElement ? html : html?.[0] instanceof HTMLElement ? html[0] : null;
+    if (!el) return;
+
     // If the GM has manually toggled the tray on this card, preserve their explicit choice
     if (message._trayStates?.has("DAMAGE-APPLICATION") || message._trayStates?.has("damage-application")) {
         return;
     }
 
-    const trays = html.querySelectorAll("damage-application");
+    const trays = el.querySelectorAll("damage-application");
     if (!trays.length) return;
 
     message._trayStates ??= new Map();
@@ -181,7 +187,7 @@ function _collapseTrayElement(message, html) {
         if (tray.targetList) tray.targetList.suspended = true;
     }
 
-    const cardTrays = html.querySelectorAll(".card-tray");
+    const cardTrays = el.querySelectorAll("damage-application .card-tray, .card-tray.damage-tray");
     for (const ct of cardTrays) {
         ct.classList.add("collapsed");
     }
