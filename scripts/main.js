@@ -42,6 +42,7 @@ import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocket
 import { initHidePrivateGMRolls } from "./features/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/auto-collapse-damage-trays.js";
 import { initSuppressBloodiedDead } from "./features/suppress-bloodied-dead.js";
+import { initAutoanimationsTeleportUI } from "./features/autoanimations-teleport-ui.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -253,6 +254,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections (Personal)",
         hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAutoanimationsTeleportUI", {
+        name: "Enhanced Teleport Targeting UI (Personal)",
+        hint: "Enables the floating destination HUD, ghost token preview, and ESC cancellation for Automated Animations teleport presets (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -634,6 +644,16 @@ Hooks.once("init", () => {
         default: false,
         restricted: true,
         requiresReload: true
+    });
+
+    game.settings.register(MODULE_ID, "enableAutoanimationsTeleportUI", {
+        name: "Enhanced Teleport Targeting UI (Autoanimations)",
+        hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
     // ==========================================
@@ -1172,6 +1192,7 @@ Hooks.once("setup", () => {
     initHidePrivateGMRolls();
     initAutoCollapseDamageTrays();
     initSuppressBloodiedDead();
+    initAutoanimationsTeleportUI();
 });
 
 Hooks.once("ready", async () => {

@@ -43,6 +43,7 @@ All features can be configured within the comprehensive **Settings Dashboard** (
 3. **Canvas & Templates**:
    - *Auto-Target Tokens in Spell Templates* — automatically target tokens inside templates placed by you.
    - *Snap Templates to Grid Intersections* — snap circle and square templates to grid vertices when placed by you.
+   - *Enhanced Teleport Targeting UI* — floating HUD banner, ghost token preview, and ESC cancellation for teleport presets.
 
 ---
 
@@ -80,6 +81,13 @@ All features can be configured within the comprehensive **Settings Dashboard** (
 * **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Supports both Foundry V14 / DnD5e v6 Region-based templates and legacy V13 measured templates, including live preview dragging and final placement. Hold **Shift** while placing to temporarily override and place freely. Cones and rays are not affected.
 * **Auto-Clear Movement History**: Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).
 * **Disable Underground Token Hiding**: Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Compatible with Foundry native Scene Levels. Disabled by default.
+* **Enhanced Teleport Targeting UI (Automated Animations)**: Significantly improves the destination selection UX when triggering a teleport preset (such as *Misty Step*, *Dimension Door*, or custom teleport animations) in the **Automated Animations** (`autoanimations`) module.
+  * **Floating Screen Banner**: A modern, glassmorphic HUD banner at the top of the screen displays the active teleport spell/item, maximum range, live distance measurement, status badge (`In Range`, `Out of Range`, `Path Blocked`), hotkey hint (`ESC`), and an interactive `✕ Cancel` button.
+  * **Ghost Token Preview on Canvas**: Snaps a translucent preview of your token to the grid under the cursor in real time, with an arcane cyan glow for valid spaces, a crimson border with diagonal slash for out-of-range tiles, and an orange border with X indicator when blocked by walls. When Dynamic Token Rings are enabled, renders an authentic layered preview using the token's actual sculpted dynamic ring and background disc textures from the spritesheet, scales the frame accurately via `subjectScaleAdjustment` and `(w * ringScaleFactor) / subjectScale` to eliminate any gap or padding, displays the character's ring color in a glowing rune band along the ring channel, and respects Subject Scale Correction (scaling the subject artwork up to burst outside the ring) and directional mirroring.
+  * **Precision Reticle**: Switches the canvas mouse cursor to a crosshair while targeting.
+  * **Clean ESC / Cancel Button Flow**: Pressing **Escape** or clicking the banner's **Cancel** button cleanly aborts destination picking, detaches the canvas listener, and terminates Sequencer's border effect without moving the token or altering spell slot uses.
+  * **Uninterrupted Right-Click Panning**: Right-click is intentionally ignored so players and GMs can freely pan the canvas while choosing a destination.
+  * **Untouched Camera**: Preserves your existing zoom level and camera position without disorienting viewport jumps.
 
 ### Group 3: Automation & QOL Tasks
 

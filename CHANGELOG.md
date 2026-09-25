@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.0] - 2026-09-25
+### Added
+- **Enhanced Teleport Targeting UI for Automated Animations**:
+  - Enhances the targeting and destination selection UX when triggering a teleport preset (such as *Misty Step*, *Dimension Door*, or custom teleport animations) in the **Automated Animations** (`autoanimations`) module.
+  - **Floating Screen Banner**: Displays a modern, glassmorphic top-center HUD banner indicating the active teleport action (spell/item name), maximum range, live distance readout, status indicators (`In Range`, `Out of Range`, `Path Blocked`), hotkey hint (`ESC`), and an interactive `[✕ Cancel]` button.
+  - **Ghost Token Preview on Canvas**: Renders a translucent preview of the caster's token snapped to the grid beneath the mouse cursor in real time:
+    - Glowing arcane cyan border and soft fill when the hovered destination is valid and within range.
+    - Crimson border with a diagonal slash indicator when the destination exceeds the teleport range.
+    - Warning orange border with an X indicator when the destination path is obstructed by a wall (when A-A collision checking is enabled).
+    - When Dynamic Token Rings are enabled, renders an authentic layered preview using the token's actual sculpted dynamic ring and background disc textures from the spritesheet:
+      - Uses `subjectScaleAdjustment` (`w * ringScaleFactor`) to size the ring frame to the token grid cell, and applies `subjectScale` to burst artwork so the portrait fills the ring and features burst out dynamically.
+      - Renders the authentic metallic bronze or steel sculpted ring frame with its natural highlights, shading, and 3D bevels intact.
+      - Renders the character's configured or dynamic ring color as a vibrant band directly along the ring channel using exact `colorBand` geometry, cleanly masking spritesheet default tint channels (e.g. red).
+      - Suppresses background discs when `colors.background` is unset to preserve transparency around burst artwork, and draws background circles cleanly within the inner ring rim when configured.
+      - Respects Subject Scale Correction (scaling burst artwork over the ring), directional mirroring, and rotation, perfectly matching Foundry's native token shader layout.
+  - **Canvas Reticle Cursor**: Dynamically updates the canvas pointer to a precision crosshair during destination targeting.
+  - **Clean ESC / Cancel Flow**: Allows canceling targeting at any time by pressing **Escape** or clicking the banner's **Cancel** button:
+    - Disarms and removes Automated Animations' canvas stage listener, preventing accidental activation later.
+    - Terminates Sequencer's active `"teleportation"` border effect cleanly.
+    - Tears down the ghost preview, HUD banner, and custom cursor, posting a brief confirmation notification (`Teleport canceled.`).
+    - Leaves token movement and spell/activity uses untouched without prompting.
+  - **Uninterrupted Right-Click Panning**: Intentionally ignores right-clicks so players and GMs can freely right-click drag to pan the canvas while picking a destination.
+  - **Untouched Camera**: Preserves existing canvas zoom and pan positions without forcing unexpected camera jumps.
+  - Configurable via world setting (**Enhanced Teleport Targeting UI (Autoanimations)**) and client setting (**Enhanced Teleport Targeting UI (Personal)**), enabled by default.
+
 ## [14.31.1] - 2026-09-25
 ### Fixed
 - **Player Damage Prompt — Whisper Visibility & Synthetic Actor Fixes**:

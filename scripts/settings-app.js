@@ -229,6 +229,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
+                            },
+                            {
+                                key: "clientEnableAutoanimationsTeleportUI",
+                                name: "Enhanced Teleport Targeting UI",
+                                hint: "Shows a floating HUD banner, ghost token preview, and allows pressing ESC to cancel when picking an Automated Animations teleport destination (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
                             }
                         ]
                     }
@@ -534,6 +542,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: false,
                                 scope: "world",
                                 requiresReload: true
+                            },
+                            {
+                                key: "enableAutoanimationsTeleportUI",
+                                name: "Enhanced Teleport Targeting UI (Autoanimations)",
+                                hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             }
                         ]
                     }
