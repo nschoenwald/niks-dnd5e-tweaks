@@ -1,4 +1,5 @@
 import { MODULE_ID, debug } from "../main.js";
+import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
 
 /**
  * Auto Status at 0 HP
@@ -83,6 +84,10 @@ async function _applyZeroHPStatus(actor, statusId) {
         } else {
             debug(`Auto-Status | ${actor.name} already has "${statusId}" as overlay — skipping`);
         }
+    }
+
+    if (statusId === "dead" && game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) {
+        await removeBloodiedEffect(actor);
     }
 }
 

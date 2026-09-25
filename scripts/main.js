@@ -40,6 +40,8 @@ import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/chat-card-styling.js";
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/retroactive-advantage.js";
 import { initHidePrivateGMRolls } from "./features/hide-private-gm-rolls.js";
+import { initAutoCollapseDamageTrays } from "./features/auto-collapse-damage-trays.js";
+import { initSuppressBloodiedDead } from "./features/suppress-bloodied-dead.js";
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 
@@ -382,6 +384,16 @@ Hooks.once("init", () => {
             ui.chat?.render(true);
             if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableAutoCollapseHostileDamageTrays", {
+        name: "Auto-Collapse Hostile Damage Trays for GM",
+        hint: "Automatically collapses damage application trays for the GM on damage rolls originating from hostile NPCs targeting player characters when DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
 
@@ -1043,6 +1055,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableSuppressBloodiedWhileDead", {
+        name: "Suppress Bloodied Condition on Dead Tokens",
+        hint: "Removes and suppresses the Bloodied condition from tokens that also have the Dead condition, preventing the Bloodied status icon from lingering alongside the Dead condition overlay.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ── Phase 5: Encounter Conclusion ──────────────────────────────────
 
     game.settings.register(MODULE_ID, "enableCombatExpTracker", {
@@ -1148,6 +1170,8 @@ Hooks.once("setup", () => {
     initChatCardStyling();
     initRetroactiveAdvantage();
     initHidePrivateGMRolls();
+    initAutoCollapseDamageTrays();
+    initSuppressBloodiedDead();
 });
 
 Hooks.once("ready", async () => {

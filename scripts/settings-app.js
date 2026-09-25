@@ -436,6 +436,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableAutoCollapseHostileDamageTrays",
+                                name: "Auto-Collapse Hostile Damage Trays for GM",
+                                hint: "Automatically collapses damage application trays for the GM when damage rolls from hostile NPCs target player characters and DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             }
                         ]
                     },
@@ -890,6 +898,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableDeathSavePrompt",
                                 name: "Prompt for Death Saves",
                                 hint: "Whispers a Death Saving Throw button when a player starts their combat turn at 0 HP.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableSuppressBloodiedWhileDead",
+                                name: "Suppress Bloodied Condition on Dead Tokens",
+                                hint: "Removes and suppresses the Bloodied condition from tokens that have the Dead condition, preventing both the dead and bloodied status icons from displaying at the same time.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

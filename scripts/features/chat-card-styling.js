@@ -184,22 +184,12 @@ function _expandD20DieDisplay(message, root) {
         const allResults = d20Die.results;
         if (!allResults || allResults.length <= 1) continue;
 
-        // Sort: active (kept) die first, discarded after.
-        const sorted = [...allResults].sort((a, b) => {
-            const aActive = a.active ?? !a.discarded;
-            const bActive = b.active ?? !b.discarded;
-            if (aActive && !bActive) return -1;
-            if (!aActive && bActive) return 1;
-            return 0;
-        });
-
-        // Build a replacement multi-die element. This sits at the same
-        // position as the original .d20die (position:absolute, inset-inline-end).
+        // Keep the original order of rolls (chronological order as rolled)
         const multi = document.createElement("span");
         multi.className = "nd5t-d20-multi";
 
-        for (let i = 0; i < sorted.length; i++) {
-            const r = sorted[i];
+        for (let i = 0; i < allResults.length; i++) {
+            const r = allResults[i];
             const isActive = r.active ?? !r.discarded;
 
             const badge = document.createElement("span");

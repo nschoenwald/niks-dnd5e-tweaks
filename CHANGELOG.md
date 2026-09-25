@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.31.0] - 2026-09-25
+### Added
+- **Auto-Collapse Hostile Damage Trays for GM**:
+  - Automatically collapses `<damage-application>` trays on chat cards for GMs when damage rolls originate from hostile NPCs targeting player characters, provided DnD5e's setting "Allow Players to Apply Damage" (`allowPlayerDamageTray`, introduced in DnD5e v6) is enabled.
+  - Reduces chat log clutter for GMs during combat by collapsing damage resolution controls that players can now apply themselves.
+  - Preserves manual GM toggles — if the GM explicitly clicks to expand or collapse the damage tray on a card, their manual selection is tracked in `message._trayStates` and retained during re-renders.
+  - Automatically resolves targets via message targets, associated attack roll targets, and recorded target pills in the card markup to verify player character targets.
+  - Configurable via a world setting (**Auto-Collapse Hostile Damage Trays for GM**) under the **Chat Log** category, enabled by default.
+- **Suppress Bloodied Condition on Dead Tokens**:
+  - Automatically suppresses and removes the "bloodied" condition from tokens that also possess the "dead" condition.
+  - In DnD5e, dropping to 0 HP or dying retains the bloodied condition (since HP is <= 50%), causing both the dead overlay and bloodied condition icon to linger on dead tokens and corpses.
+  - Dynamically patches `ActiveEffect5e.prototype.isSuppressed` so any bloodied active effect on a dead actor is treated as suppressed, removing `"bloodied"` from `actor.statuses` and clearing the bloodied badge from token condition rings and HUDs.
+  - Patches `Actor5e.prototype.updateBloodied` and hooks `preCreateActiveEffect` to prevent generating or applying bloodied effects while dead, and deletes existing bloodied effects upon gaining the dead condition.
+  - Automatically re-evaluates and restores the bloodied condition if the dead condition is removed (e.g. resurrection or revivify) while the token remains at or below 50% HP.
+  - Seamlessly integrated with **Auto-Apply Status at 0 HP**.
+  - Configurable via a world setting (**Suppress Bloodied Condition on Dead Tokens**) under **Phase 4: Health Thresholds & Incapacitation**, enabled by default.
+
+### Changed
+- **Chat Card Styling — Multi-Die Indicator Roll Order Preservation**:
+  - Multi-die roll indicators on d20 buttons (advantage, disadvantage, Elven Accuracy) now preserve the natural chronological order in which the dice were rolled, rather than sorting the kept/primary die to the leftmost position.
+  - The kept die and discarded die still visually distinguish active vs. discarded status (bold and full opacity vs. dimmed and reduced scale), but retain their true 1st/2nd/3rd roll positions.
+
+### Fixed
+- **Chat Card Styling — Dark Theme Core vs. Light Chat Log Isolation**:
+  - Fixed dark-theme colors, action buttons, and dice-roll backgrounds erroneously applying to light parchment chat cards when Foundry Core's interface theme is Dark Theme but DnD5e's Chat Log theme is set to parchment or Light Theme (`chatLogTheme: "" | "light"`).
+  - Core Foundry V13/V14 applies `class="theme-dark"` to `<body>`, which previously caused descendant selectors like `.theme-dark .message` or `body.theme-dark .chat-log` to match chat messages even when the chat log itself was light.
+  - Strictly scoped all Dark Theme styling and tokens to `:is(#chat-log, .chat-log, .chat-popout).theme-dark` and `:is(.chat-message, .message).theme-dark` so that dark styling activates only when DnD5e's Chat Log is specifically configured to Dark Theme.
+  - Made Light Theme tokens and button styling the default baseline for all chat cards, action buttons, whisper/blind/emote badges, and tints.
+  - Cleaned up dice roll button (`button.dice-roll`) styling to rely on CSS custom properties (`--button-background-color`, `--button-border-color`) instead of forcing opaque `!important` backgrounds, preventing dark backgrounds with illegible text on light chat cards.
+
 ## [14.30.0] - 2026-09-24
 ### Added
 - **Hide Private GM Rolls from Players**:
