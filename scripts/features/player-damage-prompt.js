@@ -25,6 +25,8 @@ import { MODULE_ID, debug, log } from "../main.js";
  * Called once during the "setup" phase from main.js.
  */
 export function initPlayerDamagePrompt() {
+    _patchChatMessageVisibility();
+
     Hooks.on("createChatMessage", _onCreateChatMessage);
     Hooks.on("createChatMessage", _onCreateChatMessage_Attack);
 
@@ -39,6 +41,49 @@ export function initPlayerDamagePrompt() {
     Hooks.on("updateChatMessage", _onUpdateDamageApplied);
 
     debug("Player Damage Prompt | Initialized hooks");
+}
+
+/**
+ * Patch ChatMessage.prototype.visible so that:
+ * 1. Damage prompts strictly respect their whisper list (preventing the Primary GM author
+ *    from receiving whispers when damagePromptVisibility is set to "playerOnly").
+ * 2. Players who have enabled `suppressDamagePrompt` don't see damage prompts at all.
+ */
+function _patchChatMessageVisibility() {
+    const chatMessageClass = CONFIG.ChatMessage?.documentClass ?? ChatMessage;
+    if (!chatMessageClass?.prototype) return;
+
+    let descriptor = null;
+    let proto = chatMessageClass.prototype;
+    while (!descriptor && proto) {
+        descriptor = Object.getOwnPropertyDescriptor(proto, "visible");
+        if (!descriptor) proto = Object.getPrototypeOf(proto);
+    }
+
+    if (!descriptor?.get) return;
+
+    const originalGetter = descriptor.get;
+
+    Object.defineProperty(chatMessageClass.prototype, "visible", {
+        get() {
+            if (this.flags?.[MODULE_ID]?.damagePrompt) {
+                // If a non-GM player has suppressed damage prompts, hide completely
+                if (!game.user?.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
+                    return false;
+                }
+
+                // If whisper recipients are defined, enforce that the user must be in the whisper list.
+                // This prevents the author GM from seeing "Player Only" prompts via Foundry's `this.isAuthor` fallback.
+                if (Array.isArray(this.whisper) && this.whisper.length > 0) {
+                    return this.whisper.includes(game.user?.id);
+                }
+            }
+
+            return originalGetter.call(this);
+        },
+        configurable: true,
+        enumerable: descriptor.enumerable
+    });
 }
 
 // ── Dice So Nice integration ─────────────────────────────────────────
@@ -759,37 +804,27 @@ function _getTokenName(tokenDoc, target, actor) {
 
 /**
  * Determine whether an actor is player-owned (at least one non-GM user
- * with OWNER permission).
+ * with OWNER permission). Uses actor.testUserPermission to properly handle
+ * unlinked / synthetic token actors inheriting ownership.
  * @param {Actor} actor
  * @returns {boolean}
  */
 function _isPlayerOwned(actor) {
-    for (const [id, level] of Object.entries(actor.ownership)) {
-        if (level !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) continue;
-        if (id === "default") return true;
-        const user = game.users.get(id);
-        if (user && !user.isGM) return true;
-    }
-    return false;
+    if (!actor) return false;
+    return game.users.some(u => !u.isGM && actor.testUserPermission(u, "OWNER"));
 }
 
 /**
  * Collect the user IDs that should receive the whisper.  Respects the
  * `damagePromptVisibility` setting to include or exclude GMs.
+ * Uses actor.testUserPermission to properly handle unlinked / synthetic
+ * token actors inheriting ownership.
  * @param {Actor} actor
  * @returns {string[]}
  */
 function _getWhisperTargets(actor) {
-    const owners = [];
-    for (const [id, level] of Object.entries(actor.ownership)) {
-        if (level !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) continue;
-        if (id === "default") {
-            owners.push(...game.users.filter(u => !u.isGM).map(u => u.id));
-        } else {
-            const user = game.users.get(id);
-            if (user && !user.isGM) owners.push(id);
-        }
-    }
+    if (!actor) return [];
+    const owners = game.users.filter(u => !u.isGM && actor.testUserPermission(u, "OWNER")).map(u => u.id);
 
     const includeGM = game.settings.get(MODULE_ID, "damagePromptVisibility") === "gmAndPlayer";
     if (includeGM) {
@@ -1325,6 +1360,12 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {boolean}  [hasHalfDamage=false]    Whether the activity does half damage on save.
  */
 async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null) {
+    // Guard against empty whisper recipients (prevents accidental public broadcast)
+    if (!whisperUsers?.length) {
+        debug(`Player Damage Prompt | ✗ Aborting _sendDamagePrompt: no whisper recipients for ${actor?.name}`);
+        return;
+    }
+
     const isToken = tokenDoc?.documentName === "Token";
     const speakerToken = isToken ? tokenDoc : null;
 
@@ -1815,9 +1856,10 @@ function _bindApplyDamageButton(message, element) {
     if (prompt.dataset.bound) return;
     prompt.dataset.bound = "true";
 
-    // Allow individual players to suppress damage prompts
+    // Allow individual players to suppress damage prompts (defense-in-depth)
     if (!game.user.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
-        prompt.style.display = "none";
+        element.style.display = "none";
+        element.remove();
         return;
     }
 

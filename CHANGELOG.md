@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.31.1] - 2026-09-25
+### Fixed
+- **Player Damage Prompt — Whisper Visibility & Synthetic Actor Fixes**:
+  - Fixed an issue where the Primary GM continued to see whispered damage prompts when **Damage Prompt Whisper Visibility** was set to **"Player Only"**. In core Foundry, the author of a message always sees it; `ChatMessage.prototype.visible` is now patched for damage prompt cards to strictly require presence in `message.whisper`.
+  - Fixed player ownership resolution for unlinked / synthetic token actors (e.g. summons, familiars, wildshapes, and unlinked player tokens). Replaced raw `actor.ownership` dictionary checks with `actor.testUserPermission(u, "OWNER")`, which properly accounts for inherited permissions (`INHERIT: -1`) on synthetic actors.
+  - Fixed a UI issue where players with **Suppress Damage Prompts (Player)** enabled were left with empty ghost chat cards containing only the message header and whisper banner. The entire message container is now cleanly suppressed and hidden.
+  - Added an empty-whisper guard to `_sendDamagePrompt` to prevent accidental public message broadcasts.
+
 ## [14.31.0] - 2026-09-25
 ### Added
 - **Auto-Collapse Hostile Damage Trays for GM**:
