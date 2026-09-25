@@ -23,6 +23,7 @@ let originalAddListener = null;
 let originalOn = null;
 let isUpdatingGhost = false;
 let lastMoveErrorLogged = false;
+let pendingMoveRAF = null;
 
 /**
  * Initializes the Autoanimations Teleport UI feature.
@@ -41,6 +42,17 @@ export function initAutoanimationsTeleportUI() {
     Hooks.on("endedSequencerEffect", (effect) => {
         if (effect?.data?.name === "teleportation" && activeSession) {
             cleanupSession(false);
+        }
+    });
+
+    // Safeguard: clean up if the canvas tears down (e.g. scene change) or caster token is deleted
+    Hooks.on("canvasTearDown", () => {
+        if (activeSession) cleanupSession(true);
+    });
+
+    Hooks.on("deleteToken", (tokenDoc) => {
+        if (activeSession && activeSession.sourceToken?.id === tokenDoc.id) {
+            cleanupSession(true);
         }
     });
 
@@ -589,24 +601,31 @@ function createGhostToken(sourceToken) {
 }
 
 /**
- * Pointer move event handler with error throttling.
+ * Pointer move event handler with requestAnimationFrame and error throttling.
+ * Coalesces rapid mouse events to match the display refresh rate (e.g. 60Hz/144Hz).
  */
 function onPointerMove() {
-    if (!activeSession || isUpdatingGhost) return;
-    try {
-        const mousePos = canvas.mousePosition;
-        if (!mousePos) return;
-        isUpdatingGhost = true;
-        updateGhostAndHud(mousePos);
-    } catch (err) {
-        if (!lastMoveErrorLogged) {
-            console.error("Nik's DnD5e Tweaks | Error updating teleport destination preview:", err);
-            ui.notifications?.error(`Teleport Preview Error: ${err.message}`);
-            lastMoveErrorLogged = true;
+    if (!activeSession) return;
+    if (pendingMoveRAF) return;
+
+    pendingMoveRAF = requestAnimationFrame(() => {
+        pendingMoveRAF = null;
+        if (!activeSession || isUpdatingGhost) return;
+        try {
+            const mousePos = canvas.mousePosition;
+            if (!mousePos) return;
+            isUpdatingGhost = true;
+            updateGhostAndHud(mousePos);
+        } catch (err) {
+            if (!lastMoveErrorLogged) {
+                console.error("Nik's DnD5e Tweaks | Error updating teleport destination preview:", err);
+                ui.notifications?.error(`Teleport Preview Error: ${err.message}`);
+                lastMoveErrorLogged = true;
+            }
+        } finally {
+            isUpdatingGhost = false;
         }
-    } finally {
-        isUpdatingGhost = false;
-    }
+    });
 }
 
 /**
@@ -619,6 +638,14 @@ function updateGhostAndHud(mousePos) {
 
     // Calculate snapped grid point matching Autoanimations logic
     const topLeft = canvas.grid.getTopLeftPoint(mousePos);
+    if (!topLeft) return;
+
+    // Grid-cell throttle: if cursor moves within the same grid cell, position, distance, and collision are identical
+    if (activeSession.lastSnappedX === topLeft.x && activeSession.lastSnappedY === topLeft.y) {
+        return;
+    }
+    activeSession.lastSnappedX = topLeft.x;
+    activeSession.lastSnappedY = topLeft.y;
 
     if (ghost?.container) {
         ghost.container.visible = true;
@@ -895,6 +922,10 @@ function cleanupSession(isCancel = false) {
     }
 
     restoreStageInterception();
+    if (pendingMoveRAF) {
+        cancelAnimationFrame(pendingMoveRAF);
+        pendingMoveRAF = null;
+    }
     activeSession = null;
     isUpdatingGhost = false;
     lastMoveErrorLogged = false;
