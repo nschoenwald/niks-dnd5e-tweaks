@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.2] - 2026-09-26
+### Improved
+- **D20 Multi-Die Display — Dynamic Collision Avoidance with Roll Results**:
+  - Implemented dynamic collision detection and positioning for the roll result (`button.dice-roll .result`) to guarantee that multi-die badges (Advantage, Disadvantage, and 3d20 Elven Accuracy) never overlap or obscure the roll total.
+  - Roll results remain perfectly centered in the roll button by default, preserving original alignment across all chat cards and wide viewports.
+  - When (and only when) multiple dice or narrow containers cause the centered roll total to collide with the d20 badges, the roll result is smoothly pushed left just enough to clear the dice with a clean 6px breathing gap, bounded so it never collides with the left-hand icon.
+  - Powered by a shared `ResizeObserver` that automatically and reactively updates roll result positioning in real time as the chat sidebar is expanded/collapsed or popout windows are resized.
+  - Added full bi-directional support for right-to-left (RTL) reading directions.
+  - Updated chat popout handlers and historical message tagging to ensure multi-die displays and collision avoidance apply consistently across all windows and existing chat messages.
+
 ## [14.32.1] - 2026-09-25
 ### Fixed
 - **Suppress Bloodied on Dead Tokens — Non-Bloodied Death & Recursion Fix**:

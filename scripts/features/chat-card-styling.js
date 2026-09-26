@@ -215,8 +215,144 @@ function _expandD20DieDisplay(message, root) {
 
         btn.dataset.nd5tD20Expanded = "1";
     }
+
+    // Dynamically adjust roll result horizontal positioning on all dice buttons
+    // so centered totals never collide with multi-die badges.
+    _adjustRollResultPositions(root);
 }
 
+/** @type {ResizeObserver|null} */
+let _rollResultResizeObserver = null;
+
+/**
+ * Get or create the shared ResizeObserver for dice-roll buttons.
+ * Automatically recalculates roll result positioning whenever buttons change size
+ * (e.g. sidebar expand/collapse, popout resize, window resizing).
+ * @returns {ResizeObserver|null}
+ */
+function _getRollResultResizeObserver() {
+    if (!_rollResultResizeObserver && typeof ResizeObserver !== "undefined") {
+        _rollResultResizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const btn = entry.target;
+                if (btn instanceof HTMLElement) {
+                    _adjustButtonRollResult(btn);
+                }
+            }
+        });
+    }
+    return _rollResultResizeObserver;
+}
+
+/**
+ * Adjust the horizontal position of the roll result inside a dice-roll button.
+ *
+ * Normally, .result is centered horizontally in button.dice-roll.
+ * However, when multiple d20 dice are shown (advantage, disadvantage, Elven
+ * Accuracy) or in narrow chat containers / long roll values, the right edge of
+ * the centered roll result could overlap the d20 icons.
+ *
+ * If (and ONLY if) an overlap would occur, this pushes the roll result from the
+ * center to the left just enough to clear the d20s with a clean breathing gap (6px),
+ * while preventing it from colliding with the left-hand icon.
+ * If there is sufficient clearance, no shift is applied and the result remains
+ * perfectly centered.
+ *
+ * @param {HTMLButtonElement} btn
+ */
+function _adjustButtonRollResult(btn) {
+    if (!btn || !btn.isConnected) return;
+
+    const resultEl = btn.querySelector(".result");
+    if (!resultEl) return;
+
+    const diceEl = btn.querySelector(".nd5t-d20-multi, .d20die");
+    if (!diceEl) {
+        resultEl.style.removeProperty("transform");
+        return;
+    }
+
+    // Reset transform first so we measure the natural unshifted layout
+    resultEl.style.transform = "";
+
+    const btnRect = btn.getBoundingClientRect();
+    const resultRect = resultEl.getBoundingClientRect();
+    const diceRect = diceEl.getBoundingClientRect();
+
+    // If unrendered / hidden (0 size), nothing to measure
+    if (btnRect.width === 0 || resultRect.width === 0 || diceRect.width === 0) return;
+
+    const isRTL = getComputedStyle(btn).direction === "rtl";
+    const minGap = 6; // px minimum breathing room between roll result and dice
+
+    const iconsEl = btn.querySelector(".icons");
+    const iconsRect = (iconsEl && iconsEl.offsetWidth > 0) ? iconsEl.getBoundingClientRect() : null;
+
+    if (!isRTL) {
+        // LTR: icons on left, dice on right.
+        // Overlap occurs if result's right boundary + minGap extends past dice's left boundary.
+        const overlap = (resultRect.right + minGap) - diceRect.left;
+
+        if (overlap > 0) {
+            // Overlap detected: push to the left, bounded by the left icons/edge.
+            const leftBound = iconsRect ? (iconsRect.right + minGap) : (btnRect.left + 8 + minGap);
+            const maxLeftShift = Math.max(0, resultRect.left - leftBound);
+            const shift = Math.min(Math.ceil(overlap), Math.floor(maxLeftShift));
+
+            if (shift > 0) {
+                resultEl.style.transform = `translateX(-${shift}px)`;
+            } else {
+                resultEl.style.transform = "";
+            }
+        } else {
+            // Sufficient space: keep natural centered position
+            resultEl.style.transform = "";
+        }
+    } else {
+        // RTL: dice on left, icons on right.
+        // Overlap occurs if dice's right boundary + minGap extends past result's left boundary.
+        const overlap = (diceRect.right + minGap) - resultRect.left;
+
+        if (overlap > 0) {
+            const rightBound = iconsRect ? (iconsRect.left - minGap) : (btnRect.right - 8 - minGap);
+            const maxRightShift = Math.max(0, rightBound - resultRect.right);
+            const shift = Math.min(Math.ceil(overlap), Math.floor(maxRightShift));
+
+            if (shift > 0) {
+                resultEl.style.transform = `translateX(${shift}px)`;
+            } else {
+                resultEl.style.transform = "";
+            }
+        } else {
+            resultEl.style.transform = "";
+        }
+    }
+}
+
+/**
+ * Adjust the roll result positions for all dice-roll buttons in a given container.
+ * Also registers them with the shared ResizeObserver.
+ *
+ * @param {HTMLElement} root
+ */
+function _adjustRollResultPositions(root) {
+    if (!root) return;
+    const diceButtons = root.querySelectorAll("button.dice-roll");
+    if (!diceButtons.length) return;
+
+    const observer = _getRollResultResizeObserver();
+
+    for (const btn of diceButtons) {
+        observer?.observe(btn);
+        if (btn.isConnected && btn.offsetWidth > 0) {
+            _adjustButtonRollResult(btn);
+        } else {
+            requestAnimationFrame(() => {
+                if (btn.isConnected) _adjustButtonRollResult(btn);
+            });
+        }
+    }
+}
 
 /**
  * Scan all chat message elements in the current DOM and tag/format them.
@@ -226,7 +362,10 @@ function _tagExistingMessages() {
     for (const msgEl of document.querySelectorAll(".chat-log .message, .chat-popout .message")) {
         const msgId = msgEl.dataset.messageId;
         const message = game.messages?.get?.(msgId);
-        if (message) _tagMessageElement(message, msgEl);
+        if (message) {
+            _tagMessageElement(message, msgEl);
+            _expandD20DieDisplay(message, msgEl);
+        }
     }
 }
 
@@ -254,6 +393,18 @@ export function disableChatCardStyling() {
     for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
         popout.ownerDocument?.body?.classList.remove("nd5t-chat-card-styling");
     }
+
+    // Disconnect and reset resize observer
+    if (_rollResultResizeObserver) {
+        _rollResultResizeObserver.disconnect();
+        _rollResultResizeObserver = null;
+    }
+
+    // Restore roll result transform
+    for (const res of document.querySelectorAll("button.dice-roll .result")) {
+        res.style.removeProperty("transform");
+    }
+
     for (const msgEl of document.querySelectorAll(".chat-log .message, .chat-popout .message")) {
         // Restore subtitle
         const subtitleEl = msgEl.querySelector(".card-header .name-stacked .subtitle");
@@ -334,6 +485,10 @@ export function initChatCardStyling() {
         const doc = el?.ownerDocument;
         if (doc && !doc.body.classList.contains("nd5t-chat-card-styling")) {
             doc.body.classList.add("nd5t-chat-card-styling");
+        }
+        if (app?.message && el) {
+            _tagMessageElement(app.message, el);
+            _expandD20DieDisplay(app.message, el);
         }
     });
 }

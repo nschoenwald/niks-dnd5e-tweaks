@@ -1698,6 +1698,17 @@ body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-multi) {
     margin: 0;
 }
 
+/* Center roll result cleanly and shrink-wrap to content for dynamic collision avoidance */
+body.nd5t-chat-card-styling button.dice-roll .result {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    margin-inline: auto !important;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
 body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
     display: inline-flex;
     align-items: center;
