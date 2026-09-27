@@ -1523,6 +1523,15 @@ body.nd5t-chat-card-styling .chat-message.message {
     --nd5t-healing-badge-border: oklch(58% 0.10 145);
     --nd5t-healing-badge-color: oklch(28% 0.10 145);
 
+    --nd5t-temphp-border-color: oklch(46% 0.16 255);
+    --nd5t-temphp-tint-color: oklch(58% 0.14 255 / 0.10);
+    --nd5t-temphp-label-color: oklch(32% 0.14 255);
+    --nd5t-temphp-btn-border: oklch(68% 0.10 255);
+    --nd5t-temphp-btn-bg: oklch(97% 0.015 255);
+    --nd5t-temphp-badge-bg: oklch(94% 0.030 255);
+    --nd5t-temphp-badge-border: oklch(60% 0.12 255);
+    --nd5t-temphp-badge-color: oklch(30% 0.13 255);
+
     --nd5t-hitdie-border-color: oklch(46% 0.12 155);
     --nd5t-hitdie-tint-color: oklch(56% 0.13 155 / 0.10);
     --nd5t-hitdie-label-color: oklch(30% 0.11 155);
@@ -1589,6 +1598,15 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark {
     --nd5t-healing-badge-bg: oklch(20% 0.06 145);
     --nd5t-healing-badge-border: oklch(42% 0.10 145);
     --nd5t-healing-badge-color: oklch(75% 0.10 145);
+
+    --nd5t-temphp-border-color: oklch(52% 0.16 255);
+    --nd5t-temphp-tint-color: oklch(40% 0.12 255 / 0.22);
+    --nd5t-temphp-label-color: oklch(76% 0.13 255);
+    --nd5t-temphp-btn-border: oklch(40% 0.12 255);
+    --nd5t-temphp-btn-bg: oklch(19% 0.05 255);
+    --nd5t-temphp-badge-bg: oklch(22% 0.06 255);
+    --nd5t-temphp-badge-border: oklch(46% 0.12 255);
+    --nd5t-temphp-badge-color: oklch(80% 0.11 255);
 
     --nd5t-hitdie-border-color: oklch(46% 0.12 155);
     --nd5t-hitdie-tint-color: oklch(40% 0.10 155 / 0.22);
@@ -1863,6 +1881,21 @@ body.nd5t-chat-card-styling .chat-message.message.nd5t-healing-card {
     background-image: linear-gradient(to right, var(--nd5t-healing-tint-color), transparent 50%) !important;
 }
 
+/* Temp HP Card: Scoped token override for healing cards with temphp subtype */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-healing-card[data-nd5t-card-subtype="temphp"],
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-temphp-card,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-healing-card[data-nd5t-card-subtype="temphp"],
+body.nd5t-chat-card-styling .chat-message.message.nd5t-temphp-card {
+    --nd5t-healing-border-color: var(--nd5t-temphp-border-color);
+    --nd5t-healing-tint-color: var(--nd5t-temphp-tint-color);
+    --nd5t-healing-label-color: var(--nd5t-temphp-label-color);
+    --nd5t-healing-btn-border: var(--nd5t-temphp-btn-border);
+    --nd5t-healing-btn-bg: var(--nd5t-temphp-btn-bg);
+    --nd5t-healing-badge-bg: var(--nd5t-temphp-badge-bg);
+    --nd5t-healing-badge-border: var(--nd5t-temphp-badge-border);
+    --nd5t-healing-badge-color: var(--nd5t-temphp-badge-color);
+}
+
 /* Hit Die Card: Accent border & gradient tint */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-hitdie-card,
 body.nd5t-chat-card-styling .chat-message.message.nd5t-hitdie-card {
@@ -2089,6 +2122,14 @@ body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5
 /* Initiative Roll — overrides "CHK " on initiative sub-type check cards */
 body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-check-card[data-nd5t-card-subtype="initiative"] button.dice-roll .result::before {
     content: "INIT ";
+}
+
+/* Temp HP Healing Roll — overrides "HEAL " with "TEMP " on temphp sub-type healing cards */
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-healing-card[data-nd5t-card-subtype="temphp"] button.dice-roll .result::before,
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.nd5t-temphp-card button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-healing-card[data-nd5t-card-subtype="temphp"] button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-temphp-card button.dice-roll .result::before {
+    content: "TEMP ";
 }
 
 /* ─── Whisper / Blind / Emote Message Type Badges ─── */

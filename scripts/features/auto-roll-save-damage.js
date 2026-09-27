@@ -1,4 +1,5 @@
 import { MODULE_ID, debug, log, isFeatureActive } from "../main.js";
+import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
 
 /**
  * Auto-Roll Save Damage
@@ -10,6 +11,10 @@ import { MODULE_ID, debug, log, isFeatureActive } from "../main.js";
  * The damage is NOT rolled automatically; the dialog simply opens so the user
  * can confirm or configure the roll, exactly as if they had clicked the
  * "Damage" button on the chat card.
+ *
+ * If the damage formula is purely static / deterministic (no dice) and the
+ * "Auto-Roll Flat / Static Damage" setting is active, the damage is rolled
+ * immediately without prompting for configuration.
  *
  * This feature is automatically disabled when midi-qol is active, because
  * midi-qol takes over the entire activity workflow (including auto-rolling
@@ -31,10 +36,19 @@ function _onPostUseActivity(activity, usageConfig, results) {
     if (activity.type !== "save") return;
     if (!activity.damage?.parts?.length) return;
 
-    debug("Auto-Roll Save Damage | Save activity with damage detected, opening damage dialog", activity);
+    const autoRollStatic = game.settings.get(MODULE_ID, "autoRollStaticDamage");
+    const hasDice = activityHasDamageDice(activity);
+    const shouldConfigure = !autoRollStatic || hasDice;
+
+    debug("Auto-Roll Save Damage | Save activity with damage detected", {
+        hasDice,
+        autoRollStatic,
+        shouldConfigure
+    });
+
     activity.rollDamage(
-        { event: usageConfig.event },
-        {},
+        { event: usageConfig.event, configure: shouldConfigure },
+        { configure: shouldConfigure },
         {
             data: {
                 system: {

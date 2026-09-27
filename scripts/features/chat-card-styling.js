@@ -34,6 +34,90 @@ function _formatDamageSubtitle(message, root) {
 }
 
 /**
+ * Determine the subtype for a healing roll ("temphp" vs "healing").
+ *
+ * Checks message.rolls (DamageRoll options and term flavors) first,
+ * falling back to the associated activity's configured healing types.
+ *
+ * @param {ChatMessage} message
+ * @returns {"temphp"|"healing"}
+ */
+function _getHealingSubtype(message) {
+    if (!message) return "healing";
+
+    // 1. Inspect rolls
+    if (message.rolls?.length) {
+        let hasTempHp = false;
+        let hasRealHealing = false;
+
+        for (const roll of message.rolls) {
+            const rollType = roll.options?.type;
+            if (rollType === "temphp") hasTempHp = true;
+            else if (rollType === "healing") hasRealHealing = true;
+
+            // Also check roll terms flavor if type wasn't explicit on roll.options
+            if (roll.terms?.length) {
+                for (const term of roll.terms) {
+                    const flavor = term.flavor?.toLowerCase().trim();
+                    if (flavor === "temphp") hasTempHp = true;
+                    else if (flavor === "healing") hasRealHealing = true;
+                }
+            }
+        }
+
+        if (hasTempHp && !hasRealHealing) return "temphp";
+        if (hasRealHealing) return "healing";
+    }
+
+    // 2. Fallback to associated activity
+    const activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
+        ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+    const healingTypes = activity?.healing?.types;
+    if (healingTypes) {
+        const hasType = (t) => healingTypes instanceof Set
+            ? healingTypes.has(t)
+            : Array.isArray(healingTypes)
+                ? healingTypes.includes(t)
+                : false;
+        if (hasType("temphp") && !hasType("healing")) return "temphp";
+    }
+
+    return "healing";
+}
+
+/**
+ * Format the subtitle of healing rolls: for temporary HP rolls, replace the
+ * default system subtitle ("Healing Roll") with "Temp HP Roll".
+ *
+ * @param {ChatMessage} message
+ * @param {HTMLElement} root
+ */
+function _formatHealingSubtitle(message, root) {
+    const rawRollType = message.type ?? message.flags?.dnd5e?.roll?.type;
+    const rollType = rawRollType?.toLowerCase();
+    if (rollType !== "healing") return;
+    if (root.dataset.nd5tCardSubtype !== "temphp") return;
+
+    const subtitleEl = root.querySelector(".card-header .name-stacked .subtitle");
+    if (!subtitleEl) return;
+
+    if (!subtitleEl.dataset.originalSubtitle) {
+        subtitleEl.dataset.originalSubtitle = subtitleEl.textContent;
+    }
+
+    const localizedHealing = game.i18n?.localize?.("DND5E.HEAL.HealingRoll") ?? "Healing Roll";
+    const tempHpLabel = game.i18n?.localize?.("ND5T.ChatCard.TempHpRoll") ?? "Temp HP Roll";
+
+    let text = subtitleEl.textContent;
+    if (localizedHealing && text.includes(localizedHealing)) {
+        text = text.replace(localizedHealing, tempHpLabel);
+    } else {
+        text = text.replace(/Healing Roll/gi, tempHpLabel);
+    }
+    subtitleEl.textContent = text;
+}
+
+/**
  * Override Foundry's inline player border color with the themed roll-type accent border.
  *
  * @param {ChatMessage} message
@@ -57,7 +141,10 @@ function _applyCardBorders(message, root) {
 
     if (!isStyledRoll) return;
 
-    const accentVar = `var(--nd5t-${rollType}-border-color)`;
+    const subType = root.dataset.nd5tCardSubtype;
+    const accentVar = (rollType === "healing" && subType === "temphp")
+        ? "var(--nd5t-temphp-border-color)"
+        : `var(--nd5t-${rollType}-border-color)`;
     const goldVar = "var(--dnd5e-color-gold, #c9a227)";
 
     root.style.setProperty("border-top-color", goldVar, "important");
@@ -94,10 +181,19 @@ function _tagMessageElement(message, root) {
         root.dataset.nd5tCardType = rollType;
         root.classList.add(`nd5t-${rollType}-card`);
 
-        // Tag the sub-type (e.g. "death" / "concentration" for saves, "initiative" for checks)
+        // Tag the sub-type (e.g. "death" / "concentration" for saves, "initiative" for checks, "temphp" for healing)
         // so CSS can use [data-nd5t-card-subtype] to apply precise micro-labels without adding
         // extra JS-only card classes.
-        const subType = message.system?.type;
+        let subType = message.system?.type;
+        if (rollType === "healing") {
+            const healingSubtype = _getHealingSubtype(message);
+            if (healingSubtype === "temphp") {
+                subType = "temphp";
+                root.classList.add("nd5t-temphp-card");
+            } else {
+                root.classList.remove("nd5t-temphp-card");
+            }
+        }
         if (subType) {
             root.dataset.nd5tCardSubtype = subType;
         } else {
@@ -134,6 +230,7 @@ function _tagMessageElement(message, root) {
 
     _applyCardBorders(message, root);
     _formatDamageSubtitle(message, root);
+    _formatHealingSubtitle(message, root);
 }
 
 /**

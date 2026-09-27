@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.3] - 2026-09-27
+### Added
+- **Chat Card Styling — Distinct Styling for Temporary HP Healing Rolls**:
+  - Differentiated Temporary HP rolls from "real" HP healing rolls in chat cards:
+    - **Protective Azure Theme**: Temp HP cards now display a dedicated blue/azure theme (`--nd5t-temphp-*`), including a solid 4px accent left border, subtle background gradient tint, themed dice roll button, and header subtitle badge in both Light and Dark themes.
+    - **Micro-Label**: Replaced the prepended `"HEAL "` button micro-label on the dice roll result with `"TEMP "` for Temporary HP rolls.
+    - **Subtitle Formatting**: Automatically replaces the default system subtitle `"Healing Roll"` with `"Temp HP Roll"` on Temporary HP cards (e.g. from *False Life*, *Heroism*, *Inspiring Leader*, or custom activities), preserving the activity/spell prefix when present.
+    - **Intelligent Subtype Detection**: Accurately inspects `DamageRoll` options, term flavors, and associated `HealActivity` configuration to distinguish between standard HP healing and temporary hit points.
+- **Auto-Roll Flat / Static Damage & Healing**:
+  - When any damage or healing roll would be prompted by the system or module (such as using a feature with a flat heal/temp HP roll like `@classes.barbarian.levels`, an attack hitting target AC under *Prompt for Attack Damage*, or a save activity triggering *Auto-Open Damage Dialog for Saves*), intercepts `dnd5e.preRollDamage` and checks the formula before presenting the configuration dialog.
+  - If the formula consists strictly of deterministic static or derived values with no dice (e.g. `@classes.barbarian.levels`, Unarmed Strikes dealing `1 + @mod`, Blowguns dealing `1`, or flat bonuses), automatically suppresses the dialog (`dialog.configure = false`) and rolls the damage or healing immediately.
+  - Added world sub-setting **↳ Auto-Roll Flat / Static Damage & Healing** (`autoRollStaticDamage`), enabled by default, nested beneath *Prompt for Attack Damage* in the module settings app.
+  - Enhanced the settings application parent-child reactive toggle system to dynamically support `<select>` parent inputs, cleanly dimming and disabling child settings when a parent select is set to `"none"`.
+
 ## [14.32.2] - 2026-09-26
 ### Improved
 - **D20 Multi-Die Display — Dynamic Collision Avoidance with Roll Results**:

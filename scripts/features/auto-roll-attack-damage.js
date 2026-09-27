@@ -55,6 +55,135 @@ function _shouldPrompt(role) {
 }
 
 /**
+ * Inspect a roll process configuration (or rollConfig object) to determine
+ * whether all damage/healing formula parts are purely deterministic and contain no dice.
+ *
+ * @param {object} config Configuration data for the pending roll (e.g. from dnd5e.preRollDamage or getDamageConfig)
+ * @returns {boolean} True if there is at least one formula part and none contain dice.
+ */
+export function isRollConfigPurelyStatic(config) {
+    if (config?.rolls?.length) {
+        let hasParts = false;
+        for (const roll of config.rolls) {
+            if (!roll.parts?.length) continue;
+            const formula = roll.parts
+                .filter(p => p !== null && p !== undefined && p !== "")
+                .map(String)
+                .join(" + ");
+            if (!formula) continue;
+            hasParts = true;
+
+            // Fast check for dice notation (e.g. 1d8, 2d6, d4, 1df)
+            if (/\d*d\d+/i.test(formula)) return false;
+
+            try {
+                const parsed = Roll.create(formula, roll.data ?? {});
+                if (parsed.dice?.length > 0 || !parsed.isDeterministic) return false;
+            } catch {
+                if (/\d*d\d+/i.test(formula)) return false;
+            }
+        }
+        if (hasParts) return true;
+    }
+
+    // Fallback: inspect subject activity directly if present
+    const activity = config?.subject;
+    if (activity) {
+        if (activity.healing?.formula) {
+            const formula = String(activity.healing.formula);
+            if (/\d*d\d+/i.test(formula)) return false;
+            try {
+                const rollData = activity.getRollData?.() ?? {};
+                const parsed = Roll.create(formula, rollData);
+                if (parsed.dice?.length === 0 && parsed.isDeterministic) return true;
+            } catch {
+                if (/\d*d\d+/i.test(formula)) return false;
+            }
+        }
+
+        if (activity.damage?.parts?.length) {
+            let hasParts = false;
+            for (const part of activity.damage.parts) {
+                if (part.custom?.enabled && part.custom.formula) {
+                    const formula = String(part.custom.formula);
+                    if (/\d*d\d+/i.test(formula)) return false;
+                    try {
+                        const rollData = activity.getRollData?.() ?? {};
+                        const parsed = Roll.create(formula, rollData);
+                        if (parsed.dice?.length > 0 || !parsed.isDeterministic) return false;
+                    } catch {
+                        if (/\d*d\d+/i.test(formula)) return false;
+                    }
+                    hasParts = true;
+                } else {
+                    if (part.denomination && part.denomination > 0 && part.number !== 0) return false;
+                    if (part.bonus || part.number) hasParts = true;
+                }
+            }
+            if (hasParts) return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Check whether an Activity's damage or healing formula contains any dice, or if it is
+ * purely deterministic (static values, ability modifiers, derived stats).
+ *
+ * @param {Activity} activity
+ * @param {object} [config={}]
+ * @returns {boolean} True if the damage/healing contains at least one die; false if purely static/derived.
+ */
+export function activityHasDamageDice(activity, config = {}) {
+    if (!activity) return false;
+
+    try {
+        if (typeof activity.getDamageConfig === "function") {
+            const rollConfig = activity.getDamageConfig(config);
+            if (rollConfig?.rolls?.length) {
+                return !isRollConfigPurelyStatic(rollConfig);
+            }
+        }
+    } catch (err) {
+        debug("Auto-Roll Attack Damage | Error in activityHasDamageDice getDamageConfig:", err);
+    }
+
+    // Fallback: inspect activity.healing or activity.damage.parts directly
+    if (activity.healing?.formula) {
+        const formula = String(activity.healing.formula);
+        if (/\d*d\d+/i.test(formula)) return true;
+        try {
+            const rollData = activity.getRollData?.() ?? {};
+            const parsed = Roll.create(formula, rollData);
+            if (parsed.dice?.length > 0 || !parsed.isDeterministic) return true;
+        } catch {
+            if (/\d*d\d+/i.test(formula)) return true;
+        }
+        return false;
+    }
+
+    if (activity.damage?.parts?.length) {
+        for (const part of activity.damage.parts) {
+            if (part.custom?.enabled && part.custom.formula) {
+                if (/\d*d\d+/i.test(part.custom.formula)) return true;
+                try {
+                    const rollData = activity.getRollData?.() ?? {};
+                    const parsed = Roll.create(part.custom.formula, rollData);
+                    if (parsed.dice?.length > 0 || !parsed.isDeterministic) return true;
+                } catch {
+                    if (/\d*d\d+/i.test(part.custom.formula)) return true;
+                }
+            } else {
+                if (part.denomination && part.denomination > 0 && part.number !== 0) return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
  * Extract the D20Roll from an attack roll message.
  * @param {ChatMessage} message
  * @returns {D20Roll|Roll|null}
@@ -231,15 +360,28 @@ async function _onCreateChatMessage(message) {
             return;
         }
 
+        // Determine whether to configure (show dialog) or auto-roll immediately
+        const autoRollStatic = game.settings.get(MODULE_ID, "autoRollStaticDamage");
+        const hasDice = activityHasDamageDice(resolvedActivity, { isCritical });
+        const shouldConfigure = !autoRoll && (!autoRollStatic || hasDice);
+
+        debug("Auto-Roll Attack Damage | Hit detected, rolling damage", {
+            autoRoll,
+            autoRollStatic,
+            hasDice,
+            shouldConfigure,
+            isCritical
+        });
+
         // Trigger damage roll — either prompt (configure: true) or auto-roll (configure: false)
         await resolvedActivity.rollDamage(
             {
                 isCritical: isCritical,
                 attack: { isCritical: isCritical },
-                configure: !autoRoll
+                configure: shouldConfigure
             },
             {
-                configure: !autoRoll
+                configure: shouldConfigure
             },
             {
                 data: {
@@ -257,10 +399,35 @@ async function _onCreateChatMessage(message) {
 }
 
 /**
- * Initialise the feature by registering the hook.
+ * Hook handler for dnd5e.preRollDamage.
+ * Intercepts any damage or healing roll before the configuration dialog is displayed.
+ * If the formula consists purely of static or deterministic values (such as flat bonuses,
+ * ability modifiers, or level multipliers like @classes.barbarian.levels) and contains no dice,
+ * automatically suppresses the dialog (dialog.configure = false) when autoRollStaticDamage is enabled.
+ *
+ * @param {DamageRollProcessConfiguration} config
+ * @param {DamageRollDialogConfiguration} dialog
+ * @param {DamageRollMessageConfiguration} message
+ */
+function _onPreRollDamage(config, dialog, message) {
+    if (dialog.configure === false) return;
+    if (!game.settings.get(MODULE_ID, "autoRollStaticDamage")) return;
+
+    if (isRollConfigPurelyStatic(config)) {
+        debug("Auto-Roll Static Damage | Suppressing damage/healing dialog for deterministic roll", {
+            subject: config.subject?.name,
+            rolls: config.rolls
+        });
+        dialog.configure = false;
+    }
+}
+
+/**
+ * Initialise the feature by registering the hooks.
  * Called once during module setup.
  */
 export function initAutoRollAttackDamage() {
     Hooks.on("createChatMessage", _onCreateChatMessage);
-    debug("Auto-Roll Attack Damage | Initialized");
+    Hooks.on("dnd5e.preRollDamage", _onPreRollDamage);
+    debug("Auto-Roll Attack Damage & Static Damage/Healing | Initialized");
 }

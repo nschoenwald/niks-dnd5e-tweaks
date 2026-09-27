@@ -784,6 +784,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "autoRollStaticDamage", {
+        name: "↳ Auto-Roll Flat / Static Damage & Healing",
+        hint: "When a damage or healing roll would be prompted (such as using an activity, an attack hitting, or a save activity), automatically rolls immediately without showing a confirmation dialog if the formula contains only static or derived values (no dice).",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "autoRollAttackDamage", {
         name: "Auto-Roll Attack Damage",
         hint: "Automatically rolls damage without showing a configuration dialog when an attack roll hits the target's AC. Takes precedence over 'Prompt for Attack Damage' for the same actor type. The attacker's actor type (player character or NPC) determines whether the setting applies. Automatically bypassed when midi-qol is configured to auto-apply damage.",

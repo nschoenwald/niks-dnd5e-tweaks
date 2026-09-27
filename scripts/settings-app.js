@@ -659,6 +659,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "autoRollStaticDamage",
+                                name: "↳ Auto-Roll Flat / Static Damage & Healing",
+                                hint: "Automatically rolls damage or healing immediately without showing a dialog if the formula contains only static or derived values (no dice).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "promptForAttackDamage"
+                            },
+                            {
                                 key: "autoRollAttackDamage",
                                 name: "Auto-Roll Attack Damage",
                                 hint: "Automatically rolls damage without dialog when an attack roll hits target AC. Takes precedence over Prompt.",
@@ -1101,9 +1110,9 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         }
 
         // 3. Parent-Child Reactive Toggles
-        const parentCheckboxes = html.querySelectorAll(".nd5t-setting-row:not(.nd5t-child-setting) input[type='checkbox']");
-        parentCheckboxes.forEach(cb => {
-            cb.addEventListener("change", () => {
+        const parentControls = html.querySelectorAll(".nd5t-setting-row:not(.nd5t-child-setting) input[type='checkbox'], .nd5t-setting-row:not(.nd5t-child-setting) select");
+        parentControls.forEach(ctrl => {
+            ctrl.addEventListener("change", () => {
                 this.#updateChildSettingStates();
             });
         });
@@ -1156,7 +1165,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     }
 
     /**
-     * Updates disabled states for child settings based on parent checkbox status
+     * Updates disabled states for child settings based on parent control status
      */
     #updateChildSettingStates() {
         const html = this.element;
@@ -1165,8 +1174,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         childRows.forEach(row => {
             const parentKey = row.dataset.parent;
             const parentRow = html.querySelector(`.nd5t-setting-row[data-key="${parentKey}"]`);
-            const parentInput = parentRow?.querySelector("input[type='checkbox']");
-            const isParentActive = parentInput ? parentInput.checked : true;
+            const parentCheckbox = parentRow?.querySelector("input[type='checkbox']");
+            const parentSelect = parentRow?.querySelector("select");
+
+            let isParentActive = true;
+            if (parentCheckbox) {
+                isParentActive = parentCheckbox.checked;
+            } else if (parentSelect) {
+                isParentActive = parentSelect.value !== "none" && parentSelect.value !== "";
+            }
 
             const controls = row.querySelectorAll("input, select, button");
             if (!isParentActive) {
