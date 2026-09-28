@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.6] - 2026-09-28
+### Fixed
+- **Dark Mode Styling & Contrast — Chat Card Buttons & Retroactive Advantage**:
+  - **Root Cause — Wrong `theme-dark` Anchor**: Foundry V14 `configureUI` applies `theme-dark` to `body` only when the **Applications** color scheme is set to dark. When only the **Interface** color scheme is dark (the common case), Foundry applies `theme-dark` to `#interface` and sidebar tab elements such as `#chat` — not to `body`. All dark theme CSS rules that were scoped to `body.theme-dark` were therefore silently ignored when the user had "Interface: dark" without "Applications: dark". Fixed by replacing `body.theme-dark.nd5t-chat-card-styling :is(.chat-log) .message` with `body.nd5t-chat-card-styling .theme-dark :is(.chat-log) .message` (and `.theme-dark :is(.chat-log) .message` for the feature-independent retroactive advantage rules), so any `theme-dark` class at any ancestor level — `body`, `#interface`, `#sidebar`, or `#chat` — triggers dark styling correctly.
+  - **Specificity Bug — `#chat-log` ID in `:is()`**: The light-mode color token selector contained `#chat-log` (a legacy Foundry ID that no longer exists in V14's DOM) inside a `:is()` list. Because `:is()` takes the highest specificity of any selector it contains, this inflated the selector's specificity to `(1,2,1)` — silently beating every dark-mode override rule at `(0,5,1)` even when dark mode was correctly detected. Removed `#chat-log` from all `:is()` groups throughout the stylesheet; selectors now use only class-level specificity so dark overrides win by source order and their higher class count.
+  - **Invalid CSS Selector Bug**: Fixed structurally impossible selectors of the form `:is(.theme-dark, .theme-dark *) body.nd5t-chat-card-styling ...` that were silently dropped by all browsers (a `body` element cannot be a descendant of its own children). Replaced with the correct ancestor-agnostic `.theme-dark` pattern.
+  - **Dice Roll Bar Background Contrast in Dark Mode**: Fixed an issue where `button.dice-roll` retained a light parchment background (`oklch(97% ...)`) in dark mode, causing the roll total to be near-invisible. Dark token variables (`--nd5t-attack-btn-bg`, etc.) now correctly resolve to `oklch(20% ...)` for all card types.
+  - **Retroactive Advantage Button Readability**: Fixed inactive retroactive advantage buttons (`[ ADV ]` and `[ DISADV ]`) displaying near-black text on dark cards. CSS selectors and `isChatDark()` updated to detect all Foundry V14 dark mode configurations.
+
 ## [14.32.5] - 2026-09-28
 ### Added
 - **Chat Card Action Buttons — Transform, Summon, Teleport, Use, Template, and Break Concentration Styling**:

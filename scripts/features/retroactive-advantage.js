@@ -201,7 +201,7 @@ export async function onSocketMessage(data) {
 
 /**
  * Determine if the chat message card is rendered in Dark Mode.
- * In DnD5e v6, chat cards are light parchment by default unless chatLogTheme is "dark".
+ * In DnD5e v6, chat cards follow chatLogTheme ("dark" / "light") or cascade from Foundry's UI theme.
  *
  * @param {HTMLElement} targetEl
  * @returns {boolean}
@@ -213,6 +213,10 @@ export function isChatDark(targetEl) {
     if (dndTheme === "dark") return true;
     if (dndTheme === "light") return false;
 
+    // Check closest scoped theme overrides on target element or card
+    if (targetEl?.closest(".theme-light")) return false;
+    if (targetEl?.closest(".theme-dark")) return true;
+
     const chatLog = targetEl?.closest(".chat-log, .chat-popout");
     if (chatLog?.classList.contains("theme-dark")) return true;
     if (chatLog?.classList.contains("theme-light")) return false;
@@ -220,6 +224,25 @@ export function isChatDark(targetEl) {
     const message = targetEl?.closest(".chat-message, .message");
     if (message?.classList.contains("theme-dark")) return true;
     if (message?.classList.contains("theme-light")) return false;
+
+    // Check document body and root element (Foundry core interface theme)
+    const doc = targetEl?.ownerDocument ?? document;
+    if (doc.body?.classList.contains("theme-dark")) return true;
+    if (doc.body?.classList.contains("theme-light")) return false;
+    if (doc.documentElement?.classList.contains("theme-dark")) return true;
+    if (doc.documentElement?.classList.contains("theme-light")) return false;
+
+    // Check core uiConfig setting
+    try {
+        const { colorScheme = {} } = game.settings.get("core", "uiConfig") ?? {};
+        if (colorScheme.interface === "dark") return true;
+        if (colorScheme.interface === "light") return false;
+    } catch {
+        // setting may not exist
+    }
+
+    // Match browser prefers-color-scheme
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return true;
 
     return false;
 }
