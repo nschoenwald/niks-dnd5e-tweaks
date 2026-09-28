@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.5] - 2026-09-28
+### Added
+- **Chat Card Action Buttons — Transform, Summon, Teleport, Use, Template, and Break Concentration Styling**:
+  - Extended the compact chat card action button enhancements to **Transform**, **Summon**, **Teleport** (new DnD5e v6 activity), **Use**, **Template** placement, and native **Break Concentration** actions:
+    - **Action Text Labels**: Appends clear, bold uppercase text labels alongside the activity icons:
+      - **Transform** (`transformActor`, `transform`, `rollTransform`)
+      - **Summon** (`placeSummons`, `placeSummon`, `summon`, `rollSummon`)
+      - **Teleport** (`planTeleport`, `teleport`, `rollTeleport`)
+      - **Use** (`use`, `useItem`, `activity-use`, `rollFormula`, `rollUse`)
+      - **Template** (`placeTemplate`, `template`)
+      - **Break** (`breakConcentration`, `endConcentration`)
+    - **Distinct Color Themes (Light & Dark)**:
+      - **Transform**: Emerald Jade theme (`oklch(... 170)`) — soft emerald tint, crisp jade border, and dark jade text in Light Theme; dark forest jade background with luminous mint jade text and border in Dark Theme.
+      - **Summon**: Cosmic Orchid theme (`oklch(... 325)`) — soft cosmic orchid tint, vibrant orchid border, and dark orchid text in Light Theme; dark astral orchid background with glowing radiant orchid text and border in Dark Theme.
+      - **Teleport**: Rift Indigo theme (`oklch(... 270)`) — soft dimensional indigo tint, crisp rift indigo border, and dark indigo text in Light Theme; dark rift indigo background with luminous light indigo text and border in Dark Theme.
+      - **Use**: Astral Cyan theme (`oklch(... 210)`) — soft cyan/steel tint, crisp cyan border, and dark cyan text in Light Theme; dark cyan background with luminous ice cyan text and border in Dark Theme.
+      - **Template**: Ruby Target theme (`oklch(... 25)`) — soft ruby tint, crisp ruby target border, and dark ruby text in Light Theme; dark ruby background with glowing light ruby text and border in Dark Theme.
+      - **Break**: Crimson Interruption theme (`oklch(... 15)`) — soft crimson tint, crisp crimson border, and dark crimson text in Light Theme; dark crimson background with luminous light crimson text and border in Dark Theme.
+    - **Grouped Action Support**: Added full support for grouped action buttons (`data-forward-action`) alongside standard buttons (`data-action`), ensuring multi-action dropdowns and grouped activity buttons receive the same custom typography, padding, and theme colors.
+
 ## [14.32.4] - 2026-09-28
 ### Fixed
 - **Prompt for Attack Damage & Auto-Roll Attack Damage — Hit Detection & Preference Scope Fixes**:

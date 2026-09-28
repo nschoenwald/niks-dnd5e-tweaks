@@ -1281,8 +1281,8 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
 /* ─── DnD5e 6.0 Chat Card Action Buttons: Icon + Text ─── */
 
 /* Base: size, padding, font */
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action],
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action] {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action]),
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action]) {
     --button-size: unset;
     block-size: unset;
     padding: 4px 10px;
@@ -1301,10 +1301,10 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
 }
 
 /* Scale icon to match button, prevent overflow */
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action]>dnd5e-icon,
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action]>i,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action]>dnd5e-icon,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action]>i {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>dnd5e-icon,
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>i,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>dnd5e-icon,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>i {
     --icon-size: 1em;
     --gold-icon-size: 1em;
     font-size: inherit;
@@ -1312,42 +1312,81 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     overflow: hidden;
 }
 
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>img,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action])>img {
+    width: 1em;
+    height: 1em;
+    object-fit: contain;
+    border: none;
+    flex-shrink: 0;
+}
+
 /* Short text labels per action */
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"]::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"]::after {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"])::after {
     content: "Atk";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"]::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"]::after {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"])::after {
     content: "Dmg";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"]::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"]::after {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after {
     content: "Save";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"]::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"]::after {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after {
     content: "Check";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"]::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"]::after {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"])::after {
     content: "Heal";
 }
 
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"])::after {
+    content: "Transform";
+}
+
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"])::after {
+    content: "Summon";
+}
+
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"])::after {
+    content: "Use";
+}
+
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"])::after {
+    content: "Teleport";
+}
+
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"])::after {
+    content: "Template";
+}
+
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"])::after,
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"])::after {
+    content: "Break";
+}
+
 /* Only prevent wrapping on the ul that contains action buttons — leaves tag rows unaffected */
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul:has(> li > button.icon[data-action]),
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul:has(> li > button.icon[data-action]) {
+body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])),
+body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])) {
     flex-wrap: nowrap;
     overflow: hidden;
 }
 
 /* ─── Button Colors — Light Theme (Default) ─── */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
-body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"]) {
     --button-background-color: oklch(96% 0.015 295);
     /* soft violet tint */
     --button-border-color: oklch(52% 0.15 295);
@@ -1359,8 +1398,8 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button
     /* dark violet text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
-body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"]) {
     --button-background-color: oklch(96% 0.02 50);
     /* warm flame orange tint */
     --button-border-color: oklch(58% 0.15 50);
@@ -1372,8 +1411,8 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button
     /* dark flame orange text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
-body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon[data-action="rollSave"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"]) {
     --button-background-color: oklch(96% 0.018 240);
     /* cool blue tint */
     --button-border-color: oklch(52% 0.1 240);
@@ -1385,8 +1424,8 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button
     /* dark blue text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
-body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"]) {
     --button-background-color: oklch(96% 0.018 75);
     /* soft bronze tint */
     --button-border-color: oklch(52% 0.12 75);
@@ -1398,8 +1437,8 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button
     /* dark bronze text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
-body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"]) {
     --button-background-color: oklch(96% 0.02 145);
     /* green tint */
     --button-border-color: oklch(45% 0.1 145);
@@ -1409,9 +1448,87 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button
     color: oklch(30% 0.1 145) !important;
 }
 
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"]) {
+    --button-background-color: oklch(96% 0.02 170);
+    /* soft emerald jade tint */
+    --button-border-color: oklch(46% 0.12 170);
+    /* emerald jade */
+    --button-hover-border-color: oklch(34% 0.14 170);
+    background: oklch(96% 0.02 170) !important;
+    border-color: oklch(46% 0.12 170) !important;
+    color: oklch(30% 0.12 170) !important;
+    /* dark jade text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"]) {
+    --button-background-color: oklch(96% 0.02 325);
+    /* soft cosmic orchid tint */
+    --button-border-color: oklch(50% 0.16 325);
+    /* vibrant orchid */
+    --button-hover-border-color: oklch(38% 0.18 325);
+    background: oklch(96% 0.02 325) !important;
+    border-color: oklch(50% 0.16 325) !important;
+    color: oklch(35% 0.16 325) !important;
+    /* dark orchid text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"]) {
+    --button-background-color: oklch(96% 0.02 210);
+    /* soft cyan/steel tint */
+    --button-border-color: oklch(48% 0.12 210);
+    /* cyan/steel border */
+    --button-hover-border-color: oklch(36% 0.14 210);
+    background: oklch(96% 0.02 210) !important;
+    border-color: oklch(48% 0.12 210) !important;
+    color: oklch(32% 0.12 210) !important;
+    /* dark cyan text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"]) {
+    --button-background-color: oklch(96% 0.02 270);
+    /* soft rift indigo tint */
+    --button-border-color: oklch(50% 0.15 270);
+    /* rift indigo border */
+    --button-hover-border-color: oklch(38% 0.17 270);
+    background: oklch(96% 0.02 270) !important;
+    border-color: oklch(50% 0.15 270) !important;
+    color: oklch(34% 0.15 270) !important;
+    /* dark indigo text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"]) {
+    --button-background-color: oklch(96% 0.02 25);
+    /* soft ruby tint */
+    --button-border-color: oklch(52% 0.17 25);
+    /* ruby target border */
+    --button-hover-border-color: oklch(40% 0.18 25);
+    background: oklch(96% 0.02 25) !important;
+    border-color: oklch(52% 0.17 25) !important;
+    color: oklch(35% 0.16 25) !important;
+    /* dark ruby text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout) .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"]),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"]) {
+    --button-background-color: oklch(96% 0.02 15);
+    /* soft crimson tint */
+    --button-border-color: oklch(50% 0.18 15);
+    /* crimson border */
+    --button-hover-border-color: oklch(38% 0.19 15);
+    background: oklch(96% 0.02 15) !important;
+    border-color: oklch(50% 0.18 15) !important;
+    color: oklch(34% 0.17 15) !important;
+    /* dark crimson text */
+}
+
 /* ─── Button Colors — Dark Theme (scoped strictly to dark chat log/message) ─── */
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollAttack"],
-body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon[data-action="rollAttack"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"]) {
     --button-background-color: oklch(22% 0.06 295);
     /* dark violet bg */
     --button-border-color: oklch(48% 0.16 295);
@@ -1423,8 +1540,8 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .ico
     /* light lavender text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollDamage"],
-body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon[data-action="rollDamage"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"]) {
     --button-background-color: oklch(22% 0.06 50);
     /* dark flame orange bg */
     --button-border-color: oklch(50% 0.16 50);
@@ -1436,8 +1553,8 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .ico
     /* radiant orange text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollSave"],
-body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon[data-action="rollSave"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"]) {
     --button-background-color: oklch(22% 0.04 240);
     /* dark blue bg */
     --button-border-color: oklch(45% 0.1 240);
@@ -1449,8 +1566,8 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .ico
     /* light blue text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollCheck"],
-body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon[data-action="rollCheck"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"]) {
     --button-background-color: oklch(22% 0.05 75);
     /* dark bronze bg */
     --button-border-color: oklch(48% 0.12 75);
@@ -1462,8 +1579,8 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .ico
     /* warm bronze text */
 }
 
-body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon[data-action="rollHealing"],
-body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon[data-action="rollHealing"] {
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"]) {
     --button-background-color: oklch(20% 0.05 145);
     /* dark green bg */
     --button-border-color: oklch(40% 0.1 145);
@@ -1471,6 +1588,84 @@ body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .ico
     background: oklch(20% 0.05 145) !important;
     border-color: oklch(40% 0.1 145) !important;
     color: oklch(72% 0.1 145) !important;
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="transformActor"], [data-action="transform"], [data-action="rollTransform"], [data-forward-action="transformActor"], [data-forward-action="transform"], [data-forward-action="rollTransform"]) {
+    --button-background-color: oklch(20% 0.05 170);
+    /* dark jade bg */
+    --button-border-color: oklch(44% 0.13 170);
+    /* jade border */
+    --button-hover-border-color: oklch(62% 0.15 170);
+    background: oklch(20% 0.05 170) !important;
+    border-color: oklch(44% 0.13 170) !important;
+    color: oklch(78% 0.12 170) !important;
+    /* light jade text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"]) {
+    --button-background-color: oklch(22% 0.06 325);
+    /* dark orchid bg */
+    --button-border-color: oklch(52% 0.16 325);
+    /* orchid border */
+    --button-hover-border-color: oklch(70% 0.16 325);
+    background: oklch(22% 0.06 325) !important;
+    border-color: oklch(52% 0.16 325) !important;
+    color: oklch(82% 0.13 325) !important;
+    /* light orchid text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="use"], [data-action="useItem"], [data-action="activity-use"], [data-action="rollFormula"], [data-action="rollUse"], [data-forward-action="use"], [data-forward-action="useItem"], [data-forward-action="activity-use"], [data-forward-action="rollFormula"], [data-forward-action="rollUse"]) {
+    --button-background-color: oklch(20% 0.05 210);
+    /* dark cyan/steel bg */
+    --button-border-color: oklch(46% 0.12 210);
+    /* cyan/steel border */
+    --button-hover-border-color: oklch(64% 0.13 210);
+    background: oklch(20% 0.05 210) !important;
+    border-color: oklch(46% 0.12 210) !important;
+    color: oklch(78% 0.11 210) !important;
+    /* light cyan text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="planTeleport"], [data-action="teleport"], [data-action="rollTeleport"], [data-forward-action="planTeleport"], [data-forward-action="teleport"], [data-forward-action="rollTeleport"]) {
+    --button-background-color: oklch(21% 0.06 270);
+    /* dark rift indigo bg */
+    --button-border-color: oklch(50% 0.15 270);
+    /* rift indigo border */
+    --button-hover-border-color: oklch(68% 0.15 270);
+    background: oklch(21% 0.06 270) !important;
+    border-color: oklch(50% 0.15 270) !important;
+    color: oklch(80% 0.12 270) !important;
+    /* light rift indigo text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="template"], [data-forward-action="placeTemplate"], [data-forward-action="template"]) {
+    --button-background-color: oklch(22% 0.06 25);
+    /* dark ruby bg */
+    --button-border-color: oklch(50% 0.17 25);
+    /* ruby target border */
+    --button-hover-border-color: oklch(68% 0.17 25);
+    background: oklch(22% 0.06 25) !important;
+    border-color: oklch(50% 0.17 25) !important;
+    color: oklch(82% 0.13 25) !important;
+    /* light ruby text */
+}
+
+body.nd5t-chat-card-styling :is(#chat-log, .chat-log, .chat-popout).theme-dark .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"]),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"]) {
+    --button-background-color: oklch(22% 0.06 15);
+    /* dark crimson bg */
+    --button-border-color: oklch(50% 0.18 15);
+    /* crimson border */
+    --button-hover-border-color: oklch(68% 0.18 15);
+    background: oklch(22% 0.06 15) !important;
+    border-color: oklch(50% 0.18 15) !important;
+    color: oklch(82% 0.13 15) !important;
+    /* light crimson text */
 }
 
 /* ─── Attack & Damage Distinct Card Styling ─── */
