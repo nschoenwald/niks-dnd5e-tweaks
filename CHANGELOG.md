@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.4] - 2026-09-28
+### Fixed
+- **Prompt for Attack Damage & Auto-Roll Attack Damage — Hit Detection & Preference Scope Fixes**:
+  - **Fixed Personal Settings Scope**: Resolved an issue where client-level preferences (`clientEnableAttackDamagePrompt` and `clientEnableAutoRollAttackDamage`) were evaluated unconditionally across all attack rolls, causing GM-controlled NPC attack damage prompts and auto-rolls to be silently suppressed. Personal client preferences now strictly gate player character rolls (`role === "players"`), allowing GM settings for "ALL" and "NPC Only" to function as expected.
+  - **Support for Private & Blind GM Rolls**: Removed the restrictive public roll check that aborted execution if the attack roll had whispers or was rolled blindly (`/gmroll`, `/blindroll`, or default GM roll modes). The triggered damage roll now inherits the roll mode matching the originating attack roll.
+  - **Target Resolution & Hit Evaluation**: Attack roll targets (`message.system.targets`) now take precedence over item usage card targets (`originTargets`), preventing stale or missing targets from suppressing damage. Hit detection now leverages native DnD5e 6.x evaluated targets (`!target.isMiss`) with fallback to AC evaluation.
+  - **Weapon Damage & Ammunition Support**: Enhanced damage eligibility checks to recognize weapons using ammunition (`properties.has("amm")`) or inheriting base weapon damage (`activity.item.system.offersBaseDamage` with `includeBase`), ensuring ranged weapons (such as bows, crossbows, and slings) and weapons with empty un-instantiated activity parts are not skipped.
+  - **Roll Context & Origin Linking**: Forwarded attack roll parameters (`mode`, `ability`, `ammunitionItem`) and critical hit state into `activity.rollDamage`, and set `system.origin` to the attack message ID so the resulting damage roll is properly linked to the attack card in the DnD5e chat log.
+
+### Improved
+- **Auto-Roll Attack Damage — Critical Hit Detection**: Removed the overly aggressive natural-20 fallback (`d0.total === 20`) from `isCritical` detection. `D20Roll.isCritical` and `roll.options.isCritical` are now the sole sources of truth, correctly respecting configured critical thresholds (e.g. Champion Fighter's 19–20 range and other variant rules).
+- **Auto-Roll Attack Damage — Redundant Config Cleanup**: Removed the vestigial `attack: { isCritical }` sub-object from the `rollDamage` call. `getDamageConfig` reads `config.isCritical` at the top level; the nested sub-object was not consumed.
+- **Prone Rotation — Dead Code Removed**: Removed the `changes.disabled !== undefined` branch from `_onUpdateActiveEffect`. In dnd5e 6.0, conditions are never toggled via `disabled` — they are always created and deleted via `ActiveEffect5e.manageStatusEffect`. The branch was confirmed dead code for all standard condition workflows.
+- **Auto-Roll Save Damage — Cleaned Up `rollDamage` Call**: Removed the inert `configure` key from the config argument of `activity.rollDamage`. Dialog display is controlled by `dialog.configure` (second argument), not by the config object; the key in the config arg was silently ignored.
+- **Suppress Bloodied on Dead — Correct Active Effect Check**: Changed `isActorDead`'s fallback effect scan from `!e.disabled` to `e.active`. `e.active` is the canonical check — it covers both disabled effects (`disabled=true`) and suppressed effects (`disabled=false, active=false`, e.g. dead-condition immunity via CI), preventing suppressed dead effects from being incorrectly counted as active.
+- **Chat Card Styling — Per-Window ResizeObserver for Popout Windows**: Replaced the module-level `ResizeObserver` singleton with a `WeakMap<Window, ResizeObserver>` so each browser window context (main window and each detached chat popout) gets its own observer. Browser `ResizeObserver` instances are window-context-specific and cannot observe elements across window boundaries; the previous singleton silently failed to provide dynamic roll result collision avoidance when popout chat windows were resized.
+
 ## [14.32.3] - 2026-09-27
 ### Added
 - **Chat Card Styling — Distinct Styling for Temporary HP Healing Rolls**:

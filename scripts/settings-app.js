@@ -74,7 +74,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "clientEnableAttackDamagePrompt",
                                 name: "Prompt for Attack Damage",
-                                hint: "Automatically opens the damage dialog when your attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
+                                hint: "Automatically opens the damage dialog when your player character's attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
@@ -82,7 +82,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "clientEnableAutoRollAttackDamage",
                                 name: "Auto-Roll Attack Damage",
-                                hint: "Automatically rolls damage immediately when your attack roll hits target AC (if enabled by the GM).",
+                                hint: "Automatically rolls damage immediately when your player character's attack roll hits target AC (if enabled by the GM).",
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"

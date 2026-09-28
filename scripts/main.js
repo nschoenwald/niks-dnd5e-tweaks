@@ -112,7 +112,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableAttackDamagePrompt", {
         name: "Prompt for Attack Damage (Personal)",
-        hint: "Automatically opens the damage dialog when your attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
+        hint: "Automatically opens the damage dialog when your player character's attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
         scope: "client",
         config: false,
         type: Boolean,
@@ -121,7 +121,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableAutoRollAttackDamage", {
         name: "Auto-Roll Attack Damage (Personal)",
-        hint: "Automatically rolls damage immediately when your attack roll hits target AC (if enabled by the GM).",
+        hint: "Automatically rolls damage immediately when your player character's attack roll hits target AC (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,

@@ -39,14 +39,8 @@ export class ProneRotation {
         const tokenDoc = this._resolveTokenDoc(effect);
         if (!actor && !tokenDoc) return;
 
-        // If disabled was modified (e.g. toggled on sheet, via macro, or by automation module)
-        if (changes.disabled !== undefined) {
-            const shouldRotate = !changes.disabled && effect.active;
-            this._handleRotation(actor, shouldRotate, userId, tokenDoc);
-            return;
-        }
-
         // If statuses or condition type were modified on an existing effect
+        // (e.g. by an automation module), re-evaluate rotation.
         if (changes.statuses !== undefined || changes.system?.type !== undefined) {
             const isRotationNow = this._isRotationEffect(effect) && effect.active;
             this._handleRotation(actor, isRotationNow, userId, tokenDoc);

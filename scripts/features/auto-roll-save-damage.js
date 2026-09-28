@@ -47,7 +47,7 @@ function _onPostUseActivity(activity, usageConfig, results) {
     });
 
     activity.rollDamage(
-        { event: usageConfig.event, configure: shouldConfigure },
+        { event: usageConfig.event },
         { configure: shouldConfigure },
         {
             data: {

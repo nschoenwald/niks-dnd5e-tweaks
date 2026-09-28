@@ -318,27 +318,39 @@ function _expandD20DieDisplay(message, root) {
     _adjustRollResultPositions(root);
 }
 
-/** @type {ResizeObserver|null} */
-let _rollResultResizeObserver = null;
 
 /**
- * Get or create the shared ResizeObserver for dice-roll buttons.
+ * Map of ResizeObserver instances keyed by the Window object they were created in.
+ * `ResizeObserver` is window-context-specific — an observer created in the main
+ * window cannot observe elements living in a detached popout window, and vice-versa.
+ * Using a WeakMap ensures each window context gets its own observer and allows
+ * garbage collection when popout windows are closed.
+ * @type {WeakMap<Window, ResizeObserver>}
+ */
+const _rollResultResizeObservers = new WeakMap();
+
+/**
+ * Get or create the ResizeObserver for the given window context.
  * Automatically recalculates roll result positioning whenever buttons change size
  * (e.g. sidebar expand/collapse, popout resize, window resizing).
+ * @param {Window} [win] - The window context; defaults to the main `window`.
  * @returns {ResizeObserver|null}
  */
-function _getRollResultResizeObserver() {
-    if (!_rollResultResizeObserver && typeof ResizeObserver !== "undefined") {
-        _rollResultResizeObserver = new ResizeObserver((entries) => {
+function _getRollResultResizeObserver(win = window) {
+    if (typeof ResizeObserver === "undefined") return null;
+    const WinResizeObserver = win.ResizeObserver ?? ResizeObserver;
+    if (!_rollResultResizeObservers.has(win)) {
+        const observer = new WinResizeObserver((entries) => {
             for (const entry of entries) {
                 const btn = entry.target;
-                if (btn instanceof HTMLElement) {
+                if (btn instanceof win.HTMLElement) {
                     _adjustButtonRollResult(btn);
                 }
             }
         });
+        _rollResultResizeObservers.set(win, observer);
     }
-    return _rollResultResizeObserver;
+    return _rollResultResizeObservers.get(win);
 }
 
 /**
@@ -428,7 +440,7 @@ function _adjustButtonRollResult(btn) {
 
 /**
  * Adjust the roll result positions for all dice-roll buttons in a given container.
- * Also registers them with the shared ResizeObserver.
+ * Also registers them with the ResizeObserver for their window context.
  *
  * @param {HTMLElement} root
  */
@@ -437,7 +449,10 @@ function _adjustRollResultPositions(root) {
     const diceButtons = root.querySelectorAll("button.dice-roll");
     if (!diceButtons.length) return;
 
-    const observer = _getRollResultResizeObserver();
+    // Derive the window context from the element's ownerDocument so popout
+    // windows use their own observer rather than the main window's observer.
+    const win = root.ownerDocument?.defaultView ?? window;
+    const observer = _getRollResultResizeObserver(win);
 
     for (const btn of diceButtons) {
         observer?.observe(btn);
@@ -491,11 +506,13 @@ export function disableChatCardStyling() {
         popout.ownerDocument?.body?.classList.remove("nd5t-chat-card-styling");
     }
 
-    // Disconnect and reset resize observer
-    if (_rollResultResizeObserver) {
-        _rollResultResizeObserver.disconnect();
-        _rollResultResizeObserver = null;
+    // Disconnect and reset all resize observers across all window contexts
+    for (const observer of _rollResultResizeObservers.values?.() ?? []) {
+        try { observer.disconnect(); } catch (_) {}
     }
+    // WeakMap entries are garbage-collected automatically when their window keys are
+    // closed/collected; explicitly delete the main window entry to allow recreation.
+    _rollResultResizeObservers.delete(window);
 
     // Restore roll result transform
     for (const res of document.querySelectorAll("button.dice-roll .result")) {

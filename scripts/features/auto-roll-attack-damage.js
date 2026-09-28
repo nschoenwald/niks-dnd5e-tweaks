@@ -32,7 +32,7 @@ function _getActorRole(actor) {
  * @returns {boolean}
  */
 function _shouldAutoRoll(role) {
-    if (!game.settings.get(MODULE_ID, "clientEnableAutoRollAttackDamage")) return false;
+    if (role === "players" && !game.settings.get(MODULE_ID, "clientEnableAutoRollAttackDamage")) return false;
     const setting = game.settings.get(MODULE_ID, "autoRollAttackDamage");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;
@@ -46,7 +46,7 @@ function _shouldAutoRoll(role) {
  * @returns {boolean}
  */
 function _shouldPrompt(role) {
-    if (!game.settings.get(MODULE_ID, "clientEnableAttackDamagePrompt")) return false;
+    if (role === "players" && !game.settings.get(MODULE_ID, "clientEnableAttackDamagePrompt")) return false;
     const setting = game.settings.get(MODULE_ID, "promptForAttackDamage");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;
@@ -101,6 +101,15 @@ export function isRollConfigPurelyStatic(config) {
             }
         }
 
+        if (activity.damage?.includeBase && activity.item?.system?.damage?.base) {
+            const base = activity.item.system.damage.base;
+            if (base.custom?.enabled && base.custom.formula) {
+                if (/\d*d\d+/i.test(base.custom.formula)) return false;
+            } else if (base.denomination && base.denomination > 0 && base.number !== 0) {
+                return false;
+            }
+        }
+
         if (activity.damage?.parts?.length) {
             let hasParts = false;
             for (const part of activity.damage.parts) {
@@ -149,7 +158,7 @@ export function activityHasDamageDice(activity, config = {}) {
         debug("Auto-Roll Attack Damage | Error in activityHasDamageDice getDamageConfig:", err);
     }
 
-    // Fallback: inspect activity.healing or activity.damage.parts directly
+    // Fallback: inspect activity.healing, base damage, or activity.damage.parts directly
     if (activity.healing?.formula) {
         const formula = String(activity.healing.formula);
         if (/\d*d\d+/i.test(formula)) return true;
@@ -161,6 +170,15 @@ export function activityHasDamageDice(activity, config = {}) {
             if (/\d*d\d+/i.test(formula)) return true;
         }
         return false;
+    }
+
+    if (activity.damage?.includeBase && activity.item?.system?.damage?.base) {
+        const base = activity.item.system.damage.base;
+        if (base.custom?.enabled && base.custom.formula) {
+            if (/\d*d\d+/i.test(base.custom.formula)) return true;
+        } else if (base.denomination && base.denomination > 0 && base.number !== 0) {
+            return true;
+        }
     }
 
     if (activity.damage?.parts?.length) {
@@ -207,32 +225,30 @@ function _getAttackD20Roll(message) {
  * Handle a newly created chat message to see if it is a hit attack roll
  * from an attack activity, and if so prompt for or auto-roll damage.
  * @param {ChatMessage} message  The message that was just created.
+ * @param {object} options       Message creation options.
+ * @param {string} userId        ID of the user who created the message.
  */
-async function _onCreateChatMessage(message) {
+async function _onCreateChatMessage(message, options, userId) {
     try {
         // Run on the client that authored the attack roll so dialogs pop up
         // on the attacker's screen and auto-rolls are attributed to them.
-        const author = message.author ?? message.user;
-        if (author) {
-            if (author.id !== game.user.id) return;
-        } else {
-            const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-            if (!primaryGM?.isSelf) return;
-        }
+        const isAuthor = message.isAuthor ?? (message.author?.id ? message.author.id === game.user.id : message.author === game.user);
+        if (!isAuthor && userId !== game.user.id) return;
 
         // Only process attack rolls from attack activities
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
         const activity = message.getAssociatedActivity?.()
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
         const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "attack") return;
         if (activityType !== "attack") return;
 
-        // Only trigger on public rolls — skip private (GM), blind, and self rolls
-        const isPublic = (!message.whisper?.length) && !message.blind;
-        if (!isPublic) {
-            debug("Auto-Roll Attack Damage | Non-public attack roll, skipping");
-            return;
+        // Determine appropriate roll mode matching the attack message
+        let rollMode = undefined;
+        if (message.blind) rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        else if (message.whisper?.length) {
+            const isSelf = message.whisper.length === 1 && message.whisper[0] === game.user.id;
+            rollMode = isSelf ? CONST.DICE_ROLL_MODES.SELF : CONST.DICE_ROLL_MODES.PRIVATE;
         }
 
         // Skip if midi-qol is active and configured to auto-apply damage
@@ -250,7 +266,7 @@ async function _onCreateChatMessage(message) {
         if (!attackerActor) {
             const subjectUuid = message.system?.item?.uuid ?? message.getFlag("dnd5e", "subject.uuid");
             if (subjectUuid) {
-                const doc = fromUuidSync(subjectUuid);
+                const doc = fromUuidSync(subjectUuid, { strict: false });
                 attackerActor = doc?.actor ?? doc;
             }
         }
@@ -271,15 +287,16 @@ async function _onCreateChatMessage(message) {
             return;
         }
 
-        // Resolve targets — prefer originating (usage) message targets, fall back to attack message
-        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
-            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
-            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
-        const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
+        // Resolve targets — attack message targets take precedence, fall back to originating message
         const attackTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
-        const targets = (originTargets?.length ? originTargets : null)
-            || (attackTargets?.length ? attackTargets : null)
+        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
+            ?? (message.system?.origin ? (message.system.origin instanceof ChatMessage ? message.system.origin : game.messages.get(message.system.origin)) : null)
+            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+        const originTargets = (originatingMessage && originatingMessage !== message)
+            ? (originatingMessage.system?.targets ?? originatingMessage.getFlag("dnd5e", "targets"))
+            : null;
+        const targets = (attackTargets?.length ? attackTargets : null)
+            || (originTargets?.length ? originTargets : null)
             || [];
 
         if (!targets.length) {
@@ -295,7 +312,7 @@ async function _onCreateChatMessage(message) {
         }
 
         const d0 = attackRoll.dice?.[0];
-        const isCritical = Boolean(attackRoll.isCritical || attackRoll.options?.isCritical || (d0?.faces === 20 && d0?.total === 20));
+        const isCritical = Boolean(attackRoll.isCritical || attackRoll.options?.isCritical);
         const isFumble = Boolean(attackRoll.isFumble || attackRoll.options?.isFumble || (d0?.faces === 20 && d0?.total === 1 && !isCritical));
         const attackTotal = attackRoll.total ?? 0;
 
@@ -306,20 +323,26 @@ async function _onCreateChatMessage(message) {
         }
 
         // Check whether at least one target was hit
-        const hitTargets = targets.filter(target => {
-            if (isCritical) return true;
-            let ac = target.ac;
-            if (ac === undefined || ac === null) {
-                const targetUuid = target.actor ?? target.token ?? target.uuid;
-                if (targetUuid) {
-                    const targetDoc = fromUuidSync(targetUuid);
-                    const targetActor = targetDoc?.actor ?? targetDoc;
-                    ac = targetActor?.system?.attributes?.ac?.value;
+        // Prefer native DnD5e evaluatedTargets if present
+        let hitTargets = [];
+        if (message.system?.evaluatedTargets?.length) {
+            hitTargets = message.system.evaluatedTargets.filter(target => !target.isMiss);
+        } else {
+            hitTargets = targets.filter(target => {
+                if (isCritical) return true;
+                let ac = target.ac;
+                if (ac === undefined || ac === null) {
+                    const targetUuid = target.actor ?? target.token ?? target.uuid;
+                    if (targetUuid) {
+                        const targetDoc = fromUuidSync(targetUuid, { strict: false });
+                        const targetActor = targetDoc?.actor ?? targetDoc;
+                        ac = targetActor?.system?.attributes?.ac?.value;
+                    }
                 }
-            }
-            if (ac === undefined || ac === null) ac = Infinity;
-            return attackTotal >= ac;
-        });
+                if (ac === undefined || ac === null) ac = Infinity;
+                return attackTotal >= ac;
+            });
+        }
 
         if (!hitTargets.length) {
             debug(`Auto-Roll Attack Damage | Attack total ${attackTotal} missed all targets, skipping`);
@@ -338,13 +361,13 @@ async function _onCreateChatMessage(message) {
                 ?? originatingMessage?.getFlag("dnd5e", "item.uuid");
 
             if (itemUuid) {
-                const item = fromUuidSync(itemUuid);
+                const item = fromUuidSync(itemUuid, { strict: false });
                 resolvedActivity = item?.system?.activities?.get(activityId) ?? item?.activities?.get(activityId);
             }
 
-            if (!resolvedActivity && activityId) {
+            if (!resolvedActivity && activityId && attackerActor) {
                 resolvedActivity = attackerActor.items
-                    .flatMap(i => [...(i.system.activities?.values() ?? [])])
+                    .flatMap(i => [...(i.system?.activities?.values() ?? i.activities?.values() ?? [])])
                     .find(a => a.id === activityId);
             }
         }
@@ -354,15 +377,23 @@ async function _onCreateChatMessage(message) {
             return;
         }
 
-        // Verify the activity has damage parts to roll
-        if (!resolvedActivity.damage?.parts?.length) {
-            debug("Auto-Roll Attack Damage | Activity has no damage parts, skipping");
+        // Verify the activity has damage or ammunition to roll
+        const hasActivityDamage = Boolean(
+            resolvedActivity.damage?.parts?.length
+            || resolvedActivity.item?.system?.properties?.has("amm")
+            || (resolvedActivity.damage?.includeBase && resolvedActivity.item?.system?.offersBaseDamage && resolvedActivity.item?.system?.damage?.base?.formula)
+        );
+        if (!hasActivityDamage) {
+            debug("Auto-Roll Attack Damage | Activity has no damage parts or ammunition, skipping");
             return;
         }
 
+        // Extract attack roll parameters to forward to rollDamage
+        const { ability, ammunitionItem: ammunition, mode: attackMode } = message.system ?? {};
+
         // Determine whether to configure (show dialog) or auto-roll immediately
         const autoRollStatic = game.settings.get(MODULE_ID, "autoRollStaticDamage");
-        const hasDice = activityHasDamageDice(resolvedActivity, { isCritical });
+        const hasDice = activityHasDamageDice(resolvedActivity, { ability, ammunition, attackMode, isCritical });
         const shouldConfigure = !autoRoll && (!autoRollStatic || hasDice);
 
         debug("Auto-Roll Attack Damage | Hit detected, rolling damage", {
@@ -373,24 +404,33 @@ async function _onCreateChatMessage(message) {
             isCritical
         });
 
+        const dialogConfig = {
+            configure: shouldConfigure
+        };
+        if (isCritical) {
+            dialogConfig.options = { defaultButton: "critical" };
+        }
+
+        const messageConfig = {
+            data: {
+                system: {
+                    origin: message.id,
+                    targets: targets
+                }
+            }
+        };
+        if (rollMode) messageConfig.rollMode = rollMode;
+
         // Trigger damage roll — either prompt (configure: true) or auto-roll (configure: false)
         await resolvedActivity.rollDamage(
             {
-                isCritical: isCritical,
-                attack: { isCritical: isCritical },
-                configure: shouldConfigure
+                ability,
+                ammunition,
+                attackMode,
+                isCritical: isCritical
             },
-            {
-                configure: shouldConfigure
-            },
-            {
-                data: {
-                    system: {
-                        origin: originatingId ?? message.id,
-                        targets: targets
-                    }
-                }
-            }
+            dialogConfig,
+            messageConfig
         );
 
     } catch (err) {
@@ -431,3 +471,4 @@ export function initAutoRollAttackDamage() {
     Hooks.on("dnd5e.preRollDamage", _onPreRollDamage);
     debug("Auto-Roll Attack Damage & Static Damage/Healing | Initialized");
 }
+

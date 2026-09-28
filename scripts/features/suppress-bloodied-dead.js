@@ -47,7 +47,7 @@ export function isBloodiedEffect(effect) {
 export function isActorDead(actor) {
     if (!actor) return false;
     if (actor.statuses?.has("dead")) return true;
-    return actor.effects?.some(e => !e.disabled && e.statuses?.has("dead")) ?? false;
+    return actor.effects?.some(e => e.active && e.statuses?.has("dead")) ?? false;
 }
 
 /**
