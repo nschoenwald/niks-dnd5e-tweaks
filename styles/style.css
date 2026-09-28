@@ -1958,7 +1958,7 @@ body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-badge {
 }
 
 /* Hex icon — enlarged for generous breathing room around 2-digit numbers */
-body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) > i {
+body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge)>i {
     position: absolute;
     inset: 0;
     display: flex;
@@ -1988,11 +1988,11 @@ body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) .roll
 }
 
 /* Critical & Fumble coloring on active die */
-body.nd5t-chat-card-styling button.dice-roll.critical :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) > i {
+body.nd5t-chat-card-styling button.dice-roll.critical :is(.d20die, .nd5t-d20-badge.nd5t-d20-active)>i {
     color: var(--color-level-success, #22c55e);
 }
 
-body.nd5t-chat-card-styling button.dice-roll.fumble :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) > i {
+body.nd5t-chat-card-styling button.dice-roll.fumble :is(.d20die, .nd5t-d20-badge.nd5t-d20-active)>i {
     color: var(--color-level-error, #ef4444);
 }
 
@@ -2859,6 +2859,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
         opacity: 0;
         transform: translate(-50%, -18px) scale(0.96);
     }
+
     to {
         opacity: 1;
         transform: translate(-50%, 0) scale(1);
@@ -2870,6 +2871,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
         opacity: 1;
         transform: translate(-50%, 0) scale(1);
     }
+
     to {
         opacity: 0;
         transform: translate(-50%, -14px) scale(0.96);
@@ -2906,10 +2908,13 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 }
 
 @keyframes nd5t-portal-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 6px rgba(0, 220, 200, 0.4);
         transform: scale(1);
     }
+
     50% {
         box-shadow: 0 0 14px rgba(0, 220, 200, 0.8);
         transform: scale(1.08);
