@@ -93,5 +93,12 @@
   "ND5T.NpcHpScaler.ScaleDown": "Scale Hit Points Down (-1 Hit Die; Shift-click for -5)",
   "ND5T.NpcHpScaler.ScaleUp": "Scale Hit Points Up (+1 Hit Die; Shift-click for +5)",
 
-  "ND5T.ChatCard.TempHpRoll": "Temp HP Roll"
+  "ND5T.ChatCard.TempHpRoll": "Temp HP Roll",
+
+  "ND5T.ItemSheetAttunementTag.Required": "Attunement Required",
+  "ND5T.ItemSheetAttunementTag.NoAttunement": "No Attunement Required",
+  "ND5T.ItemSheetAttunementTag.Attuned": "Attuned",
+  "ND5T.ItemSheetAttunementTag.Optional": "Optional Attunement",
+  "ND5T.ItemSheetAttunementTag.ClickToAttune": "Click to attune",
+  "ND5T.ItemSheetAttunementTag.ClickToUnattune": "Click to unattune"
 }

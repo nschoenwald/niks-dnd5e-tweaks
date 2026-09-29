@@ -191,6 +191,39 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableItemSheetAttunementTag",
+                                name: "Item Sheet Attunement Tag",
+                                hint: "Shows the attunement tag on magic item sheets (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientItemSheetAttunementTag_placement",
+                                name: "Attunement Tag Placement",
+                                hint: "Where to display the attunement tag on your screen.",
+                                type: "Select",
+                                default: "default",
+                                choices: [
+                                    { value: "default", label: "Follow World Default" },
+                                    { value: "both", label: "Header & Description Pills" },
+                                    { value: "header", label: "Header Badge Only" },
+                                    { value: "description", label: "Description Pills Only" },
+                                    { value: "subtitle", label: "Header Subtitle Only" }
+                                ],
+                                scope: "client",
+                                parentKey: "clientEnableItemSheetAttunementTag"
+                            },
+                            {
+                                key: "clientItemSheetAttunementTag_tooltip",
+                                name: "Show in Item Tooltips",
+                                hint: "Display the attunement pill in rich item tooltips on your screen (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client",
+                                parentKey: "clientEnableItemSheetAttunementTag"
+                            },
+                            {
                                 key: "enableToolbarLimitation",
                                 name: "Toolbar Limitation",
                                 hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable.",
@@ -331,6 +364,38 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableItemSheetAttunementTag",
+                                name: "Item Sheet Attunement Tag",
+                                hint: "Adds a clear 'Attunement Required' or 'No Attunement Required' tag to magic item sheets. Clicking an attunement badge on an owned item allows quickly toggling the attuned state.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "itemSheetAttunementTag_placement",
+                                name: "Attunement Tag Placement",
+                                hint: "Where to display the attunement tag on item sheets: both header and description pills, header badge only, description pills only, or header subtitle line only.",
+                                type: "Select",
+                                default: "both",
+                                choices: [
+                                    { value: "both", label: "Header & Description Pills" },
+                                    { value: "header", label: "Header Badge Only" },
+                                    { value: "description", label: "Description Pills Only" },
+                                    { value: "subtitle", label: "Header Subtitle Only" }
+                                ],
+                                scope: "world",
+                                parentKey: "enableItemSheetAttunementTag"
+                            },
+                            {
+                                key: "itemSheetAttunementTag_tooltip",
+                                name: "Show in Item Tooltips",
+                                hint: "Also displays the Attunement Required or No Attunement Required pill in rich item tooltips (e.g. when hovering over items in actor sheets, compendiums, or chat links).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableItemSheetAttunementTag"
                             },
                             {
                                 key: "enableSheetPlusCompendium",

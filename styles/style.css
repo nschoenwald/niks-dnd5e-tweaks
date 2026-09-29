@@ -3049,3 +3049,210 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 .nd5t-teleport-cancel-btn:active {
     transform: scale(0.97);
 }
+
+/* ── Item Sheet Attunement Tag ────────────────────────────────────── */
+
+/* Flexible height for subtitles line when badge is present */
+.dnd5e2.sheet.item .identity-info .subtitles {
+    block-size: auto;
+    min-height: 28px;
+    align-items: center;
+}
+
+.dnd5e2.sheet.item .identity-info .subtitles li.nd5t-attunement-badge-item {
+    display: inline-flex;
+    align-items: center;
+}
+
+.dnd5e2.sheet.item .identity-info .subtitles li.nd5t-attunement-badge-item::after {
+    content: "";
+    margin: 0;
+}
+
+/* Header Badge Base */
+.nd5t-attunement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    white-space: nowrap;
+    user-select: none;
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+button.nd5t-attunement-badge {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+}
+
+button.nd5t-attunement-badge:hover {
+    transform: scale(1.04);
+}
+
+/* Subtitle Plain Text Variant */
+.nd5t-attunement-subtitle-item .nd5t-attunement-text {
+    font-weight: 500;
+}
+.nd5t-attunement-subtitle-item.nd5t-required .nd5t-attunement-text {
+    color: #991b1b;
+}
+.nd5t-attunement-subtitle-item.nd5t-attuned .nd5t-attunement-text {
+    color: #b45309;
+    font-weight: 600;
+}
+.nd5t-attunement-subtitle-item.nd5t-none .nd5t-attunement-text {
+    color: #166534;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-subtitle-item.nd5t-required .nd5t-attunement-text {
+    color: #fca5a5;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-subtitle-item.nd5t-attuned .nd5t-attunement-text {
+    color: #fde047;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-subtitle-item.nd5t-none .nd5t-attunement-text {
+    color: #86efac;
+}
+
+/* Badge & Pill State Colors — Light Mode (Default) */
+.nd5t-attunement-badge.nd5t-required,
+.pill.nd5t-attunement-pill.nd5t-required {
+    background-color: rgba(185, 28, 28, 0.08);
+    border: 1px solid rgba(185, 28, 28, 0.4);
+    color: #881337;
+}
+.nd5t-attunement-badge.nd5t-required i,
+.pill.nd5t-attunement-pill.nd5t-required i {
+    color: #b91c1c;
+}
+button.nd5t-attunement-badge.nd5t-required:hover {
+    background-color: rgba(185, 28, 28, 0.15);
+    border-color: rgba(185, 28, 28, 0.6);
+    box-shadow: 0 0 6px rgba(185, 28, 28, 0.25);
+}
+
+.nd5t-attunement-badge.nd5t-attuned,
+.pill.nd5t-attunement-pill.nd5t-attuned {
+    background-color: rgba(217, 119, 6, 0.12);
+    border: 1px solid rgba(217, 119, 6, 0.55);
+    color: #78350f;
+    box-shadow: 0 0 5px rgba(217, 119, 6, 0.25);
+}
+.nd5t-attunement-badge.nd5t-attuned i,
+.pill.nd5t-attunement-pill.nd5t-attuned i {
+    color: #d97706;
+}
+button.nd5t-attunement-badge.nd5t-attuned:hover {
+    background-color: rgba(217, 119, 6, 0.2);
+    border-color: rgba(217, 119, 6, 0.8);
+    box-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
+}
+
+.nd5t-attunement-badge.nd5t-optional,
+.pill.nd5t-attunement-pill.nd5t-optional {
+    background-color: rgba(79, 70, 229, 0.08);
+    border: 1px solid rgba(79, 70, 229, 0.4);
+    color: #312e81;
+}
+.nd5t-attunement-badge.nd5t-optional i,
+.pill.nd5t-attunement-pill.nd5t-optional i {
+    color: #4f46e5;
+}
+
+.nd5t-attunement-badge.nd5t-none,
+.pill.nd5t-attunement-pill.nd5t-none {
+    background-color: rgba(22, 101, 52, 0.07);
+    border: 1px solid rgba(22, 101, 52, 0.35);
+    color: #14532d;
+}
+.nd5t-attunement-badge.nd5t-none i,
+.pill.nd5t-attunement-pill.nd5t-none i {
+    color: #16a34a;
+}
+
+/* Badge & Pill State Colors — Dark Mode */
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-required,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-required {
+    background-color: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    color: #fecaca;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-required i,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-required i {
+    color: #f87171;
+}
+:is(.theme-dark, .theme-dark *) button.nd5t-attunement-badge.nd5t-required:hover {
+    background-color: rgba(239, 68, 68, 0.25);
+    border-color: rgba(248, 113, 113, 0.75);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+}
+
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-attuned,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-attuned {
+    background-color: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.65);
+    color: #fef08a;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-attuned i,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-attuned i {
+    color: #fde047;
+}
+:is(.theme-dark, .theme-dark *) button.nd5t-attunement-badge.nd5t-attuned:hover {
+    background-color: rgba(245, 158, 11, 0.3);
+    border-color: rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-optional,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-optional {
+    background-color: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(129, 140, 248, 0.5);
+    color: #c7d2fe;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-optional i,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-optional i {
+    color: #a5b4fc;
+}
+
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-none,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-none {
+    background-color: rgba(34, 197, 94, 0.14);
+    border: 1px solid rgba(74, 222, 128, 0.45);
+    color: #bbf7d0;
+}
+:is(.theme-dark, .theme-dark *) .nd5t-attunement-badge.nd5t-none i,
+:is(.theme-dark, .theme-dark *) .pill.nd5t-attunement-pill.nd5t-none i {
+    color: #4ade80;
+}
+
+/* Description Tab & Tooltip Pill Styling */
+:is(.dnd5e-tooltip, #tooltip, .tab.description) .pills .pill.nd5t-attunement-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+:is(.dnd5e-tooltip, #tooltip, .tab.description) .pills .pill.nd5t-attunement-pill i {
+    font-size: 0.9em;
+    line-height: 1;
+}
+.tab.description .pills .pill.nd5t-attunement-pill.nd5t-attunement-toggleable {
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.tab.description .pills .pill.nd5t-attunement-pill.nd5t-attunement-toggleable:hover {
+    transform: scale(1.04);
+}

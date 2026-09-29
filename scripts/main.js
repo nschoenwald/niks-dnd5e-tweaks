@@ -28,6 +28,7 @@ import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
 import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
 import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/sheet-popout-button.js";
+import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./features/item-sheet-attunement-tag.js";
 import { initNpcHpScaler, disableNpcHpScaler } from "./features/npc-hp-scaler.js";
 import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
@@ -240,6 +241,47 @@ Hooks.once("init", () => {
             if (value && game.settings.get(MODULE_ID, "enableSheetPopoutButton")) initSheetPopoutButton();
             else disableSheetPopoutButton();
         }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableItemSheetAttunementTag", {
+        name: "Item Sheet Attunement Tag (Personal)",
+        hint: "Shows a clear 'Attunement Required' / 'No Attunement Required' tag on magic item sheets (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: (value) => {
+            if (value && game.settings.get(MODULE_ID, "enableItemSheetAttunementTag")) initItemSheetAttunementTag();
+            else disableItemSheetAttunementTag();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientItemSheetAttunementTag_placement", {
+        name: "Attunement Tag Placement (Personal)",
+        hint: "Where to display the attunement tag on item sheets.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "default",
+        choices: {
+            default: "Follow World Default",
+            both: "Header & Description Pills",
+            header: "Header Badge Only",
+            description: "Description Pills Only",
+            subtitle: "Header Subtitle Only"
+        },
+        onChange: () => {
+            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientItemSheetAttunementTag_tooltip", {
+        name: "Show in Item Tooltips (Personal)",
+        hint: "Display the attunement pill in rich item tooltips on your screen (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
     });
 
     game.settings.register(MODULE_ID, "clientEnableTemplateTargeting", {
@@ -501,6 +543,49 @@ Hooks.once("init", () => {
             if (isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) initSheetPopoutButton();
             else disableSheetPopoutButton();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableItemSheetAttunementTag", {
+        name: "Item Sheet Attunement Tag",
+        hint: "Adds a clear 'Attunement Required' or 'No Attunement Required' tag to magic item sheets. Clicking an attunement badge on an owned item allows quickly toggling the attuned state.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+            else disableItemSheetAttunementTag();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "itemSheetAttunementTag_placement", {
+        name: "Attunement Tag Placement",
+        hint: "Where to display the attunement tag on item sheets: both header and description pills, header badge only, description pills only, or header subtitle line only.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "both",
+        choices: {
+            both: "Header & Description Pills",
+            header: "Header Badge Only",
+            description: "Description Pills Only",
+            subtitle: "Header Subtitle Only"
+        },
+        restricted: true,
+        onChange: () => {
+            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "itemSheetAttunementTag_tooltip", {
+        name: "Show in Item Tooltips",
+        hint: "Also displays the Attunement Required or No Attunement Required pill in rich item tooltips (e.g. when hovering over items in actor sheets, compendiums, or chat links).",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
     game.settings.register(MODULE_ID, "enableSheetPlusCompendium", {
@@ -1200,6 +1285,7 @@ Hooks.once("setup", () => {
     initSheetPlusCompendium();
     initNpcHpScaler();
     initSheetPopoutButton();
+    initItemSheetAttunementTag();
     initTemplateTargeting();
 
     initCombatExpTracker();

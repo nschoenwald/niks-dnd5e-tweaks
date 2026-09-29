@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.33.0] - 2026-09-29
+### Added
+- **Item Sheet Attunement Tag**:
+  - Adds a clear **Attunement Required** / **No Attunement Required** tag to item sheets for all magic items (weapons, armor/equipment, tools, containers, consumables, and loot).
+  - **Accurate D&D 5e Rules & Statblock Alignment**: Official sourcebooks prominently display attunement requirements beneath an item's title in the header alongside type and rarity. Default DnD5e 6.x only renders an inconspicuous dotted pill at the bottom of the Description tab when attunement is required, completely omitting any indication when attunement is not needed. This feature clarifies attunement requirements at a glance across both the header and description.
+  - **Interactive Quick-Attune Toggle**: For items owned by an actor where the user has edit permission, clicking an Attunement Required or Attuned badge toggles the item's attuned state immediately, without needing to open the Details tab or locate the item on the character sheet inventory.
+  - **Theme-Adaptive Visual Styling (Light & Dark Mode)**:
+    - **Attunement Required**: Styled crimson/maroon badge with sun icon in light mode; luminous rose/crimson with subtle glow in dark mode.
+    - **Attuned**: Warm golden amber badge with glowing sun icon in both light and dark modes.
+    - **Optional Attunement**: Sleek indigo badge with sun icon in both light and dark modes.
+    - **No Attunement Required**: Soft emerald/sage badge with checkmark icon in light mode; radiant mint/emerald in dark mode.
+  - **Flexible Placement Options (Option D)**:
+    - *Header & Description Pills* (Default): Injects both a header badge chip in the item's identity line and an enhanced/added property pill in the Description tab.
+    - *Header Badge Only*: Injects the styled badge chip in the header subtitles line.
+    - *Description Pills Only*: Enhances existing attunement pills and adds a clear "No Attunement Required" pill to the Description tab.
+    - *Header Subtitle Only*: Renders a clean text subtitle chip matching standard subtitle items.
+  - **Rich Item Tooltip Pills**: Extends the clear "Attunement Required" / "No Attunement Required" pill directly into rich item tooltips when hovering over items across actor sheets, compendiums, chat card links, journal entries, and containers. Can be toggled independently via the "Show in Item Tooltips" setting.
+  - **Unidentified Item Concealment**: Automatically respects DnD5e's unidentified item concealment (`item.system.identified === false`), keeping attunement requirements hidden from players until the item is identified. GMs continue to see attunement tags on unidentified items for easy encounter management.
+  - **Settings Dashboard & Personal Preferences**: Includes world-level master toggle, placement settings, and tooltip toggle under **Sheets & Toolbars** (`uiSheets`), with personal client-level override settings under **Personal Preferences** (`clientVisuals`).
+
 ## [14.32.7] - 2026-09-29
 ### Fixed
 - **Light Chat Log with Dark Interface / Applications**: Fixed an issue where dark theme styling and dark tokens were erroneously applied to light parchment chat cards when the DnD5e Chat Log Theme was explicitly set to "Light" in a world with "Applications: dark" or "Interface: dark". Updated all ancestor `.theme-dark` rules across the stylesheet to explicitly guard against light chat logs and light containers via `:not(.theme-light, .theme-light *)`.
