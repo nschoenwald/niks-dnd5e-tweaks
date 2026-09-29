@@ -1,49 +1,58 @@
-import { initForceCompendiumBrowser } from "./features/force-compendium-browser.js";
-import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/auto-clear-movement-history.js";
-import { initSceneNavName } from "./features/scene-nav-name.js";
-import { enableCursorHints, disableCursorHints } from "./features/cursor-hints.js";
-import { enableProneRotation, disableProneRotation } from "./features/prone-rotation.js";
-import { initTokenResizer } from "./features/token-resizer.js";
-import { initDisableUndergroundTokenHiding } from "./features/disable-underground-token-hiding.js";
-import { initActorDispositionColors } from "./features/actor-disposition-colors.js";
-import { initTemplateGridSnap } from "./features/template-grid-snap.js";
-import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/sidebar-name-wrap.js";
-import { initBloodDropIcon } from "./features/blood-drop-icon.js";
-import { initCleanSheetTitles } from "./features/clean-sheet-titles.js";
-import { initToolbarLimitation, applyToolbarLimitation, resetToolbars } from "./features/toolbar-limitation.js";
+// UI & Visuals
+import { initSceneNavName } from "./features/ui-visuals/scene-nav-name.js";
+import { enableCursorHints, disableCursorHints } from "./features/ui-visuals/cursor-hints.js";
+import { initActorDispositionColors } from "./features/ui-visuals/actor-disposition-colors.js";
+import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/ui-visuals/sidebar-name-wrap.js";
+import { initBloodDropIcon } from "./features/ui-visuals/blood-drop-icon.js";
+import { initCleanSheetTitles } from "./features/ui-visuals/clean-sheet-titles.js";
+import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/ui-visuals/sheet-popout-button.js";
+import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./features/ui-visuals/item-sheet-attunement-tag.js";
+import { initSheetPlusCompendium } from "./features/ui-visuals/sheet-plus-compendium.js";
+import { initNpcHpScaler, disableNpcHpScaler } from "./features/ui-visuals/npc-hp-scaler.js";
+import { initToolbarLimitation, applyToolbarLimitation, resetToolbars } from "./features/ui-visuals/toolbar-limitation.js";
+import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
+import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
+import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/ui-visuals/chat-scroll-fix.js";
+import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/ui-visuals/chat-card-styling.js";
+import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
+import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
+import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
 
-import { initDeathSavePrompt } from "./features/death-save-prompt.js";
-import { initAutoStatusZeroHP } from "./features/auto-status-zero-hp.js";
-import { initLegendaryActionPlaceholders } from "./features/legendary-action-placeholders.js";
-import { initHealingContextMenu } from "./features/healing-context-menu.js";
-import { initAutoRollSaveDamage } from "./features/auto-roll-save-damage.js";
-import { initAutoRollAttackDamage } from "./features/auto-roll-attack-damage.js";
-import { initPlayerDamagePrompt } from "./features/player-damage-prompt.js";
-import { initCombatExpTracker } from "./features/combat-exp-tracker.js";
-import { initAutoEndConcentration } from "./features/auto-end-concentration.js";
-import { initAutoEndClassFeatures } from "./features/auto-end-class-features.js";
-import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/disable-active-effect-expiry.js";
-import { initAutoRollConcentration } from "./features/auto-roll-concentration.js";
-import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/mage-slayer-concentration.js";
-import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/self-effect-application.js";
-import { initSheetPlusCompendium } from "./features/sheet-plus-compendium.js";
-import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/sheet-popout-button.js";
-import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./features/item-sheet-attunement-tag.js";
-import { initNpcHpScaler, disableNpcHpScaler } from "./features/npc-hp-scaler.js";
-import { initAutoAddTokensToCombat } from "./features/auto-add-tokens-to-combat.js";
-import { initAutoRollInitiative } from "./features/auto-roll-initiative.js";
-import { onSocketMessage as damagePromptSocketMessage } from "./features/player-damage-prompt.js";
-import { initTemplateTargeting } from "./features/template-targeting.js";
-import { initFixSkillTooltipOverlap } from "./features/fix-skill-tooltip-overlap.js";
-import { initAutoUnpauseOnLogin } from "./features/auto-unpause-on-login.js";
-import { initRollModeHighlight } from "./features/roll-mode-highlight.js";
-import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/chat-scroll-fix.js";
-import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/chat-card-styling.js";
-import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/retroactive-advantage.js";
-import { initHidePrivateGMRolls } from "./features/hide-private-gm-rolls.js";
-import { initAutoCollapseDamageTrays } from "./features/auto-collapse-damage-trays.js";
-import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./features/suppress-bloodied-dead.js";
-import { initAutoanimationsTeleportUI } from "./features/autoanimations-teleport-ui.js";
+// Canvas & Tokens
+import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
+import { initTokenResizer } from "./features/canvas-tokens/token-resizer.js";
+import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
+import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
+import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/canvas-tokens/auto-clear-movement-history.js";
+import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
+import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
+
+// Combat & Automation
+import { initAutoAddTokensToCombat } from "./features/combat-automation/auto-add-tokens-to-combat.js";
+import { initAutoRollInitiative } from "./features/combat-automation/auto-roll-initiative.js";
+import { initLegendaryActionPlaceholders } from "./features/combat-automation/legendary-action-placeholders.js";
+import { initAutoRollSaveDamage } from "./features/combat-automation/auto-roll-save-damage.js";
+import { initAutoRollAttackDamage } from "./features/combat-automation/auto-roll-attack-damage.js";
+import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } from "./features/combat-automation/player-damage-prompt.js";
+import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
+import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
+import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
+import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
+import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
+import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
+import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/combat-automation/disable-active-effect-expiry.js";
+import { initAutoStatusZeroHP } from "./features/combat-automation/auto-status-zero-hp.js";
+import { initDeathSavePrompt } from "./features/combat-automation/death-save-prompt.js";
+import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./features/combat-automation/suppress-bloodied-dead.js";
+import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tracker.js";
+
+// Utilities
+import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
+
+// Patches
+import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip-overlap.js";
+
+// Settings Dashboard
 import { NiksTweaksSettingsApp } from "./settings-app.js";
 
 

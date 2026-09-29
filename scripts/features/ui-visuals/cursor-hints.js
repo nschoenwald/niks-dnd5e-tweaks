@@ -1,0 +1,210 @@
+/**
+ * Feature: Cursor Keyboard Hints
+ * Description: Renders floating keyboard modifier badges (Alt, Shift, Ctrl) near the cursor when modifier keys configured in DnD5e are held down.
+ *
+ * @introduced v13.0.1
+ */
+import { MODULE_ID, debug } from "../../main.js";
+
+export class CursorHints {
+    constructor() {
+        this.element = this._createCursorElement();
+        this.modifiers = {
+            hintSkip: { active: false, icon: "fa-solid fa-forward", label: "Skip", color: "#6cadea" },
+            hintAdvantage: { active: false, icon: "fa-solid fa-angle-double-up", label: "Advantage", color: "#3da83d" },
+            hintDisadvantage: { active: false, icon: "fa-solid fa-angle-double-down", label: "Disadvantage", color: "#d93131" },
+        };
+
+        this._addListeners();
+    }
+
+    _addListeners() {
+        this._onMouseMove = (e) => this._onMouseMoveHandler(e);
+        this._onBlur = () => this._clearKeys();
+
+        window.addEventListener("mousemove", this._onMouseMove, { passive: true });
+        window.addEventListener("blur", this._onBlur);
+    }
+
+    destroy() {
+        window.removeEventListener("mousemove", this._onMouseMove);
+        window.removeEventListener("blur", this._onBlur);
+        if (this.element) this.element.remove();
+    }
+
+    setModifierState(action, active) {
+        if (this.modifiers[action]) {
+            debug(`Setting modifier state for ${action} to ${active}`);
+            this.modifiers[action].active = active;
+            this._updateVisuals();
+        }
+    }
+
+    _createCursorElement() {
+        const el = document.createElement("div");
+        el.id = "nd5t-cursor-hint";
+        document.body.appendChild(el);
+        return el;
+    }
+
+    _clearKeys() {
+        for (const key in this.modifiers) {
+            this.modifiers[key].active = false;
+        }
+        this._updateVisuals();
+    }
+
+    _onMouseMoveHandler(event) {
+        if (!this.element) return;
+
+        // Skip transform updates when no hints are visible — mousemove fires
+        // at 60+ Hz but modifiers are only held briefly, so this eliminates
+        // the vast majority of unnecessary style writes.
+        if (this.element.style.opacity === "0") return;
+
+        // Offset slightly from cursor to not block visibility
+        const offsetX = 16;
+        const offsetY = 16;
+
+        this.element.style.transform = `translate(${event.clientX + offsetX}px, ${event.clientY + offsetY}px)`;
+    }
+
+    _updateVisuals() {
+        const activeHints = [];
+
+        // Iterate over object values
+        for (const hint of Object.values(this.modifiers)) {
+            if (hint.active) activeHints.push(hint);
+        }
+
+        // Render
+        this.element.innerHTML = "";
+        if (activeHints.length === 0) {
+            this.element.style.opacity = "0";
+            return;
+        }
+
+        activeHints.forEach(hint => {
+            const icon = document.createElement("i");
+            icon.className = hint.icon;
+            icon.style.color = hint.color;
+            // Optional: Add drop shadow or visual flair
+            this.element.appendChild(icon);
+        });
+
+        this.element.style.opacity = "1";
+    }
+}
+
+const DND5E_ACTIONS = {
+    SKIP: "skipDialogNormal",          // Was "skipDialog"
+    ADVANTAGE: "skipDialogAdvantage",    // Was "advantage"
+    DISADVANTAGE: "skipDialogDisadvantage" // Was "disadvantage"
+};
+
+let cursorHints = null;
+let onKeyDownBound = null;
+let onKeyUpBound = null;
+
+export function enableCursorHints() {
+    if (!cursorHints && game.settings.get(MODULE_ID, "enableCursorHints")) {
+        cursorHints = new CursorHints();
+        _addKeyListeners();
+    }
+}
+
+export function disableCursorHints() {
+    if (cursorHints) {
+        cursorHints.destroy();
+        cursorHints = null;
+        _removeKeyListeners();
+    }
+}
+
+function _addKeyListeners() {
+    onKeyDownBound = _handleKeyDown;
+    onKeyUpBound = _handleKeyUp;
+
+    window.addEventListener("keydown", onKeyDownBound, { capture: true });
+    window.addEventListener("keyup", onKeyUpBound, { capture: true });
+}
+
+function _removeKeyListeners() {
+    if (onKeyDownBound) window.removeEventListener("keydown", onKeyDownBound, { capture: true });
+    if (onKeyUpBound) window.removeEventListener("keyup", onKeyUpBound, { capture: true });
+}
+
+function _handleKeyDown(event) {
+    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
+    // Don't trigger if user is typing in a text box
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.isContentEditable) return;
+
+    if (_matchesAction(DND5E_ACTIONS.SKIP, event)) cursorHints.setModifierState("hintSkip", true);
+    if (_matchesAction(DND5E_ACTIONS.ADVANTAGE, event)) cursorHints.setModifierState("hintAdvantage", true);
+    if (_matchesAction(DND5E_ACTIONS.DISADVANTAGE, event)) cursorHints.setModifierState("hintDisadvantage", true);
+}
+
+function _handleKeyUp(event) {
+    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
+    
+    if (_matchesAction(DND5E_ACTIONS.SKIP, event)) cursorHints.setModifierState("hintSkip", false);
+    if (_matchesAction(DND5E_ACTIONS.ADVANTAGE, event)) cursorHints.setModifierState("hintAdvantage", false);
+    if (_matchesAction(DND5E_ACTIONS.DISADVANTAGE, event)) cursorHints.setModifierState("hintDisadvantage", false);
+}
+
+function _matchesAction(actionId, event) {
+    let bindings;
+
+    try {
+        bindings = game.keybindings.get("dnd5e", actionId);
+    } catch (e) {
+        return false;
+    }
+    
+    if (!bindings || bindings.length === 0) return false;
+
+    const isKeyup = event.type === "keyup";
+
+    return bindings.some(binding => {
+        const isShiftKey = event.code.startsWith("Shift");
+        const isCtrlKey = event.code.startsWith("Control");
+        const isAltKey = event.code.startsWith("Alt");
+        const isMetaKey = event.code.startsWith("Meta");
+
+        // On keyup, if they released a required modifier, the binding is broken.
+        if (isKeyup && binding.modifiers && binding.modifiers.length > 0) {
+            if (isShiftKey && binding.modifiers.includes("Shift")) return true;
+            if (isCtrlKey && binding.modifiers.includes("Control")) return true;
+            if (isAltKey && binding.modifiers.includes("Alt")) return true;
+            if (isMetaKey && binding.modifiers.includes("Meta")) return true;
+        }
+
+        // If it's not the primary key, it doesn't match
+        if (binding.key !== event.code && binding.key !== event.key) return false;
+
+        // If it's a keyup, we know they released the primary key, so the binding is broken
+        // regardless of what other modifiers are currently held.
+        if (isKeyup) return true;
+
+        // For keydown, we must strictly check modifiers
+        if (binding.modifiers && binding.modifiers.length > 0) {
+            const modifiersMatch = binding.modifiers.every(mod => {
+                if (mod === "Control") return event.ctrlKey;
+                if (mod === "Shift") return event.shiftKey;
+                if (mod === "Alt") return event.altKey;
+                if (mod === "Meta") return event.metaKey;
+                return false;
+            });
+            if (!modifiersMatch) return false;
+        } else {
+            // If no modifiers are required, ensure no extra modifiers are pressed.
+            // We ignore the modifier flag if the pressed key itself IS that modifier.
+            if (event.ctrlKey && !isCtrlKey) return false;
+            if (event.shiftKey && !isShiftKey) return false;
+            if (event.altKey && !isAltKey) return false;
+            if (event.metaKey && !isMetaKey) return false;
+        }
+
+        return true;
+    });
+}

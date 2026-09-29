@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.33.3] - 2026-09-29
+### Changed
+- **Feature Scripts File Organization & Documentation**:
+  - Reorganized all feature modules under `scripts/features/` into category-based subfolders matching the Settings Dashboard tabs and documentation:
+    - `ui-visuals/`: User interface, sidebar, chat log, and sheet enhancements.
+    - `canvas-tokens/`: Canvas behaviors, grid snapping, token rotation, sizing, and templates.
+    - `combat-automation/`: Encounter management, rolls, saves, concentration, and combat lifecycles.
+    - `utilities/`: GM convenience tools and socket helpers.
+    - `patches/`: Bug fixes and compatibility patches (e.g. skill tooltip overlap).
+  - Updated module import paths in `scripts/main.js` and relative imports across all feature files.
+  - Added standardized JSDoc file header comments to all 46 feature modules detailing the feature name, functional description, and the exact version number in which each feature was first introduced.
+
 ## [14.33.2] - 2026-09-29
 ### Changed
 - **Chat Card Roll Row Dice Icon Removed**:
