@@ -213,33 +213,54 @@ export function isChatDark(targetEl) {
     if (dndTheme === "dark") return true;
     if (dndTheme === "light") return false;
 
-    // Check closest scoped theme overrides on target element or card
-    if (targetEl?.closest(".theme-light")) return false;
-    if (targetEl?.closest(".theme-dark")) return true;
+    // Check closest scoped theme overrides on target element or card (excluding body/root)
+    if (targetEl) {
+        const closestThemed = targetEl.closest(".theme-dark, .theme-light");
+        if (closestThemed && closestThemed !== document.body && closestThemed !== document.documentElement) {
+            return closestThemed.classList.contains("theme-dark");
+        }
+    }
 
-    const chatLog = targetEl?.closest(".chat-log, .chat-popout");
+    const doc = targetEl?.ownerDocument ?? document;
+
+    // Check chat log element (attached to card or in DOM)
+    const chatLog = targetEl?.closest(".chat-log, .chat-popout")
+        ?? doc.querySelector(".chat-log, .chat-popout");
     if (chatLog?.classList.contains("theme-dark")) return true;
     if (chatLog?.classList.contains("theme-light")) return false;
+
+    // Check chat tab or interface container (Foundry V14 interface theme applies here)
+    const chatTab = doc.getElementById("chat");
+    if (chatTab?.classList.contains("theme-dark")) return true;
+    if (chatTab?.classList.contains("theme-light")) return false;
+
+    const ifaceEl = doc.getElementById("interface");
+    if (ifaceEl?.classList.contains("theme-dark")) return true;
+    if (ifaceEl?.classList.contains("theme-light")) return false;
 
     const message = targetEl?.closest(".chat-message, .message");
     if (message?.classList.contains("theme-dark")) return true;
     if (message?.classList.contains("theme-light")) return false;
 
-    // Check document body and root element (Foundry core interface theme)
-    const doc = targetEl?.ownerDocument ?? document;
+    // Check core uiConfig interface setting before application body
+    let coreColorScheme = {};
+    try {
+        coreColorScheme = game.settings.get("core", "uiConfig")?.colorScheme ?? {};
+    } catch {
+        // setting may not exist
+    }
+
+    if (coreColorScheme.interface === "dark") return true;
+    if (coreColorScheme.interface === "light") return false;
+
+    // Check document body and root element (Foundry core application theme)
     if (doc.body?.classList.contains("theme-dark")) return true;
     if (doc.body?.classList.contains("theme-light")) return false;
     if (doc.documentElement?.classList.contains("theme-dark")) return true;
     if (doc.documentElement?.classList.contains("theme-light")) return false;
 
-    // Check core uiConfig setting
-    try {
-        const { colorScheme = {} } = game.settings.get("core", "uiConfig") ?? {};
-        if (colorScheme.interface === "dark") return true;
-        if (colorScheme.interface === "light") return false;
-    } catch {
-        // setting may not exist
-    }
+    if (coreColorScheme.applications === "dark") return true;
+    if (coreColorScheme.applications === "light") return false;
 
     // Match browser prefers-color-scheme
     if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return true;
@@ -316,6 +337,18 @@ function insertButtons(message, html) {
 }
 
 /**
+ * Update the theme classes on all existing retroactive advantage menus in the DOM.
+ */
+export function updateAllRetroAdvantageThemes() {
+    const menus = document.querySelectorAll(".nd5t-retro-advantage");
+    for (const menu of menus) {
+        const isDark = isChatDark(menu);
+        menu.classList.toggle("nd5t-theme-dark", isDark);
+        menu.classList.toggle("nd5t-theme-light", !isDark);
+    }
+}
+
+/**
  * Tag existing chat messages already present in the DOM.
  */
 function tagExistingMessages() {
@@ -336,5 +369,66 @@ export function initRetroactiveAdvantage() {
 
     Hooks.once("ready", () => {
         tagExistingMessages();
+
+        // 1. Wrap ChatLog5e.applyTheme so changes to dnd5e.chatLogTheme immediately update buttons
+        if (typeof CONFIG.ui.chat?.applyTheme === "function") {
+            const origApplyTheme = CONFIG.ui.chat.applyTheme;
+            CONFIG.ui.chat.applyTheme = function(...args) {
+                const result = origApplyTheme.apply(this, args);
+                try {
+                    updateAllRetroAdvantageThemes();
+                } catch (err) {
+                    console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on applyTheme:", err);
+                }
+                return result;
+            };
+        }
+
+        // 2. Wrap game.configureUI so Foundry core theme changes update buttons
+        if (typeof game.configureUI === "function") {
+            const origConfigureUI = game.configureUI;
+            game.configureUI = function(...args) {
+                const result = origConfigureUI.apply(this, args);
+                try {
+                    updateAllRetroAdvantageThemes();
+                } catch (err) {
+                    console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on configureUI:", err);
+                }
+                return result;
+            };
+        }
+
+        // 3. Dynamically update existing retroactive advantage buttons whenever chat log or UI theme changes
+        const observer = new MutationObserver(() => {
+            updateAllRetroAdvantageThemes();
+        });
+
+        // Observe class changes on body, interface, and chat tab (including .chat-log inside #chat)
+        if (document.body) {
+            observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        }
+        const iface = document.getElementById("interface");
+        if (iface) {
+            observer.observe(iface, { attributes: true, attributeFilter: ["class"] });
+        }
+        const chatEl = document.getElementById("chat");
+        if (chatEl) {
+            observer.observe(chatEl, { attributes: true, subtree: true, attributeFilter: ["class"] });
+        }
+
+        // Support popped-out chat logs
+        Hooks.on("renderChatPopout", (app, html) => {
+            const el = html instanceof HTMLElement ? html : html?.[0];
+            if (el) {
+                observer.observe(el, { attributes: true, subtree: true, attributeFilter: ["class"] });
+                updateAllRetroAdvantageThemes();
+            }
+        });
+
+        // Listen for OS/Browser theme changes
+        window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener?.("change", () => {
+            updateAllRetroAdvantageThemes();
+        });
     });
 }
+

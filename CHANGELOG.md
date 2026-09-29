@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.32.7] - 2026-09-29
+### Fixed
+- **Light Chat Log with Dark Interface / Applications**: Fixed an issue where dark theme styling and dark tokens were erroneously applied to light parchment chat cards when the DnD5e Chat Log Theme was explicitly set to "Light" in a world with "Applications: dark" or "Interface: dark". Updated all ancestor `.theme-dark` rules across the stylesheet to explicitly guard against light chat logs and light containers via `:not(.theme-light, .theme-light *)`.
+- **Theme Precedence in Retroactive Advantage (`isChatDark`)**: Updated `isChatDark()` so that explicit chat log (`dnd5e.chatLogTheme`) and interface container themes take priority over application body themes, preventing dark application sheet settings from incorrectly turning a light chat interface dark.
+- **Dynamic Live Theme Switching for Retroactive Advantage Buttons (No Reload Required)**:
+  - Fixed an issue where switching between dark, light, or default chat modes in DnD5e or Foundry core required a page reload for existing retroactive advantage buttons to adapt their styling.
+  - Buttons now cascade dynamically via CSS from parent `.chat-log` / `.message` theme classes.
+  - Added method wrapping for `CONFIG.ui.chat.applyTheme` and `game.configureUI`, combined with a `MutationObserver` on chat and interface elements and `prefers-color-scheme` listeners, to immediately update all active buttons in the DOM whenever theme settings change without requiring a reload.
+
 ## [14.32.6] - 2026-09-28
 ### Fixed
 - **Dark Mode Styling & Contrast — Chat Card Buttons & Retroactive Advantage**:
