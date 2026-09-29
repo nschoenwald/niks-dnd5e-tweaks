@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.33.1] - 2026-09-29
+### Changed
+- **Chat Card Roll Result Whiskers Removed**:
+  - Removed the default system horizontal lines (`::before` and `::after` gradient whiskers) flanking both sides of the roll total result (`.dice-roll :is(.result, .dice-total) > .total`) in chat cards.
+  - Keeps the roll result clean and uncluttered between card micro-labels (such as `ATK`, `DMG`, `SAVE`, `CHK`) and d20 dice badges.
+
 ## [14.33.0] - 2026-09-29
 ### Added
 - **Item Sheet Attunement Tag**:

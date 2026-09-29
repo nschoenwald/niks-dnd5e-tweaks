@@ -1934,6 +1934,14 @@ body.nd5t-chat-card-styling button.dice-roll .result {
     white-space: nowrap;
 }
 
+/* Remove decorative horizontal lines running to both sides of the roll result */
+body.nd5t-chat-card-styling .dice-roll :is(.result, .dice-total) > .total::before,
+body.nd5t-chat-card-styling .dice-roll :is(.result, .dice-total) > .total::after {
+    display: none !important;
+    content: none !important;
+}
+
+
 body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
     display: inline-flex;
     align-items: center;
