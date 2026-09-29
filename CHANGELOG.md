@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.33.2] - 2026-09-29
+### Changed
+- **Chat Card Roll Row Dice Icon Removed**:
+  - Removed the default system "dice" icon (`.icon-row > i.fa-dice`) situated directly to the left of roll results in chat cards when Chat Card Styling is active.
+  - Allows roll buttons (and any retroactive advantage controls) to occupy the row cleanly without redundant icon clutter.
+
 ## [14.33.1] - 2026-09-29
 ### Changed
 - **Chat Card Roll Result Whiskers Removed**:

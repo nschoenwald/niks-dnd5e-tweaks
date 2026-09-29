@@ -1941,6 +1941,13 @@ body.nd5t-chat-card-styling .dice-roll :is(.result, .dice-total) > .total::after
     content: none !important;
 }
 
+/* Remove the "dice" row icon to the left of roll results */
+body.nd5t-chat-card-styling .icon-row > i:is(.fa-dice, [class*="fa-dice"]),
+body.nd5t-chat-card-styling .icon-row:has(.dice-roll) > i:is(.fa-dice, [class*="fa-dice"]) {
+    display: none !important;
+}
+
+
 
 body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
     display: inline-flex;
