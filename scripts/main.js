@@ -13,7 +13,7 @@ import { initToolbarLimitation, applyToolbarLimitation, resetToolbars } from "./
 import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
 import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/ui-visuals/chat-scroll-fix.js";
-import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/ui-visuals/chat-card-styling.js";
+import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling, updateChatCardSaveAbilityShorthand } from "./features/ui-visuals/chat-card-styling.js";
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
 import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
@@ -215,6 +215,18 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (value && game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "clientChatCardSaveAbilityShorthand", {
+        name: "Saving Throw Ability Shorthand (Personal)",
+        hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards on your screen (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => {
+            updateChatCardSaveAbilityShorthand();
         }
     });
 
@@ -429,6 +441,19 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "chatCardSaveAbilityShorthand", {
+        name: "Saving Throw Ability Shorthand",
+        hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards instead of generic Save.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            updateChatCardSaveAbilityShorthand();
         }
     });
 

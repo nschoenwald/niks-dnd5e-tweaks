@@ -167,6 +167,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientChatCardSaveAbilityShorthand",
+                                name: "Saving Throw Ability Shorthand",
+                                hint: "Adds the ability shorthand (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards on your screen (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client",
+                                parentKey: "clientEnableChatCardStyling"
+                            },
+                            {
                                 key: "clientEnableRetroactiveAdvantage",
                                 name: "Retroactive Advantage/Disadvantage",
                                 hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
@@ -509,6 +518,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "chatCardSaveAbilityShorthand",
+                                name: "Saving Throw Ability Shorthand",
+                                hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards instead of generic Save.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableChatCardStyling"
                             },
                             {
                                 key: "enableChatScrollFix",

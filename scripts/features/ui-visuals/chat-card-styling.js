@@ -205,6 +205,37 @@ function _tagMessageElement(message, root) {
         } else {
             delete root.dataset.nd5tCardSubtype;
         }
+
+        // Tag saving throw roll cards with the rolled ability (e.g. str, dex, con, int, wis, cha)
+        if (rollType === "save") {
+            const ability = message.system?.ability
+                ?? message.flags?.dnd5e?.roll?.ability
+                ?? message.rolls?.[0]?.options?.ability;
+            if (ability && typeof ability === "string") {
+                root.dataset.nd5tAbility = ability.toLowerCase();
+            } else {
+                delete root.dataset.nd5tAbility;
+            }
+        }
+    }
+
+    // Tag saving throw action buttons with ability shorthand if not already present
+    const saveButtons = root.querySelectorAll('button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])');
+    if (saveButtons.length > 0) {
+        const activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        for (const btn of saveButtons) {
+            if (!btn.dataset.ability && activity?.save?.ability) {
+                const saveAbility = activity.save.ability instanceof Set
+                    ? (activity.save.ability.first?.() ?? Array.from(activity.save.ability)[0])
+                    : Array.isArray(activity.save.ability)
+                        ? activity.save.ability[0]
+                        : activity.save.ability;
+                if (saveAbility && typeof saveAbility === "string") {
+                    btn.dataset.ability = saveAbility.toLowerCase();
+                }
+            }
+        }
     }
 
     // Determine message visibility type (blind roll, private roll, whisper, emote)
@@ -488,6 +519,29 @@ function _tagExistingMessages() {
 }
 
 /**
+ * Update the saving throw ability shorthand class on document.body and popouts.
+ */
+export function updateChatCardSaveAbilityShorthand() {
+    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")
+        && isFeatureActive("chatCardSaveAbilityShorthand", "clientChatCardSaveAbilityShorthand");
+    if (active) {
+        document.body.classList.add("nd5t-save-shorthand");
+        for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
+            popout.ownerDocument?.body?.classList.add("nd5t-save-shorthand");
+        }
+    } else {
+        document.body.classList.remove("nd5t-save-shorthand");
+        for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
+            popout.ownerDocument?.body?.classList.remove("nd5t-save-shorthand");
+        }
+    }
+    // Re-adjust roll result button layouts to fit new label widths
+    for (const msgEl of document.querySelectorAll(".chat-log .message, .chat-popout .message")) {
+        _adjustRollResultPositions(msgEl);
+    }
+}
+
+/**
  * Enable Chat Card Styling Improvements.
  * Adds the styling class to document.body and any active popout windows,
  * and tags/formats existing chat messages in the DOM.
@@ -497,6 +551,7 @@ export function enableChatCardStyling() {
     for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
         popout.ownerDocument?.body?.classList.add("nd5t-chat-card-styling");
     }
+    updateChatCardSaveAbilityShorthand();
     _tagExistingMessages();
     log("Chat Card Styling Improvements enabled");
 }
@@ -507,9 +562,9 @@ export function enableChatCardStyling() {
  * and restores original borders, subtitles, and card-type classes.
  */
 export function disableChatCardStyling() {
-    document.body.classList.remove("nd5t-chat-card-styling");
+    document.body.classList.remove("nd5t-chat-card-styling", "nd5t-save-shorthand");
     for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
-        popout.ownerDocument?.body?.classList.remove("nd5t-chat-card-styling");
+        popout.ownerDocument?.body?.classList.remove("nd5t-chat-card-styling", "nd5t-save-shorthand");
     }
 
     // Disconnect and reset all resize observers across all window contexts
@@ -541,6 +596,7 @@ export function disableChatCardStyling() {
         }
         delete msgEl.dataset.nd5tCardType;
         delete msgEl.dataset.nd5tCardSubtype;
+        delete msgEl.dataset.nd5tAbility;
         delete msgEl.dataset.nd5tVisibility;
 
         // Restore inline borders
@@ -605,6 +661,9 @@ export function initChatCardStyling() {
         const doc = el?.ownerDocument;
         if (doc && !doc.body.classList.contains("nd5t-chat-card-styling")) {
             doc.body.classList.add("nd5t-chat-card-styling");
+        }
+        if (doc && isFeatureActive("chatCardSaveAbilityShorthand", "clientChatCardSaveAbilityShorthand") && !doc.body.classList.contains("nd5t-save-shorthand")) {
+            doc.body.classList.add("nd5t-save-shorthand");
         }
         if (app?.message && el) {
             _tagMessageElement(app.message, el);

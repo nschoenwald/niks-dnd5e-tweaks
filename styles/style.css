@@ -1402,6 +1402,37 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     content: "Save";
 }
 
+/* Saving Throw Action Buttons with Ability Shorthand */
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after {
+    content: "STR SAVE";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after {
+    content: "DEX SAVE";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after {
+    content: "CON SAVE";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after {
+    content: "INT SAVE";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after {
+    content: "WIS SAVE";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after {
+    content: "CHA SAVE";
+}
+
 body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
 body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after {
     content: "Check";
@@ -2405,6 +2436,37 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-save-card
 /* Concentration Save — overrides "SAVE " on concentration sub-type save cards */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-card-subtype="concentration"] button.dice-roll .result::before {
     content: "CONC ";
+}
+
+/* Saving Throw Roll Card Micro-Labels with Ability Shorthand */
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "STR SAVE ";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "DEX SAVE ";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "CON SAVE ";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "INT SAVE ";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "WIS SAVE ";
+}
+
+body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+    content: "CHA SAVE ";
 }
 
 /* Initiative Roll — overrides "CHK " on initiative sub-type check cards */
