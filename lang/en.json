@@ -6,6 +6,7 @@
   "ND5T.AutoRollConcentration.EndConcentration": "End Concentration",
   "ND5T.AutoRollConcentration.ConcentrationEnded": "Concentration Ended",
   "ND5T.AutoRollConcentration.EndingConcentration": "Ending Concentration...",
+  "ND5T.AutoRollConcentration.ConcentratingOn": "Concentrating on:",
 
   "ND5T.AutoRollInitiative.PromptTitle": "Initiative Roll Required",
   "ND5T.AutoRollInitiative.PromptMessage": "{name} was added to combat. Please roll initiative.",

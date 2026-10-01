@@ -17,10 +17,10 @@ import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } fr
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
 import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
+import { initContextMenuStyling } from "./features/ui-visuals/context-menu-styling.js";
 
 // Canvas & Tokens
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
-import { initTokenResizer } from "./features/canvas-tokens/token-resizer.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/canvas-tokens/auto-clear-movement-history.js";
@@ -293,6 +293,15 @@ Hooks.once("init", () => {
         default: true
     });
 
+    game.settings.register(MODULE_ID, "clientEnableContextMenuStyling", {
+        name: "Context Menu Styling (Personal)",
+        hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) in right-click context menus (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
     game.settings.register(MODULE_ID, "clientEnableTemplateTargeting", {
         name: "Auto-Target Tokens in Spell Templates (Personal)",
         hint: "Automatically targets tokens inside spell templates placed by you (if enabled by the GM).",
@@ -323,6 +332,16 @@ Hooks.once("init", () => {
     // ==========================================
     // GROUP 1: User Interface & Visuals
     // ==========================================
+
+    game.settings.register(MODULE_ID, "enableContextMenuStyling", {
+        name: "Context Menu Styling",
+        hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) across right-click context menus in sheets, sidebars, and chat cards, with full light and dark mode support.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
 
     game.settings.register(MODULE_ID, "enableSceneNavName", {
         name: "Sync Browser Tab Title",
@@ -683,19 +702,6 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (value) enableProneRotation();
             else disableProneRotation();
-        }
-    });
-
-    game.settings.register(MODULE_ID, "enableTokenResizer", {
-        name: "Token Resizer Tool",
-        hint: "Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes (Tiny, Small, Medium, Large, Huge, Gargantuan).",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-        restricted: true,
-        onChange: () => {
-            ui.controls.render();
         }
     });
 
@@ -1261,7 +1267,6 @@ Hooks.once("init", () => {
 
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
-    initTokenResizer();
     initDisableUndergroundTokenHiding();
     initToolbarLimitation();
 });
@@ -1307,6 +1312,7 @@ Hooks.once("setup", () => {
 
     // UI helpers
     initRollModeHighlight();
+    initContextMenuStyling();
     initChatScrollFix();
     initChatCardStyling();
     initRetroactiveAdvantage();

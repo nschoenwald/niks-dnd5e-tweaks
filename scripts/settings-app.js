@@ -224,6 +224,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 parentKey: "clientEnableItemSheetAttunementTag"
                             },
                             {
+                                key: "clientEnableContextMenuStyling",
+                                name: "Context Menu Styling",
+                                hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) in right-click context menus (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "enableToolbarLimitation",
                                 name: "Toolbar Limitation",
                                 hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable.",
@@ -323,6 +331,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableSidebarNameWrap",
                                 name: "Sidebar Multi-line Names",
                                 hint: "Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableContextMenuStyling",
+                                name: "Context Menu Styling",
+                                hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) across right-click context menus in sheets, sidebars, and chat cards, with full light and dark mode support.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -565,14 +581,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 hint: "Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when removed.",
                                 type: "Boolean",
                                 default: true,
-                                scope: "world"
-                            },
-                            {
-                                key: "enableTokenResizer",
-                                name: "Token Resizer Tool",
-                                hint: "Adds a control button to the Token tools menu (GM-only) for quickly resizing selected tokens to standard 5e creature sizes.",
-                                type: "Boolean",
-                                default: false,
                                 scope: "world"
                             },
                             {

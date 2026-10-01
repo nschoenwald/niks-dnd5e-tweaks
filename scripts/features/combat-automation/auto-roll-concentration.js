@@ -64,6 +64,88 @@ export function hasBoonOfTheIronMind(actor) {
     return false;
 }
 
+/**
+ * Retrieve the items currently being concentrated on by an actor.
+ * Extracts name, icon, and UUID from active effects and item data.
+ *
+ * @param {Actor|TokenDocument|Token} actor
+ * @returns {Array<{name: string, img: string, uuid: string|null}>}
+ */
+export function getConcentratingItems(actor) {
+    const act = actor?.actor ?? actor;
+    if (!act) return [];
+
+    const items = [];
+    const seenKeys = new Set();
+
+    // 1. Inspect actor.concentration.effects (canonical in dnd5e 5.2+ / 6.x)
+    for (const effect of act.concentration?.effects ?? []) {
+        if (!effect.active) continue;
+
+        const itemFlag = effect.getFlag("dnd5e", "item");
+        let name = itemFlag?.data?.name ?? itemFlag?.name;
+        let img = itemFlag?.data?.img ?? itemFlag?.img;
+        let uuid = itemFlag?.uuid ?? null;
+
+        // Try resolving live embedded item from actor by id
+        if (itemFlag?.id) {
+            const liveItem = act.items?.get(itemFlag.id);
+            if (liveItem) {
+                name = liveItem.name;
+                img = liveItem.img;
+                uuid = liveItem.uuid;
+            }
+        }
+
+        // If no flag item or missing name, try effect origin document
+        if (!name && effect.origin) {
+            try {
+                const originDoc = fromUuidSync(effect.origin);
+                if (originDoc) {
+                    name = originDoc.name;
+                    img = originDoc.img;
+                    uuid = originDoc.uuid;
+                }
+            } catch (e) {
+                // Ignore invalid origin UUID
+            }
+        }
+
+        // Fallback: strip leading status prefix from effect name (e.g. "Concentrating: Bless" -> "Bless")
+        if (!name && effect.name) {
+            name = effect.name.replace(/^[^:]+:\s*/, "").trim();
+            img = effect.img;
+        }
+
+        const key = (uuid || name || "").toLowerCase();
+        if (name && !seenKeys.has(key)) {
+            seenKeys.add(key);
+            items.push({
+                name,
+                img: img || effect.img || "icons/svg/aura.svg",
+                uuid: uuid || null
+            });
+        }
+    }
+
+    // 2. Fallback to actor.concentration.items if effects yielded nothing
+    if (items.length === 0 && act.concentration?.items?.size) {
+        for (const item of act.concentration.items) {
+            const key = (item.uuid || item.name || "").toLowerCase();
+            if (item?.name && !seenKeys.has(key)) {
+                seenKeys.add(key);
+                items.push({
+                    name: item.name,
+                    img: item.img || "icons/svg/aura.svg",
+                    uuid: item.uuid || null
+                });
+            }
+        }
+    }
+
+    return items;
+}
+
 let _challengeConcentrationPatched = false;
 
 /**
@@ -248,6 +330,8 @@ async function _onDamageActor(actor, changes, update, userId) {
 
         await new Promise(resolve => setTimeout(resolve, 200));
 
+        const concentratingItems = getConcentratingItems(actor);
+
         const rolls = await actor.rollConcentration(
             { target: dc },
             { configure: !fastForward },
@@ -257,7 +341,8 @@ async function _onDamageActor(actor, changes, update, userId) {
                         [MODULE_ID]: {
                             isConcentrationSave: true,
                             targetDC: dc,
-                            actorUuid: actor.uuid
+                            actorUuid: actor.uuid,
+                            concentratingItems
                         }
                     }
                 }
@@ -303,10 +388,17 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
         );
         if (!message) return;
 
-        // Stamp the flag — this triggers a message update which re-renders the card,
-        // causing _onRenderChatMessage to run again and inject the button.
-        message.setFlag(MODULE_ID, "isConcentrationSave", true);
-        message.setFlag(MODULE_ID, "actorUuid", actor.uuid);
+        // Stamp the flags — this triggers a message update which re-renders the card,
+        // causing _onRenderChatMessage to run again and inject the pill and button.
+        const concentratingItems = message.flags?.[MODULE_ID]?.concentratingItems ?? getConcentratingItems(actor);
+        const updates = {
+            [`flags.${MODULE_ID}.isConcentrationSave`]: true,
+            [`flags.${MODULE_ID}.actorUuid`]: actor.uuid
+        };
+        if (concentratingItems?.length) {
+            updates[`flags.${MODULE_ID}.concentratingItems`] = concentratingItems;
+        }
+        message.update(updates);
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onRollConcentration:`, err);
     }
@@ -333,6 +425,60 @@ function _onRenderChatMessage(message, html) {
     }
     if (!actor) return;
 
+    // 1. Inject Concentrating Items Pill Container (Above Roll)
+    const concentratingItems = message.flags?.[MODULE_ID]?.concentratingItems
+        ?? getConcentratingItems(actor);
+
+    if (!html.querySelector(".nd5t-concentrating-pill-container") && concentratingItems.length > 0) {
+        const pillContainer = document.createElement("div");
+        pillContainer.className = "nd5t-concentrating-pill-container";
+
+        for (const item of concentratingItems) {
+            const pill = document.createElement("div");
+            pill.className = "nd5t-concentrating-pill";
+            if (item.uuid) {
+                pill.dataset.action = "showDocument";
+                pill.dataset.uuid = item.uuid;
+            }
+
+            const imgEl = document.createElement("img");
+            imgEl.className = "nd5t-concentrating-icon gold-icon";
+            imgEl.src = item.img || "icons/svg/aura.svg";
+            imgEl.alt = item.name;
+
+            const labelEl = document.createElement("span");
+            labelEl.className = "nd5t-concentrating-label";
+            const prefix = game.i18n.localize("ND5T.AutoRollConcentration.ConcentratingOn");
+            labelEl.innerHTML = `${prefix} <strong>${foundry.utils.escapeHTML(item.name)}</strong>`;
+
+            pill.appendChild(imgEl);
+            pill.appendChild(labelEl);
+
+            if (item.uuid) {
+                pill.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    const doc = await fromUuid(item.uuid);
+                    doc?.sheet?.render(true);
+                });
+            }
+
+            pillContainer.appendChild(pill);
+        }
+
+        // Insert above the roll result
+        const rollSection = html.querySelector(".chat-card + section.icon-row, .icon-row:has(button.dice-roll), button.dice-roll")
+            ?.closest("section.icon-row, .dice-roll")
+            ?? html.querySelector("button.dice-roll");
+
+        if (rollSection && rollSection.parentNode) {
+            rollSection.parentNode.insertBefore(pillContainer, rollSection);
+        } else {
+            const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;
+            cardTarget.prepend(pillContainer);
+        }
+    }
+
+    // 2. Inject "End Concentration" Button
     // Avoid duplicate buttons if re-rendered
     if (html.querySelector(".nd5t-end-concentration-btn")) return;
 

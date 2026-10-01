@@ -21,17 +21,6 @@
     display: block;
 }
 
-/* Dialog Button Tweaks - Used by token-resizer.js */
-.nd5t-dialog-button.tiny,
-.nd5t-dialog-button.Tiny {
-    margin: 0 5px !important;
-}
-
-.nd5t-dialog-button.unit,
-.nd5t-dialog-button.An.Absolute.Unit {
-    margin: 5px;
-}
-
 /* Disposition Dot - Used by actor-disposition-colors.js */
 .nd5t-disposition-dot {
     display: inline-block;
@@ -363,6 +352,82 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     opacity: 0.6;
     cursor: default;
     pointer-events: none;
+}
+
+/* Concentrating Item Pill (Above Roll) */
+.nd5t-concentrating-pill-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    margin-block: 4px 6px;
+    width: 100%;
+}
+
+.nd5t-concentrating-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px 2px 4px;
+    background: var(--dnd5e-background-10, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--dnd5e-color-gold, #c9a227);
+    border-radius: 4px;
+    font-size: var(--font-size-11, 11px);
+    line-height: 1.2;
+    color: var(--color-text-primary, inherit);
+    box-sizing: border-box;
+    max-width: 100%;
+    user-select: none;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.nd5t-concentrating-pill[data-action="showDocument"] {
+    cursor: pointer;
+}
+
+.nd5t-concentrating-pill[data-action="showDocument"]:hover {
+    background: var(--dnd5e-background-20, rgba(0, 0, 0, 0.1));
+    border-color: var(--color-shadow-highlight, #e6b422);
+    transform: translateY(-1px);
+}
+
+.nd5t-concentrating-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid var(--dnd5e-color-gold, #c9a227);
+    display: block;
+}
+
+.nd5t-concentrating-label {
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: var(--font-size-11, 11px);
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nd5t-concentrating-label strong {
+    font-weight: 700;
+    color: var(--dnd5e-color-gold, #c9a227);
+}
+
+/* Dark theme overrides for concentrating pill */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .nd5t-concentrating-pill,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .nd5t-concentrating-pill,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message.compact:not(.theme-light) .nd5t-concentrating-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(201, 162, 39, 0.45);
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .nd5t-concentrating-pill[data-action="showDocument"]:hover,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .nd5t-concentrating-pill[data-action="showDocument"]:hover,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message.compact:not(.theme-light) .nd5t-concentrating-pill[data-action="showDocument"]:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--dnd5e-color-gold, #c9a227);
 }
 
 /* ── Prompt for Initiative on Combat Add ────────────────────────────── */
@@ -1377,11 +1442,12 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     content: "Break";
 }
 
-/* Only prevent wrapping on the ul that contains action buttons — leaves tag rows unaffected */
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])),
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])) {
-    flex-wrap: nowrap;
-    overflow: hidden;
+/* Action buttons: allow wrapping onto multiple lines when too wide for one line */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul:has(> li > button.icon:is([data-action], [data-forward-action])) {
+    flex-wrap: wrap;
+    overflow: visible;
+    row-gap: 4px;
 }
 
 /* ─── Button Colors — Light Theme (Default) ─── */
@@ -3270,4 +3336,118 @@ button.nd5t-attunement-badge.nd5t-attuned:hover {
 }
 .tab.description .pills .pill.nd5t-attunement-pill.nd5t-attunement-toggleable:hover {
     transform: scale(1.04);
+}
+
+/* ==========================================================================
+   Context Menu Styling
+   ========================================================================== */
+
+/* Default Variables (Dark Background / Neutral) */
+#context-menu,
+#context-menu.nd5t-theme-dark {
+    --nd5t-context-delete-color: #ff5c5c;
+    --nd5t-context-delete-hover-bg: rgba(255, 92, 92, 0.16);
+    --nd5t-context-delete-hover-color: #ff7575;
+
+    --nd5t-context-duplicate-color: #4ade80;
+    --nd5t-context-duplicate-hover-bg: rgba(74, 222, 128, 0.16);
+    --nd5t-context-duplicate-hover-color: #6ee7b7;
+
+    --nd5t-context-violet-color: #c084fc;
+    --nd5t-context-violet-hover-bg: rgba(192, 132, 252, 0.16);
+    --nd5t-context-violet-hover-color: #d8b4fe;
+}
+
+/* Light Background Variables (Explicitly light background) */
+#context-menu.nd5t-theme-light,
+:is(body.theme-light:not(.theme-dark)) #context-menu:not(.nd5t-theme-dark) {
+    --nd5t-context-delete-color: #b91c1c;
+    --nd5t-context-delete-hover-bg: rgba(185, 28, 28, 0.10);
+    --nd5t-context-delete-hover-color: #991b1b;
+
+    --nd5t-context-duplicate-color: #15803d;
+    --nd5t-context-duplicate-hover-bg: rgba(21, 128, 61, 0.10);
+    --nd5t-context-duplicate-hover-color: #166534;
+
+    --nd5t-context-violet-color: #7c3aed;
+    --nd5t-context-violet-hover-bg: rgba(124, 58, 237, 0.10);
+    --nd5t-context-violet-hover-color: #6d28d9;
+}
+
+/* Delete / Remove Item Styling */
+#context-menu .context-item.nd5t-context-delete {
+    color: var(--nd5t-context-delete-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-delete > i {
+    color: var(--nd5t-context-delete-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-delete > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-delete-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-delete:hover {
+    color: var(--nd5t-context-delete-hover-color) !important;
+    background: var(--nd5t-context-delete-hover-bg) !important;
+}
+
+#context-menu .context-item.nd5t-context-delete:hover > i {
+    color: var(--nd5t-context-delete-hover-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-delete:hover > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-delete-hover-color) !important;
+}
+
+/* Duplicate / Copy / Clone Item Styling */
+#context-menu .context-item.nd5t-context-duplicate {
+    color: var(--nd5t-context-duplicate-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-duplicate > i {
+    color: var(--nd5t-context-duplicate-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-duplicate > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-duplicate-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-duplicate:hover {
+    color: var(--nd5t-context-duplicate-hover-color) !important;
+    background: var(--nd5t-context-duplicate-hover-bg) !important;
+}
+
+#context-menu .context-item.nd5t-context-duplicate:hover > i {
+    color: var(--nd5t-context-duplicate-hover-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-duplicate:hover > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-duplicate-hover-color) !important;
+}
+
+/* Make Private / Reveal Visibility (Violet) Item Styling */
+#context-menu .context-item.nd5t-context-violet {
+    color: var(--nd5t-context-violet-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-violet > i {
+    color: var(--nd5t-context-violet-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-violet > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-violet-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-violet:hover {
+    color: var(--nd5t-context-violet-hover-color) !important;
+    background: var(--nd5t-context-violet-hover-bg) !important;
+}
+
+#context-menu .context-item.nd5t-context-violet:hover > i {
+    color: var(--nd5t-context-violet-hover-color) !important;
+}
+
+#context-menu .context-item.nd5t-context-violet:hover > dnd5e-icon {
+    --icon-fill: var(--nd5t-context-violet-hover-color) !important;
 }

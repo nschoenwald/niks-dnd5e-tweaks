@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.34.2] - 2026-10-01
+### Fixed
+- **Chat Card Action Buttons Multi-Line Wrapping**:
+  - Fixed an issue where compact chat card action buttons (such as Save, Damage, and Template) were forced onto a single line without wrapping (`flex-wrap: nowrap`), causing buttons to be clipped or completely cut off when an activity has multiple action buttons that exceed the card's width.
+  - Action buttons now cleanly line-break onto additional lines as needed with balanced row spacing (`row-gap: 4px`) and visible overflow, ensuring all action buttons remain fully visible and clickable regardless of sidebar width or number of actions.
+
+## [14.34.1] - 2026-10-01
+### Added
+- **Concentrating Item Name Pill on Concentration Save Cards**:
+  - Displays a sleek, interactive **"Concentrating on: [Item Name]"** pill badge above the roll result on all concentration saving throw chat cards (both auto-rolled on damage and manually rolled from sheets or prompt cards).
+  - Features the spell/item icon and bold item name with gold accents, styled seamlessly for both Light and Dark themes.
+  - Click-to-view shortcut: clicking the pill opens the concentrated item's sheet.
+  - Full multi-concentration support: actors concentrating on multiple effects display separate pills for each active item.
+- **Legendary Action Placeholders — Initiative Tie Breaking**:
+  - Fixed an issue where legendary action placeholders failed to alternate correctly when two or more player characters had identical initiatives.
+  - Automatically gives an additional minimal tie breaker to subsequent tied player characters before creating placeholders, ensuring each player turn is immediately followed by its legendary action placeholder without altering displayed initiative values.
+
+## [14.34.0] - 2026-09-30
+### Added
+- **Context Menu Styling**:
+  - Color-codes right-click context menu options across sheets, sidebars, folders, and chat cards to improve visual hierarchy and prevent accidental deletions.
+  - **Destructive Actions (Delete / Remove)**: Highlighted with crisp red text (`#ff5c5c` on dark backgrounds, `#b91c1c` on light backgrounds), matching icon tinting, and a soft red hover highlight.
+  - **Additive Actions (Duplicate / Clone / Copy)**: Highlighted with clear green text (`#4ade80` on dark backgrounds, `#15803d` on light backgrounds), matching icon tinting, and a soft green hover highlight.
+  - **Visibility & Privacy Toggles (Make Private / Reveal To Everyone)**: Highlighted with luminous violet text (`#c084fc` on dark backgrounds, `#7c3aed` on light backgrounds), matching eye/eye-slash icons, and a soft violet hover highlight on chat message cards.
+  - **Dynamic Background Luminance Detection (Hybrid Theme Support)**: Solves the hybrid theme dilemma (e.g. light chat log with dark interface) by dynamically measuring the actual rendered background luminance of the `#context-menu` popover element, ensuring high-contrast action text is selected based on the true rendered background rather than inherited container classes.
+  - **Comprehensive Coverage**: Patches `foundry.applications.ux.ContextMenu` rendering and positioning, covering all DnD5e sheets and components (inventory items, spells, features, activities, advancements, active effects) as well as Foundry V14 core sidebar directories, popouts, and chat log cards.
+  - **Settings Dashboard Integration**: Configurable via world-level master toggle under **General Interface** (`uiGeneral`) with individual player toggle under **Personal Preferences** (`clientVisuals`).
+
+### Removed
+- **Token Resizer Tool**:
+  - Removed the Token Resizer Tool, including its scene controls tool button, creature sizing dialog, helper API functions (`globalThis.nd5t.api`), setting registration (`enableTokenResizer`), and associated button styling.
+
 ## [14.33.3] - 2026-09-29
 ### Changed
 - **Feature Scripts File Organization & Documentation**:
