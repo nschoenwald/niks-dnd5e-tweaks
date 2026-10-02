@@ -18,6 +18,7 @@ import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocket
 import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
 import { initContextMenuStyling } from "./features/ui-visuals/context-menu-styling.js";
+import { initCarolingianHarmony, updateCarolingianThemeState } from "./features/ui-visuals/carolingian-harmony.js";
 
 // Canvas & Tokens
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
@@ -352,6 +353,15 @@ Hooks.once("init", () => {
         default: true
     });
 
+    game.settings.register(MODULE_ID, "clientEnableAutoAttachSelfEmanations", {
+        name: "Auto-Attach Self Emanation Templates (Personal)",
+        hint: "When using an activity with an emanation template targeting Self (e.g. Spirit Guardians, Aura of Protection), automatically attaches the template to your token and skips manual canvas placement (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
     game.settings.register(MODULE_ID, "clientEnableSummonControlsHUD", {
         name: "Summoning Placement Controls HUD (Personal)",
         hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
@@ -361,9 +371,30 @@ Hooks.once("init", () => {
         default: true
     });
 
+    game.settings.register(MODULE_ID, "clientEnableCarolingianTheme", {
+        name: "Carolingian UI Theme Harmony (Personal)",
+        hint: "Adopts Carolingian UI's active color theme and styling on your client (if enabled by the GM and Carolingian UI is active).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => updateCarolingianThemeState()
+    });
+
     // ==========================================
     // GROUP 1: User Interface & Visuals
     // ==========================================
+
+    game.settings.register(MODULE_ID, "enableCarolingianTheme", {
+        name: "Carolingian UI Theme Harmony",
+        hint: "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => updateCarolingianThemeState()
+    });
 
     game.settings.register(MODULE_ID, "enableContextMenuStyling", {
         name: "Context Menu Styling",
@@ -808,6 +839,16 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableTemplateControlsHUD", {
         name: "Template Placement Controls HUD & Scroll Rotation",
         hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableAutoAttachSelfEmanations", {
+        name: "Auto-Attach Self Emanation Templates",
+        hint: "When an actor uses an ability with an emanation template targeting Self (e.g. Spirit Guardians, Aura of Protection), automatically attaches the template directly to the caster's token and skips manual canvas placement.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1378,6 +1419,7 @@ Hooks.once("setup", () => {
     // UI helpers
     initRollModeHighlight();
     initContextMenuStyling();
+    initCarolingianHarmony();
     initChatScrollFix();
     initChatCardStyling();
     initRetroactiveAdvantage();

@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.37.0] - 2026-10-02
+### Added
+- **Carolingian UI Theme Harmony**:
+  - Full compatibility and aesthetic harmonization with **Carolingian UI** (`crlngn-ui`) when installed and active in the world.
+  - **Dynamic Color Theme Adoption**: Automatically harmonizes the Settings Dashboard (active navigation tabs, search focus rings, match count text, toggle switches, and section badges), floating HUD banners, and damage prompt cards with Carolingian UI's active theme palette (*Carolingian Teal*, *Royal Blood*, *Dark Sorcery*, *Grass and Stone*, *Gold and Chocolate*, *Pumpkin Patch*, *Plum Purple*, or *Gambit's Blue*).
+  - **Top Scene Navigation Clearance**: Automatically offsets all floating canvas HUD banners (Template Placement HUD, Summoning Placement HUD, and Teleport Targeting UI) by Carolingian UI's docked scene navigation height (`--crlngn-top-offset` / `--top-nav-height`). Dynamically respects Carolingian's active navigation settings, immediately returning to standard canvas offset with a smooth glide when the scene bar is disabled, collapsed (`navigation-collapsed`), or hidden for players (`hide-player-ui-navigation`).
+  - **Chat Card Action Button Harmonization**: Preserves Nik's distinctive color-coded action borders and text/icon accents (Royal Violet Atk, Flame Orange Dmg, Cobalt Blue Save, Forest Green Heal, Cosmic Orchid Summon, Astral Cyan Use, Ruby Template, etc.) while seamlessly inheriting Carolingian UI's button sizing, spacing, and chat surface tokens. Explicit action labels and saving throw ability shorthands (**STR SAVE**, **DEX**, **CON**, **INT**, **WIS**, **CHA**) take precedence over generic labels.
+  - **Legendary Action Placeholders in Combat Carousel**: In Carolingian UI's horizontal Combat Carousel (`#combat-popout`), placeholder turns are rendered with an ornate dashed accent border, soft translucent background, and scaled emblem with theme-reactive drop shadow, clearly distinguishing them as phase separators among combatant creature portraits.
+  - **Typography & Font Synchronization**: Automatically adopts Carolingian UI's custom typography (*Work Sans* for UI and *Roboto Slab* for headers) across the Settings Dashboard when Carolingian custom fonts are enabled.
+  - **Conditional Dashboard Settings**: Configurable with a GM world master toggle under **Interface & Visual Enhancements** (`enableCarolingianTheme`) and an individual player toggle under **Personal Preferences** (`clientEnableCarolingianTheme`). Settings are dynamically displayed in the dashboard only when Carolingian UI is installed and active in the world, and default to enabled.
+- **Emanation Token Guidance in Template Placement HUD**:
+  - **Clear Token Attachment Instruction**: When placing an emanation (e.g. *Spirit Guardians*, *Aura of Protection*, *Antilife Shell*), the HUD subtitle prominently updates to indicate that the template must be attached to a creature (e.g. `15 ft Emanation • Attach to Token`).
+  - **Live Dynamic Token Target Status Badge**:
+    - **Hovering Empty Space**: Displays an attention-pulsing amber warning badge with `Click a Token (not empty space)` and a tooltip clarifying that emanations originate from a creature and will not attach if placed on empty space.
+    - **Hovering a Token**: Instantly transitions to an emerald glowing badge displaying `Target: [Token Name]` with a checkmark icon, giving immediate visual confirmation that the hovered token is targeted for attachment.
+  - **Dynamic Placement Action Badge**:
+    - Replaces the generic `[Click] Place` action chip with `<kbd>Click Token</kbd> Select Token` when over empty ground, dynamically updating to `<kbd>Click Token</kbd> Attach to [Token Name]` when hovering over a token.
+  - **Context-Aware Controls**:
+    - Suppresses the irrelevant `<kbd>Scroll</kbd> Rotate` badge for emanations and non-rotatable shapes (circles, rings), reducing visual clutter.
+    - When placing non-rotatable shapes or emanations, mouse wheel scrolling cleanly zooms the canvas camera instead of capturing scroll events.
+    - Suppresses the `<kbd>Shift</kbd> Free Snap` badge during emanation placement since emanations bind directly to tokens rather than grid vertices.
+  - **Empty-Ground Placement Safety Notice**: If an emanation is confirmed on empty ground without an attached token, an informative notification explains that the emanation was placed on the ground without an attached token and reminds the player to click directly on a token to bind the emanation to a creature.
+- **Auto-Attach Self Emanation Templates**:
+  - **Skip Manual Placement for Self-Targeted Emanations**: Added a new sub-setting to Template Placement Controls HUD that detects when an activity with an emanation template targets Self (e.g. *Spirit Guardians*, *Antilife Shell*, *Holy Aura*, *Aura of Protection*, *Aura of Courage*).
+  - **Direct Token Binding**: Automatically resolves the caster's triggering token on the active scene, configures the region shape with the token's dimensions and elevation, and immediately attaches the emanation directly to the token without requiring manual canvas placement or token selection.
+  - **Flicker-Free Invocation**: Suppresses window minimization during automated placement (`config.minimizeWindows = false`), allowing character sheets to remain open without visual interruption.
+  - **Graceful Fallback**: If no triggering token can be located on the current canvas (e.g. GM casting from a sidebar actor without a token placed), automatically falls back to manual placement with full HUD guidance.
+  - **Settings Dashboard Integration**: Configurable with a GM world master toggle under **Canvas & Templates** (`enableAutoAttachSelfEmanations`) and an individual player toggle under **Personal Preferences** (`clientEnableAutoAttachSelfEmanations`). Defaults to enabled.
+
+
+
 ## [14.36.0] - 2026-10-02
 ### Added
 - **Enhanced Summoning Placement HUD & Range Preview**:

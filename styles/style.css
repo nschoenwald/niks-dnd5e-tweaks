@@ -3031,10 +3031,10 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 
 #nd5t-teleport-hud {
     position: fixed;
-    top: 24px;
+    top: 20px;
     left: var(--nd5t-hud-left, 50%);
     transform: translateX(-50%);
-    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -3235,10 +3235,10 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 
 #nd5t-template-hud {
     position: fixed;
-    top: 24px;
+    top: 20px;
     left: var(--nd5t-hud-left, 50%);
     transform: translateX(-50%);
-    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -3420,6 +3420,81 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     flex-shrink: 0;
 }
 
+/* Emanation Target Status Badge */
+.nd5t-template-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.nd5t-template-status-badge span {
+    white-space: nowrap;
+}
+
+.nd5t-template-status-badge.waiting {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.55);
+    color: #fcd34d;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    animation: nd5t-pulse-attention 2s infinite ease-in-out;
+}
+
+.nd5t-template-status-badge.waiting .nd5t-highlight-token {
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 700;
+}
+
+.nd5t-template-status-badge.targeted {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.55);
+    color: #4ade80;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.nd5t-template-status-badge.targeted strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.nd5t-template-control-badge.nd5t-template-place-emanation.waiting {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.nd5t-template-control-badge.nd5t-template-place-emanation.waiting .nd5t-template-control-label {
+    color: #fcd34d;
+}
+
+.nd5t-template-control-badge.nd5t-template-place-emanation.targeted {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+.nd5t-template-control-badge.nd5t-template-place-emanation.targeted .nd5t-template-control-label {
+    color: #4ade80;
+}
+
+@keyframes nd5t-pulse-attention {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+        border-color: rgba(245, 158, 11, 0.8);
+    }
+}
+
+
 .nd5t-template-actions {
     display: flex;
     align-items: center;
@@ -3463,10 +3538,10 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 
 #nd5t-summon-hud {
     position: fixed;
-    top: 24px;
+    top: 20px;
     left: var(--nd5t-hud-left, 50%);
     transform: translateX(-50%);
-    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -4022,4 +4097,164 @@ button.nd5t-attunement-badge.nd5t-attuned:hover {
 
 #context-menu .context-item.nd5t-context-violet:hover > dnd5e-icon {
     --icon-fill: var(--nd5t-context-violet-hover-color) !important;
+}
+
+/* ==========================================================================
+   Carolingian UI Theme Harmony (crlngn-ui)
+   ========================================================================== */
+
+/* ── 1. Settings Dashboard Palette & Font Harmony ────────────────────────── */
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-nav-tab.active {
+    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
+    color: var(--color-light-1, #ffffff) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-nav-tab.active i {
+    color: var(--color-highlights, #4493ad) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-nav-tab .tab-badge {
+    background: var(--color-highlights, #4493ad) !important;
+    color: var(--color-light-1, #ffffff) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-search-input:focus {
+    border-color: var(--color-highlights, #4493ad) !important;
+    box-shadow: 0 0 6px var(--color-shadow-highlight, rgba(68, 147, 173, 0.5)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-match-count {
+    color: var(--color-highlights, #4493ad) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-switch input:checked + .nd5t-slider {
+    background-color: var(--color-highlights, #4493ad) !important;
+    border-color: var(--color-border-highlight, #4493ad) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-switch input:focus + .nd5t-slider {
+    box-shadow: 0 0 5px var(--color-shadow-highlight, rgba(68, 147, 173, 0.5)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.cui-font-ui .nd5t-settings-app {
+    font-family: var(--crlngn-font-family, "Work Sans", sans-serif);
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.cui-font-t .nd5t-settings-app h1,
+body.crlngn-ui.nd5t-crlngn-theme-active.cui-font-t .nd5t-settings-app h2,
+body.crlngn-ui.nd5t-crlngn-theme-active.cui-font-t .nd5t-settings-app h3 {
+    font-family: var(--crlngn-font-titles, "Roboto Slab", serif);
+}
+
+/* ── 2. Floating Canvas HUD Banners ───────────────────────────────────────── */
+
+/* Only apply top clearance when Carolingian Harmony is active, Scene Nav is enabled,
+   and Scene Nav is neither collapsed nor hidden for players */
+body.nd5t-crlngn-theme-active.crlngn-scene-nav:not(.navigation-collapsed):not(.hide-player-ui-navigation) #nd5t-teleport-hud,
+body.nd5t-crlngn-theme-active.crlngn-scene-nav:not(.navigation-collapsed):not(.hide-player-ui-navigation) #nd5t-template-hud,
+body.nd5t-crlngn-theme-active.crlngn-scene-nav:not(.navigation-collapsed):not(.hide-player-ui-navigation) #nd5t-summon-hud {
+    top: calc(20px + var(--crlngn-top-offset, var(--top-nav-height, 48px)));
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-teleport-hud-content,
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-template-hud-content,
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-summon-hud-content {
+    border-color: var(--color-secondary-b, rgba(255, 255, 255, 0.15)) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 10px var(--color-shadow-highlight, rgba(68, 147, 173, 0.25)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-teleport-cancel:hover,
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-template-cancel:hover,
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-summon-cancel:hover {
+    background: var(--color-warm-2, #4493ad) !important;
+    border-color: var(--color-warm-3, #3c7892) !important;
+    color: var(--color-light-1, #ffffff) !important;
+}
+
+/* ── 3. Legendary Action Placeholders in Combat Carousel ──────────────────── */
+
+body.crlngn-ui.nd5t-crlngn-theme-active #combat-popout li.combatant.nd5t-legendary-placeholder {
+    border: 1px dashed var(--color-highlights, #4493ad) !important;
+    background: var(--color-secondary-50, rgba(34, 34, 54, 0.5)) !important;
+    opacity: 0.85;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active #combat-popout li.combatant.nd5t-legendary-placeholder:hover {
+    opacity: 1;
+    border-color: var(--color-warm-1, #7ab6c4) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active #combat-popout li.combatant.nd5t-legendary-placeholder > .token-image {
+    padding: 14px;
+    object-fit: contain !important;
+    filter: drop-shadow(0 0 6px var(--color-highlights, rgba(68, 147, 173, 0.6))) !important;
+}
+
+/* ── 4. Chat Card Action Buttons Harmonization (Option 1A) ────────────────── */
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action]),
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action], [data-forward-action]) {
+    min-height: var(--cui-chat-button-min-height, 2.5em);
+    border-radius: 4px;
+    font-family: var(--crlngn-font-family, var(--dnd5e-font-roboto-condensed));
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollAttack"], [data-forward-action="rollAttack"])::after {
+    content: "Atk" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollDamage"], [data-forward-action="rollDamage"])::after {
+    content: "Dmg" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after {
+    content: "Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after {
+    content: "Check" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollHealing"], [data-forward-action="rollHealing"])::after {
+    content: "Heal" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="placeSummons"], [data-action="placeSummon"], [data-action="summon"], [data-action="rollSummon"], [data-forward-action="placeSummons"], [data-forward-action="placeSummon"], [data-forward-action="summon"], [data-forward-action="rollSummon"])::after {
+    content: "Summon" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="placeArea"], [data-forward-action="placeTemplate"], [data-forward-action="placeArea"])::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="placeTemplate"], [data-action="placeArea"], [data-forward-action="placeTemplate"], [data-forward-action="placeArea"])::after {
+    content: "Template" !important;
+}
+
+/* ── 5. Retroactive Advantage & Self-Effects ──────────────────────────────── */
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-retro-adv-bar button:not(:disabled):hover {
+    border-color: var(--color-highlights, #4493ad) !important;
+    box-shadow: 0 0 6px var(--color-shadow-highlight, rgba(68, 147, 173, 0.4)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-retro-adv-bar button.nd5t-retro-active {
+    border-color: var(--color-highlights, #4493ad) !important;
+    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-concentration-badge {
+    border-color: var(--color-highlights-50, rgba(68, 147, 173, 0.5)) !important;
+    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-apply:hover {
+    background: var(--color-warm-2, #4493ad) !important;
+    border-color: var(--color-warm-3, #3c7892) !important;
+    color: var(--color-light-1, #ffffff) !important;
 }

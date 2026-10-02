@@ -143,6 +143,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         icon: "fa-solid fa-wand-magic-sparkles",
                         settings: [
                             {
+                                key: "clientEnableCarolingianTheme",
+                                name: "Carolingian UI Theme Harmony",
+                                hint: "Automatically adopts Carolingian UI's active color theme and styling across the dashboard, floating HUD banners, damage prompts, and combat placeholders (only active when Carolingian UI is enabled).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client",
+                                requiresModule: "crlngn-ui"
+                            },
+                            {
                                 key: "clientEnableCursorHints",
                                 name: "Cursor Keyboard Hints",
                                 hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
@@ -297,6 +306,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableAutoAttachSelfEmanations",
+                                name: "Auto-Attach Self Emanation Templates",
+                                hint: "Automatically attaches self-targeted emanation templates (e.g. Spirit Guardians, Paladin auras) directly to your token without requiring manual canvas placement (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableSummonControlsHUD",
                                 name: "Summoning Placement Controls HUD",
                                 hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
@@ -367,6 +384,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableCarolingianTheme",
+                                name: "Carolingian UI Theme Harmony",
+                                hint: "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                requiresModule: "crlngn-ui"
                             }
                         ]
                     },
@@ -662,6 +688,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableTemplateControlsHUD",
                                 name: "Template Placement Controls HUD & Scroll Rotation",
                                 hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableAutoAttachSelfEmanations",
+                                name: "Auto-Attach Self Emanation Templates",
+                                hint: "When an actor uses an ability with an emanation template targeting Self (e.g. Spirit Guardians, Paladin auras), automatically attaches the template directly to the caster's token and skips manual canvas placement.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -1133,44 +1167,51 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         const tabs = NiksTweaksSettingsApp.SETTINGS_SCHEMA.map(tab => {
             const isActiveTab = tab.id === this.#activeTab;
 
-            const sections = tab.sections.map(sec => {
-                const settings = sec.settings
-                    .map(s => {
-                        let value;
-                        try {
-                            value = game.settings.get(MODULE_ID, s.key);
-                        } catch {
-                            value = s.default;
-                        }
+            const sections = tab.sections
+                .map(sec => {
+                    const settings = sec.settings
+                        .filter(s => {
+                            if (s.requiresModule && !game.modules.get(s.requiresModule)?.active) return false;
+                            if (typeof s.condition === "function" && !s.condition()) return false;
+                            return true;
+                        })
+                        .map(s => {
+                            let value;
+                            try {
+                                value = game.settings.get(MODULE_ID, s.key);
+                            } catch {
+                                value = s.default;
+                            }
 
-                        // Prepare choices for select dropdowns
-                        let choices = [];
-                        if (s.type === "Select" && Array.isArray(s.choices)) {
-                            choices = s.choices.map(c => ({
-                                ...c,
-                                selected: c.value === value
-                            }));
-                        }
+                            // Prepare choices for select dropdowns
+                            let choices = [];
+                            if (s.type === "Select" && Array.isArray(s.choices)) {
+                                choices = s.choices.map(c => ({
+                                    ...c,
+                                    selected: c.value === value
+                                }));
+                            }
 
-                        // Build combined search index text
-                        const searchText = `${s.name} ${s.hint || ""} ${tab.label} ${sec.title || ""}`.toLowerCase();
+                            // Build combined search index text
+                            const searchText = `${s.name} ${s.hint || ""} ${tab.label} ${sec.title || ""}`.toLowerCase();
 
-                        return {
-                            ...s,
-                            value,
-                            choices,
-                            isChild: Boolean(s.parentKey),
-                            isClient: s.scope === "client",
-                            isUser: s.scope === "user",
-                            searchText
-                        };
-                    });
+                            return {
+                                ...s,
+                                value,
+                                choices,
+                                isChild: Boolean(s.parentKey),
+                                isClient: s.scope === "client",
+                                isUser: s.scope === "user",
+                                searchText
+                            };
+                        });
 
-                return {
-                    ...sec,
-                    settings
-                };
-            });
+                    return {
+                        ...sec,
+                        settings
+                    };
+                })
+                .filter(sec => sec.settings.length > 0);
 
             return {
                 ...tab,
@@ -1420,6 +1461,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 for (const s of sec.settings) {
                     // Enforce permission: non-authorized users can only save client/user-scoped settings
                     if (s.scope !== "client" && s.scope !== "user" && !canModify) continue;
+                    if (s.requiresModule && !game.modules.get(s.requiresModule)?.active) continue;
+                    if (typeof s.condition === "function" && !s.condition()) continue;
 
                     const rawVal = formData.object[s.key];
 
@@ -1474,6 +1517,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             for (const sec of tab.sections) {
                 for (const s of sec.settings) {
                     if (!canModify && s.scope !== "client" && s.scope !== "user") continue;
+                    if (s.requiresModule && !game.modules.get(s.requiresModule)?.active) continue;
+                    if (typeof s.condition === "function" && !s.condition()) continue;
                     const currentVal = game.settings.get(MODULE_ID, s.key);
                     if (currentVal !== s.default) {
                         await game.settings.set(MODULE_ID, s.key, s.default);
