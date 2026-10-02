@@ -5,6 +5,7 @@
  * @introduced v14.32.0
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { attachHudPositioning } from "./hud-position-helper.js";
 
 /**
  * Enhanced UI for Automated Animations Teleport Preset:
@@ -176,6 +177,7 @@ function startTeleportSession({ sourceToken, item, itemName, range, checkCollisi
         // 1. Create Floating HUD Banner
         const hud = createTeleportHud({ itemName, range });
         document.body.appendChild(hud);
+        const detachPositioning = attachHudPositioning(hud);
 
         // 2. Create Ghost Token Preview
         const ghost = createGhostToken(sourceToken);
@@ -209,6 +211,7 @@ function startTeleportSession({ sourceToken, item, itemName, range, checkCollisi
             checkCollision,
             measureType,
             hud,
+            detachPositioning,
             ghost,
             onPointerMoveBound,
             onPointerDownBound,
@@ -890,7 +893,8 @@ export function cancelTeleport() {
 function cleanupSession(isCancel = false) {
     if (!activeSession) return;
 
-    const { hud, ghost, onPointerMoveBound, onPointerDownBound, onKeyDownBound } = activeSession;
+    const { hud, ghost, detachPositioning, onPointerMoveBound, onPointerDownBound, onKeyDownBound } = activeSession;
+    detachPositioning?.();
 
     // Fade out and remove HUD banner
     if (hud?.parentNode) {

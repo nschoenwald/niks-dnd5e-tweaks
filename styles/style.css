@@ -3032,8 +3032,9 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 #nd5t-teleport-hud {
     position: fixed;
     top: 24px;
-    left: 50%;
+    left: var(--nd5t-hud-left, 50%);
     transform: translateX(-50%);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -3140,7 +3141,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 }
 
 .nd5t-teleport-status-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
@@ -3148,7 +3149,13 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.2px;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.2s ease;
+}
+
+.nd5t-teleport-status-badge span {
+    white-space: nowrap;
 }
 
 .nd5t-teleport-status-badge.in-range {
@@ -3173,10 +3180,13 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-teleport-kbd {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 3px 6px;
     font-family: inherit;
     font-size: 10px;
@@ -3186,10 +3196,12 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-teleport-cancel-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 5px 12px;
@@ -3200,6 +3212,8 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.15s ease;
 }
 
@@ -3222,8 +3236,9 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 #nd5t-template-hud {
     position: fixed;
     top: 24px;
-    left: 50%;
+    left: var(--nd5t-hud-left, 50%);
     transform: translateX(-50%);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -3273,6 +3288,8 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(245, 158, 11, 0.25);
     color: #fef3c7;
     font-family: var(--dnd5e-font-roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    white-space: nowrap;
+    max-width: 96vw;
 }
 
 .nd5t-template-badge-icon {
@@ -3332,6 +3349,8 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     display: flex;
     align-items: center;
     gap: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-control-badge {
@@ -3344,12 +3363,16 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     padding: 3px 8px;
     font-size: 12px;
     color: #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-kbd-combo {
     display: inline-flex;
     align-items: center;
     gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-kbd-plus {
@@ -3371,12 +3394,15 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 4px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-control-label {
     font-size: 11px;
     font-weight: 600;
     color: #f8fafc;
+    white-space: nowrap;
 }
 
 .nd5t-template-rotation-val {
@@ -3390,16 +3416,20 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     font-weight: 700;
     color: #fef08a;
     letter-spacing: 0.2px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-actions {
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nd5t-template-cancel-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 5px 12px;
@@ -3410,6 +3440,8 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.15s ease;
 }
 
@@ -3422,6 +3454,252 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 }
 
 .nd5t-template-cancel-btn:active {
+    transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Enhanced Summoning Placement HUD
+   ========================================================================== */
+
+#nd5t-summon-hud {
+    position: fixed;
+    top: 24px;
+    left: var(--nd5t-hud-left, 50%);
+    transform: translateX(-50%);
+    transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+    user-select: none;
+    animation: nd5t-summon-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#nd5t-summon-hud.nd5t-summon-fade-out {
+    animation: nd5t-summon-slide-out 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+@keyframes nd5t-summon-slide-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -18px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+@keyframes nd5t-summon-slide-out {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -14px) scale(0.96);
+    }
+}
+
+.nd5t-summon-hud-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(18, 22, 32, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    border-radius: 30px;
+    padding: 8px 18px 8px 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 0 18px rgba(168, 85, 247, 0.28);
+    color: #f3e8ff;
+    font-family: var(--dnd5e-font-roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    white-space: nowrap;
+    max-width: 96vw;
+}
+
+.nd5t-summon-badge-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(59, 130, 246, 0.25));
+    border: 1px solid rgba(168, 85, 247, 0.6);
+    color: #c084fc;
+    font-size: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+.nd5t-summon-badge-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.nd5t-summon-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 110px;
+}
+
+.nd5t-summon-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.nd5t-summon-subtitle {
+    font-size: 11px;
+    color: #d8b4fe;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.nd5t-summon-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.nd5t-summon-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.nd5t-summon-status-badge span {
+    white-space: nowrap;
+}
+
+.nd5t-summon-status-badge.in-range {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #34d399;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.nd5t-summon-status-badge.out-of-range {
+    background: rgba(239, 68, 68, 0.22);
+    border: 1px solid rgba(239, 68, 68, 0.55);
+    color: #f87171;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.nd5t-summon-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nd5t-summon-control-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nd5t-summon-kbd-combo {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nd5t-summon-kbd-plus {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.nd5t-summon-kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    color: #f3e8ff;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nd5t-summon-control-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #f8fafc;
+    white-space: nowrap;
+}
+
+
+.nd5t-summon-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nd5t-summon-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: rgba(200, 40, 50, 0.2);
+    border: 1px solid rgba(240, 70, 80, 0.4);
+    border-radius: 16px;
+    color: #ff9999;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.nd5t-summon-cancel-btn:hover {
+    background: rgba(220, 40, 50, 0.4);
+    border-color: rgba(255, 80, 90, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(240, 60, 70, 0.4);
+    transform: scale(1.03);
+}
+
+.nd5t-summon-cancel-btn:active {
     transform: scale(0.97);
 }
 

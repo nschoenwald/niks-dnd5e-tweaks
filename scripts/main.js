@@ -27,6 +27,7 @@ import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAu
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
+import { initSummonPlacementHUD } from "./features/canvas-tokens/summon-placement-hud.js";
 
 // Combat & Automation
 import { initAutoAddTokensToCombat } from "./features/combat-automation/auto-add-tokens-to-combat.js";
@@ -345,6 +346,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableTemplateControlsHUD", {
         name: "Template Placement Controls HUD & Scroll Rotation (Personal)",
         hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableSummonControlsHUD", {
+        name: "Summoning Placement Controls HUD (Personal)",
+        hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -798,6 +808,16 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableTemplateControlsHUD", {
         name: "Template Placement Controls HUD & Scroll Rotation",
         hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSummonControlsHUD", {
+        name: "Summoning Placement Controls HUD",
+        hint: "Displays a floating HUD banner with key controls, live distance vs. max range badge, and canvas range boundary ring during summoning placement.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1366,6 +1386,7 @@ Hooks.once("setup", () => {
     initSuppressBloodiedDead();
     initAutoanimationsTeleportUI();
     initTemplatePlacementHUD();
+    initSummonPlacementHUD();
 });
 
 Hooks.once("ready", async () => {

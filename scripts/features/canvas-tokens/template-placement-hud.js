@@ -5,6 +5,7 @@
  * @introduced v14.35.0
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { attachHudPositioning } from "./hud-position-helper.js";
 
 /**
  * State tracking for the active template HUD session
@@ -256,9 +257,11 @@ function _openOrUpdateHud({ activity, data, shape, regionIndex, regionCount, lay
     });
 
     document.body.appendChild(hudElement);
+    const detachPositioning = attachHudPositioning(hudElement);
 
     activeHudSession = {
         hudElement,
+        detachPositioning,
         activity,
         data,
         shape,
@@ -515,8 +518,9 @@ function _closeHudSession(immediate = false) {
 
     if (!activeHudSession) return;
 
-    const hud = activeHudSession.hudElement;
+    const { hudElement: hud, detachPositioning } = activeHudSession;
     activeHudSession = null;
+    detachPositioning?.();
 
     if (!hud || !hud.isConnected) return;
 

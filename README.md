@@ -46,6 +46,7 @@ All features can be configured within the comprehensive **Settings Dashboard** (
    - *Auto-Target Tokens in Spell Templates* — automatically target tokens inside templates placed by you.
    - *Snap Templates to Grid Intersections* — snap circle and square templates to grid vertices when placed by you.
    - *Template Placement Controls HUD & Scroll Rotation* — floating banner with live controls, rotation angle readout, and inverts scrolling so wheel rotates and Shift+wheel zooms.
+   - *Summoning Placement Controls HUD* — floating banner with key controls, live distance vs. max range badge, canvas range boundary ring, and single-row compact layout during summoning placement.
    - *Enhanced Teleport Targeting UI* — floating HUD banner, ghost token preview, and ESC cancellation for teleport presets.
 
 ---
@@ -103,6 +104,27 @@ All features can be configured within the comprehensive **Settings Dashboard** (
     * **Grid Snapping Override**: Shows a `<kbd>Shift</kbd> Free Snap` badge when **Snap Templates to Grid Intersections** is active, letting players know they can hold Shift to place freely off-grid.
     * **Cancellation**: Shows `<kbd>ESC / Right-Click</kbd>` plus an interactive, one-click **[Cancel]** button with hover animations to immediately abort template placement.
   * **Context-Aware Template Info**: Automatically displays the casting item or spell's name, custom artwork image, and shape dimensions (e.g. *Fireball* • 20 ft Radius, *Cone of Cold* • 60 ft Cone) with multi-shape step progression (e.g. *Shape 1 of 2*) for multi-area abilities.
+* **Enhanced Summoning Placement HUD & Range Preview**: Displays a dedicated, floating glassmorphic HUD banner at the top of the canvas during summoning placement (e.g. *Summon Beast*, *Find Familiar*, *Conjure Animals*, *Faithful Hound*), seamlessly matching the sleek aesthetic of the Template Placement HUD and Teleport Targeting UI.
+  * **Scroll Wheel Controls**:
+    * **Scroll**: Zooms the canvas camera in and out freely.
+    * **Shift + Scroll**: Rotates the token's facing direction in 15° increments (or 30° on hexagonal grids), providing intuitive token orientation before dropping summons onto the board.
+  * **Live Range & Distance Readout**:
+    * Computes real-time distance from the caster token to the preview position using `canvas.grid.measurePath`.
+    * **In Range Badge**: Displays an emerald glowing badge with `✓ In Range (X / Max ft)` when within the spell's allowed reach.
+    * **Out of Range Badge**: Switches to a crimson warning badge with `⚠ Out of Range (X / Max ft)` when moving beyond the spell's reach.
+    * Gracefully adapts for touch spells (5 ft reach) and general summoning activities with unknown or unlimited range.
+  * **Canvas Range Boundary Ring**:
+    * Automatically draws an ethereal conjuration boundary circle around the caster token on `canvas.controls` indicating the maximum reach of the summoning spell.
+    * Dynamically pulses from arcane violet to warning red if the placement cursor moves beyond maximum range.
+    * Automatically cleans up and destroys canvas graphics once placement completes or is cancelled.
+  * **Multi-Creature Summon Step Tracking**:
+    * When summoning multiple creatures (e.g. 4 wolves, 8 fey creatures), the HUD subtitle dynamically updates in real time to show progress (e.g. *Beast of the Air • Summon 1 of 4* -> *Summon 2 of 4*).
+  * **On-Screen Placement Shortcuts**:
+    * Displays quick badges for `<kbd>Scroll</kbd> Zoom`, `<kbd>Shift + Scroll</kbd> Facing`, `<kbd>Click</kbd> Place`, and `<kbd>Shift</kbd> Free Snap` (to place freely without snapping to grid vertices or cell centers).
+    * Features `<kbd>ESC / Right-Click</kbd>` cancellation plus an interactive, animated **[Cancel]** button to immediately abort placement.
+  * **Single-Row Compact Layout**: Enforces non-wrapping (`white-space: nowrap`) across all distance badges and keycaps to prevent vertical text breaking, ensuring the banner maintains an elegant, single-row height.
+  * **Visible Canvas Dynamic Centering**: Automatically centers the banner on the unobstructed canvas space between the left controls toolbar and the right sidebar (expanded or collapsed), with smooth animated realignment when the sidebar is toggled.
+  * **Automatic Token Artwork Resolution for Previews**: Fixes a core DnD5e / Foundry V14 limitation where preview tokens during summoning frequently show the default "Mystery Man" placeholder instead of the creature's artwork. Checks for configured default wildcard images (such as Token HUD Wildcard's "Wildcard drop default" setting), automatically evaluates wildcard token image patterns using `actor.getTokenImages()`, and falls back to the actor's portrait artwork (`actor.img`) so the canvas preview renders the authentic creature art immediately.
 * **Auto-Clear Movement History**: Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).
 * **Disable Underground Token Hiding**: Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Compatible with Foundry native Scene Levels. Disabled by default.
 * **Enhanced Teleport Targeting UI (Automated Animations)**: Significantly improves the destination selection UX when triggering a teleport preset (such as *Misty Step*, *Dimension Door*, or custom teleport animations) in the **Automated Animations** (`autoanimations`) module.

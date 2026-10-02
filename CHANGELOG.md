@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.36.0] - 2026-10-02
+### Added
+- **Enhanced Summoning Placement HUD & Range Preview**:
+  - Adds a dedicated, floating HUD banner at the top of the canvas during summoning placement (e.g. *Summon Beast*, *Find Familiar*, *Conjure Animals*, *Faithful Hound*), seamlessly matching the sleek glassmorphic aesthetics of the Template Placement HUD and Teleport Targeting UI.
+  - **Scroll Wheel Controls**:
+    - **Scroll**: Zooms the canvas camera in and out smoothly.
+    - **Shift + Scroll**: Rotates the preview token's facing direction in 15° increments (or 30° on hexagonal grids), providing intuitive and effortless token orientation before dropping summons onto the board.
+  - **Live Range & Distance Readout**:
+    - Calculates real-time distance from the caster token to the preview position using `canvas.grid.measurePath`.
+    - **In Range Badge**: Displays an emerald glowing badge with `✓ In Range (X / Max ft)` when within the spell's allowed reach.
+    - **Out of Range Badge**: Switches to a crimson warning badge with `⚠ Out of Range (X / Max ft)` when moving beyond the spell's reach.
+    - Gracefully adapts for touch spells (5 ft reach) and general summoning activities with unknown or unlimited range.
+  - **Canvas Range Boundary Ring**:
+    - Automatically draws an ethereal conjuration boundary circle around the caster token on `canvas.controls` indicating the maximum reach of the summoning spell.
+    - Dynamically updates from arcane violet to warning red if the placement cursor moves beyond maximum range.
+    - Automatically cleans up and destroys canvas graphics once placement completes or is cancelled.
+  - **Multi-Creature Summon Step Tracking**:
+    - When summoning multiple creatures (e.g. 4 wolves, 8 fey creatures), the HUD subtitle dynamically updates in real time to show progress (e.g. *Beast of the Air • Summon 1 of 4* -> *Summon 2 of 4*).
+  - **On-Screen Placement Shortcuts**:
+    - Displays quick badges for `<kbd>Scroll</kbd> Zoom`, `<kbd>Shift + Scroll</kbd> Facing`, `<kbd>Click</kbd> Place`, and `<kbd>Shift</kbd> Free Snap` (to place freely without snapping to grid vertices or cell centers).
+    - Features `<kbd>ESC / Right-Click</kbd>` cancellation plus an interactive, animated **[Cancel]** button to immediately abort placement.
+  - **Single-Row Compact HUD Layout**:
+    - Enforced non-wrapping (`white-space: nowrap`) across the live distance badge (`✓ In Range (X / Max ft)`), on-screen control chips, and `<kbd>ESC / Right-Click</kbd>` cancellation keycap, preventing vertical text splitting and keeping the HUD banner sleek and compact.
+  - **Visible Canvas Dynamic HUD Centering**:
+    - Shifted the positioning of all floating HUD banners (Summoning Placement HUD, Template Placement HUD, and Teleport Targeting UI) so they dynamically center on the open, visible canvas area rather than the total browser window width.
+    - Accurately balances between the left scene controls toolbar and the right sidebar in both expanded and collapsed states, with smooth animated realignment when the sidebar is toggled or the browser is resized.
+  - **Automatic Token Artwork Resolution for Previews**: Fixes a core DnD5e / Foundry V14 limitation where summoning preview tokens frequently show the default "Mystery Man" placeholder instead of the creature's artwork (due to un-evaluated wildcard token paths or unconfigured prototype token textures). Inspects the summoned actor, checks for configured default wildcard images (such as Token HUD Wildcard's "Wildcard drop default" setting), dynamically evaluates wildcard token patterns using `actor.getTokenImages()`, and falls back to the actor's portrait artwork (`actor.img`) so the native canvas preview token renders the authentic creature art immediately.
+  - **Settings Dashboard Integration**:
+    - Configurable with a GM world master toggle under **Token & Template Behaviors** (`enableSummonControlsHUD`) and an individual player toggle under **Personal Preferences** (`clientEnableSummonControlsHUD`). Enabled by default.
+
 ## [14.35.0] - 2026-10-02
 ### Added
 - **Template Placement Controls HUD & Scroll Rotation**:

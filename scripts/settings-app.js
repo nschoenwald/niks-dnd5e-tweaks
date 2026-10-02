@@ -295,6 +295,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
+                            },
+                            {
+                                key: "clientEnableSummonControlsHUD",
+                                name: "Summoning Placement Controls HUD",
+                                hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
                             }
                         ]
                     }
@@ -654,6 +662,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableTemplateControlsHUD",
                                 name: "Template Placement Controls HUD & Scroll Rotation",
                                 hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableSummonControlsHUD",
+                                name: "Summoning Placement Controls HUD",
+                                hint: "Displays a floating HUD banner with key controls, live distance vs. max range badge, and canvas range boundary ring during summoning placement.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
