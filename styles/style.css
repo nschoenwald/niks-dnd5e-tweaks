@@ -354,7 +354,7 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     pointer-events: none;
 }
 
-/* Concentrating Item Pill (Above Roll) */
+/* Concentrating Item Pill (Above Roll / Prompt) */
 .nd5t-concentrating-pill-container {
     display: flex;
     flex-wrap: wrap;
@@ -362,6 +362,10 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     gap: 5px;
     margin-block: 4px 6px;
     width: 100%;
+}
+
+.chat-card.request-card .nd5t-concentrating-pill-container {
+    margin-block: 2px 6px;
 }
 
 .nd5t-concentrating-pill {
@@ -1468,9 +1472,11 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     content: "Template";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"])::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="breakConcentration"], [data-action="endConcentration"], [data-forward-action="breakConcentration"], [data-forward-action="endConcentration"])::after {
-    content: "Break";
+/* Remove native break concentration button on save result chat cards */
+.message button.icon:is([data-action="breakConcentration"], [data-forward-action="breakConcentration"]),
+.message .icon-row > ul > li:has(> button.icon:is([data-action="breakConcentration"], [data-forward-action="breakConcentration"])),
+.message .icon-row:has(> ul > li:only-child > button.icon:is([data-action="breakConcentration"], [data-forward-action="breakConcentration"])) {
+    display: none !important;
 }
 
 /* Action buttons: allow wrapping onto multiple lines when too wide for one line */
@@ -1479,6 +1485,12 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul:has(> li 
     flex-wrap: wrap;
     overflow: visible;
     row-gap: 4px;
+}
+
+/* Remove the play button icon next to the action button row */
+body.nd5t-chat-card-styling .icon-row > i:is(.fa-circle-play, [class*="fa-circle-play"]),
+body.nd5t-chat-card-styling .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])) > i {
+    display: none !important;
 }
 
 /* ─── Button Colors — Light Theme (Default) ─── */

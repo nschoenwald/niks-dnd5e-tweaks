@@ -31,6 +31,11 @@ export function initAutoRollConcentration() {
         if (html instanceof HTMLElement) _onRenderChatMessage(message, html);
     });
 
+    Hooks.on("dnd5e.renderChatMessage", (message, html) => {
+        const root = html instanceof HTMLElement ? html : html?.[0];
+        if (root instanceof HTMLElement) _onRenderChatMessage(message, root);
+    });
+
     debug("Auto-Roll Concentration | Initialized");
 }
 
@@ -78,68 +83,132 @@ export function getConcentratingItems(actor) {
     const items = [];
     const seenKeys = new Set();
 
-    // 1. Inspect actor.concentration.effects (canonical in dnd5e 5.2+ / 6.x)
-    for (const effect of act.concentration?.effects ?? []) {
-        if (!effect.active) continue;
+    const isGenericLabel = (str) => {
+        if (!str || typeof str !== "string") return true;
+        const lower = str.trim().toLowerCase();
+        return lower === "concentration"
+            || lower === "concentrating"
+            || lower === (game.i18n.localize("EFFECT.DND5E.StatusConcentrating") || "").toLowerCase()
+            || lower === (game.i18n.localize("DND5E.Concentration") || "").toLowerCase();
+    };
 
-        const itemFlag = effect.getFlag("dnd5e", "item");
+    const addConcentratingItem = (name, img, uuid) => {
+        if (!name || isGenericLabel(name)) return;
+        const key = (uuid || name).toLowerCase();
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        items.push({
+            name,
+            img: img || "icons/svg/aura.svg",
+            uuid: uuid || null
+        });
+    };
+
+    const resolveFromEffect = (effect) => {
+        if (!effect) return;
+        const itemFlag = effect.getFlag?.("dnd5e", "item") ?? effect.flags?.dnd5e?.item;
+        const activityFlag = effect.getFlag?.("dnd5e", "activity") ?? effect.flags?.dnd5e?.activity;
+
         let name = itemFlag?.data?.name ?? itemFlag?.name;
         let img = itemFlag?.data?.img ?? itemFlag?.img;
         let uuid = itemFlag?.uuid ?? null;
 
-        // Try resolving live embedded item from actor by id
-        if (itemFlag?.id) {
+        if (name && isGenericLabel(name)) name = null;
+
+        // Try direct UUID from flag
+        if (!name && uuid) {
+            try {
+                const doc = fromUuidSync(uuid);
+                if (doc && !isGenericLabel(doc.name)) {
+                    name = doc.name;
+                    img = doc.img;
+                    uuid = doc.uuid;
+                }
+            } catch {}
+        }
+
+        // Try live item on actor by ID
+        if ((!name || !img) && itemFlag?.id) {
             const liveItem = act.items?.get(itemFlag.id);
-            if (liveItem) {
+            if (liveItem && !isGenericLabel(liveItem.name)) {
                 name = liveItem.name;
                 img = liveItem.img;
                 uuid = liveItem.uuid;
             }
         }
 
-        // If no flag item or missing name, try effect origin document
-        if (!name && effect.origin) {
+        // Try activity UUID
+        if ((!name || !img) && activityFlag?.uuid) {
+            try {
+                const actDoc = fromUuidSync(activityFlag.uuid);
+                const itemDoc = actDoc?.item ?? actDoc;
+                if (itemDoc && !isGenericLabel(itemDoc.name)) {
+                    name = itemDoc.name;
+                    img = itemDoc.img;
+                    uuid = itemDoc.uuid;
+                }
+            } catch {}
+        }
+
+        // Try effect origin document
+        if ((!name || !img) && effect.origin) {
             try {
                 const originDoc = fromUuidSync(effect.origin);
-                if (originDoc) {
+                if (originDoc && !isGenericLabel(originDoc.name)) {
                     name = originDoc.name;
                     img = originDoc.img;
                     uuid = originDoc.uuid;
                 }
-            } catch (e) {
-                // Ignore invalid origin UUID
-            }
+            } catch {}
         }
 
         // Fallback: strip leading status prefix from effect name (e.g. "Concentrating: Bless" -> "Bless")
         if (!name && effect.name) {
-            name = effect.name.replace(/^[^:]+:\s*/, "").trim();
-            img = effect.img;
+            const cleaned = effect.name.replace(/^[^:]+:\s*/, "").trim();
+            if (!isGenericLabel(cleaned)) {
+                name = cleaned;
+            }
         }
 
-        const key = (uuid || name || "").toLowerCase();
-        if (name && !seenKeys.has(key)) {
-            seenKeys.add(key);
-            items.push({
-                name,
-                img: img || effect.img || "icons/svg/aura.svg",
-                uuid: uuid || null
-            });
+        // If img is generic concentration status icon, try finding the item by name in actor's items
+        if (name && (!img || img.includes("statuses/concentrating.svg") || img.includes("aura.svg"))) {
+            const matchingItem = act.items?.getName?.(name);
+            if (matchingItem) {
+                img = matchingItem.img;
+                if (!uuid) uuid = matchingItem.uuid;
+            }
+        }
+
+        if (name && !isGenericLabel(name)) {
+            addConcentratingItem(name, img, uuid);
+        }
+    };
+
+    // 1. Inspect actor.concentration.effects (canonical in dnd5e 5.2+ / 6.x)
+    for (const effect of act.concentration?.effects ?? []) {
+        if (effect.active !== false) resolveFromEffect(effect);
+    }
+
+    // 2. Fallback: inspect act.effects and act.appliedEffects for any concentrating status
+    if (items.length === 0) {
+        const allEffects = [...(act.effects ?? []), ...(act.appliedEffects ?? [])];
+        const concStatus = CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating";
+        for (const effect of allEffects) {
+            if (effect.active === false) continue;
+            const isConc = effect.statuses?.has(concStatus)
+                || effect.statuses?.has("concentrating")
+                || effect.statuses?.has("concentration")
+                || effect.system?.type === "concentrating";
+            if (isConc) {
+                resolveFromEffect(effect);
+            }
         }
     }
 
-    // 2. Fallback to actor.concentration.items if effects yielded nothing
+    // 3. Inspect actor.concentration.items
     if (items.length === 0 && act.concentration?.items?.size) {
         for (const item of act.concentration.items) {
-            const key = (item.uuid || item.name || "").toLowerCase();
-            if (item?.name && !seenKeys.has(key)) {
-                seenKeys.add(key);
-                items.push({
-                    name: item.name,
-                    img: item.img || "icons/svg/aura.svg",
-                    uuid: item.uuid || null
-                });
-            }
+            if (item?.name && !isGenericLabel(item.name)) addConcentratingItem(item.name, item.img, item.uuid);
         }
     }
 
@@ -168,23 +237,40 @@ function _patchChallengeConcentration() {
 
             const connectedOwners = game.users.filter(u => !u.isGM && u.active && this.testUserPermission(u, "OWNER"));
             if (connectedOwners.length > 0) {
-                const isConcentrating = this.concentration?.effects?.size > 0;
+                const isConcentrating = this.concentration?.effects?.size > 0 || this.statuses?.has("concentrating");
                 if (!isConcentrating) return null;
 
                 const dc = options?.dc ?? 10;
                 const button = { dc, format: "short", type: "concentration" };
                 if (options?.ability in CONFIG.DND5E.abilities) button.ability = options.ability;
 
+                const concentratingItems = getConcentratingItems(this);
                 debug(`Auto-Roll Concentration | Whispering concentration challenge prompt for ${this.name} only to connected player owner(s).`);
                 return ChatMessage.implementation.create({
                     speaker: ChatMessage.implementation.getSpeaker({ actor: this }),
                     system: { broadcast: false, buttons: [button] },
                     type: "prompt",
-                    whisper: connectedOwners.map(u => u.id)
+                    whisper: connectedOwners.map(u => u.id),
+                    flags: {
+                        [MODULE_ID]: {
+                            isConcentrationPrompt: true,
+                            actorUuid: this.uuid,
+                            concentratingItems
+                        }
+                    }
                 });
             }
         }
-        return originalChallengeConcentration.call(this, options, ...args);
+        const msg = await originalChallengeConcentration.call(this, options, ...args);
+        if (msg && msg.canUserModify?.(game.user, "update")) {
+            const concentratingItems = getConcentratingItems(this);
+            msg.update({
+                [`flags.${MODULE_ID}.isConcentrationPrompt`]: true,
+                [`flags.${MODULE_ID}.actorUuid`]: this.uuid,
+                [`flags.${MODULE_ID}.concentratingItems`]: concentratingItems
+            }).catch(() => {});
+        }
+        return msg;
     };
     _challengeConcentrationPatched = true;
 }
@@ -410,24 +496,82 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
  * @param {HTMLElement} html
  */
 function _onRenderChatMessage(message, html) {
-    // Process messages flagged as a concentration save by our module or by midi-qol.
-    // _onRollConcentration stamps this flag on ALL concentration saves (auto-rolled or manual)
-    // so we don't need to rely on the native roll.options.isConcentration which is not set
-    // by the dnd5e system on the serialised Roll object.
+    if (!html || !(html instanceof HTMLElement)) return;
+
     const isMidiConc = message.flags?.["midi-qol"]?.isConcentrationCheck;
-    if (!message.flags?.[MODULE_ID]?.isConcentrationSave && !isMidiConc) return;
+    const isModuleConcSave = message.flags?.[MODULE_ID]?.isConcentrationSave;
+    const isModuleConcPrompt = message.flags?.[MODULE_ID]?.isConcentrationPrompt;
+
+    // Detect native DnD5e concentration save roll card
+    const isNativeSaveCard = message.system?.type === "concentration"
+        || message.flags?.dnd5e?.roll?.saveType === "concentration"
+        || message.flags?.dnd5e?.roll?.isConcentration === true
+        || (message.type === "save" && message.system?.type === "concentration")
+        || message.rolls?.some(r => r.options?.isConcentration || r.options?.saveType === "concentration");
+
+    // Detect native DnD5e concentration prompt / request card
+    const hasPromptButtons = message.type === "prompt"
+        && (message.system?.buttons?.some?.(b => b.type === "concentration") || message.system?.type === "concentration");
+
+    const hasPromptDOM = !hasPromptButtons && (
+        html.querySelector(".chat-card.request-card button[data-action='roll'] .fa-shield-heart")
+        || html.querySelector(".chat-card.request-card button[data-action='roll'] :is(.visible-dc, .hidden-dc)")
+    );
+    const isPromptFromDOM = hasPromptDOM && /concentration/i.test(hasPromptDOM.textContent || hasPromptDOM.parentElement?.textContent || "");
+
+    const isPromptCard = isModuleConcPrompt || hasPromptButtons || isPromptFromDOM;
+    const isSaveCard = isModuleConcSave || isMidiConc || isNativeSaveCard;
+
+    if (!isPromptCard && !isSaveCard) return;
 
     // Resolve the actor
     const actorUuid = message.flags?.[MODULE_ID]?.actorUuid ?? message.flags?.["midi-qol"]?.actorUuid;
     let actor = actorUuid ? fromUuidSync(actorUuid) : null;
+    if (actor?.actor) actor = actor.actor;
+
+    if (!actor && typeof message.getAssociatedActor === "function") {
+        actor = message.getAssociatedActor();
+    }
+
+    if (!actor) {
+        const tokenUuid = html.querySelector("[data-token-uuid]")?.dataset.tokenUuid;
+        if (tokenUuid) {
+            try {
+                const tokenDoc = fromUuidSync(tokenUuid);
+                actor = tokenDoc?.actor ?? tokenDoc;
+            } catch {}
+        }
+    }
+
+    if (!actor) {
+        const domActorUuid = html.querySelector("[data-actor-uuid]")?.dataset.actorUuid;
+        if (domActorUuid) {
+            try {
+                const doc = fromUuidSync(domActorUuid);
+                actor = doc?.actor ?? doc;
+            } catch {}
+        }
+    }
+
+    if (!actor && message.speaker?.token) {
+        try {
+            const scene = message.speaker.scene ? game.scenes.get(message.speaker.scene) : canvas.scene;
+            const token = scene?.tokens?.get(message.speaker.token);
+            if (token?.actor) actor = token.actor;
+        } catch {}
+    }
+
     if (!actor && message.speaker?.actor) {
         actor = game.actors.get(message.speaker.actor);
     }
+
     if (!actor) return;
 
-    // 1. Inject Concentrating Items Pill Container (Above Roll)
-    const concentratingItems = message.flags?.[MODULE_ID]?.concentratingItems
-        ?? getConcentratingItems(actor);
+    // 1. Inject Concentrating Items Pill Container
+    const storedItems = message.flags?.[MODULE_ID]?.concentratingItems;
+    const concentratingItems = Array.isArray(storedItems) && storedItems.length > 0
+        ? storedItems
+        : getConcentratingItems(actor);
 
     if (!html.querySelector(".nd5t-concentrating-pill-container") && concentratingItems.length > 0) {
         const pillContainer = document.createElement("div");
@@ -465,24 +609,61 @@ function _onRenderChatMessage(message, html) {
             pillContainer.appendChild(pill);
         }
 
-        // Insert above the roll result
-        const rollSection = html.querySelector(".chat-card + section.icon-row, .icon-row:has(button.dice-roll), button.dice-roll")
-            ?.closest("section.icon-row, .dice-roll")
-            ?? html.querySelector("button.dice-roll");
-
-        if (rollSection && rollSection.parentNode) {
-            rollSection.parentNode.insertBefore(pillContainer, rollSection);
+        if (isPromptCard) {
+            // In a prompt / request card: insert directly before .card-buttons or inside .chat-card
+            const requestCard = html.querySelector(".chat-card.request-card") || html.querySelector(".chat-card");
+            const cardButtons = requestCard?.querySelector(".card-buttons") || html.querySelector(".card-buttons");
+            if (cardButtons && cardButtons.parentNode) {
+                cardButtons.parentNode.insertBefore(pillContainer, cardButtons);
+            } else if (requestCard) {
+                requestCard.prepend(pillContainer);
+            } else {
+                const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;
+                cardTarget.prepend(pillContainer);
+            }
         } else {
-            const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;
-            cardTarget.prepend(pillContainer);
+            // In a roll card: insert above the roll result
+            const rollSection = html.querySelector(".chat-card + section.icon-row, .icon-row:has(button.dice-roll), button.dice-roll")
+                ?.closest("section.icon-row, .dice-roll")
+                ?? html.querySelector("button.dice-roll");
+
+            if (rollSection && rollSection.parentNode) {
+                rollSection.parentNode.insertBefore(pillContainer, rollSection);
+            } else {
+                const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;
+                cardTarget.prepend(pillContainer);
+            }
+        }
+
+        // Backfill flags if user can modify message and flags not yet saved
+        if (message.canUserModify?.(game.user, "update") && !message.flags?.[MODULE_ID]?.concentratingItems) {
+            message.update({
+                [`flags.${MODULE_ID}.${isPromptCard ? "isConcentrationPrompt" : "isConcentrationSave"}`]: true,
+                [`flags.${MODULE_ID}.actorUuid`]: actor.uuid,
+                [`flags.${MODULE_ID}.concentratingItems`]: concentratingItems
+            }).catch(() => {});
         }
     }
 
-    // 2. Inject "End Concentration" Button
-    // Avoid duplicate buttons if re-rendered
-    if (html.querySelector(".nd5t-end-concentration-btn")) return;
+    // 2. Remove native DnD5e "Break" concentration button from save cards (so we don't have duplicate buttons)
+    if (!isPromptCard) {
+        const nativeBreakBtn = html.querySelector("button.icon:is([data-action='breakConcentration'], [data-forward-action='breakConcentration'])");
+        if (nativeBreakBtn) {
+            const li = nativeBreakBtn.closest("li");
+            const ul = li?.parentElement;
+            const iconRow = ul?.closest(".icon-row");
+            if (li) li.remove();
+            else nativeBreakBtn.remove();
+            if (ul && !ul.children.length && iconRow) iconRow.remove();
+        }
+    }
 
-    const isConcentrating = actor.concentration?.effects?.size > 0;
+    // 3. Inject "End Concentration" Button (only into save roll cards, never prompt cards)
+    if (isPromptCard || html.querySelector(".nd5t-end-concentration-btn")) return;
+
+    const isConcentrating = (actor.concentration?.effects?.size > 0)
+        || (actor.statuses?.has?.("concentrating"))
+        || (concentratingItems.length > 0);
     const canManage = actor.isOwner || game.user.isGM;
 
     // Create the button element
@@ -529,7 +710,6 @@ function _onRenderChatMessage(message, html) {
         }
     });
 
-    // Append to card body or footer
     const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;
     cardTarget.appendChild(button);
 }

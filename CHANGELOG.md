@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.34.1] - 2026-10-02
+### Fixed
+- **Concentration Prompt & Request Cards Pill Display**:
+  - Fixed an issue where the **"Concentrating on: [Item Name]"** pill failed to render on concentration challenge prompt / request cards (`.request-card`).
+  - Concentration prompt cards now display the concentrating item pill directly above the DC challenge roll button when an item/spell is being concentrated on, keeping the save prompt clean without adding extra buttons.
+  - Suppressed generic "Concentrating on: Concentration" badges: if concentration is merely toggled as a generic status condition and not associated with a specific item or spell, the pill is cleanly omitted.
+
+### Removed
+- **Duplicate Native Break Concentration Button**:
+  - Removed the redundant native small "Break" concentration button (`[ ⃠ BREAK ]`) from saving throw result chat cards, leaving our primary, full-width **"End Concentration"** button at the bottom of the card.
+- **Chat Card Action Button Row Play Icon**:
+  - Removed the default system play button icon (`.icon-row > i.fa-circle-play`) situated directly to the left of the action button row in compact chat cards when Chat Card Styling is enabled.
+  - Eliminates visual clutter and frees up horizontal row width, allowing action buttons (such as Save, Damage, and Template) to fit comfortably side-by-side without prematurely wrapping or overflowing.
+
 ## [14.34.0] - 2026-10-01
 ### Added
 - **Context Menu Styling**:
