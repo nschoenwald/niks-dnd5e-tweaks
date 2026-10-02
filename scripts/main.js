@@ -26,6 +26,7 @@ import { initTemplateTargeting } from "./features/canvas-tokens/template-targeti
 import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/canvas-tokens/auto-clear-movement-history.js";
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
+import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
 
 // Combat & Automation
 import { initAutoAddTokensToCombat } from "./features/combat-automation/auto-add-tokens-to-combat.js";
@@ -335,6 +336,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableAutoanimationsTeleportUI", {
         name: "Enhanced Teleport Targeting UI (Personal)",
         hint: "Enables the floating destination HUD, ghost token preview, and ESC cancellation for Automated Animations teleport presets (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableTemplateControlsHUD", {
+        name: "Template Placement Controls HUD & Scroll Rotation (Personal)",
+        hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -778,6 +788,16 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableAutoanimationsTeleportUI", {
         name: "Enhanced Teleport Targeting UI (Autoanimations)",
         hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableTemplateControlsHUD", {
+        name: "Template Placement Controls HUD & Scroll Rotation",
+        hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1345,6 +1365,7 @@ Hooks.once("setup", () => {
     initAutoCollapseDamageTrays();
     initSuppressBloodiedDead();
     initAutoanimationsTeleportUI();
+    initTemplatePlacementHUD();
 });
 
 Hooks.once("ready", async () => {
@@ -1364,6 +1385,10 @@ Hooks.once("ready", async () => {
     // of each feature registering its own game.socket.on() listener,
     // which can't be cleanly de-registered if a feature is hot-toggled.
     game.socket.on(`module.${MODULE_ID}`, (data) => {
+        if (data?.action === "clearTargets") {
+            canvas.tokens?.setTargets([]);
+            return;
+        }
         damagePromptSocketMessage(data);
         selfEffectSocketMessage(data);
         mageSlayerSocketMessage(data);

@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.35.0] - 2026-10-02
+### Added
+- **Template Placement Controls HUD & Scroll Rotation**:
+  - Adds an informative, floating HUD banner at the top of the canvas whenever placing a spell or item template, mirroring the sleek glassmorphic aesthetic of the Enhanced Teleport Targeting UI.
+  - **Inverted Scroll Wheel Controls**: Intelligently overrides mouse wheel scrolling while in template placement mode:
+    - **Scrolling**: Directly rotates the preview shape in fine 5° steps (or 15° square snap), restoring the effortless single-handed rotation experience from older versions of DnD5e without requiring modifiers.
+    - **Shift + Scrolling**: Zooms the canvas in and out, allowing you to freely adjust the camera zoom while maintaining your template placement session.
+  - **Live Controls & Shortcuts**: Clearly displays essential template placement controls directly on screen:
+    - **Rotation**: Shows `<kbd>Scroll</kbd>` to rotate directional templates (cones, lines, rays, cubes/squares), featuring a live rotation angle badge (e.g. `0°`, `45°`, `90°`) that updates dynamically as you scroll.
+    - **Canvas Zoom**: Shows `<kbd>Shift</kbd> + <kbd>Scroll</kbd>` to zoom the canvas.
+    - **Placement**: Shows `<kbd>Click</kbd>` to confirm placement at the cursor position.
+    - **Grid Snapping Override**: Shows a `<kbd>Shift</kbd> Free Snap` badge whenever the **Snap Templates to Grid Intersections** tweak is active, informing players they can hold Shift to bypass vertex snapping and place freely.
+    - **Cancellation**: Shows `<kbd>ESC / Right-Click</kbd>` along with an interactive, one-click **[Cancel]** button with hover animations to immediately abort template placement.
+  - **Context-Aware Template Details**: Displays the spell or item's name, custom icon image (or matching glowing shape badge), and dimensions subtitle (e.g. *Fireball* • 20 ft Radius, *Cone of Cold* • 60 ft Cone), including step progress (e.g. *Shape 1 of 2*) for multi-placement activities.
+  - **Settings Dashboard Integration**: Configurable with a world master toggle under **Token & Template Behaviors** (`enableTemplateControlsHUD`) and an individual player toggle under **Personal Preferences** (`clientEnableTemplateControlsHUD`). Enabled by default.
+- **Global Target Clearing Socket Handler**:
+  - Added a `clearTargets` socket message handler to the module's central socket dispatcher, allowing GMs, scripts, or macros to instantly and cleanly clear token targets across all connected player clients simultaneously.
+
+### Changed
+- **Chat Card Action Button Row Play Icon Restored & Top-Row Aligned**:
+  - Reverted the removal of the default system play button icon (`.icon-row > i.fa-circle-play`) situated to the left of the action button row in compact chat cards when Chat Card Styling is enabled.
+  - Aligned the play icon to the first row of action buttons (`align-items: flex-start` with 25px height centering) so it remains cleanly level with the top row instead of awkwardly centering between multiple lines when action buttons wrap.
+
+### Fixed
+- **Template Auto-Targeting Live Preview (Foundry V14 & DnD5e v6)**:
+  - Fixed an issue where live preview target highlighting did not work while moving or rotating templates. In DnD5e 6.x and Foundry V14, `AbilityTemplate` was deprecated in favor of `TemplatePlacement` and region-based shapes placed via `canvas.regions.placeRegions()`, which bypassed the legacy `dnd5e.createActivityTemplate` hook.
+  - Re-architected live preview targeting to wrap `RegionLayer.prototype.placeRegion` and intercept `options.onChange`, testing enclosed tokens against live preview `RegionDocument` instances in real time via native `TokenDocument#testInsideRegion()`.
+  - Added smart target diffing to eliminate unnecessary canvas re-renders and socket broadcasts during micro-movements when the set of targeted tokens has not changed.
+  - Added target state restoration: if template placement is cancelled or dismissed (via ESC, right-click, or the HUD Cancel button), the user's previous target selection is restored.
+  - Added token visibility protection: non-GM players cannot auto-target tokens that are invisible or hidden to them.
+  - Added multi-region batch containment support on final placement, ensuring multi-area spells (e.g. multiple cubes or spheres) target tokens across all placed shapes rather than subsequent regions overwriting preceding ones.
+  - Removed all obsolete legacy `AbilityTemplate` code.
+
+### Removed
+- **Legacy V13 Compatibility Code Cleanup**:
+  - Removed all deprecated V13 compatibility hooks (`dnd5e.createActivityTemplate`, `preCreateMeasuredTemplate`) and legacy `AbilityTemplate` preview overrides from `template-grid-snap.js`, fully aligning the feature with Foundry V14 and DnD5e 6.x.
+  - Replaced retired `foundry.utils.duplicate()` call in `disable-active-effect-expiry.js` with `foundry.utils.deepClone()`.
+  - Cleaned up lingering V13 documentation references across `README.md`.
+
 ## [14.34.1] - 2026-10-02
 ### Fixed
 - **Concentration Prompt & Request Cards Pill Display**:

@@ -1487,10 +1487,20 @@ body.nd5t-chat-card-styling .chat-message.message.compact .icon-row>ul:has(> li 
     row-gap: 4px;
 }
 
-/* Remove the play button icon next to the action button row */
-body.nd5t-chat-card-styling .icon-row > i:is(.fa-circle-play, [class*="fa-circle-play"]),
-body.nd5t-chat-card-styling .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])) > i {
-    display: none !important;
+/* Align play button icon to the first row of action buttons */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.compact .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])),
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])) {
+    align-items: flex-start;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.compact .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])) > i,
+body.nd5t-chat-card-styling .chat-message.message.compact .icon-row:has(> ul > li > button.icon:is([data-action], [data-forward-action])) > i {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 25px;
+    padding-block-start: 0;
 }
 
 /* ─── Button Colors — Light Theme (Default) ─── */
@@ -3202,6 +3212,216 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 }
 
 .nd5t-teleport-cancel-btn:active {
+    transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Template Placement Controls HUD
+   ========================================================================== */
+
+#nd5t-template-hud {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+    user-select: none;
+    animation: nd5t-template-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#nd5t-template-hud.nd5t-template-fade-out {
+    animation: nd5t-template-slide-out 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+@keyframes nd5t-template-slide-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -18px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+@keyframes nd5t-template-slide-out {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -14px) scale(0.96);
+    }
+}
+
+.nd5t-template-hud-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(18, 22, 28, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 30px;
+    padding: 8px 18px 8px 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(245, 158, 11, 0.25);
+    color: #fef3c7;
+    font-family: var(--dnd5e-font-roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.nd5t-template-badge-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(220, 38, 38, 0.2));
+    border: 1px solid rgba(245, 158, 11, 0.6);
+    color: #fbbf24;
+    font-size: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+}
+
+.nd5t-template-badge-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.nd5t-template-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 110px;
+}
+
+.nd5t-template-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.nd5t-template-subtitle {
+    font-size: 11px;
+    color: #fcd34d;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.nd5t-template-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+}
+
+.nd5t-template-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nd5t-template-control-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: #e2e8f0;
+}
+
+.nd5t-template-kbd-combo {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.nd5t-template-kbd-plus {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.nd5t-template-kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fef08a;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.nd5t-template-control-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.nd5t-template-rotation-val {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(245, 158, 11, 0.25);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fef08a;
+    letter-spacing: 0.2px;
+}
+
+.nd5t-template-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nd5t-template-cancel-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: rgba(200, 40, 50, 0.2);
+    border: 1px solid rgba(240, 70, 80, 0.4);
+    border-radius: 16px;
+    color: #ff9999;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nd5t-template-cancel-btn:hover {
+    background: rgba(220, 40, 50, 0.4);
+    border-color: rgba(255, 80, 90, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(240, 60, 70, 0.4);
+    transform: scale(1.03);
+}
+
+.nd5t-template-cancel-btn:active {
     transform: scale(0.97);
 }
 

@@ -287,6 +287,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
+                            },
+                            {
+                                key: "clientEnableTemplateControlsHUD",
+                                name: "Template Placement Controls HUD & Scroll Rotation",
+                                hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
                             }
                         ]
                     }
@@ -638,6 +646,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableAutoanimationsTeleportUI",
                                 name: "Enhanced Teleport Targeting UI (Autoanimations)",
                                 hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableTemplateControlsHUD",
+                                name: "Template Placement Controls HUD & Scroll Rotation",
+                                hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

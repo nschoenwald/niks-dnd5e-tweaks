@@ -3,35 +3,21 @@
  * Description: Automatically targets tokens enclosed within spell or ability templates placed on the canvas in real time.
  *
  * @introduced v14.19.0
+ * @updated v14.35.0 (Full Foundry V14 & DnD5e v6 RegionLayer placement support)
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 
 /**
- * Template Auto-Targeting
- *
- * When a dnd5e spell or ability template is placed on the canvas, automatically
- * targets all tokens whose position falls inside the template area.
- *
- * Two mechanisms work together:
- * 1. dnd5e.createActivityTemplate — fires when AbilityTemplate instances are
- *    created (before drawPreview). We wrap each template's refresh() method
- *    so that targeting updates every time the template moves.
- * 2. createRegion — fires once when placement is confirmed and the Region is
- *    persisted. Finalises targeting using the TokenDocument#testInsideRegion
- *    API. Deferred by one tick to allow the Region's polygon tree to initialise.
- *
- * Guards:
- * - Completely disabled when midi-qol is active (it has its own targeting).
- * - Only the user who placed the template updates their own game.user.targets;
- *   all other clients skip both hooks.
- *
- * Targets are REPLACED (not merged) on each update, matching midi-qol behavior.
+ * State tracking for the active template placement session
  */
+let activePlacementActivity = null;
+let activePlacementTimestamp = 0;
+let initialPlacementTargets = null;
 
 // ── Initialisation ───────────────────────────────────────────────────
 
 /**
- * Register hooks for the Template Auto-Targeting feature.
+ * Register hooks and wraps for the Template Auto-Targeting feature.
  * Called once during the "setup" phase from main.js.
  * No-op when midi-qol is active.
  */
@@ -43,61 +29,146 @@ export function initTemplateTargeting() {
         return;
     }
 
-    // Live preview: wrap template.refresh() on each AbilityTemplate instance
-    // created by a dnd5e activity. This hook fires before drawPreview() is called,
-    // giving us the template instances. Approach mirrors template-grid-snap.js.
-    Hooks.on("dnd5e.createActivityTemplate", _onCreateActivityTemplate);
+    // Capture activity context when template placement starts in DnD5e 6.x
+    Hooks.on("dnd5e.preCreateMeasuredTemplate", (activity, config) => {
+        activePlacementActivity = activity;
+        activePlacementTimestamp = Date.now();
+        debug(`Template Targeting | Captured preCreateMeasuredTemplate for activity: ${activity?.name || activity?.item?.name}`);
+    });
 
-    // Final placement: re-run containment against the persisted RegionDocument.
+    // Wrap RegionLayer.prototype.placeRegion to update targets live as the template preview is moved or rotated
+    _wrapRegionLayerPlaceRegion();
+
+    // Final placement: re-run containment against the persisted RegionDocument
     Hooks.on("createRegion", _onCreateRegion);
 
-    log("Template Targeting | Initialized (Region mode)");
+    // Clean up state if canvas tears down
+    Hooks.on("canvasTearDown", () => {
+        activePlacementActivity = null;
+        initialPlacementTargets = null;
+    });
+
+    log("Template Targeting | Initialized (Foundry V14 / DnD5e v6 Region mode)");
 }
 
-// ── Hook Handlers ────────────────────────────────────────────────────
+// ── RegionLayer Placement Wrapper (Live Preview) ─────────────────────
 
 /**
- * Live preview: wrap each AbilityTemplate's refresh() method to update
- * targeting every time the template is redrawn.
- *
- * The dnd5e.createActivityTemplate hook fires after AbilityTemplate.fromActivity()
- * constructs the template objects but before drawPreview() is called, giving us
- * a clean point to override instance methods — the same approach used by
- * template-grid-snap.js for getSnappedPosition.
- *
- * @param {Activity} activity           The dnd5e Activity for which templates are placed.
- * @param {AbilityTemplate[]} templates The template instances being placed.
+ * Wrap RegionLayer.prototype.placeRegion to intercept onChange and update targets in real time.
  */
-function _onCreateActivityTemplate(activity, templates) {
-    if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
+function _wrapRegionLayerPlaceRegion() {
+    if (typeof RegionLayer === "undefined" || !RegionLayer.prototype?.placeRegion) return;
+    if (RegionLayer.prototype.placeRegion._nd5tTargetingWrapped) return;
 
-    debug(`Template Targeting | dnd5e.createActivityTemplate fired for activity ${activity?.name ?? "(unknown)"}, wrapping ${templates.length} template(s)`);
+    const originalPlaceRegion = RegionLayer.prototype.placeRegion;
 
-    for (const template of templates) {
-        // Wrap refresh() to update targets on every redraw during placement preview.
-        const originalRefresh = template.refresh.bind(template);
-        template.refresh = function(options) {
-            const result = originalRefresh(options);
-            // Guard canvas in case refresh fires after placement is complete
-            if (canvas?.tokens) {
-                _applyTargetsFromPreviewTemplate(this);
-            }
-            return result;
+    const wrapped = async function(data, options = {}) {
+        if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) {
+            return originalPlaceRegion.call(this, data, options);
+        }
+
+        const isTemplate = _isTemplatePlacement(data, options, this);
+        if (!isTemplate) {
+            return originalPlaceRegion.call(this, data, options);
+        }
+
+        // Capture user targets prior to template placement (only on first region in batch)
+        const isFirstRegion = (options._regionIndex ?? 0) === 0;
+        if (isFirstRegion) {
+            initialPlacementTargets = Array.from(game.user.targets ?? []).map(t => t.id);
+        }
+
+        // Intercept onChange to update targets in real-time as the preview moves or rotates
+        const origOnChange = options.onChange;
+        options.onChange = (args) => {
+            _onRegionPlacementChange(args);
+            return origOnChange?.(args);
         };
-    }
+
+        let result;
+        try {
+            result = await originalPlaceRegion.call(this, data, options);
+            return result;
+        } finally {
+            // If placement was aborted/cancelled (result is null/falsy), restore previous targets
+            if (!result) {
+                if (initialPlacementTargets !== null) {
+                    _setTargetsIfChanged(initialPlacementTargets);
+                    initialPlacementTargets = null;
+                }
+                activePlacementActivity = null;
+            } else if ((options._regionIndex ?? 0) >= (options._regionCount ?? 1) - 1) {
+                // Batch completed successfully
+                initialPlacementTargets = null;
+                activePlacementActivity = null;
+            }
+        }
+    };
+
+    wrapped._nd5tTargetingWrapped = true;
+    RegionLayer.prototype.placeRegion = wrapped;
 }
+
+/**
+ * Determine whether a region placement call represents a template placement.
+ * @param {object} data
+ * @param {object} options
+ * @param {RegionLayer} layer
+ * @returns {boolean}
+ */
+function _isTemplatePlacement(data, options, layer) {
+    if (activePlacementActivity && (Date.now() - activePlacementTimestamp < 15000)) {
+        return true;
+    }
+    if (data?.["flags.core.MeasuredTemplate"] || data?.flags?.core?.MeasuredTemplate) {
+        return true;
+    }
+    if (data?.flags?.dnd5e?.activity || data?.flags?.dnd5e?.item) {
+        return true;
+    }
+    if (layer?.templateMode) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Handler for live region placement changes (cursor move, wheel rotation).
+ * Evaluates tokens enclosed by all active preview region documents and updates targets.
+ * @param {object} args
+ */
+function _onRegionPlacementChange(args) {
+    if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
+    if (!canvas?.ready || !canvas?.tokens) return;
+
+    // Collect all preview region documents currently active in this placement session
+    const previewDocs = new Set();
+    if (args?.document) previewDocs.add(args.document);
+    if (args?.preview?.document) previewDocs.add(args.preview.document);
+
+    // Also include any previously confirmed previews from the same batch (e.g. multi-template spells)
+    if (canvas.regions?.preview?.children) {
+        for (const child of canvas.regions.preview.children) {
+            if (child?.document && !child.destroyed) {
+                previewDocs.add(child.document);
+            }
+        }
+    }
+
+    if (!previewDocs.size) return;
+
+    const targetIds = _getTargetsForRegions(Array.from(previewDocs));
+    _setTargetsIfChanged(targetIds);
+}
+
+// ── Hook Handlers (Post-Placement) ───────────────────────────────────
 
 /**
  * Post-placement: finalise targets once when the Region document is created.
  *
- * When the user confirms template placement, dnd5e calls
- * canvas.scene.createEmbeddedDocuments("MeasuredTemplate", [...]) which Foundry
- * V14 routes to a Region creation. The createRegion hook fires on all clients;
- * we guard to only process it for the creating user.
- *
- * NOTE: Foundry post-create hooks for embedded documents use the 3-parameter
- * signature (document, options, userId) — NOT 4 parameters. The extra `data`
- * parameter only exists on preCreate hooks.
+ * When the user confirms template placement, dnd5e creates the Region document.
+ * The createRegion hook fires on all clients; we guard to only process it for
+ * the creating user.
  *
  * Processing is deferred by one tick (setTimeout 0) to allow Foundry to build
  * the Region's polygon tree before we call testInsideRegion().
@@ -113,27 +184,28 @@ function _onCreateRegion(regionDoc, options, userId) {
         return;
     }
 
-    // Guard 2: dnd5e activity template flag
-    if (!regionDoc.flags?.dnd5e?.origin && !regionDoc.flags?.dnd5e?.item && !regionDoc.flags?.dnd5e?.activity) {
-        debug("Template Targeting | createRegion: no flags.dnd5e.(origin|item|activity), not a dnd5e template, skipping");
-        return;
-    }
-
-    // Guard 3: only the placing user runs this
+    // Guard 2: only the placing user runs this
     if (userId !== game.user.id) {
         debug(`Template Targeting | createRegion: userId ${userId} !== game.user.id ${game.user.id}, skipping`);
         return;
     }
 
-    if (!canvas?.tokens) {
+    if (!canvas?.ready || !canvas?.tokens) {
         debug("Template Targeting | createRegion: no canvas.tokens, skipping");
+        return;
+    }
+
+    // Guard 3: check if this region was created from a dnd5e activity/item or core MeasuredTemplate
+    const isDnd5eTemplate = !!(regionDoc.flags?.dnd5e?.origin || regionDoc.flags?.dnd5e?.item || regionDoc.flags?.dnd5e?.activity);
+    const isCoreTemplate = !!(regionDoc.flags?.core?.MeasuredTemplate);
+    if (!isDnd5eTemplate && !isCoreTemplate) {
+        debug("Template Targeting | createRegion: not a template region, skipping");
         return;
     }
 
     debug(`Template Targeting | createRegion: all guards passed for region ${regionDoc.id}, deferring containment check`);
 
-    // Defer by one tick so the Region's polygon tree is fully built before
-    // we call testInsideRegion().
+    // Defer by one tick so the Region's polygon tree is fully built before we call testInsideRegion()
     setTimeout(() => {
         _applyTargetsFromRegion(regionDoc);
     }, 0);
@@ -142,87 +214,80 @@ function _onCreateRegion(regionDoc, options, userId) {
 // ── Containment Helpers ──────────────────────────────────────────────
 
 /**
- * Compute which tokens fall inside a live MeasuredTemplate preview and
- * replace game.user.targets with exactly that set.
+ * Calculate which tokens fall inside any of the specified Region documents.
+ * Uses native TokenDocument#testInsideRegion() API.
+ * Respects token visibility so non-GMs cannot auto-target hidden tokens.
  *
- * Checks the center of each grid square that the token occupies against
- * template.shape.contains(localX, localY) in template-local coordinates.
- * For multi-square tokens (Large, Huge, Gargantuan) we check every occupied
- * square and treat the token as inside if any square is covered.
- *
- * @param {AbilityTemplate} template  The live preview AbilityTemplate placeable.
+ * @param {RegionDocument|RegionDocument[]} regionDocs  One or more Region documents to test against.
+ * @returns {string[]}                                  Array of token IDs enclosed by the regions.
  */
-function _applyTargetsFromPreviewTemplate(template) {
-    if (!template.shape) return;
+function _getTargetsForRegions(regionDocs) {
+    if (!canvas?.tokens?.placeables) return [];
+    const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
+    if (!docs.length) return [];
 
-    const grid = canvas.scene?.grid;
-    if (!grid) return;
+    const targetIds = [];
+    for (const token of canvas.tokens.placeables) {
+        if (!token?.document) continue;
 
-    // Use world position from the placeable itself (template.x/y) with fallback
-    // to the underlying document, matching midi-qol's approach.
-    const originX = template.document?.x ?? template.x ?? 0;
-    const originY = template.document?.y ?? template.y ?? 0;
-
-    const targets = [];
-
-    for (const token of (canvas.tokens?.placeables ?? [])) {
-        if (!token.document) continue;
-
-        // For tokens narrower than 1 grid unit, start from the center of the
-        // (fractional) token space. For >= 1 grid unit, check each full square.
-        const startX = token.document.width >= 1 ? 0.5 : (token.document.width / 2);
-        const startY = token.document.height >= 1 ? 0.5 : (token.document.height / 2);
+        // Non-GMs cannot target tokens they cannot see
+        if (!token.visible && !game.user.isGM) continue;
 
         let inside = false;
-        outer: for (let x = startX; x < token.document.width; x++) {
-            for (let y = startY; y < token.document.height; y++) {
-                // World-space center of this grid square
-                const worldX = token.x + x * grid.size;
-                const worldY = token.y + y * grid.size;
-                // Convert to template-local coordinates
-                const localX = worldX - originX;
-                const localY = worldY - originY;
-                if (template.shape.contains(localX, localY)) {
+        for (const doc of docs) {
+            try {
+                if (token.document.testInsideRegion(doc)) {
                     inside = true;
-                    break outer;
+                    break;
                 }
+            } catch (err) {
+                debug("Template Targeting | testInsideRegion error:", err);
             }
         }
-        if (inside) targets.push(token.id);
+
+        if (inside) targetIds.push(token.id);
     }
 
-    debug(`Template Targeting | Preview: ${targets.length} token(s) in template`);
+    return targetIds;
+}
 
-    // Replace all existing targets with exactly the tokens inside the template.
-    // canvas.tokens.setTargets() is the correct V14 API (game.user.updateTokenTargets
-    // was retired as part of V12 deprecation cleanup in V14).
-    canvas.tokens?.setTargets(targets);
+/**
+ * Updates game.user.targets only if the new set of target IDs differs from the current targets.
+ * Avoids unnecessary re-rendering and socket traffic on micro-movements.
+ *
+ * @param {string[]} newTargetIds  The new list of targeted token IDs.
+ */
+function _setTargetsIfChanged(newTargetIds) {
+    if (!canvas?.tokens) return;
+    const currentTargets = game.user.targets;
+    const currentIds = new Set(Array.from(currentTargets ?? []).map(t => t.id));
+
+    if (newTargetIds.length === currentIds.size && newTargetIds.every(id => currentIds.has(id))) {
+        return;
+    }
+
+    debug(`Template Targeting | Updating targets: [${newTargetIds.join(", ")}]`);
+    canvas.tokens.setTargets(newTargetIds);
 }
 
 /**
  * Compute which tokens fall inside a persisted Region (final placement) and
- * replace game.user.targets with exactly that set.
- *
- * Uses the V14 native TokenDocument#testInsideRegion() API. Called after a
- * one-tick delay from createRegion to allow the polygon tree to be ready.
+ * update game.user.targets accordingly.
+ * Supports multi-region batches from the same activity.
  *
  * @param {RegionDocument} regionDoc  The persisted Region document.
  */
 function _applyTargetsFromRegion(regionDoc) {
     if (!canvas?.tokens) return;
 
-    const targets = [];
-    for (const token of (canvas.tokens?.placeables ?? [])) {
-        if (!token.document) continue;
-        try {
-            if (token.document.testInsideRegion(regionDoc)) targets.push(token.id);
-        } catch (e) {
-            debug("Template Targeting | testInsideRegion error:", e);
-        }
-    }
+    // For multi-template activities, include all regions created by the same activity
+    const activityUuid = regionDoc.flags?.dnd5e?.activity;
+    const relatedRegions = activityUuid
+        ? (canvas.scene?.regions?.filter(r => r.flags?.dnd5e?.activity === activityUuid) ?? [regionDoc])
+        : [regionDoc];
 
-    debug(`Template Targeting | Final placement: targeting ${targets.length} token(s) in region ${regionDoc.id}`);
+    const targetIds = _getTargetsForRegions(relatedRegions);
+    debug(`Template Targeting | Final placement: targeting ${targetIds.length} token(s) in region(s)`);
 
-    // Replace all existing targets with exactly the tokens inside the template.
-    canvas.tokens?.setTargets(targets);
+    _setTargetsIfChanged(targetIds);
 }

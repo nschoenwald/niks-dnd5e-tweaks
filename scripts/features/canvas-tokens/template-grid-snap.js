@@ -19,10 +19,6 @@ import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
  * - Spell and item templates are placed via TemplatePlacement and canvas.regions.placeRegions().
  * - Live preview snapping wraps _getSnappedPoint on CircleShapeData and RectangleShapeData.
  * - Final placement is handled via the dnd5e.createMeasuredTemplate and preCreateRegion hooks.
- *
- * In Foundry V13 / DnD5e v4/v5 (Legacy):
- * - Live preview snapping wraps getSnappedPosition on AbilityTemplate instances via dnd5e.createActivityTemplate.
- * - Final placement is handled via preCreateMeasuredTemplate.
  */
 
 /**
@@ -117,13 +113,7 @@ export function initTemplateGridSnap() {
     // 3. V14: General Region pre-creation safety net
     Hooks.on("preCreateRegion", _onPreCreateRegion);
 
-    // 4. V13 (Legacy): AbilityTemplate preview snapping hook
-    Hooks.on("dnd5e.createActivityTemplate", _onCreateActivityTemplate);
-
-    // 5. V13 (Legacy): MeasuredTemplate pre-creation hook
-    Hooks.on("preCreateMeasuredTemplate", _onPreCreateMeasuredTemplate);
-
-    log("Template Grid Snap initialized (V13/V14 dual compatibility)");
+    log("Template Grid Snap initialized (Foundry V14 / DnD5e v6)");
 }
 
 /* -------------------------------------------- */
@@ -232,79 +222,3 @@ function _onPreCreateRegion(document, data, options, userId) {
     }
 }
 
-/* -------------------------------------------- */
-/*  Legacy V13: MeasuredTemplate Hook            */
-/* -------------------------------------------- */
-
-/**
- * Snap circle and rect MeasuredTemplateDocument instances to grid intersections on creation.
- *
- * @param {MeasuredTemplateDocument} document
- * @param {object} data
- * @param {object} options
- * @param {string} userId
- */
-function _onPreCreateMeasuredTemplate(document, data, options, userId) {
-    if (userId && userId !== game.user.id) return;
-    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
-
-    const type = document.t;
-    if (type !== "circle" && type !== "rect") return;
-    if (document.flags?.dnd5e?.dimensions?.adjustedSize) return;
-
-    if (_isShiftHeld()) {
-        debug("Shift held — skipping measured template snap on creation");
-        return;
-    }
-
-    const snapped = canvas.grid.getSnappedPoint(
-        { x: document.x, y: document.y },
-        { mode: CONST.GRID_SNAPPING_MODES.VERTEX, resolution: 1 }
-    );
-
-    if (document.x !== snapped.x || document.y !== snapped.y) {
-        document.updateSource({ x: snapped.x, y: snapped.y });
-        debug(`preCreateMeasuredTemplate: Snapped ${type} template to vertex (${snapped.x}, ${snapped.y})`);
-    }
-}
-
-/* -------------------------------------------- */
-/*  Legacy V13: Preview Snapping                 */
-/* -------------------------------------------- */
-
-/**
- * Wrap the getSnappedPosition method on circle/rect AbilityTemplate instances
- * so the preview also snaps to grid intersections while dragging in V13.
- *
- * @param {Activity} activity              The Activity for which templates are being placed.
- * @param {AbilityTemplate[]} templates    The template instances being placed.
- */
-function _onCreateActivityTemplate(activity, templates) {
-    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
-
-    for (const template of templates) {
-        const type = template.document.t;
-
-        // Only override snapping for circle and rect (square/cube) templates
-        if (type !== "circle" && type !== "rect") continue;
-
-        // Skip emanation (radius) templates — these need free placement on tokens
-        if (template.document.flags?.dnd5e?.dimensions?.adjustedSize) continue;
-
-        debug(`Wrapping getSnappedPosition for ${type} template preview (V13)`);
-
-        const originalGetSnappedPosition = template.getSnappedPosition.bind(template);
-
-        template.getSnappedPosition = function(position) {
-            if (_isShiftHeld()) {
-                debug("Shift held — using default snap behaviour");
-                return originalGetSnappedPosition(position);
-            }
-
-            return canvas.grid.getSnappedPoint(position, {
-                mode: CONST.GRID_SNAPPING_MODES.VERTEX,
-                resolution: 1
-            });
-        };
-    }
-}

@@ -92,7 +92,7 @@ function _patchOnUpdate() {
     effectClass.prototype._onUpdate = function(data, options, userId) {
         if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
             if (data?.duration?.expired) {
-                data = foundry.utils.duplicate(data);
+                data = foundry.utils.deepClone(data);
                 data.duration.expired = false;
             }
         }
