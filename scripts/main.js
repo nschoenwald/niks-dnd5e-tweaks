@@ -769,7 +769,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableProneRotation", {
         name: "Auto-Rotate Prone Tokens",
-        hint: "Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when it is removed.",
+        hint: "Automatically rotates tokens 90° clockwise when the Prone, Unconscious or Dead condition is applied, and restores their previous facing when all of them are removed.",
         scope: "world",
         config: false,
         type: Boolean,
