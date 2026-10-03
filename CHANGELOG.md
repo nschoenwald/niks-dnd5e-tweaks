@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - **Auto-Attach Self Emanation Templates**:
   - **Skip Manual Placement for Self-Targeted Emanations**: Added a new sub-setting to Template Placement Controls HUD that detects when an activity with an emanation template targets Self (e.g. *Spirit Guardians*, *Antilife Shell*, *Holy Aura*, *Aura of Protection*, *Aura of Courage*).
   - **Direct Token Binding**: Automatically resolves the caster's triggering token on the active scene, configures the region shape with the token's dimensions and elevation, and immediately attaches the emanation directly to the token without requiring manual canvas placement or token selection.
-  - **Flicker-Free Invocation**: Suppresses window minimization during automated placement (`config.minimizeWindows = false`), allowing character sheets to remain open without visual interruption.
+  - **Seamless & Flicker-Free Invocation**: Silently attaches without popup notifications and suppresses window minimization during automated placement (`config.minimizeWindows = false`), allowing character sheets to remain open without visual interruption.
   - **Graceful Fallback**: If no triggering token can be located on the current canvas (e.g. GM casting from a sidebar actor without a token placed), automatically falls back to manual placement with full HUD guidance.
   - **Settings Dashboard Integration**: Configurable with a GM world master toggle under **Canvas & Templates** (`enableAutoAttachSelfEmanations`) and an individual player toggle under **Personal Preferences** (`clientEnableAutoAttachSelfEmanations`). Defaults to enabled.
 

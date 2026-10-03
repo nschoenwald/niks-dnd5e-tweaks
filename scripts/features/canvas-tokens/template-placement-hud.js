@@ -396,9 +396,6 @@ function _autoAttachSelfEmanation(activity, data, options) {
 
         const tokenName = tokenDoc.name || "caster";
         const itemName = activity?.item?.name || activity?.name || "Emanation";
-        if (!options._regionIndex || options._regionIndex === 0) {
-            ui.notifications.info(`Auto-attached ${itemName} to ${tokenName}.`);
-        }
         debug(`Auto-attached self emanation "${itemName}" directly to token "${tokenName}" (${tokenDoc.id})`);
 
         // If this is the last or only region, clean up cached activity
