@@ -593,6 +593,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableAutoCollapsePlayerDamageTrays",
+                                name: "Auto-Collapse Unowned Damage Trays for Players",
+                                hint: "Automatically collapses damage application trays for players when no targeted tokens are owned by them (such as damage rolls targeting NPCs) and DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             }
                         ]
                     },

@@ -185,8 +185,11 @@ export class ProneRotation {
             tokenDocs = [actor.token];
         } else if (actor) {
             // Base-actor effects also apply to unlinked tokens (ActorDelta inherits them from the
-            // base actor), so every dependent token on every scene is a candidate.
-            tokenDocs = actor.getDependentTokens({ scenes: game.scenes.contents, concreteOnly: true });
+            // base actor), so every dependent token on the viewed scene is a candidate. Tokens on
+            // other scenes are reconciled when those scenes load (see syncScene).
+            tokenDocs = canvas?.scene
+                ? actor.getDependentTokens({ scenes: canvas.scene, concreteOnly: true })
+                : [];
         }
 
         if (!tokenDocs.length) return;
@@ -247,23 +250,15 @@ export class ProneRotation {
             sceneUpdates.get(scene).push(update);
         }
 
-        const applyUpdates = async (scene, updates) => {
+        for (const [scene, updates] of sceneUpdates) {
+            if (!updates.length) continue;
             debug(`  Batch updating ${updates.length} token(s) on scene "${scene.name}"`);
             try {
                 await scene.updateEmbeddedDocuments("Token", updates);
             } catch (err) {
                 console.error(`${MODULE_ID} | ProneRotation batch update failed`, err);
             }
-        };
-
-        // The viewed scene is updated first so the visible tokens react immediately;
-        // all other scenes are then updated in parallel rather than one after another.
-        const currentUpdates = sceneUpdates.get(canvas?.scene);
-        if (currentUpdates?.length) await applyUpdates(canvas.scene, currentUpdates);
-        sceneUpdates.delete(canvas?.scene);
-        await Promise.all(
-            Array.from(sceneUpdates, ([scene, updates]) => updates.length ? applyUpdates(scene, updates) : null)
-        );
+        }
     }
 
     /**

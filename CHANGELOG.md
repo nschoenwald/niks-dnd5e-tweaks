@@ -2,16 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.37.1] - 2026-10-03
+## [14.38.0] - 2026-10-03
+### Added
+- **Auto-Collapse Unowned Damage Trays for Players**:
+  - Automatically collapses damage application trays (`<damage-application>`) on chat cards for players when none of the targeted tokens are owned by them (e.g. rolls targeting NPCs or other players' characters) and DnD5e's "Allow Players to Apply Damage" (`dnd5e.allowPlayerDamageTray`) setting is enabled.
+  - Prevents non-functional UI clutter and player confusion: DnD5e strictly restricts damage application to tokens owned by the active user, so trays targeting monsters cannot be interacted with by players anyway.
+  - When at least one targeted token is owned by the player (e.g. incoming hostile attacks or self/ally healing), the tray remains expanded so they can directly apply damage or healing to their own character.
+  - User-driven manual expansions or collapses on specific cards are tracked and preserved.
+  - Configurable via a world setting (**Auto-Collapse Unowned Damage Trays for Players**) under the **Chat Log** dashboard category, enabled by default, with dynamic re-render `onChange` callback for instant updates.
+
 ### Fixed
-- **Auto-Rotate Prone Tokens audit**:
+- **Template Placement HUD Zoom & Shape Rotation Handling**:
+  - **Context-Aware Shape Controls**:
+    - **Circle & Square/Cube Templates**: For non-directional templates (circles, spheres, cylinders, squares, cubes, grids, and emanations), rotation is not relevant. Both regular scrolling and Shift+scrolling now smoothly zoom the canvas camera. The HUD banner cleanly displays only the single regular `<kbd>Scroll</kbd> Zoom` badge, eliminating clutter and modifier confusion.
+    - **Directional Templates (Cones & Rays/Lines)**: Regular scrolling rotates the template in fine 5° steps (with real-time angle readout badge), while Shift + scrolling (or Ctrl / trackpad pinch) zooms the canvas camera.
+  - **Canvas Zoom Compatibility**:
+    - Fixed an issue where Shift + scroll (and Ctrl / trackpad pinch gestures) failed to zoom the canvas during template placement when modules overriding `Canvas.prototype._onMouseWheel` (such as **Nik's Zoom / Pan Options**) are active.
+    - Implemented direct canvas zoom calculation (`_zoomCanvas`) that does not depend on Foundry's default `Canvas.prototype._onMouseWheel` handler, dynamically respecting `zoom-speed-multiplier` settings if `niks-zoom-pan-options` is installed.
+    - Corrected macOS wheel delta resolution during Shift + scroll where the browser maps vertical scroll into horizontal delta (`deltaX`) while zeroing `deltaY`.
+- **Auto-Rotate Prone Tokens Audit**:
   - Rotation checks are now per token (using each token's own actor), so unlinked tokens that inherit a base-actor condition are handled correctly and a leftover condition on one token no longer blocks another.
   - Standing up always resets the token to 0° (tokens are assumed to face 0° normally); no previous rotation is stored.
   - **Dead tokens now tilt left** (270°) while Prone and Unconscious tilt right (90°). Dead takes priority, and removing it while another rotation condition remains switches the token to the remaining angle.
   - Changing an effect's status/type away from prone/unconscious/dead, or enabling/disabling such an effect, now correctly updates rotation.
   - Newly created tokens (drag from sidebar, duplicate, paste) of an already prone/unconscious/dead actor now start rotated.
-  - Linked tokens on **other scenes** are now rotated too (previously only the viewed scene). The viewed scene is updated first, then the other scenes in parallel, so there is no delay for actors with many tokens.
-  - Added a scene sync on canvas load (primary GM) that reconciles token rotation with actor conditions, also applying retroactively when the setting is enabled.
+  - Added a scene sync on canvas load (active GM) that rotates/unrotates tokens to match their actor's conditions, also applying retroactively when the setting is enabled.
   - Added error handling around async hooks and batch updates; updated setting hint.
 
 ## [14.37.0] - 2026-10-02

@@ -235,7 +235,8 @@ function _onWindowWheelCapture(event) {
     const isShift = event.shiftKey;
 
     let dy = event.deltaY;
-    if (isShift && dy === 0) dy = event.deltaX;
+    // On macOS, holding Shift maps vertical scroll into deltaX with deltaY === 0
+    if (dy === 0) dy = event.deltaX;
     if (dy === 0) return;
 
     // Intercept event from Foundry's default MouseManager handler
@@ -246,16 +247,46 @@ function _onWindowWheelCapture(event) {
 
     // If active placement is an emanation (or shape cannot rotate), plain scroll zooms canvas
     if (activeHudSession?.isEmanation || !activeHudSession?.canRotate) {
-        canvas._onMouseWheel(event);
+        _zoomCanvas(dy);
         return;
     }
 
     if (isShift || isCtrl) {
         // Shift + Scroll (or Ctrl / Trackpad pinch): Zoom the canvas
-        canvas._onMouseWheel(event);
+        _zoomCanvas(dy);
     } else {
         // Plain Scroll: Rotate the template
         canvas.regions._onMouseWheel(event);
+    }
+}
+
+/**
+ * Zoom the canvas directly. Avoids relying on Canvas.prototype._onMouseWheel,
+ * which is commonly overridden to a no-op by zoom/pan modules (such as niks-zoom-pan-options).
+ * Respects niks-zoom-pan-options zoom speed settings if active.
+ * @param {number} delta
+ */
+function _zoomCanvas(delta) {
+    if (!delta) return;
+
+    let scaleChangeRatio;
+    const zpo = game.modules.get("niks-zoom-pan-options");
+    if (zpo?.active) {
+        const multiplier = game.settings.get("niks-zoom-pan-options", "zoom-speed-multiplier") ?? 0;
+        const fivePercentZoom = delta < 0 ? 1.05 : (1 / 1.05);
+        scaleChangeRatio = multiplier === 0 ? fivePercentZoom : (1.05 ** (-delta * 0.01 * multiplier));
+    } else {
+        scaleChangeRatio = delta < 0 ? 1.05 : 0.95;
+    }
+
+    const currentScale = canvas.stage.scale.x;
+    const targetScale = scaleChangeRatio * currentScale;
+    const max = canvas.dimensions?.scale?.max ?? CONFIG.Canvas.maxZoom ?? 3;
+    const min = canvas.dimensions?.scale?.min ?? CONFIG.Canvas.minZoom ?? 0.1;
+    const clampedScale = Math.clamp(targetScale, min, max);
+
+    if (clampedScale !== currentScale) {
+        canvas.pan({ x: canvas.stage.pivot.x, y: canvas.stage.pivot.y, scale: clampedScale });
     }
 }
 
@@ -505,7 +536,7 @@ function _openOrUpdateHud({ activity, data, shape, regionIndex, regionCount, lay
 
     const info = _extractTemplateInfo(activity, data, shape, regionIndex, regionCount, isEmanation);
     const initialRotation = shape?.rotation ?? shape?.direction ?? 0;
-    const canRotate = !isEmanation && info.shapeType !== "circle" && info.shapeType !== "ring";
+    const canRotate = !isEmanation && _isDirectionalShape(info.shapeType, activity, shape);
 
     if (activeHudSession && activeHudSession.hudElement?.isConnected) {
         // Update existing HUD
@@ -574,6 +605,33 @@ function _cancelPlacement({ layer } = {}) {
 }
 
 /**
+ * Determines whether a template shape is directional (e.g. cones, rays, lines) where rotation is relevant,
+ * versus non-directional shapes (circles, squares, cubes, rings, emanations) where rotation is not relevant.
+ * @param {string} shapeType
+ * @param {Activity} [activity]
+ * @param {object} [shape]
+ * @returns {boolean}
+ */
+function _isDirectionalShape(shapeType, activity, shape) {
+    const activityType = (activity?.target?.template?.type || "").toLowerCase();
+    const resolvedType = (activityType || shapeType || shape?.type || "").toLowerCase();
+
+    // Explicit non-rotatable shapes: circles/spheres/cylinders, squares/cubes/rectangles/grids, emanations
+    const nonRotatable = new Set([
+        "circle", "sphere", "cylinder", "radius", "ring",
+        "rect", "rectangle", "square", "cube", "grid",
+        "emanation"
+    ]);
+
+    if (nonRotatable.has(resolvedType) || nonRotatable.has((shapeType || "").toLowerCase())) {
+        return false;
+    }
+
+    // Directional shapes: cones, rays, lines, walls
+    return resolvedType === "cone" || resolvedType === "ray" || resolvedType === "line" || resolvedType === "wall";
+}
+
+/**
  * Extracts friendly display information (name, image, shape label, subtitle)
  * from the activity or placement shape data.
  * @param {Activity} activity
@@ -587,7 +645,7 @@ function _cancelPlacement({ layer } = {}) {
 function _extractTemplateInfo(activity, data, shape, regionIndex, regionCount, isEmanation = false) {
     let name = activity?.item?.name || activity?.name || data?.name;
     let img = activity?.item?.img || null;
-    let shapeType = shape?.type || data?.shapes?.[0]?.type || (isEmanation ? "emanation" : "template");
+    let shapeType = activity?.target?.template?.type || shape?.type || data?.shapes?.[0]?.type || (isEmanation ? "emanation" : "template");
     let size = activity?.target?.template?.size || shape?.radius || shape?.length || shape?.width || shape?.distance;
     let units = activity?.target?.template?.units || canvas.scene?.grid?.units || "ft";
 
@@ -595,6 +653,9 @@ function _extractTemplateInfo(activity, data, shape, regionIndex, regionCount, i
     let shapeLabel = "";
     switch (shapeType) {
         case "circle":
+        case "sphere":
+        case "cylinder":
+        case "radius":
             shapeLabel = size ? `${size} ${units} Radius` : "Circle";
             break;
         case "cone":
@@ -605,10 +666,14 @@ function _extractTemplateInfo(activity, data, shape, regionIndex, regionCount, i
             break;
         case "ray":
         case "line":
+        case "wall":
             shapeLabel = size ? `${size} ${units} Line` : "Line";
             break;
+        case "cube":
+        case "square":
         case "rect":
         case "rectangle":
+        case "grid":
             shapeLabel = size ? `${size} ${units} Cube` : "Cube / Square";
             break;
         case "ring":
@@ -637,14 +702,21 @@ function _extractTemplateInfo(activity, data, shape, regionIndex, regionCount, i
             iconClass = "fa-solid fa-shapes";
             break;
         case "circle":
+        case "sphere":
+        case "cylinder":
+        case "radius":
             iconClass = "fa-solid fa-bullseye";
             break;
         case "ray":
         case "line":
+        case "wall":
             iconClass = "fa-solid fa-arrows-left-right";
             break;
+        case "cube":
+        case "square":
         case "rect":
         case "rectangle":
+        case "grid":
             iconClass = "fa-regular fa-square";
             break;
         case "emanation":
@@ -720,7 +792,6 @@ function _createTemplateHudElement(info, initialRotation, isEmanation, canRotate
                         ${normalizedAngle}°
                     </span>
                 </div>
-                ` : ""}
                 <div class="nd5t-template-control-badge" title="Hold Shift and scroll mouse wheel to zoom canvas">
                     <span class="nd5t-template-kbd-combo">
                         <kbd class="nd5t-template-kbd">Shift</kbd>
@@ -729,6 +800,12 @@ function _createTemplateHudElement(info, initialRotation, isEmanation, canRotate
                     </span>
                     <span class="nd5t-template-control-label">Zoom</span>
                 </div>
+                ` : `
+                <div class="nd5t-template-control-badge" title="Scroll mouse wheel to zoom canvas">
+                    <kbd class="nd5t-template-kbd"><i class="fa-solid fa-magnifying-glass"></i> Scroll</kbd>
+                    <span class="nd5t-template-control-label">Zoom</span>
+                </div>
+                `}
                 ${placeBadgeHtml}
                 ${(isGridSnapActive && !isEmanation) ? `
                 <div class="nd5t-template-control-badge" title="Hold Shift while placing to bypass grid vertex snap and place freely">
@@ -792,14 +869,16 @@ function _updateRotationDisplay(degrees) {
     if (!rotEl) return;
 
     if (!activeHudSession.canRotate) {
-        rotEl.style.display = "none";
+        const badge = rotEl.closest(".nd5t-template-control-badge");
+        if (badge) badge.style.display = "none";
         return;
     }
 
     if (degrees !== undefined && !Number.isNaN(degrees)) {
         const normalized = Math.round(((degrees % 360) + 360) % 360);
         rotEl.textContent = `${normalized}°`;
-        rotEl.style.display = "";
+        const badge = rotEl.closest(".nd5t-template-control-badge");
+        if (badge) badge.style.display = "";
         activeHudSession.rotation = normalized;
     }
 }

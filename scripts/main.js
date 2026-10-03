@@ -556,6 +556,20 @@ Hooks.once("init", () => {
         }
     });
 
+    game.settings.register(MODULE_ID, "enableAutoCollapsePlayerDamageTrays", {
+        name: "Auto-Collapse Unowned Damage Trays for Players",
+        hint: "Automatically collapses damage application trays for players when no targeted tokens are owned by them (such as damage rolls targeting NPCs) and DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            ui.chat?.render(true);
+            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
+        }
+    });
+
 
     game.settings.register(MODULE_ID, "enableCursorHints", {
         name: "Cursor Keyboard Hints",
