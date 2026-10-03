@@ -6,10 +6,11 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Auto-Rotate Prone Tokens audit**:
   - Rotation checks are now per token (using each token's own actor), so unlinked tokens that inherit a base-actor condition are handled correctly and a leftover condition on one token no longer blocks another.
-  - Original facing is now remembered and restored (previously always reset to 0°); manually-rotated tokens without a stored facing are no longer clobbered.
+  - Standing up always resets the token to 0° (tokens are assumed to face 0° normally); no previous rotation is stored.
+  - **Dead tokens now tilt left** (270°) while Prone and Unconscious tilt right (90°). Dead takes priority, and removing it while another rotation condition remains switches the token to the remaining angle.
   - Changing an effect's status/type away from prone/unconscious/dead, or enabling/disabling such an effect, now correctly updates rotation.
   - Newly created tokens (drag from sidebar, duplicate, paste) of an already prone/unconscious/dead actor now start rotated.
-  - Linked tokens on **other scenes** are now rotated too (previously only the viewed scene).
+  - Linked tokens on **other scenes** are now rotated too (previously only the viewed scene). The viewed scene is updated first, then the other scenes in parallel, so there is no delay for actors with many tokens.
   - Added a scene sync on canvas load (primary GM) that reconciles token rotation with actor conditions, also applying retroactively when the setting is enabled.
   - Added error handling around async hooks and batch updates; updated setting hint.
 

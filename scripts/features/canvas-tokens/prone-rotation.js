@@ -1,6 +1,6 @@
 /**
  * Feature: Auto-Rotate Prone Tokens
- * Description: Automatically rotates tokens 90° clockwise when Prone, Unconscious, or Dead conditions are applied, and restores their rotation when all rotation conditions are removed.
+ * Description: Automatically rotates tokens 90° clockwise when Prone or Unconscious (90° counter-clockwise when Dead), and restores their rotation when all rotation conditions are removed.
  *
  * @introduced v13.0.1
  */
@@ -58,13 +58,13 @@ export class ProneRotation {
             for (const doc of canvas.scene.tokens) {
                 const actor = doc.actor;
                 if (!actor) continue;
-                const shouldRotate = actor.effects?.some(e => this._isRotationEffect(e) && e.active) ?? false;
-                if (shouldRotate) {
-                    if (doc.rotation !== 90 || doc.lockRotation) {
+                const wanted = this._getRotationAngle(actor);
+                if (wanted !== null) {
+                    if (doc.rotation !== wanted || doc.lockRotation) {
                         await this._handleRotation(actor, true, game.user.id, doc);
                     }
                 } else {
-                    const managed = Number.isFinite(doc.getFlag(MODULE_ID, "proneOriginalRotation"))
+                    const managed = doc.rotation === 90 || doc.rotation === 270
                         || doc.getFlag(MODULE_ID, "proneLockRotation");
                     if (managed) await this._handleRotation(actor, false, game.user.id, doc);
                 }
@@ -216,48 +216,29 @@ export class ProneRotation {
                 if (triggeringUser && doc.canUserModify(triggeringUser, "update")) continue;
             }
 
-            const originalRotation = doc.getFlag(MODULE_ID, "proneOriginalRotation");
-            const hasOriginal = Number.isFinite(originalRotation);
-            const hadProneLock = !isProne && Boolean(doc.getFlag(MODULE_ID, "proneLockRotation"));
+            // Resolve the angle from the token's own remaining effects. Dead tilts left (270°),
+            // every other rotation effect tilts right (90°). When standing up was requested but
+            // another rotation effect remains (e.g. dead removed, prone left), switch to that angle.
+            // During deleteActiveEffect the deleted effect may still be listed, so it is excluded.
+            const checkActor = doc.actor ?? actor;
+            const wanted = this._getRotationAngle(checkActor, isProne ? null : deletedEffectId);
+            const rotated = isProne || wanted !== null;
+            const targetRotation = rotated ? (wanted ?? 90) : 0;
 
-            // Prone: rotate to 90°. Standing: restore the remembered facing; for legacy/unflagged
-            // tokens only reset a 90° tilt to 0° (never clobber a manually chosen facing).
-            let targetRotation;
-            if (isProne) targetRotation = 90;
-            else if (hasOriginal) targetRotation = originalRotation;
-            else targetRotation = doc.rotation === 90 ? 0 : doc.rotation;
-
+            const hadProneLock = !rotated && Boolean(doc.getFlag(MODULE_ID, "proneLockRotation"));
             const needsRotation = doc.rotation !== targetRotation;
-            const needsUnlock = isProne && doc.lockRotation;
+            const needsUnlock = rotated && doc.lockRotation;
             const needsRelock = hadProneLock && !doc.lockRotation;
-            const needsClearOriginal = !isProne && hasOriginal;
 
             // Only skip if nothing needs updating
-            if (!needsRotation && !needsUnlock && !needsRelock && !needsClearOriginal) continue;
-
-            if (!isProne) {
-                // Don't un-rotate if the actor still has another rotation-triggering active effect.
-                // Note: during deleteActiveEffect, actor.statuses might not have been re-prepared yet,
-                // so we check remaining effects excluding the one being deleted.
-                const checkActor = doc.actor ?? actor;
-                const hasOtherActiveRotationEffect = checkActor?.effects?.some(
-                    e => e.id !== deletedEffectId && this._isRotationEffect(e) && e.active
-                );
-                if (hasOtherActiveRotationEffect) continue;
-            }
+            if (!needsRotation && !needsUnlock && !needsRelock) continue;
 
             debug(`  ${doc.name} (${doc.id}): ${doc.rotation}° → ${targetRotation}° (lockRotation: ${doc.lockRotation})`);
             const update = { _id: doc.id, rotation: targetRotation };
-            if (isProne && !hasOriginal && doc.rotation !== 90) {
-                // Remember the pre-prone facing (only once, so stacked rotation effects don't overwrite it)
-                update[`flags.${MODULE_ID}.proneOriginalRotation`] = doc.rotation;
-            } else if (!isProne && hasOriginal) {
-                update[`flags.${MODULE_ID}.proneOriginalRotation`] = null;
-            }
-            if (isProne && doc.lockRotation) {
+            if (rotated && doc.lockRotation) {
                 update.lockRotation = false;
                 update[`flags.${MODULE_ID}.proneLockRotation`] = true;
-            } else if (!isProne && hadProneLock) {
+            } else if (!rotated && hadProneLock) {
                 update.lockRotation = true;
                 update[`flags.${MODULE_ID}.proneLockRotation`] = null;
             }
@@ -266,16 +247,44 @@ export class ProneRotation {
             sceneUpdates.get(scene).push(update);
         }
 
-        for (const [scene, updates] of sceneUpdates) {
-            if (updates.length) {
-                debug(`  Batch updating ${updates.length} token(s) on scene "${scene.name}"`);
-                try {
-                    await scene.updateEmbeddedDocuments("Token", updates);
-                } catch (err) {
-                    console.error(`${MODULE_ID} | ProneRotation batch update failed`, err);
-                }
+        const applyUpdates = async (scene, updates) => {
+            debug(`  Batch updating ${updates.length} token(s) on scene "${scene.name}"`);
+            try {
+                await scene.updateEmbeddedDocuments("Token", updates);
+            } catch (err) {
+                console.error(`${MODULE_ID} | ProneRotation batch update failed`, err);
             }
+        };
+
+        // The viewed scene is updated first so the visible tokens react immediately;
+        // all other scenes are then updated in parallel rather than one after another.
+        const currentUpdates = sceneUpdates.get(canvas?.scene);
+        if (currentUpdates?.length) await applyUpdates(canvas.scene, currentUpdates);
+        sceneUpdates.delete(canvas?.scene);
+        await Promise.all(
+            Array.from(sceneUpdates, ([scene, updates]) => updates.length ? applyUpdates(scene, updates) : null)
+        );
+    }
+
+    /**
+     * Determine the rotation angle an actor's active effects call for.
+     * Dead tilts left (270°) and takes priority; prone/unconscious tilt right (90°).
+     * @param {Actor|null} actor
+     * @param {string|null} [excludeEffectId]  An effect id to ignore (the one being deleted).
+     * @returns {270|90|null}  null when no rotation effect is active.
+     */
+    _getRotationAngle(actor, excludeEffectId = null) {
+        let angle = null;
+        for (const e of actor?.effects ?? []) {
+            if (e.id === excludeEffectId || !e.active || !this._isRotationEffect(e)) continue;
+            if (this._isDeadEffect(e)) return 270;
+            angle = 90;
         }
+        return angle;
+    }
+
+    _isDeadEffect(effect) {
+        return effect?.system?.type === "dead" || !!effect?.statuses?.has("dead");
     }
 
     /**
