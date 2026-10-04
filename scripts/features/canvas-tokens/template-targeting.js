@@ -42,9 +42,19 @@ export function initTemplateTargeting() {
     // Listen to "Place Template" button clicks in chat cards to track which message to update
     document.addEventListener("click", (event) => {
         const button = event.target?.closest?.('[data-action="placeTemplate"]');
-        if (!button) return;
-        const messageId = button.closest("[data-message-id]")?.dataset?.messageId;
-        if (messageId) lastChatActionMessageId = messageId;
+        if (button) {
+            const messageId = button.closest("[data-message-id]")?.dataset?.messageId;
+            if (messageId) lastChatActionMessageId = messageId;
+            return;
+        }
+
+        // Track when user manually clicks the targeting mode toggle so we do not overwrite their manual choice
+        const toggle = event.target?.closest?.(".target-source-toggle");
+        if (toggle) {
+            const messageId = toggle.closest("[data-message-id]")?.dataset?.messageId;
+            const msg = game.messages?.get(messageId);
+            if (msg) msg._nd5tUserToggledMode = true;
+        }
     }, true);
 
     // Final placement in DnD5e 6.x: fired with the exact newly created RegionDocument instances
@@ -63,10 +73,7 @@ export function initTemplateTargeting() {
         if (lastChatActionMessageId) {
             const message = game.messages?.get(lastChatActionMessageId);
             if (message) {
-                const targetDescriptors = dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
-                message.update({ "system.targets": targetDescriptors }).catch(err => {
-                    debug("Template Targeting | Failed to update chat message targets:", err);
-                });
+                _syncTargetsToMessage(message);
             }
             lastChatActionMessageId = null;
         }
@@ -77,13 +84,15 @@ export function initTemplateTargeting() {
         if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
         if (!results?.templates?.length || !results?.message) return;
 
-        const targetDescriptors = dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
-        try {
-            await results.message.update({ "system.targets": targetDescriptors });
-            debug(`Template Targeting | Synchronized ${targetDescriptors.length} target(s) to usage message ${results.message.id}`);
-        } catch (err) {
-            debug("Template Targeting | Error synchronizing targets to usage message:", err);
-        }
+        await _syncTargetsToMessage(results.message);
+    });
+
+    // Ensure chat cards with recorded targets default to "targeted" mode instead of "selected"
+    Hooks.on("dnd5e.renderChatMessage", (message, html) => {
+        _ensureTargetedApplicationMode(message, html);
+    });
+    Hooks.on("renderChatMessageHTML", (message, html) => {
+        _ensureTargetedApplicationMode(message, html);
     });
 
     // Wrap RegionLayer.prototype.placeRegion to update targets live as the template preview is moved or rotated
@@ -270,9 +279,87 @@ function _onCreateRegion(regionDoc, options, userId) {
 // ── Containment Helpers ──────────────────────────────────────────────
 
 /**
+ * Check if the active placement or any of the given region documents represent a cone or line/ray template.
+ * @param {RegionDocument|RegionDocument[]} regionDocs
+ * @returns {boolean}
+ */
+function _isConeOrLine(regionDocs) {
+    const actType = activePlacementActivity?.target?.template?.type;
+    if (actType && ["cone", "line", "ray"].includes(actType)) return true;
+
+    const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
+    for (const doc of docs) {
+        if (!doc) continue;
+        const shapes = doc.shapes ?? [];
+        for (const shape of shapes) {
+            if (shape?.type && ["cone", "line", "ray"].includes(shape.type)) return true;
+        }
+        const templateT = doc.flags?.core?.MeasuredTemplate?.t;
+        if (templateT && ["cone", "ray"].includes(templateT)) return true;
+        const dnd5eType = doc.flags?.dnd5e?.dimensions?.type;
+        if (dnd5eType && ["cone", "line", "ray"].includes(dnd5eType)) return true;
+    }
+    return false;
+}
+
+/**
+ * Retrieve token IDs for the originating caster token(s) of the active template.
+ * @param {RegionDocument|RegionDocument[]} regionDocs
+ * @returns {Set<string>}
+ */
+function _getOriginatingTokenIds(regionDocs) {
+    const ids = new Set();
+    const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
+
+    for (const doc of docs) {
+        if (!doc) continue;
+        const originUuid = doc.flags?.dnd5e?.origin;
+        if (originUuid) {
+            try {
+                const originDoc = fromUuidSync(originUuid, { strict: false });
+                if (originDoc?.id) ids.add(originDoc.id);
+            } catch (err) {}
+        }
+    }
+
+    if (activePlacementActivity) {
+        try {
+            const usageToken = activePlacementActivity.getUsageToken?.();
+            if (usageToken?.id) ids.add(usageToken.id);
+        } catch (err) {}
+
+        const actor = activePlacementActivity.actor ?? activePlacementActivity.item?.actor;
+        if (actor) {
+            try {
+                const activeTokens = actor.getActiveTokens?.(false, true) ?? actor.getActiveTokens?.() ?? [];
+                for (const t of activeTokens) {
+                    if (t?.id) ids.add(t.id);
+                }
+            } catch (err) {}
+        }
+    }
+
+    if (!ids.size) {
+        for (const token of canvas.tokens?.controlled ?? []) {
+            ids.add(token.id);
+        }
+        if (game.user.character) {
+            try {
+                for (const t of game.user.character.getActiveTokens?.() ?? []) {
+                    if (t?.id) ids.add(t.id);
+                }
+            } catch (err) {}
+        }
+    }
+
+    return ids;
+}
+
+/**
  * Calculate which tokens fall inside any of the specified Region documents.
  * Uses native TokenDocument#testInsideRegion() API.
  * Respects token visibility so non-GMs cannot auto-target hidden tokens.
+ * For cone and ray/line templates, always excludes the originating token.
  *
  * @param {RegionDocument|RegionDocument[]} regionDocs  One or more Region documents to test against.
  * @returns {string[]}                                  Array of token IDs enclosed by the regions.
@@ -282,12 +369,18 @@ function _getTargetsForRegions(regionDocs) {
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
     if (!docs.length) return [];
 
+    const isDirectional = _isConeOrLine(docs);
+    const originIds = isDirectional ? _getOriginatingTokenIds(docs) : null;
+
     const targetIds = [];
     for (const token of canvas.tokens.placeables) {
         if (!token?.document) continue;
 
         // Non-GMs cannot target tokens they cannot see
         if (!token.visible && !game.user.isGM) continue;
+
+        // For cone and ray/line templates, always exclude the originating token
+        if (originIds?.has(token.id)) continue;
 
         let inside = false;
         for (const doc of docs) {
@@ -351,4 +444,75 @@ function _applyTargetsFromRegion(regionDoc) {
     debug(`Template Targeting | Final placement: targeting ${targetIds.length} token(s) in region(s)`);
 
     _setTargetsIfChanged(targetIds);
+}
+
+// ── Chat Card Application Mode Synchronization ──────────────────────
+
+/**
+ * Synchronize targets to a chat message and ensure its targeting mode defaults to "targeted".
+ * @param {ChatMessage} message
+ */
+async function _syncTargetsToMessage(message) {
+    if (!message) return;
+    const targetDescriptors = dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
+    if (!targetDescriptors.length) return;
+
+    if (message._targetState) {
+        message._targetState.mode = "targeted";
+    }
+
+    try {
+        await message.update({ "system.targets": targetDescriptors });
+        debug(`Template Targeting | Synchronized ${targetDescriptors.length} target(s) to message ${message.id} (mode: targeted)`);
+    } catch (err) {
+        debug("Template Targeting | Failed to update chat message targets:", err);
+    }
+
+    _setTargetingModeOnElements(message.id, "targeted");
+}
+
+/**
+ * Update live <recorded-targets> elements for a message to the specified mode.
+ * @param {string} messageId
+ * @param {"targeted"|"selected"} mode
+ */
+function _setTargetingModeOnElements(messageId, mode = "targeted") {
+    if (!messageId) return;
+    const query = `[data-message-id="${messageId}"] recorded-targets`;
+    for (const el of document.querySelectorAll(query)) {
+        if (el.hasRecordedTargets && el.targetingMode !== mode) {
+            el.targetingMode = mode;
+        }
+    }
+}
+
+/**
+ * Ensure chat cards with recorded targets default to "targeted" mode instead of "selected".
+ * Preserves explicit manual toggle if the user clicked the toggle button.
+ * @param {ChatMessage} message
+ * @param {HTMLElement|jQuery} html
+ */
+function _ensureTargetedApplicationMode(message, html) {
+    const root = html instanceof HTMLElement ? html : html?.[0];
+    if (!root) return;
+
+    const origin = message.getOriginatingMessage?.();
+    const hasTargets = !!(message.system?.targets?.length || origin?.system?.targets?.length);
+    if (!hasTargets) return;
+
+    // If user clicked the toggle button explicitly on this message, respect their choice
+    if (message._nd5tUserToggledMode) return;
+
+    if (message._targetState && message._targetState.mode !== "targeted") {
+        message._targetState.mode = "targeted";
+    }
+    if (origin && !origin._nd5tUserToggledMode && origin._targetState && origin._targetState.mode !== "targeted") {
+        origin._targetState.mode = "targeted";
+    }
+
+    for (const el of root.querySelectorAll("recorded-targets")) {
+        if (el.hasRecordedTargets && el.targetingMode !== "targeted") {
+            el.targetingMode = "targeted";
+        }
+    }
 }

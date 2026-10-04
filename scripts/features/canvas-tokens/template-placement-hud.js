@@ -256,7 +256,57 @@ function _onWindowWheelCapture(event) {
         _zoomCanvas(dy);
     } else {
         // Plain Scroll: Rotate the template
+        _rotateTemplate(event, dy);
+    }
+}
+
+let _touchpadRotationAccumulator = 0;
+let _lastTouchpadRotationTime = 0;
+
+/**
+ * Rotate the active template with intelligent touchpad / trackpad sensitivity dampening.
+ * In touchpad mode (or when pixel-scroll deltas are emitted), accumulates scroll distance
+ * before triggering a 5° rotation step, preventing wild spinning.
+ * @param {WheelEvent} event
+ * @param {number} dy
+ */
+function _rotateTemplate(event, dy) {
+    if (!canvas.regions?._placementContext) return;
+
+    // Detect touchpad mode via niks-zoom-pan-options setting or pixel-scroll deltas
+    const zpoTouchpad = game.modules.get("niks-zoom-pan-options")?.active
+        && game.settings.get("niks-zoom-pan-options", "pan-zoom-mode") === "Touchpad";
+    const isPixelScroll = event.deltaMode === 0 && (Math.abs(dy) < 50 || !Number.isInteger(dy));
+    const isTouchpad = zpoTouchpad || isPixelScroll;
+
+    if (!isTouchpad) {
+        // Standard physical mouse wheel notch: direct 1:1 rotation per notch
         canvas.regions._onMouseWheel(event);
+        return;
+    }
+
+    const now = Date.now();
+    if (now - _lastTouchpadRotationTime > 250) {
+        _touchpadRotationAccumulator = 0;
+    }
+    _lastTouchpadRotationTime = now;
+
+    _touchpadRotationAccumulator += dy;
+
+    // ~40px of trackpad stroke per 5° rotation step gives tactile, fine-grained control
+    const TOUCHPAD_ROTATION_THRESHOLD = 40;
+    if (Math.abs(_touchpadRotationAccumulator) >= TOUCHPAD_ROTATION_THRESHOLD) {
+        const steps = Math.trunc(_touchpadRotationAccumulator / TOUCHPAD_ROTATION_THRESHOLD);
+        _touchpadRotationAccumulator -= steps * TOUCHPAD_ROTATION_THRESHOLD;
+
+        const maxSteps = Math.min(Math.abs(steps), 2);
+        const sign = Math.sign(steps);
+        for (let i = 0; i < maxSteps; i++) {
+            canvas.regions._onMouseWheel({
+                delta: sign,
+                shiftKey: event.shiftKey
+            });
+        }
     }
 }
 
@@ -914,6 +964,8 @@ function _closeHudSession(immediate = false) {
 
     const { hudElement: hud, detachPositioning } = activeHudSession;
     activeHudSession = null;
+    _touchpadRotationAccumulator = 0;
+    _lastTouchpadRotationTime = 0;
     detachPositioning?.();
 
     if (!hud || !hud.isConnected) return;

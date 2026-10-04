@@ -56,6 +56,10 @@ function _onPostUseActivity(activity, usageConfig, results) {
         ? results.message.system.targets
         : (dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? []);
 
+    if (results?.message?._targetState) {
+        results.message._targetState.mode = "targeted";
+    }
+
     activity.rollDamage(
         { event: usageConfig.event },
         { configure: shouldConfigure },
