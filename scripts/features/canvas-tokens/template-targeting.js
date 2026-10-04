@@ -13,6 +13,8 @@ import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 let activePlacementActivity = null;
 let activePlacementTimestamp = 0;
 let initialPlacementTargets = null;
+const activePlacementBatchRegionIds = new Set();
+let lastChatActionMessageId = null;
 
 // ── Initialisation ───────────────────────────────────────────────────
 
@@ -33,19 +35,69 @@ export function initTemplateTargeting() {
     Hooks.on("dnd5e.preCreateMeasuredTemplate", (activity, config) => {
         activePlacementActivity = activity;
         activePlacementTimestamp = Date.now();
+        activePlacementBatchRegionIds.clear();
         debug(`Template Targeting | Captured preCreateMeasuredTemplate for activity: ${activity?.name || activity?.item?.name}`);
+    });
+
+    // Listen to "Place Template" button clicks in chat cards to track which message to update
+    document.addEventListener("click", (event) => {
+        const button = event.target?.closest?.('[data-action="placeTemplate"]');
+        if (!button) return;
+        const messageId = button.closest("[data-message-id]")?.dataset?.messageId;
+        if (messageId) lastChatActionMessageId = messageId;
+    }, true);
+
+    // Final placement in DnD5e 6.x: fired with the exact newly created RegionDocument instances
+    Hooks.on("dnd5e.postCreateMeasuredTemplate", (activity, created) => {
+        if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
+        if (!Array.isArray(created) || !created.length) return;
+
+        for (const r of created) {
+            if (r?.id) activePlacementBatchRegionIds.add(r.id);
+        }
+
+        const targetIds = _getTargetsForRegions(created);
+        _setTargetsIfChanged(targetIds);
+
+        // If template placement was triggered from a chat card button, sync targets to that card
+        if (lastChatActionMessageId) {
+            const message = game.messages?.get(lastChatActionMessageId);
+            if (message) {
+                const targetDescriptors = dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
+                message.update({ "system.targets": targetDescriptors }).catch(err => {
+                    debug("Template Targeting | Failed to update chat message targets:", err);
+                });
+            }
+            lastChatActionMessageId = null;
+        }
+    });
+
+    // Sync newly targeted tokens to the usage chat message so save & damage buttons have targets
+    Hooks.on("dnd5e.postUseActivity", async (activity, usageConfig, results) => {
+        if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
+        if (!results?.templates?.length || !results?.message) return;
+
+        const targetDescriptors = dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
+        try {
+            await results.message.update({ "system.targets": targetDescriptors });
+            debug(`Template Targeting | Synchronized ${targetDescriptors.length} target(s) to usage message ${results.message.id}`);
+        } catch (err) {
+            debug("Template Targeting | Error synchronizing targets to usage message:", err);
+        }
     });
 
     // Wrap RegionLayer.prototype.placeRegion to update targets live as the template preview is moved or rotated
     _wrapRegionLayerPlaceRegion();
 
-    // Final placement: re-run containment against the persisted RegionDocument
+    // Final placement fallback: re-run containment against the persisted RegionDocument
     Hooks.on("createRegion", _onCreateRegion);
 
     // Clean up state if canvas tears down
     Hooks.on("canvasTearDown", () => {
         activePlacementActivity = null;
         initialPlacementTargets = null;
+        activePlacementBatchRegionIds.clear();
+        lastChatActionMessageId = null;
     });
 
     log("Template Targeting | Initialized (Foundry V14 / DnD5e v6 Region mode)");
@@ -205,6 +257,10 @@ function _onCreateRegion(regionDoc, options, userId) {
 
     debug(`Template Targeting | createRegion: all guards passed for region ${regionDoc.id}, deferring containment check`);
 
+    if (activePlacementActivity && (Date.now() - activePlacementTimestamp < 30000)) {
+        activePlacementBatchRegionIds.add(regionDoc.id);
+    }
+
     // Defer by one tick so the Region's polygon tree is fully built before we call testInsideRegion()
     setTimeout(() => {
         _applyTargetsFromRegion(regionDoc);
@@ -273,20 +329,25 @@ function _setTargetsIfChanged(newTargetIds) {
 /**
  * Compute which tokens fall inside a persisted Region (final placement) and
  * update game.user.targets accordingly.
- * Supports multi-region batches from the same activity.
+ * Only evaluates the newly created region(s) from the current placement batch,
+ * avoiding old historical regions left on the scene from previous spell casts.
  *
  * @param {RegionDocument} regionDoc  The persisted Region document.
  */
 function _applyTargetsFromRegion(regionDoc) {
     if (!canvas?.tokens) return;
 
-    // For multi-template activities, include all regions created by the same activity
-    const activityUuid = regionDoc.flags?.dnd5e?.activity;
-    const relatedRegions = activityUuid
-        ? (canvas.scene?.regions?.filter(r => r.flags?.dnd5e?.activity === activityUuid) ?? [regionDoc])
-        : [regionDoc];
+    // Only evaluate regions created in the current placement batch, or this specific region.
+    // NEVER query the entire scene by activityUuid, as that would include all historical regions from previous casts!
+    let regionsToEvaluate = [regionDoc];
+    if (activePlacementBatchRegionIds.has(regionDoc.id) && activePlacementBatchRegionIds.size > 1) {
+        regionsToEvaluate = Array.from(activePlacementBatchRegionIds)
+            .map(id => canvas.scene?.regions?.get(id))
+            .filter(Boolean);
+        if (!regionsToEvaluate.length) regionsToEvaluate = [regionDoc];
+    }
 
-    const targetIds = _getTargetsForRegions(relatedRegions);
+    const targetIds = _getTargetsForRegions(regionsToEvaluate);
     debug(`Template Targeting | Final placement: targeting ${targetIds.length} token(s) in region(s)`);
 
     _setTargetsIfChanged(targetIds);

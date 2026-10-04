@@ -52,6 +52,10 @@ function _onPostUseActivity(activity, usageConfig, results) {
         shouldConfigure
     });
 
+    const targets = results?.message?.system?.targets?.length
+        ? results.message.system.targets
+        : (dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? []);
+
     activity.rollDamage(
         { event: usageConfig.event },
         { configure: shouldConfigure },
@@ -59,7 +63,7 @@ function _onPostUseActivity(activity, usageConfig, results) {
             data: {
                 system: {
                     origin: results?.message?.id,
-                    targets: results?.message?.system?.targets ?? []
+                    targets
                 }
             }
         }

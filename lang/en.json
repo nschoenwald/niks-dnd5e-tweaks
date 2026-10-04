@@ -104,5 +104,8 @@
   "ND5T.ItemSheetAttunementTag.ClickToUnattune": "Click to unattune",
 
   "ND5T.CarolingianTheme.Name": "Carolingian UI Theme Harmony",
-  "ND5T.CarolingianTheme.Hint": "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation."
+  "ND5T.CarolingianTheme.Hint": "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
+
+  "ND5T.ClearTargets.ButtonTitleGM": "Clear All Targets (All Players)",
+  "ND5T.ClearTargets.ButtonTitlePlayer": "Clear My Targets"
 }

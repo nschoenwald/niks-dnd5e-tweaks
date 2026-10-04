@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.39.0] - 2026-10-04
+### Added
+- **Clear Targets Token Control Button**:
+  - Adds a dedicated **Clear Targets** action button (`fa-solid fa-crosshairs`) to the canvas Token Controls toolbar.
+  - **Player & GM Dual-Role Targeting**:
+    - **For Players**: Removes only their own targeted tokens via Foundry V14's native `canvas.tokens.setTargets([])` API, cleanly clearing target indicators and broadcasting activity to other clients.
+    - **For GMs**: Instantly removes targets for both themselves and all connected players across the table, updating local client targets and synchronizing all connected player clients via the module's central socket dispatcher.
+  - **Direct Foundry V14 & DnD5e v6 Architecture**:
+    - Directly integrated with Foundry V14's `TokenLayer#setTargets` and `UserTargets` (subclass of `Set<Token>`), ensuring proper dispatch of `targetToken` hooks, `userActivity` socket broadcasts, and `refreshTarget` token render flags.
+    - Fully supports DnD5e 6.x dynamic token rings (`Token5e.onTargetToken`), resetting target indicators cleanly without ghost pips.
+    - Uses modern V14 Scene Controls API (`onChange` callback, object-based controls and tools mapping) registered within `Hooks.once("init")` for guaranteed compatibility.
+  - **Settings Dashboard Integration**:
+    - Configurable via world master setting (`enableClearTargetsButton`) under **Canvas & Tokens > Token & Template Behaviors** and individual preference (`clientEnableClearTargetsButton`) under **Personal Preferences**.
+    - Changing settings dynamically re-renders scene controls without requiring a page reload.
+
+### Fixed
+- **Template Auto-Targeting & Chat Card Sync**:
+  - **Single-Batch Containment Isolation**: Fixed an issue where placing a template (such as a cone or burst) evaluated tokens against all historical regions on the scene that matched the activity ID instead of strictly the newly placed template, which caused tokens outside the active cone preview (e.g. to the left or right of the caster) to become targeted after confirmation.
+  - **Usage Chat Message & Damage Roll Targets Synchronization**: In DnD5e v6, template placement occurs after the initial usage chat message is constructed. Added real-time synchronization that updates the activation `ChatMessage` (`system.targets`) upon template placement confirmation, ensuring target pills display on the spell chat card and that Save and Damage rolls (including automated save damage dialogs) are populated with the targeted tokens.
+
+## [14.38.1] - 2026-10-04
+### Improved
+- **Auto-Apply Status at 0 HP — Important NPC Handling**:
+  - **Important NPCs Roll Death Saves**: NPCs marked as "Important" (`system.traits.important` or having class levels) are no longer automatically marked as Dead when dropping to 0 HP. They are instead marked as Unconscious so they can roll death saving throws, only escalating to Dead if they accumulate 3 failed death saving throws.
+  - **Combat Tracker Protection**: Important NPCs are now exempted from automated combat actions when dropping to 0 HP — they are never removed from the combat tracker automatically or marked as defeated, allowing GMs full manual control over key story characters and boss encounters.
+  - **Bloodied Status Prediction Sync**: Updated `willActorBeDead` logic so that important NPCs dropping to 0 HP do not have bloodied prematurely suppressed as dead unless they have actually failed 3 death saves.
+
 ## [14.38.0] - 2026-10-03
 ### Added
 - **Auto-Collapse Unowned Damage Trays for Players**:

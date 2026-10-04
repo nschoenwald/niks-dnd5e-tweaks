@@ -57,6 +57,16 @@ export function isActorDead(actor) {
 }
 
 /**
+ * Determine whether an actor is an NPC marked as "important".
+ * @param {Actor} actor
+ * @returns {boolean}
+ */
+function _isImportantNPC(actor) {
+    if (!actor || actor.type !== "npc") return false;
+    return Boolean(actor.system?.traits?.important || (actor.classes && !foundry.utils.isEmpty(actor.classes)));
+}
+
+/**
  * Check whether an actor is dead or in the process of dying / becoming dead
  * (e.g. dropping to 0 HP before updateDowned or autoStatusZeroHP has added the dead effect).
  *
@@ -74,16 +84,21 @@ export function willActorBeDead(actor) {
     // HP is 0 (or less). Check if the actor will be marked dead.
     if (game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) {
         const isPlayer = actor.type === "character" || actor.hasPlayerOwner;
+        const isImportant = _isImportantNPC(actor);
         const statusKey = isPlayer ? "autoStatusZeroHP_playerStatus" : "autoStatusZeroHP_npcStatus";
-        const configuredStatus = game.settings.get(MODULE_ID, statusKey);
+        let configuredStatus = game.settings.get(MODULE_ID, statusKey);
+        if (isImportant && configuredStatus === "dead") {
+            configuredStatus = "unconscious";
+        }
         const failedDeathSaves = (actor.system.attributes?.death?.failure ?? 0) >= 3;
-        if (configuredStatus === "dead" || failedDeathSaves) return true;
+        if (failedDeathSaves && configuredStatus !== "none") return true;
+        if (configuredStatus === "dead") return true;
         if (configuredStatus !== "none") return false;
     }
 
     // Default DnD5e behavior at 0 HP
     if (actor.type === "npc") {
-        if (!actor.system?.traits?.important) return true;
+        if (!_isImportantNPC(actor)) return true;
     }
     const failedDeathSaves = (actor.system?.attributes?.death?.failure ?? 0) >= 3;
     if (failedDeathSaves) return true;

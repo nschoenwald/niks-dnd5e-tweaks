@@ -29,6 +29,8 @@ import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disa
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
 import { initSummonPlacementHUD } from "./features/canvas-tokens/summon-placement-hud.js";
+import { initClearTargets, onClearTargetsSocket, clearTargets } from "./features/canvas-tokens/clear-targets.js";
+export { clearTargets };
 
 // Combat & Automation
 import { initAutoAddTokensToCombat } from "./features/combat-automation/auto-add-tokens-to-combat.js";
@@ -369,6 +371,21 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableClearTargetsButton", {
+        name: "Clear Targets Token Control Button (Personal)",
+        hint: "Shows the Clear Targets button in your Token Controls toolbar (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => {
+            if (ui.controls) {
+                if (typeof ui.controls.initialize === "function") ui.controls.initialize();
+                else ui.controls.render({ reset: true });
+            }
+        }
     });
 
     game.settings.register(MODULE_ID, "clientEnableCarolingianTheme", {
@@ -880,6 +897,22 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableClearTargetsButton", {
+        name: "Clear Targets Token Control Button",
+        hint: "Adds a button to the Token Controls toolbar that removes targets. For players, it removes their own targets; for GMs, it removes targets for both themselves and all connected players.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            if (ui.controls) {
+                if (typeof ui.controls.initialize === "function") ui.controls.initialize();
+                else ui.controls.render({ reset: true });
+            }
+        }
+    });
+
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
@@ -1256,7 +1289,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "autoStatusZeroHP_npcStatus", {
         name: "↳ NPC Token Status at 0 HP",
-        hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP.",
+        hint: "Which overlay status condition to apply to GM-owned (NPC) tokens when they drop to 0 HP. NPCs marked as Important fall unconscious instead so they can make death saves.",
         scope: "world",
         config: false,
         type: String,
@@ -1286,7 +1319,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "autoStatusZeroHP_npcCombat", {
         name: "↳ NPC Token Combat Action at 0 HP",
-        hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP.",
+        hint: "What to do in the combat tracker when a GM-owned (NPC) token drops to 0 HP. NPCs marked as Important are never removed or marked defeated.",
         scope: "world",
         config: false,
         type: String,
@@ -1443,6 +1476,7 @@ Hooks.once("setup", () => {
     initAutoanimationsTeleportUI();
     initTemplatePlacementHUD();
     initSummonPlacementHUD();
+    initClearTargets();
 });
 
 Hooks.once("ready", async () => {
@@ -1463,7 +1497,7 @@ Hooks.once("ready", async () => {
     // which can't be cleanly de-registered if a feature is hot-toggled.
     game.socket.on(`module.${MODULE_ID}`, (data) => {
         if (data?.action === "clearTargets") {
-            canvas.tokens?.setTargets([]);
+            onClearTargetsSocket(data);
             return;
         }
         damagePromptSocketMessage(data);

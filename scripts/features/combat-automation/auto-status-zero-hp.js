@@ -40,6 +40,18 @@ function _ownershipType(actor) {
     return "npc";
 }
 
+/**
+ * Determine whether an actor is an NPC marked as "important".
+ * In DnD5e, an NPC can be explicitly marked important via system.traits.important,
+ * or inherently by having class levels.
+ * @param {Actor} actor
+ * @returns {boolean}
+ */
+export function isImportantNPC(actor) {
+    if (!actor || actor.type !== "npc") return false;
+    return Boolean(actor.system?.traits?.important || (actor.classes && !foundry.utils.isEmpty(actor.classes)));
+}
+
 // ── Status condition helpers ──────────────────────────────────────────
 
 /**
@@ -159,7 +171,7 @@ function _getCombatants(actor) {
  * @param {string} action  "defeated" | "remove" | "none"
  */
 async function _handleCombatActionZeroHP(actor, action) {
-    if (action === "none") return;
+    if (action === "none" || isImportantNPC(actor)) return;
     const combatants = _getCombatants(actor);
     if (!combatants.length) return;
 
@@ -326,10 +338,18 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
     if (liveHP <= 0) {
         // ── Status overlay ──
         const failedDeathSaves = (actor.system?.attributes?.death?.failure ?? 0) >= 3;
+        const isImportant = isImportantNPC(actor);
         const statusKey = type === "player"
             ? "autoStatusZeroHP_playerStatus"
             : "autoStatusZeroHP_npcStatus";
         let statusId = game.settings.get(MODULE_ID, statusKey);
+
+        // NPCs marked as "important" can roll death saving throws; they should not
+        // be marked as dead at 0 HP, but only as unconscious (until 3 death saves have failed).
+        if (isImportant && statusId === "dead") {
+            statusId = "unconscious";
+        }
+
         // If 3 death saves have failed, escalate to "dead" unless statuses are disabled ("none")
         if (failedDeathSaves && statusId !== "none") {
             statusId = "dead";
@@ -337,11 +357,16 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
         await _applyZeroHPStatus(actor, statusId);
 
         // ── Combat action ──
-        const combatKey = type === "player"
-            ? "autoStatusZeroHP_playerCombat"
-            : "autoStatusZeroHP_npcCombat";
-        const combatAction = game.settings.get(MODULE_ID, combatKey);
-        await _handleCombatActionZeroHP(actor, combatAction);
+        // NPCs marked as "important" should never be removed from combat automatically or marked as defeated.
+        if (!isImportant) {
+            const combatKey = type === "player"
+                ? "autoStatusZeroHP_playerCombat"
+                : "autoStatusZeroHP_npcCombat";
+            const combatAction = game.settings.get(MODULE_ID, combatKey);
+            await _handleCombatActionZeroHP(actor, combatAction);
+        } else {
+            debug(`Auto-Status | ${actor.name} is an important NPC — skipping combat tracker actions`);
+        }
     } else {
         // HP is above 0 — remove any zero-HP statuses and un-defeat,
         // but ONLY if the token was at 0 HP before this HP restoration.

@@ -320,6 +320,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
+                            },
+                            {
+                                key: "clientEnableClearTargetsButton",
+                                name: "Clear Targets Token Control Button",
+                                hint: "Shows the Clear Targets button in your Token Controls toolbar (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
                             }
                         ]
                     }
@@ -715,6 +723,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableClearTargetsButton",
+                                name: "Clear Targets Token Control Button",
+                                hint: "Adds a button to the Token Controls toolbar that removes targets. For players, it removes their own targets; for GMs, it removes targets for both themselves and all connected players.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             }
                         ]
                     }
@@ -1045,7 +1061,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "autoStatusZeroHP_npcStatus",
                                 name: "NPC Token Status at 0 HP",
-                                hint: "Overlay condition for GM/NPC tokens at 0 HP.",
+                                hint: "Overlay condition for GM/NPC tokens at 0 HP. Important NPCs fall unconscious instead so they can roll death saves.",
                                 type: "Select",
                                 default: "dead",
                                 choices: [
@@ -1073,7 +1089,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "autoStatusZeroHP_npcCombat",
                                 name: "NPC Token Combat Action at 0 HP",
-                                hint: "Action in the combat tracker when NPC drops to 0 HP.",
+                                hint: "Action in the combat tracker when NPC drops to 0 HP. Important NPCs are never removed or marked defeated.",
                                 type: "Select",
                                 default: "defeated",
                                 choices: [
