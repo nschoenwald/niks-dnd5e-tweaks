@@ -1,252 +1,341 @@
 # Nik's DnD5e Tweaks
 
-A consolidated collection of small quality-of-life tweaks for Foundry VTT and the DnD5e system. This module combines several smaller tweaks and scripts into a single, unified package with a comprehensive set of configurable options.
+[![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-V14-orange.svg)](https://foundryvtt.com)
+[![DnD5e System](https://img.shields.io/badge/DnD5e-6.0%2B-blue.svg)](https://github.com/foundryvtt/dnd5e)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/nschoenwald/niks-dnd5e-tweaks?color=purple)](https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest)
+
+A consolidated, modular collection of quality-of-life enhancements and smart combat automations for **Foundry VTT (v14)** and the **DnD5e system (6.x)**.
+
+From fluid canvas placement HUDs with mouse-wheel rotation to retroactive advantage toggles and smart concentration tracking, **Nik's DnD5e Tweaks** polishes everyday table gameplay without bloat or forced workflows.
 
 ---
 
-## Compatibility
-
-| | Minimum | Verified |
-|---|---|---|
-| **Foundry VTT** | V14 | V14 |
-| **DnD5e System** | 6.0.0 | 6.0.0 |
-
-See below for compatibility with other modules (especially midi-qol).
----
-
-## Settings Dashboard & Personal Preferences
-
-All features can be configured within the comprehensive **Settings Dashboard** (accessible via the module settings button in Foundry's Configure Settings menu by both GMs and players).
-
-- **World Settings (GM Only)**: GMs can configure global defaults and module master toggles across UI & Visuals, Canvas & Tokens, Combat & Automation, Restrictions & Rules, and Utilities.
-- **Personal Preferences (All Users & Players)**: Players and GMs have a dedicated **Personal Preferences** tab containing client-side overrides (`scope: "client"`). When a feature is enabled globally by the GM, individual users can toggle prompts, auto-rolls, interface tweaks, or templates on or off specifically for their own client without affecting anyone else. When non-GM players open the dashboard, it automatically opens directly to Personal Preferences, and the "Reset Defaults" action resets only their personal client settings.
-
-### Covered Personal Preferences
-1. **Workflow & Action Prompts**:
-   - *Item/Spell Add: Choice Dialog* — prompt to choose between creating an item or browsing the compendium.
-   - *Prompt for Attack Damage* — automatically open the damage dialog when your attack roll hits AC.
-   - *Auto-Roll Attack Damage* — automatically roll damage immediately on hit.
-   - *Auto-Open Damage for Saves* — automatically open damage dialog on Save-type activities.
-   - *Prompt for Initiative* — prompt with initiative dialog when your token enters combat.
-   - *Auto-Roll Initiative* — automatically roll initiative immediately when added to combat.
-   - *Self Effect Application Prompt* — whisper an Apply button when using self-buff abilities.
-   - *Prompt for Death Saves* — automatically open the death save dialog when starting your turn at 0 HP.
-   - *Suppress Damage Prompts* — hide incoming player damage prompt whisper cards in chat.
-2. **Interface & Visual Enhancements**:
-   - *Cursor Keyboard Hints* — display floating Alt/Shift/Ctrl modifier badges near your cursor.
-   - *Roll Mode Highlight* — highlight the recommended Advantage/Disadvantage button in d20 roll dialogs.
-   - *Chat Card Styling Improvements* — apply enhanced action buttons, badges, and color coding to chat cards.
-   - *Retroactive Advantage/Disadvantage* — display retroactive advantage/disadvantage buttons on d20 rolls.
-   - *Sync Browser Tab Title* — sync your browser tab title with the viewed scene name.
-   - *Sheet Pop-out Button* — show the ↗ pop-out button on character and item sheet headers.
-   - *Item Sheet Attunement Tag* — display a clear Attunement Required or No Attunement Required tag on magic item sheets.
-   - *Context Menu Styling* — color-code destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) in context menus.
-   - *Toolbar Limitation & Max Displayed Buttons* — make scene control toolbars scrollable when exceeding the limit.
-   - *Carolingian UI Theme Harmony* — automatically adopts Carolingian UI's active color theme and styling across the dashboard, floating HUD banners, damage prompts, and combat placeholders (only shown when Carolingian UI is active).
-3. **Canvas & Templates**:
-   - *Auto-Target Tokens in Spell Templates* — automatically target tokens inside templates placed by you.
-   - *Snap Templates to Grid Intersections* — snap circle and square templates to grid vertices when placed by you.
-   - *Template Placement Controls HUD & Scroll Rotation* — floating banner with live controls, rotation angle readout, inverts scrolling so wheel rotates and Shift+wheel zooms, and optional auto-attachment for self-targeted emanations.
-   - *Summoning Placement Controls HUD* — floating banner with key controls, live distance vs. max range badge, canvas range boundary ring, and single-row compact layout during summoning placement.
-   - *Enhanced Teleport Targeting UI* — floating HUD banner, ghost token preview, and ESC cancellation for teleport presets.
+> [!TIP]
+> **Modular by Design**: Every single tweak can be toggled independently. GMs configure global world defaults, while players have their own **Personal Preferences** tab to customize prompts, auto-rolls, and visuals for their own screen.
 
 ---
 
-## Features 
+## ⚡ Quick Navigation
 
-### Group 1: User Interface & Visuals
-* **Sync Browser Tab Title**: Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.
-* **Cursor Keyboard Hints**: Displays small floating icons near the mouse cursor when modifier keys configured in the DnD5e system (such as Skip Dialog, Advantage, or Disadvantage) are held down.
-* **Actor Directory Disposition Dots**: Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).
-* **Blood Drop Bloodied Icon**: Replaces the default DnD5e "bloodied" condition icon with a red blood drop icon.
-* **Sidebar Multi-line Names**: Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.
-* **Clean Sheet Window Titles**: Removes the verbose type prefix (e.g. "Non Player Character:") from document sheet window titles, showing just the document name. Applies to all document sheets (Actors, Items, Journals, etc.). Especially useful when detaching windows, where the prefix otherwise consumes all visible space in the OS taskbar.
-  * *↳ Sheet Title Format* — controls how titles are displayed (choices: **Name Only** (default), Type: Name, Name (Type)).
-* **Sheet Pop-out Button**: Adds a one-click **↗ pop-out button** to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry V14's native pop-out functionality — without going through the three-dot menu. The button is hidden automatically when the sheet is already detached. Enabled by default.
-* **Item Sheet Attunement Tag**: Adds a clear **Attunement Required** or **No Attunement Required** tag to item sheets and rich item tooltips for all magic items (weapons, armor/equipment, tools, containers, consumables, and loot). In official D&D 5e sourcebooks, attunement requirements are prominently stated beneath an item's name alongside type and rarity, whereas default DnD5e 6.x only renders an inconspicuous dotted pill at the bottom of the Description tab when attunement is required, completely omitting any indication when attunement is not needed. This tweak makes attunement requirements unmistakable at a glance with theme-adaptive visual styling across both light and dark modes, extending directly to rich tooltips when hovering over items in actor sheets, compendiums, chat links, and containers. On items owned by an actor, clicking an attunement badge directly toggles the item's attuned state without needing to switch to the Details tab or locate the item in the character inventory. Respects DnD5e's unidentified item concealment (concealing attunement status from players until identified). Enabled by default.
-  * *↳ Attunement Tag Placement* — choose where to display the tag: **Header & Description Pills** (default), **Header Badge Only**, **Description Pills Only**, or **Header Subtitle Only**. Players can also configure their own personal placement preference in the Personal Preferences dashboard tab.
-  * *↳ Show in Item Tooltips* — controls whether to also display the attunement pill inside rich item tooltips (default: **true**).
-* **Context Menu Styling**: Color-codes right-click context menu options across document sheets, compendiums, sidebar directories, and chat messages to improve visual scannability and prevent accidental misclicks. Destructive actions (Delete / Remove) are highlighted with crisp red text (`#ff5c5c` on dark backgrounds, `#b91c1c` on light backgrounds), additive actions (Duplicate / Clone / Copy) are highlighted with clear green text (`#4ade80` on dark backgrounds, `#15803d` on light backgrounds), and visibility/privacy toggles (Make Private / Reveal To Everyone) on chat messages are highlighted with luminous violet text (`#c084fc` on dark backgrounds, `#7c3aed` on light backgrounds). Built with dynamic background luminance detection to ensure high contrast even in hybrid themes (such as light chat with dark interface). Enabled by default.
-* **Carolingian UI Theme Harmony**: Provides full aesthetic and layout harmonization with the **Carolingian UI** (`crlngn-ui`) module when installed and active in the world:
-  * **Dynamic Color Theme Adoption**: Automatically harmonizes the Settings Dashboard (active navigation tabs, search focus rings, match count text, toggle switches, and section badges), floating HUD banners, and damage prompt cards with Carolingian UI's active theme palette (*Carolingian Teal*, *Royal Blood*, *Dark Sorcery*, *Grass and Stone*, *Gold and Chocolate*, *Pumpkin Patch*, *Plum Purple*, or *Gambit's Blue*).
-  * **Top Scene Navigation Clearance**: Automatically offsets all floating canvas HUD banners (Template Placement HUD, Summoning Placement HUD, and Teleport Targeting UI) by Carolingian UI's docked scene navigation height (`--crlngn-top-offset` / `--top-nav-height`). Dynamically respects Carolingian's active navigation settings, immediately returning to standard canvas offset with a smooth glide when the scene bar is disabled, collapsed (`navigation-collapsed`), or hidden for players (`hide-player-ui-navigation`).
-  * **Chat Card Action Button Harmonization**: Preserves Nik's distinctive color-coded action borders and text/icon accents (Royal Violet Atk, Flame Orange Dmg, Cobalt Blue Save, Forest Green Heal, Cosmic Orchid Summon, Astral Cyan Use, Ruby Template, etc.) while seamlessly inheriting Carolingian UI's button sizing, spacing, and chat surface tokens. Explicit action labels and saving throw ability shorthands (**STR SAVE**, **DEX**, **CON**, **INT**, **WIS**, **CHA**) take precedence over generic labels.
-  * **Legendary Action Placeholders in Combat Carousel**: In Carolingian UI's horizontal Combat Carousel (`#combat-popout`), placeholder turns are rendered with an ornate dashed accent border, soft translucent background, and scaled emblem with theme-reactive drop shadow, clearly distinguishing them as phase separators among combatant creature portraits.
-  * **Typography & Font Synchronization**: Automatically adopts Carolingian UI's custom typography (*Work Sans* for UI and *Roboto Slab* for headers) across the Settings Dashboard when Carolingian custom fonts are enabled.
-  * **Conditional Dashboard Settings**: Configurable with a GM world master toggle under **Interface & Visual Enhancements** (`enableCarolingianTheme`) and an individual player toggle under **Personal Preferences** (`clientEnableCarolingianTheme`). Settings are dynamically displayed in the dashboard only when Carolingian UI is installed and active in the world, and default to enabled.
-
-* **Item/Spell/Feature Add: Choice Dialog**: When clicking any '+' button (page-level or sub-category section header) on character sheets in the Items, Spells, or Features tab, allows you to choose between creating a new document or directly opening the Compendium Browser. Defaults to opening the Compendium Browser (pre-filtered by class/subclass and level for spells — including Wizard for Eldritch Knight and Arcane Trickster, and Sorcerer for Warrior of the Mystic Arts; feats for features; and physical items for items). Compatible with standard DnD5e sheets (V1 & V2) and Tidy 5e Sheets (Classic & Quadrone). Hold **Shift** while clicking the '+' button to bypass the choice dialog and proceed directly with document creation. Enabled by default.
-* **NPC Hit Point Scaling Buttons**: Adds easy plus (`+`) and minus (`-`) buttons to the NPC Hit Points configuration dialog (`HitPointsConfig`) to quickly scale a creature's hit dice count up or down. Automatically recalculates the creature's average Maximum Hit Points and health formula based on size-appropriate hit die (Tiny: d4, Small: d6, Medium: d8, Large: d10, Huge: d12, Gargantuan: d20) and Constitution modifier. Hold **Shift** while clicking to scale by 5 hit dice at a time. Enabled by default.
-* **Toolbar Limitation**: When the number of buttons in a given toolbar (such as Scene Controls) exceeds a configurable value, turns the toolbar scrollable and limits the displayed buttons to that number. Does not apply to the macro hotbar.
-  * *↳ Max Displayed Toolbar Buttons* — controls the maximum number of buttons displayed before turning scrollable (default: **20**).
-* **Roll Mode Highlight**: When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button in the roll dialog so it remains visible even after interacting with other fields. Supports four visual styles (Glow, Border, Badge, Fill) and customizable highlight color. Enabled by default.
-  * *↳ Highlight Style* — choose between **Glow** (default), Border, Badge, Fill, or None.
-  * *↳ Highlight Normal Mode Too* — also highlight the Normal button when Normal is the calculated mode (default: false).
-  * *↳ Highlight Color* — custom color for the highlight (defaults to gold `#c9a227`).
-* **Reliable Chat Log Auto-Scroll**: Fixes the DnD5e chat log failing to scroll to the bottom when new cards appear or elements expand. Keeps the chat log pinned to the bottom during CSS transitions, asynchronous target resolution, collapsible tray toggles, and message card updates, while preserving user reading position when scrolled up. Enabled by default.
-* **Retroactive Advantage / Disadvantage**: Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, directly from the chat card. Injects a sleek segmented button group (`[ ADV ] [ NORMAL ] [ DISADV ]`) directly below the dice roll bar on d20 check, save, and attack roll cards (matching DnD5e's roll dialog layout with Advantage on the left and Disadvantage on the right), highlighting and disabling the current mode with authentic DnD5e ribbon gradients and localized tooltips. Features full native compatibility with Foundry V14 and DnD5e v6 light and dark modes (high-contrast dark text and borders on light parchment cards, and subtle silver text and borders on dark cards, dynamically adapting in real time when changing chat log themes without requiring a reload). To keep chat clean, buttons remain collapsed and invisible by default, smoothly expanding into view on hover (or keyboard focus) without shifting the roll above it. Original rolled dice results are preserved and cached directly on the roll (`nd5tOriginalResults`) so toggling between modes never generates new random dice for already-rolled slots, preventing re-roll exploitation. Fully supports Elven Accuracy (3 dice) and Halfling Lucky. Integrated with Dice So Nice (DSN) to animate newly evaluated dice in 3D while skipping animations when switching between already-cached dice. Updating the roll mode automatically re-evaluates attack target ACs (hit/miss pills), critical hits, and fumble highlights across all clients. Players can adjust their own rolls even without core database update permissions via automated GM socket synchronization. Enabled by default.
-  * *↳ Show Only on Hover* — controls whether the buttons only reveal when hovering over the chat card (default: **true**).
-* **Chat Card Styling Improvements**: Enhances DnD5e chat card styling to make actions and rolls immediately clearer and easier to interact with. Enlarges compact card action buttons, appends explicit text labels (**Atk**, **Dmg**, **Save**, **Check**, **Heal**, **Transform**, **Summon**, **Teleport**, **Use**, **Template**, **Break**), applies distinct, color-coded borders and backgrounds for each action type in both Light and Dark themes (including Emerald Jade for Transform, Cosmic Orchid for Summon, Rift Indigo for Teleport, Astral Cyan for Use, Ruby for Template placement, and Crimson for Break Concentration), supports grouped action buttons, and allows action buttons to wrap cleanly onto multiple lines when too wide for a single line while keeping the leading play icon aligned to the first row. Also makes **Attack**, **Damage**, **Saving Throw**, **Ability Check**, **Healing** (differentiating "real" HP healing from **Temporary HP**), **Hit Dice**, and **Recharge** roll cards visually distinct at a glance with color-coded accent borders (Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temporary HP, Sage Green for Hit Dice, Electric Gold for Recharge), card background gradient tints, chip badges for subtitles and flavor text (simplifying damage roll subtitles to just "Damage Roll" and formatting Temporary HP cards with "Temp HP Roll"), and prepended micro-labels (**"ATK "**, **"DMG "**, **"SAVE "**, **"CHK "**, **"HEAL "**, **"TEMP "**, **"HD "**, **"RCH "**, plus **"DEATH "**, **"CONC "**, and **"INIT "**) in roll result buttons while removing the default horizontal decorative line whiskers and the leading "dice" icon from roll rows for a clean, streamlined aesthetic. The d20 indicator badge now shows **all individual dice rolled** — on advantage or disadvantage both results appear side by side in chronological roll order (kept die bold, discarded die dimmed/faded), and Elven Accuracy (3d20) shows all three, with pixel-perfect vertical centering and cross-platform frame alignment. Features dynamic collision avoidance that preserves centered roll results while automatically shifting the result left when necessary to guarantee multi-die badges never overlap or obscure the total. Additionally applies prominent, theme-aware styling and badges across all chat messages (both DnD5e v6 cards and standard chat messages/rolls): **Whispers** (indigo border + 🔒 WHISPER pill badge), **Private Rolls** (indigo border + 🔒 PRIVATE pill badge), **Blind Rolls** (fuchsia border + 👁 BLIND badge), and **Emotes** (amber border + ✦ EMOTE badge). Enabled by default.
-  * *↳ Saving Throw Ability Shorthand* — displays the ability shorthand on save action buttons and roll cards (**STR SAVE**, **DEX**, **CON**, **INT**, **WIS**, **CHA**) instead of generic Save (default: **true**).
-* **Auto-Collapse Hostile Damage Trays for GM**: In DnD5e v6, damage cards feature an interactive `<damage-application>` tray allowing direct application of damage to tokens. When DnD5e's setting "Allow Players to Apply Damage" (`allowPlayerDamageTray`) is enabled, players can apply their own damage. To minimize GM chat clutter during encounters, this feature automatically collapses the damage application tray for the GM when damage rolls originate from hostile NPCs targeting player characters. Explicit manual expansions or collapses on specific cards are tracked and preserved. World setting, enabled by default.
-* **Auto-Collapse Unowned Damage Trays for Players**: When DnD5e's "Allow Players to Apply Damage" is enabled, players see interactive damage application trays in chat. However, DnD5e strictly restricts damage application to tokens owned by the active user, meaning trays targeting NPCs or other players' characters are completely non-actionable and create unnecessary visual clutter and confusion. This feature automatically collapses damage application trays on the player's screen when none of the targeted tokens are owned by them (e.g. attacks against monsters). When at least one targeted token is owned by the player (such as incoming monster attacks or self-healing), the tray remains expanded so they can apply their damage directly. Explicit manual expansions or collapses on specific cards are tracked and preserved. World setting, enabled by default.
-
-
-### Group 2: Canvas & Tokens
-
-* **Clear Targets Token Control Button**: Injects a dedicated action button (`fa-solid fa-crosshairs`) into the canvas Token Controls toolbar to quickly and cleanly remove active token targets without switching tools or deselecting tokens.
-  * **Role-Aware Targeting Reset**:
-    * **Players**: Removes only their own active targets using Foundry V14's native `canvas.tokens.setTargets([])` API, clearing target markers on their screen and broadcasting an updated empty target set to other clients.
-    * **Game Masters**: Instantly clears targets for both themselves and all connected players across the entire canvas simultaneously, immediately updating local target sets and dispatching a synchronized socket command to all connected player clients.
-  * **Foundry V14 & DnD5e v6 Architecture**: Built directly against Foundry V14's `TokenLayer#setTargets` and `UserTargets` API, triggering native `targetToken` hooks, `userActivity` broadcasts, and `refreshTarget` render flags, fully supporting DnD5e 6.x dynamic token rings (`Token5e.onTargetToken`).
-  * **Configurable**: Managed via a world master toggle under **Canvas & Tokens > Token & Template Behaviors** (`enableClearTargetsButton`) and an individual player toggle under **Personal Preferences** (`clientEnableClearTargetsButton`). Enabled by default.
-* **Auto-Target Tokens in Spell Templates**: Automatically targets all tokens within a spell or ability template placed on the canvas. Targets update in real time while moving and rotating the preview template, and finalize when placement is confirmed. Automatically disabled when midi-qol is active to prevent conflicts.
-  * **Real-Time Live Preview**: Dynamically evaluates token containment against active template preview shapes as you move the cursor and rotate the wheel using native Foundry V14 Region containment testing (`TokenDocument#testInsideRegion`).
-  * **Directional Template Caster Exclusion**: Automatically excludes the originating caster token from target selection for cone and ray/line templates during both live preview and final placement, preventing the caster from inadvertently targeting themselves when touching the cone or line vertex.
-  * **Single-Batch Containment Isolation**: Confines target evaluation strictly to the newly placed template regions from the active placement batch, preventing stale historical scene regions from previous casts from inadvertently targeting unrelated tokens.
-  * **Chat Card & Roll Target Synchronization**: Automatically synchronizes newly targeted tokens into the usage `ChatMessage` (`system.targets`), populating target pills on the spell card and seamlessly providing targets to subsequent Saving Throw and Damage roll cards (including automated save damage dialogs).
-  * **Targeted Application Mode Enforcement**: Automatically ensures chat cards with recorded targets default to "Targeted" mode (`data-mode="targeted"`) rather than "Selected" mode, ensuring damage and effect application trays target the affected creatures while preserving manual player toggle choices.
-  * **Smart Target Diffing**: Only updates targets when the enclosed token set actually changes, preventing redundant canvas re-renders and avoiding socket broadcast spam during micro-movements.
-  * **Target State Restoration**: If template placement is cancelled or dismissed (via ESC, right-click, or the HUD Cancel button), previously targeted tokens are cleanly restored.
-  * **Player Visibility Protection**: Non-GM players only auto-target tokens that are visible to them, preventing accidental disclosure of hidden GM tokens.
-* **Auto-Rotate Prone / Unconscious / Dead Tokens**: Automatically rotates tokens 90° clockwise when the Prone or Unconscious condition is applied (90° counter-clockwise for Dead), and resets them to 0° when all rotation-triggering conditions are removed. Newly placed tokens of an already prone actor start rotated, tokens on the viewed scene are updated immediately without cross-scene delays, and other scenes are automatically reconciled on load (active GM, so enabling the setting also applies retroactively). Seamlessly handles tokens with "Lock Rotation" enabled (temporarily unlocking rotation so the visual tilt renders on canvas, and restoring the lock when standing up). Fully supports both linked player tokens and unlinked monster/NPC tokens (`ActorDelta`), as well as effect updates and condition toggles in DnD5e 6.0+ and Foundry V14.
-* **Snap Templates to Grid Intersections**: Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Tailored for Foundry V14 and DnD5e v6 Region-based templates, including live preview dragging and final placement. Hold **Shift** while placing to temporarily override and place freely. Cones and rays are not affected.
-* **Template Placement Controls HUD & Scroll Rotation**: Displays an informative, floating HUD banner at the top of the canvas during spell and item template placement, mirroring the sleek aesthetic of the Enhanced Teleport Targeting UI.
-  * **Context-Aware Scroll Wheel Controls**: Intelligently adapts mouse wheel scrolling based on whether the active template shape is directional:
-    * **Directional Templates (Cones & Rays/Lines)**:
-      * **Scrolling**: Directly rotates the preview shape in fine 5° steps, restoring the effortless single-handed rotation experience without requiring modifiers. In Touchpad mode (e.g. *Nik's Zoom / Pan Options* Touchpad mode or macOS/Windows precision trackpads), intelligent scroll delta accumulation dampens sensitivity (~40px stroke per 5° step), preventing wild spinning.
-      * **Shift + Scrolling**: Zooms the canvas in and out, allowing you to freely adjust the camera zoom while maintaining your template placement session.
-    * **Non-Directional Templates (Circles & Squares/Cubes/Emanations)**:
-      * Rotation is not relevant, so **both regular scrolling and Shift+scrolling zoom the canvas camera naturally**.
-  * **Live Control Badges**: Clearly displays essential template manipulation shortcuts right on screen:
-    * **Rotation (Directional Shapes only)**: Shows `<kbd>Scroll</kbd>` to rotate directional templates (cones, lines, rays), featuring a real-time rotation angle readout badge (e.g. `0°`, `45°`, `90°`) that updates dynamically as you scroll. Automatically omitted for non-rotatable shapes (circles, squares/cubes, emanations).
-    * **Canvas Zoom**: Shows `<kbd>Scroll</kbd>` to zoom the canvas for circles and squares/cubes (since rotation is not relevant), or `<kbd>Shift</kbd> + <kbd>Scroll</kbd>` for directional templates. Fully compatible with zoom/pan modules (including **Nik's Zoom / Pan Options**) and macOS trackpads/pinch gestures.
-    * **Placement**: Shows `<kbd>Click</kbd> Place` to confirm placement at the cursor position.
-    * **Emanation Token Target Guidance**: For emanations (e.g. *Spirit Guardians*, *Aura of Protection*, *Antilife Shell*), the HUD clearly indicates that the area must attach to a creature:
-      * **Subtitle**: Appends `• Attach to Token` to the shape description.
-      * **Target Status Badge**: Shows an attention-pulsing amber warning `Click a Token (not empty space)` while hovering empty ground, which instantly updates to a vibrant emerald check `Target: [Token Name]` as soon as the cursor hovers over a creature token.
-      * **Action Badge**: Updates dynamically to `<kbd>Click Token</kbd> Select Token` or `<kbd>Click Token</kbd> Attach to [Token Name]`.
-    * **Auto-Attach Self Emanation Templates**: A dedicated sub-setting that detects when an activity with an emanation template targets Self (e.g. *Spirit Guardians*, *Antilife Shell*, *Holy Aura*, *Aura of Protection*, *Aura of Courage*). Automatically binds the template directly to the caster's token and skips manual canvas placement entirely, while preventing window minimization flicker. Automatically falls back to manual placement with HUD guidance if no token is found on the scene. Configurable via both GM world master setting and Personal Preferences.
-    * **Grid Snapping Override**: Shows a `<kbd>Shift</kbd> Free Snap` badge when **Snap Templates to Grid Intersections** is active, letting players know they can hold Shift to place freely off-grid (suppressed during emanation placement).
-    * **Cancellation**: Shows `<kbd>ESC / Right-Click</kbd>` plus an interactive, one-click **[Cancel]** button with hover animations to immediately abort template placement.
-  * **Context-Aware Template Info**: Automatically displays the casting item or spell's name, custom artwork image, and shape dimensions (e.g. *Fireball* • 20 ft Radius, *Cone of Cold* • 60 ft Cone) with multi-shape step progression (e.g. *Shape 1 of 2*) for multi-area abilities.
-* **Enhanced Summoning Placement HUD & Range Preview**: Displays a dedicated, floating glassmorphic HUD banner at the top of the canvas during summoning placement (e.g. *Summon Beast*, *Find Familiar*, *Conjure Animals*, *Faithful Hound*), seamlessly matching the sleek aesthetic of the Template Placement HUD and Teleport Targeting UI.
-  * **Scroll Wheel Controls**:
-    * **Scroll**: Zooms the canvas camera in and out freely.
-    * **Shift + Scroll**: Rotates the token's facing direction in 15° increments (or 30° on hexagonal grids), providing intuitive token orientation before dropping summons onto the board.
-  * **Live Range & Distance Readout**:
-    * Computes real-time distance from the caster token to the preview position using `canvas.grid.measurePath`.
-    * **In Range Badge**: Displays an emerald glowing badge with `✓ In Range (X / Max ft)` when within the spell's allowed reach.
-    * **Out of Range Badge**: Switches to a crimson warning badge with `⚠ Out of Range (X / Max ft)` when moving beyond the spell's reach.
-    * Gracefully adapts for touch spells (5 ft reach) and general summoning activities with unknown or unlimited range.
-  * **Canvas Range Boundary Ring**:
-    * Automatically draws an ethereal conjuration boundary circle around the caster token on `canvas.controls` indicating the maximum reach of the summoning spell.
-    * Dynamically pulses from arcane violet to warning red if the placement cursor moves beyond maximum range.
-    * Automatically cleans up and destroys canvas graphics once placement completes or is cancelled.
-  * **Multi-Creature Summon Step Tracking**:
-    * When summoning multiple creatures (e.g. 4 wolves, 8 fey creatures), the HUD subtitle dynamically updates in real time to show progress (e.g. *Beast of the Air • Summon 1 of 4* -> *Summon 2 of 4*).
-  * **On-Screen Placement Shortcuts**:
-    * Displays quick badges for `<kbd>Scroll</kbd> Zoom`, `<kbd>Shift + Scroll</kbd> Facing`, `<kbd>Click</kbd> Place`, and `<kbd>Shift</kbd> Free Snap` (to place freely without snapping to grid vertices or cell centers).
-    * Features `<kbd>ESC / Right-Click</kbd>` cancellation plus an interactive, animated **[Cancel]** button to immediately abort placement.
-  * **Single-Row Compact Layout**: Enforces non-wrapping (`white-space: nowrap`) across all distance badges and keycaps to prevent vertical text breaking, ensuring the banner maintains an elegant, single-row height.
-  * **Visible Canvas Dynamic Centering**: Automatically centers the banner on the unobstructed canvas space between the left controls toolbar and the right sidebar (expanded or collapsed), with smooth animated realignment when the sidebar is toggled.
-  * **Automatic Token Artwork Resolution for Previews**: Fixes a core DnD5e / Foundry V14 limitation where preview tokens during summoning frequently show the default "Mystery Man" placeholder instead of the creature's artwork. Checks for configured default wildcard images (such as Token HUD Wildcard's "Wildcard drop default" setting), automatically evaluates wildcard token image patterns using `actor.getTokenImages()`, and falls back to the actor's portrait artwork (`actor.img`) so the canvas preview renders the authentic creature art immediately.
-* **Auto-Clear Movement History**: Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).
-* **Disable Underground Token Hiding**: Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Compatible with Foundry native Scene Levels. Disabled by default.
-* **Enhanced Teleport Targeting UI (Automated Animations)**: Significantly improves the destination selection UX when triggering a teleport preset (such as *Misty Step*, *Dimension Door*, or custom teleport animations) in the **Automated Animations** (`autoanimations`) module.
-  * **Floating Screen Banner**: A modern, glassmorphic HUD banner at the top of the screen displays the active teleport spell/item, maximum range, live distance measurement, status badge (`In Range`, `Out of Range`, `Path Blocked`), hotkey hint (`ESC`), and an interactive `✕ Cancel` button.
-  * **Ghost Token Preview on Canvas**: Snaps a translucent preview of your token to the grid under the cursor in real time, with an arcane cyan glow for valid spaces, a crimson border with diagonal slash for out-of-range tiles, and an orange border with X indicator when blocked by walls. When Dynamic Token Rings are enabled, renders an authentic layered preview using the token's actual sculpted dynamic ring and background disc textures from the spritesheet, scales the frame accurately via `subjectScaleAdjustment` and `(w * ringScaleFactor) / subjectScale` to eliminate any gap or padding, displays the character's ring color in a glowing rune band along the ring channel, and respects Subject Scale Correction (scaling the subject artwork up to burst outside the ring) and directional mirroring.
-  * **Precision Reticle**: Switches the canvas mouse cursor to a crosshair while targeting.
-  * **Clean ESC / Cancel Button Flow**: Pressing **Escape** or clicking the banner's **Cancel** button cleanly aborts destination picking, detaches the canvas listener, and terminates Sequencer's border effect without moving the token or altering spell slot uses.
-  * **Uninterrupted Right-Click Panning**: Right-click is intentionally ignored so players and GMs can freely pan the canvas while choosing a destination.
-  * **Untouched Camera**: Preserves your existing zoom level and camera position without disorienting viewport jumps.
-
-### Group 3: Automation & QOL Tasks
-
-* **Auto-Add Tokens to Combat**: Automatically adds new tokens to the active combat encounter when created or dragged to the canvas during combat. Enabled by default.
-* **Prompt for Initiative**: Automatically prompts connected players (or the GM for NPCs) with their initiative roll configuration dialog when their token or combatant is added to an active combat encounter (choices: For All, **For Players** (default), For NPCs, For None). If no owner is connected for a player character, a whispered chat card with a **Roll Initiative** button is sent to the GM and offline owners as a fallback. Excludes summons and legendary action placeholders.
-* **Auto-Roll Initiative**: Automatically rolls initiative immediately without showing a configuration dialog when a token or combatant is added to an active combat encounter (choices: For All, For Players, For NPCs, **For None** (default)). Works independently from the Prompt for Initiative setting.
-* **Legendary Action Placeholders**: When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage. Automatically breaks initiative ties between player characters by giving an additional minimal tie breaker before inserting placeholders, ensuring alternating turn order even when characters have identical initiatives.
-  * *↳ Show Placeholders to Players* — by default, placeholder turns are hidden from players. Enable this to make them visible.
-  * *↳ Placeholder Icon* — file picker to choose a custom icon for placeholder turns (defaults to `icons/svg/combat.svg`).
-* **Auto-Open Damage Dialog for Saves**: Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used. This mirrors the built-in behaviour of Attack activities, which already auto-open their attack roll dialog. Automatically disabled when midi-qol is active to avoid duplicate rolls.
-* **Prompt for Attack Damage**: Automatically opens the damage roll configuration dialog when an attack roll hits a target's AC (choices: **For All** (default), For Players, For NPCs, For None). The attacker's actor type (player character or NPC) determines whether the setting applies. Critical hits are treated as hits. Automatically bypassed when midi-qol is configured to auto-apply damage. Individual players can also toggle this for their own characters via Personal Preferences.
-  * *↳ Auto-Roll Flat / Static Damage & Healing* — when any damage or healing roll would normally be prompted by the system or module (such as using an ability with a flat roll like `@classes.barbarian.levels`, an attack hitting, or a save activity), automatically rolls immediately without opening a configuration dialog if the formula contains only static or derived values (no dice). Enabled by default.
-* **Auto-Roll Attack Damage**: Automatically rolls damage immediately without showing a configuration dialog when an attack roll hits a target's AC (choices: For All, For Players, For NPCs, **For None** (default)). Takes precedence over Prompt for Attack Damage for the same actor type. Automatically bypassed when midi-qol is configured to auto-apply damage. Individual players can also toggle this for their own characters via Personal Preferences.
-* **Player Damage Prompt**: When an attack hits a targeted token, whispers a chat message with the damage breakdown (accounting for damage reductions, resistances, vulnerabilities, and immunities per the 2024 rules order), the effective damage total, and a button to apply the damage. The button state syncs across all clients. Critical hits are indicated with "CRITICALLY HIT" in the message. Also supports the **Graze** weapon mastery — when an attack misses but the weapon has the Graze mastery and the attacker has mastered that weapon, a damage prompt is sent for the Graze damage (ability modifier only). Disabled by default.
-  * *↳ Damage Prompt Whisper Visibility* — controls who receives the whisper when a player token is hit (choices: **GM & Player** (default), Player Only).
-  * *↳ GM Damage Prompt for Player Attacks* — when a player rolls attack damage against an NPC token that was hit, whispers a damage prompt to the GM. Disabled by default.
-  * *↳ Non-Attack Damage Prompts* — when enabled, damage prompts are also sent for damage rolls originating from non-attack activities (like saving throws or utility abilities). For save activities, the prompt includes both Full and Half damage buttons. Also fully supports healing and temporary hit point rolls, displaying "Apply Healing" or "Apply Temp HP" with appropriate icons. Enabled by default.
-  * *↳ Damage Prompt Layout* — controls the visual layout of damage prompts. **Structured** (default) shows a per-type breakdown table with raw damage, trait modifiers, and effective damage. **Classic** shows the original text-based layout.
-  * *↳ Suppress Damage Prompts (Player)* — a per-user setting allowing individual players to hide damage prompt whispers from their chat log.
-  * *↳ Wait for Dice So Nice* — when enabled alongside the Dice So Nice module, damage prompt whispers are delayed until the 3D dice animation finishes. Disabled by default.
-* **Healing Roll Context Menu**: Adds Apply Damage / Apply Healing / Apply Temp HP right-click options to healing roll chat messages. The DnD5e system only shows these options for damage rolls by default.
-* **Self Effect Application Prompt**: When an actor uses an ability that has Active Effects targeting "Self" (e.g. Rage, Divine Favor, Mirror Image) or targets themselves manually when using an ability that can target other creatures (e.g. Haste, Invisibility, Fly, Cure Wounds, Bless, Shield of Faith, Sanctuary), whispers a chat card to the actor's owning player and the GM. The card lists each applicable effect with its icon and a one-click **Apply** button. The prompt strictly triggers only when the used activity actually has the effect assigned to it, preventing secondary activities on the same item from triggering unwanted prompts. After applying an effect, the button transitions to "Effect Applied ✓" and an **Undo** button appears to disable the effect on the actor if needed. Button state syncs across all clients, matching the same apply/undo pattern as the Player Damage Prompt. Activities that place an area-of-effect template (sphere, cone, cube, etc.) are always excluded, and abilities matching a built-in blacklist (such as **Smite** spells and features) are automatically suppressed. Active effects must come directly from items or their activities; the module does not generate synthetic effects.
-  * *↳ Always Prompt Features* — a text input field for a comma-separated list of feature or item names (case-insensitive, default: `Mage Armor`). When these features are used and have an active effect attached, the self-effect application prompt will be posted even if they were not self-targeted.
-* **Auto-Roll Concentration Saves**: Automatically rolls a concentration saving throw when a concentrating token takes damage, following official DnD5e rules (DC 10 or half damage taken, whichever is higher). All native system mechanics are respected — including the actor's configured concentration ability, concentration bonuses, and intrinsic advantage/disadvantage (e.g. War Caster, Eldritch Mind). Prompts and dialogs are routed exclusively to the character's connected player owner whenever they are online (even when damage is applied by the GM), falling back to the GM only if the token's player is offline or for NPCs. Displays a sleek, interactive **"Concentrating on: [Item Name]"** pill badge (complete with spell/item icon and click-to-view item sheet shortcut) directly on concentration challenge prompt cards and concentration save roll cards when associated with a specific spell/item. An **"End Concentration"** button is appended to concentration save roll cards (including manually initiated saves, seamlessly replacing the redundant native "Break" button) so GMs and owning players can break concentration with a single click. Also respects the dnd5e system's global "Disable Concentration Tracking" setting. Characters with the **Boon of the Iron Mind** feat (identified by `boon-of-the-iron-mind` or by name fallback `"Boon of the Iron Mind"`) are automatically exempted from concentration prompts and rolls upon taking damage, honoring their *Unshakable Focus* rule.
-  * *↳ Fast-Forward Concentration Rolls* — controls which actors skip the roll dialog and roll immediately. Choices: **NPCs Only** (default), All Actors, Players Only, Never (always show dialog).
-  * *↳ Auto-End Concentration on Save Failure* — when enabled, concentration is ended automatically when the saving throw fails. When disabled (default), the "End Concentration" button on the chat card must be clicked manually.
-* **Mage Slayer: Concentration Disadvantage**: When an attacker with the Mage Slayer feat deals damage to a concentrating creature, the concentration saving throw is automatically rolled with Disadvantage. If the defender has intrinsic Advantage on concentration saves (e.g. War Caster, Eldritch Mind), the two cancel to a normal roll per 2024 PHB rules. Attacker detection uses a 3-tier check: official `mage-slayer` item identifier, legacy `dnd5e.mageSlayer` actor flag, or item name match for homebrew.
-* **Auto-End Concentration**: Automatically ends all concentration effects from a token when it gains a condition that prevents maintaining concentration (Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned). Characters with the **Boon of the Iron Mind** feat are automatically exempted from ending concentration on Incapacitated, Paralyzed, or Stunned, ending concentration only upon becoming **Unconscious**, **Dead**, or **Petrified** per their *Unshakable Focus* feature. Works alongside the DnD5e system's own concentration tracking.
-* **Auto-End Class Features**: Automatically ends class feature active effects — including Barbarian's **Rage**, Sea Druid's **Wrath of the Sea** (`wrath-of-the-sea`), and Star Druid's **Starry Form** (`starry-form`) — when the token gains an incapacitating condition. Respects level 15+ **Persistent Rage**: for Barbarians level 15 or higher, Rage only ends early on the Unconscious condition (not on Incapacitated/Stunned/Paralyzed/Petrified). Features are identified by source item/activity identifiers or effect name fallbacks.
-* **Disable Active Effect Expiry**: Completely disables and suppresses the automatic expiration and deletion of Active Effects introduced by the DnD5e system. Effects with durations (e.g. 1 minute, 10 rounds, 1 hour) are kept active rather than deleted out of combat, at combat exit, or on rest. Turn-based pseudo-expiries (`turnStart`, `targetStart`, etc.) are silenced, and effects are prevented from becoming suppressed when their duration runs out. Effects remain active until manually toggled or removed by the GM or player. Disabled by default.
-* **Auto-Apply Status at 0 HP**: Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. When enabled, this feature overrides the DnD5e system's native Downed Status Automation (`autoApplyDowned`) so that the module's separate PC and NPC settings take precedence. Automatically escalates to Dead if an unconscious token reaches 3 failed death saving throws. NPCs marked as **Important** (`system.traits.important` or having class levels) fall **Unconscious** rather than Dead at 0 HP so they can roll death saving throws, and are **never automatically removed from combat or marked as defeated**. Also supports marking standard tokens as defeated in the combat tracker or removing them from combat entirely. All actions are configurable separately for player-owned and GM-owned (NPC) tokens. Works well with Auto-Rotate Prone / Unconscious / Dead Tokens — if both features are enabled, tokens that drop to 0 HP will be rotated automatically via the applied status. Disabled by default.
-  * *↳ Player Token Status at 0 HP* — defaults to **Unconscious** (choices: Unconscious, Dead, None).
-  * *↳ NPC Token Status at 0 HP* — defaults to **Dead** (choices: Unconscious, Dead, None). Important NPCs fall unconscious instead.
-  * *↳ Player Token Combat Action at 0 HP* — defaults to **None** (choices: Mark Defeated, Remove from Combat, None).
-  * *↳ NPC Token Combat Action at 0 HP* — defaults to **Mark Defeated** (choices: Mark Defeated, Remove from Combat, None). Important NPCs are never removed or marked defeated.
-* **Prompt for Death Saves**: When a player character starts their combat turn at 0 HP, automatically opens the Death Saving Throw roll dialog directly for the owning player. If the player is not connected, the GM receives a fallback whispered chat card with a clickable button to roll on their behalf.
-* **Suppress Bloodied Condition on Dead Tokens**: In DnD5e, tokens that die or reach 0 HP retain the Bloodied condition (since HP is <= 50%), resulting in both the Dead condition overlay and the Bloodied status icon appearing simultaneously. When enabled, this feature dynamically suppresses and removes the Bloodied condition on any actor that is dead or dies (including tokens that drop from full health directly to 0 HP), preventing creation race conditions and clearing the Bloodied icon from the token and status displays. If the Dead condition is later removed (such as upon revival or healing) while the token remains at or below 50% HP, the Bloodied condition is automatically re-evaluated and restored. World setting, enabled by default.
-* **Combat Experience Tracker**: At the end of a combat encounter, whispers a summary to the GM tallying the XP of all hostile NPCs that were involved, with a one-click button to distribute XP evenly (rounded down) to all participating player characters. Tracks combatants added mid-combat. Disabled by default.
-
-### Group 4: Restrictions & Rules
-
-* **Force Compendium Browser**: Forces non-GM users to open the DnD5e Compendium Browser when they click the Compendium sidebar tab, instead of showing the default pack list.
-  * *↳ Allow Shift-Click to Bypass* — when enabled, players can hold **Shift** while clicking the Compendium tab to access the standard Foundry compendium sidebar instead of the forced browser. Enabled by default.
-
-
-
-### Utilities
-
-* **Auto-Unpause When Logging In**: When the GM logs into a paused world, optionally unpauses the game. Choices: **Always** (unpause regardless of connected players), **When no players are connected** (only if no non-GM players are in the session), **Never** (disabled, default). This is a **per-user setting** — each GM account configures it independently.
-* **Debug Mode**: Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.
+- [📊 Feature Matrix (At a Glance)](#-feature-matrix-at-a-glance)
+- [🎨 User Interface & Visuals](#-user-interface--visuals)
+- [🎯 Canvas & Tokens](#-canvas--tokens)
+- [⚔️ Combat & Automation](#-combat--automation)
+- [📜 Rules, Restrictions & Utilities](#-rules-restrictions--utilities)
+- [🛠️ Silent System Patches](#️-silent-system-patches)
+- [⚙️ Settings Dashboard & Personal Preferences](#️-settings-dashboard--personal-preferences)
+- [🤝 Module Compatibility](#-module-compatibility)
+- [📦 Installation](#-installation)
+- [❤️ Other Modules by Nik](#️-other-modules-by-nik)
 
 ---
 
-## Patches
+## 📊 Feature Matrix (At a Glance)
 
-Patches are automatic, always-on fixes for confirmed bugs in the DnD5e system or Foundry VTT itself. They are applied silently at startup with no settings to configure, and are removed automatically once the upstream fix ships.
-
-* **Skill Tooltip Overlap**: Each skill (and tool) row in the character sheet carries a `data-reference-tooltip` on its `<li>` element. Without a direction hint, Foundry's default tooltip positioning renders the rule tooltip directly on top of adjacent rows in the list, covering their clickable areas (roll link, proficiency-cycle, config button). This patch wraps `_applyTooltips` on the `BaseActorSheet` prototype so that skill/tool list-item elements receive `data-tooltip-direction="LEFT"`, causing the tooltip to appear to the left of the row rather than overlapping the sheet.
+| Feature | Category | Default | Player Preference? |
+|---|---|:---:|:---:|
+| **[Retroactive Advantage / Disadvantage](#retroactive-advantage--disadvantage)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Sheet Pop-out Button](#sheet-pop-out-button)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Clean Sheet Window Titles](#clean-sheet-window-titles)** | UI & Visuals | ✅ Enabled | No |
+| **[Context Menu Styling](#context-menu-styling)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Reliable Chat Log Auto-Scroll](#reliable-chat-log-auto-scroll)** | UI & Visuals | ✅ Enabled | No |
+| **[Actor Directory Disposition Dots](#actor-directory-disposition-dots)** | UI & Visuals | ✅ Enabled | No |
+| **[Cursor Keyboard Hints](#cursor-keyboard-hints)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Sync Browser Tab Title](#sync-browser-tab-title)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Blood Drop Bloodied Icon](#blood-drop-bloodied-icon)** | UI & Visuals | ✅ Enabled | No |
+| **[Sidebar Multi-line Names](#sidebar-multi-line-names)** | UI & Visuals | ✅ Enabled | No |
+| **[NPC Hit Point Scaling Buttons](#npc-hit-point-scaling-buttons)** | UI & Visuals | ✅ Enabled | No |
+| **[Toolbar Limitation](#toolbar-limitation)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile-damage-trays-for-gm)** | UI & Visuals | ✅ Enabled | No |
+| **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-unowned-damage-trays-for-players)** | UI & Visuals | ✅ Enabled | No |
+| **[Carolingian UI Theme Harmony](#carolingian-ui-theme-harmony)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Canvas & Tokens | ✅ Enabled | No |
+| **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Auto-Clear Movement History](#auto-clear-movement-history)** | Canvas & Tokens | ✅ Enabled | No |
+| **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
+| **[Prompt for Initiative](#prompt-for-initiative)** | Combat & Automation | ✅ Players | Yes |
+| **[Auto-Roll Initiative](#auto-roll-initiative)** | Combat & Automation | ❌ Disabled | Yes |
+| **[Auto-Add Tokens to Combat](#auto-add-tokens-to-combat)** | Combat & Automation | ✅ Enabled | No |
+| **[Prompt for Attack Damage](#prompt-for-attack-damage)** | Combat & Automation | ✅ For All | Yes |
+| **[Auto-Roll Attack Damage](#auto-roll-attack-damage)** | Combat & Automation | ❌ Disabled | Yes |
+| **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
+| **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
+| **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
+| **[Auto-End Concentration](#auto-end-concentration)** | Combat & Automation | ✅ Enabled | No |
+| **[Auto-End Class Features (Rage, etc.)](#auto-end-class-features)** | Combat & Automation | ✅ Enabled | No |
+| **[Self Effect Application Prompt](#self-effect-application-prompt)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat & Automation | ✅ Enabled | No |
+| **[Suppress Bloodied Condition on Dead Tokens](#suppress-bloodied-condition-on-dead-tokens)** | Combat & Automation | ✅ Enabled | No |
+| **[Player Damage Prompt](#player-damage-prompt)** | Combat & Automation | ❌ Disabled | Yes |
+| **[Auto-Apply Status at 0 HP](#auto-apply-status-at-0-hp)** | Combat & Automation | ❌ Disabled | No |
+| **[Healing Roll Context Menu](#healing-roll-context-menu)** | Combat & Automation | ✅ Enabled | No |
+| **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Combat & Automation | ❌ Disabled | No |
+| **[Combat Experience Tracker](#combat-experience-tracker)** | Combat & Automation | ❌ Disabled | No |
+| **[Force Compendium Browser](#force-compendium-browser)** | Rules & Utilities | ✅ Enabled | No |
+| **[Auto-Unpause When Logging In](#auto-unpause-when-logging-in)** | Rules & Utilities | ❌ Disabled | Yes (GM) |
 
 ---
 
-## Module Compatibility
+## 🎨 User Interface & Visuals
 
-This module includes automatic compatibility checks for other popular modules. No manual configuration is needed. Conflicting features are detected and disabled at startup.
+### Retroactive Advantage / Disadvantage
+Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly below the dice roll bar on d20 check, save, and attack roll chat cards.
+* **Cached Dice Results**: Switching modes reuses originally rolled dice without rolling new random numbers, preventing re-roll exploitation.
+* **3D Animation & Rules Support**: Animates newly evaluated dice with Dice So Nice. Supports Elven Accuracy (3d20) and Halfling Lucky. Automatically recalculates attack hit/miss badges, criticals, and fumbles.
+* *Sub-settings*: **Show Only on Hover** (reveals cleanly on mouse hover to keep chat compact).
 
-### midi-qol
+### Chat Card Styling Improvements
+Modernizes DnD5e chat cards to make actions and roll results readable at a glance:
+* **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
+* **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
+* **Saving Throw Shorthand**: Replaces generic labels with ability abbreviations (**STR SAVE**, **DEX**, **CON**, **INT**, **WIS**, **CHA**).
+* **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
 
-[midi-qol](https://gitlab.com/tposney/midi-qol) provides its own comprehensive combat automation workflow, including auto-rolling damage and applying saves. The following features include **smart automatic compatibility checks** with midi-qol settings to avoid duplicate actions or conflicting behaviour:
+### Item Sheet Attunement Tag
+Adds a prominent **Attunement Required** or **No Attunement Required** badge to magic item sheets and rich item tooltips.
+* **Direct Toggle**: Clicking an attunement badge on an owned item directly toggles its attuned state without opening tabs.
+* **Concealment Friendly**: Fully respects unidentified item concealment from players.
+* *Sub-settings*: **Tag Placement** (Header & Description Pills, Header Badge Only, Description Pills Only, Header Subtitle Only), **Show in Item Tooltips**.
+
+### Item / Spell / Feature Add: Choice Dialog
+Clicking the `+` button on character sheets (Items, Spells, or Features) presents a choice between creating an empty item or opening the Compendium Browser.
+* **Smart Filtering**: Automatically pre-filters the browser by class/subclass and spell level (including Eldritch Knight, Arcane Trickster, and Mystic Arts), feats for features, and physical items for inventory.
+* **Bypass Shortcut**: Hold <kbd>Shift</kbd> while clicking `+` to skip the dialog and create directly.
+
+### Roll Mode Highlight
+Persistently highlights the recommended roll mode button (Advantage or Disadvantage) in d20 roll dialogs based on system conditions and features.
+* *Sub-settings*: **Highlight Style** (Glow, Border, Badge, Fill), **Highlight Normal Mode Too**, **Highlight Color** (default gold `#c9a227`).
+
+### Sheet Pop-out Button
+Adds a dedicated **↗ pop-out button** to Actor and Item sheet window headers to detach them into separate browser windows with one click. Automatically hides when already detached.
+
+### Clean Sheet Window Titles
+Removes redundant type prefixes (e.g. *"Non Player Character:"*) from sheet headers, displaying clean titles like *"Goblin Archer"* or *"Potion of Healing"*.
+* *Sub-settings*: Title Format (**Name Only**, Type: Name, Name (Type)).
+
+### Context Menu Styling
+Color-codes right-click context menu options across sheets, compendiums, directories, and chat:
+* **Destructive Actions** (Delete, Remove): Crisp red text.
+* **Additive Actions** (Duplicate, Copy): Clear green text.
+* **Privacy Actions** (Make Private, Reveal): Luminous violet text.
+
+### Reliable Chat Log Auto-Scroll
+Fixes the native DnD5e chat log failing to auto-scroll when new cards appear or trays expand, while preserving scroll position when reading older history.
+
+### Actor Directory Disposition Dots
+Displays colored disposition dots (Friendly, Neutral, Hostile, Secret) next to actor names in the sidebar.
+
+### Cursor Keyboard Hints
+Displays subtle floating modifier icons near the mouse cursor when holding keys for Skip Dialog, Advantage, or Disadvantage.
+
+### Sync Browser Tab Title
+Dynamically updates the browser tab title with the name of the active scene being viewed.
+
+### NPC Hit Point Scaling Buttons
+Adds `+` and `-` buttons to the NPC Hit Points configuration dialog to quickly scale hit dice up or down, automatically recalculating average maximum HP and health formulas. Hold <kbd>Shift</kbd> to scale by 5.
+
+### Toolbar Limitation
+Turns toolbars scrollable when button count exceeds a configured limit (default: 20), preventing overcrowded canvas controls.
+
+### Auto-Collapse Hostile / Unowned Damage Trays
+* **For GM**: Auto-collapses the interactive damage application tray on hostile monster attacks targeting players.
+* **For Players**: Auto-collapses damage trays when none of the targeted tokens are owned by the player, removing un-actionable clutter.
+
+### Carolingian UI Theme Harmony
+Seamlessly adapts the Settings Dashboard, floating canvas HUDs, and damage cards to **Carolingian UI** color palettes, typography, top scene navigation offsets, and Combat Carousel legendary action placeholders.
+
+---
+
+## 🎯 Canvas & Tokens
+
+### Template Placement Controls HUD & Scroll Rotation
+A floating glassmorphic banner appears during spell and item template placement:
+* **Mouse-Wheel Rotation**: Cones, rays, and lines rotate directly in 5° steps using mouse wheel scrolling. Shift+scroll zooms the camera.
+* **Live Readout**: Dynamic rotation angle readout badge (`0°`, `45°`, `90°`).
+* **Emanation Guidance**: Displays target token attachment guidance with visual feedback.
+* **Auto-Attach Self Emanations**: Automatically binds self-targeted emanations (*Spirit Guardians*, *Holy Aura*, etc.) directly to the caster token without manual placement.
+* **Cancel Shortcut**: Clean cancellation via <kbd>ESC</kbd>, Right-Click, or the interactive HUD Cancel button.
+
+### Auto-Target Tokens in Spell Templates
+Automatically selects and targets tokens inside spell templates during placement and updates targets in real time.
+* **Directional Caster Exclusion**: Cones and lines exclude the caster token from targeting.
+* **Chat Synchronization**: Updates targets directly on spell chat cards for subsequent saving throws and damage application.
+* **GM Privacy**: Non-GM players only target tokens visible to them.
+
+### Enhanced Summoning Placement HUD & Range Preview
+Appears during creature summoning activities (*Find Familiar*, *Summon Celestial*, etc.):
+* **Live Distance Measurement**: Real-time distance readout with emerald `✓ In Range` and crimson `⚠ Out of Range` status badges.
+* **Boundary Ring**: Draws an ethereal range boundary circle around the caster token on the canvas.
+* **Facing Rotation**: Hold <kbd>Shift</kbd> while scrolling to orient the summoned creature before placement.
+* **Step Tracking**: Multi-creature summons display step progress (*Summon 1 of 4*).
+* **Token Art Preview**: Evaluates wildcard patterns and actor portraits so canvas previews show actual creature artwork instead of mystery tokens.
+
+### Enhanced Teleport Targeting UI (Automated Animations)
+Improves teleport preset destination picking (*Misty Step*, *Dimension Door*):
+* Snaps a translucent ghost token preview to the grid featuring the character's authentic dynamic token ring and rune colors.
+* Real-time status badges for valid range, out-of-range, and wall collision.
+* Uninterrupted right-click canvas panning and clean <kbd>ESC</kbd> / Cancel flow.
+
+### Auto-Rotate Prone / Unconscious / Dead Tokens
+Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
+
+### Snap Templates to Grid Intersections
+Snaps circle and square spell templates to grid intersections instead of cell centers. Hold <kbd>Shift</kbd> while placing to override snapping.
+
+### Clear Targets Token Control Button
+Adds a dedicated crosshair button to the canvas Token Controls toolbar. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
+
+### Auto-Clear Movement History
+Automatically clears token movement history trails at the start of combat and on each turn (GM client).
+
+### Disable Underground Token Hiding
+Prevents tokens with negative elevation from disappearing behind the scene background layer.
+
+---
+
+## ⚔️ Combat & Automation
+
+### Auto-Roll / Prompt Concentration Saves
+Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage.
+* **Player Ownership**: Prompts are delivered directly to the connected player owning the character.
+* **Concentration Badges**: Chat cards feature an interactive **"Concentrating on: [Spell]"** badge with sheet shortcuts.
+* **One-Click End**: Appends an **End Concentration** button directly to roll cards.
+* **Boon of the Iron Mind**: Automatically exempts characters with *Unshakable Focus*.
+* *Sub-settings*: **Fast-Forward Rolls** (NPCs Only, All, Players Only, Never), **Auto-End Concentration on Failure**.
+
+### Mage Slayer: Concentration Disadvantage
+Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens.
+
+### Auto-End Concentration & Class Features
+* **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
+* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage).
+
+### Prompt / Auto-Roll Attack Damage
+* **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.
+* **Auto-Roll Attack Damage**: Immediately rolls damage on hit without opening a dialog.
+* **Auto-Roll Flat / Static Damage**: Automatically rolls flat bonuses without opening dialogs if formulas have no dice.
+
+### Prompt / Auto-Roll Initiative
+* **Prompt for Initiative**: Prompts players with initiative dialogs when added to combat (with whispered cards for offline players).
+* **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
+
+### Auto-Open Damage Dialog for Saves
+Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). Automatically bypassed when midi-qol is active.
+
+### Prevent Rolling as Group Actors
+Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.
+
+### Self Effect Application Prompt
+When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*), whispers a chat card with one-click **Apply** and **Undo** buttons.
+* *Sub-setting*: **Always Prompt Features** (comma-separated names like `Mage Armor`).
+
+### Legendary Action Placeholders
+Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking.
+* *Sub-settings*: **Show to Players**, **Custom Icon**.
+
+### Prompt for Death Saves
+Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.
+
+### Suppress Bloodied Condition on Dead Tokens
+Dynamically removes the Bloodied icon and status when a creature dies or reaches 0 HP, restoring it if revived below 50% HP.
+
+### Auto-Apply Status at 0 HP
+Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat.
+
+### Player Damage Prompt
+Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP.
+
+### Combat Experience Tracker
+Tallies hostile NPC XP at the end of combat with a one-click button for the GM to distribute experience evenly among players.
+
+---
+
+## 📜 Rules, Restrictions & Utilities
+
+### Force Compendium Browser
+Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendium Browser instead of the raw pack directory. Hold <kbd>Shift</kbd> to access the default sidebar.
+
+### Auto-Unpause When Logging In
+Per-user GM setting to automatically unpause the world upon login (**Always**, **When no players connected**, or **Never**).
+
+### Debug Mode
+Enables comprehensive diagnostic logging in the browser console.
+
+---
+
+## 🛠️ Silent System Patches
+
+Patches are zero-configuration, always-on fixes for confirmed upstream system or core bugs:
+* **Skill Tooltip Overlap**: Fixes character sheet skill and tool list reference tooltips appearing directly on top of neighboring rows, ensuring clickable links remain unobstructed.
+
+---
+
+## ⚙️ Settings Dashboard & Personal Preferences
+
+All features are managed in the **Settings Dashboard** accessible via *Configure Settings > Nik's DnD5e Tweaks*:
+
+* **World Settings (GM Only)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities.
+* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults.
+* **Player-First Access**: When non-GM players open the dashboard, it immediately displays their Personal Preferences tab, and the "Reset Defaults" action resets only their personal client settings.
+
+---
+
+## 🤝 Module Compatibility
+
+Nik's DnD5e Tweaks includes built-in compatibility guards to ensure conflict-free operation:
+
+### midi-qol Integration Matrix
+When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, conflicting automations are automatically disabled or bypassed:
 
 | Feature | Behavior with midi-qol |
 |---|---|
-| **Auto-Open Damage Dialog for Saves** | **Automatically disabled** when midi-qol is active, as midi-qol manages activity damage workflows. |
-| **Prompt / Auto-Roll Attack Damage** | **Automatically bypassed** if midi-qol is configured to auto-apply damage (`autoApplyDamage` mode contains "yes"). |
-| **Auto-Roll Concentration Saves** | **Automatically bypassed** if midi-qol is configured to handle concentration checks (`doConcentrationCheck !== "none"`). The "End Concentration" button continues to be injected into concentration check roll cards. |
-| **Self Effect Application** | **Automatically bypassed** if midi-qol is configured to auto-apply item active effects (`autoItemEffects !== "off"`). Also filters out any effects already active on the target actor. |
-| **Player Damage Prompt** | **Automatically bypassed** if midi-qol is configured to auto-apply damage (`autoApplyDamage` mode contains "yes"). |
-| **Mage Slayer Concentration** | Fully compatible with midi-qol damage application workflows. |
+| **Auto-Open Damage for Saves** | **Automatically disabled** (midi-qol handles save damage workflows). |
+| **Prompt / Auto-Roll Attack Damage** | **Automatically bypassed** if midi-qol auto-applies damage. |
+| **Auto-Roll Concentration Saves** | **Automatically bypassed** if midi-qol handles concentration checks. Roll card "End Concentration" button remains active. |
+| **Self Effect Application** | **Automatically bypassed** if midi-qol auto-applies item effects. |
+| **Player Damage Prompt** | **Automatically bypassed** if midi-qol auto-applies damage. |
+| **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows. |
 
-Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Healing Context Menu, Auto-End Class Features, etc.) coexist safely with midi-qol — using idempotent checks to avoid duplicating effects or providing purely additive UI enhancements that do not interfere with midi-qol.
-
-### Tidy 5e Sheets
-
-[Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets) is fully supported. Features that interact with character sheets (such as the **Item/Spell/Feature Add: Choice Dialog**) natively integrate with Tidy 5e Sheets (both Classic and Quadrone layouts) alongside standard DnD5e sheets (V1 & V2).
+### Other Supported Modules
+* **Tidy 5e Sheets**: Full support for Classic & Quadrone sheets (including Compendium choice dialogs).
+* **Carolingian UI**: Automatic color theme adoption, top nav clearance glide, and Combat Carousel styling.
+* **Dice So Nice (DSN)**: Synchronized 3D dice rolling for retroactive advantage and damage prompts.
+* **Automated Animations**: Ghost token preview with dynamic token rings for teleport presets.
 
 ---
 
-## Other Modules by Nik
+## 📦 Installation
+
+### Via Foundry VTT Package Browser
+1. In the Foundry setup menu, navigate to **Add-on Modules** > **Install Module**.
+2. Search for **Nik's DnD5e Tweaks**.
+3. Click **Install**.
+
+### Via Manifest URL
+Paste the following manifest URL into Foundry's **Manifest URL** field:
+```
+https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module.json
+```
+
+### Requirements
+* **Foundry VTT**: Version 14
+* **DnD5e System**: Version 6.0.0 or higher
+
+---
+
+## ❤️ Other Modules by Nik
 
 ### ⚔️ Combat & Token Tools
 * **[Nik's Token Tags](https://github.com/nschoenwald/niks-token-tags)** – Automatically numbers duplicate combatant NPCs (A, B, C…) with color-coded letter overlays.
@@ -255,9 +344,9 @@ Other features in this module (Auto-Apply Status at 0 HP, Death Save Prompt, Hea
 * **[Nik's Tiny Change Logs](https://github.com/nschoenwald/niks-tiny-changelogs)** – Compact, single-line chat messages logging token HP and Temp HP changes.
 
 ### 🎲 Visuals & Display
-* **[Nik's Dynamic Roll Area](https://github.com/nschoenwald/niks-dynamic-roll-area)** – Dynamically restricts Dice So Nice 3D dice rolling area to exclude the sidebar / chat log across all screen resolutions and window sizes.
+* **[Nik's Dynamic Roll Area](https://github.com/nschoenwald/niks-dynamic-roll-area)** – Dynamically restricts Dice So Nice 3D dice rolling area to exclude the sidebar / chat log across all screen resolutions.
 
-### ⚙️ Utilities & System Management
+### ⚙️ Utilities & Navigation
 * **[Nik's Settings Locks](https://github.com/nschoenwald/niks-settings-locks)** – Soft-lock and hard-lock client settings and keybindings across all connected players.
 * **[Nik's Compendium Search Tweaks](https://github.com/nschoenwald/niks-compendium-search-tweaks)** – Configure which compendium packs are included or excluded from native sidebar search.
 * **[Nik's Show & Tell](https://github.com/nschoenwald/niks-show-and-tell)** – Share popout images to chat and paste image files directly into chat messages.

@@ -50,6 +50,7 @@ import { initAutoStatusZeroHP } from "./features/combat-automation/auto-status-z
 import { initDeathSavePrompt } from "./features/combat-automation/death-save-prompt.js";
 import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./features/combat-automation/suppress-bloodied-dead.js";
 import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tracker.js";
+import { initPreventGroupActorRolls } from "./features/combat-automation/prevent-group-actor-rolls.js";
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
@@ -1063,6 +1064,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enablePreventGroupActorRolls", {
+        name: "Prevent Rolling as Group Actors",
+        hint: "Prevents players from making rolls as group actors (such as when controlling a party exploration token or interacting with a party sheet). The roll automatically falls back to their assigned player character actor instead.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enablePlayerDamagePrompt", {
         name: "Player Damage Prompt",
         hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
@@ -1477,6 +1488,7 @@ Hooks.once("setup", () => {
     initTemplatePlacementHUD();
     initSummonPlacementHUD();
     initClearTargets();
+    initPreventGroupActorRolls();
 });
 
 Hooks.once("ready", async () => {

@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.40.0] - 2026-10-05
+### Added
+- **Prevent Rolling as Group Actors**:
+  - Prevents non-GM players from making rolls as group actors (such as when controlling a party exploration token on the canvas, using items or activities from the party inventory, or rolling dice via chat or macros while a group token is selected).
+  - Automatically redirects the roll's speaker and data context to fall back to the player's assigned character (`game.user.character`) — using their active token on the current scene if present, or their actor document otherwise.
+  - Fixes formula evaluation issues where rolls using `@mod`, `@prof`, or ability modifiers failed or evaluated to 0 because group actors lack character attributes and ability scores.
+  - **Multi-Tiered Architecture**:
+    - **Speaker Resolution Interception (`ChatMessage.getSpeaker`)**: Wraps `ChatMessage.getSpeaker` across both `foundry.documents.ChatMessage` and `CONFIG.ChatMessage.documentClass`, ensuring that when a player client calls `getSpeaker`, any group actor or token arguments or selected group tokens on canvas are intercepted and redirected to their assigned character.
+    - **Chat Roll Pre-Processing (`chatMessage` Hook)**: Intercepts `/r` and `/roll` chat commands before dice evaluation, ensuring `chatData.speaker` and `#processDiceCommand` evaluate roll formulas with the player character's `getRollData()`.
+    - **DnD5e 6.x Roll Workflow Integration (`dnd5e.preRoll` Hook)**: Intercepts structured activity rolls (attacks, damage, saves, ability checks, and tool checks), updating `message.data.speaker` and merging the player character's attributes into `roll.data` if invoked from a group actor context (e.g. party inventory consumables).
+    - **Pre-Flight Creation Guard (`preCreateChatMessage` Hook)**: Acts as a safety net on any newly created roll message, redirecting group speaker references to the player's assigned character.
+  - **GM Exemption**: GMs (`game.user.isGM`) are completely exempt, allowing GMs to initiate group skill checks, saving throw requests, and group sheet actions without interference.
+  - **Settings Dashboard Integration**: Configurable via world master setting (**Prevent Rolling as Group Actors**) under **Combat & Automation > Phase 2: Actions, Rolls & Damage Prompts**, enabled by default.
+
+### Improved
+- **Mage Slayer Concentration Automation (Foundry V14 & DnD5e 6.x Audit)**:
+  - **Unlinked Token Isolation**: Keyed pending Mage Slayer concentration disadvantage strictly by token document `uuid` on synthetic token actors (`actor.isToken`), preventing disadvantage leakage across multiple unlinked tokens of the same base creature type on canvas.
+  - **Hook Deduplication**: Added event handling deduplication (`_nd5tMageSlayerProcessed`) between `dnd5e.preApplyDamage` and `dnd5e.applyDamage` so the same damage event does not redundantly process or re-flag an actor after a concentration roll.
+  - **Completion-Based Flag Cleanup**: Registered `dnd5e.rollConcentration` as the primary flag cleanup hook rather than deleting in `preRollConcentration`, ensuring that closing or canceling a concentration roll dialog does not prematurely clear the pending disadvantage before the roll is actually evaluated.
+  - **Extended Pending TTL**: Increased pending disadvantage time-to-live from 60s to 300s (5 minutes) so that in-game tactical discussions, player reaction queries, or spell consultations do not cause disadvantage to expire before the save is rolled.
+  - **Enhanced Attacker & Document Resolution**: Added support for direct `Actor` instances passed as `options.origin` or `options.attacker`, `fromUuidSync` resolution for message UUID strings, and updated speaker resolution via `ChatMessage.implementation.getSpeakerActor`.
+  - **Localization & Concentration Detection Fallback**: Expanded feat name matching to cover German localization (`"Magietöter"`) alongside `"Mage Slayer"` and `mage-slayer` identifier, and added fallback detection for `statuses.has("concentrating")`.
+
 ## [14.39.0] - 2026-10-04
 ### Added
 - **Clear Targets Token Control Button**:

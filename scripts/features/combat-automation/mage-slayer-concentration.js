@@ -13,12 +13,12 @@ import { MODULE_ID, debug } from "../../main.js";
  *   "When you damage a creature that is concentrating, it has Disadvantage
  *    on the saving throw it makes to maintain Concentration."
  *
- * Implementation uses two hooks:
+ * Implementation uses three hooks:
  *
  *  1. dnd5e.preApplyDamage / dnd5e.applyDamage — fires when damage is applied
  *     while options.originatingMessage or workflow is available. If the attacker
- *     holds the Mage Slayer feat, the defending actor's ID/UUID is recorded in a
- *     pending Map.
+ *     holds the Mage Slayer feat, the defending actor's UUID (and ID for linked actors)
+ *     is recorded in a pending Map and synced across clients via socket.
  *
  *  2. dnd5e.preRollConcentration — fires inside D20Roll.buildConfigure()
  *     before the concentration save is built (whether auto-rolled, rolled via dialog,
@@ -26,13 +26,16 @@ import { MODULE_ID, debug } from "../../main.js";
  *     has a pending Mage Slayer entry, disadvantage is injected into the roll config.
  *     The system's own advantage/disadvantage resolver then handles the War Caster case:
  *       advantage + disadvantage → NORMAL (2024 rules).
+ *
+ *  3. dnd5e.rollConcentration — fires after the concentration saving throw has been
+ *     evaluated and created, cleanly clearing the pending disadvantage entry.
  */
 
 /**
- * Map of actor IDs/UUIDs that should roll their next concentration save with
+ * Map of actor UUIDs/IDs that should roll their next concentration save with
  * disadvantage due to a Mage Slayer attacker.
  *
- * Key:   defender actor ID or UUID (string)
+ * Key:   defender actor UUID or ID (string)
  * Value: timestamp (ms) when the entry was recorded
  *
  * @type {Map<string, number>}
@@ -40,20 +43,20 @@ import { MODULE_ID, debug } from "../../main.js";
 const _pendingMageSlayerDisadvantage = new Map();
 
 /**
- * Maximum age (ms) of a pending Mage Slayer entry (60 seconds).
- * Ensures that if a concentration save is rolled via a chat prompt card or after a delay
+ * Maximum age (ms) of a pending Mage Slayer entry (5 minutes).
+ * Ensures that if a concentration save is rolled via a chat prompt card or after discussion
  * in a roll configuration dialog, the disadvantage is still properly applied.
  */
-const MAGE_SLAYER_TTL_MS = 60000;
+const MAGE_SLAYER_TTL_MS = 300000;
 
 // ── Attacker & Mage Slayer detection ──────────────────────────────────
 
 /**
  * Determine whether an actor has the Mage Slayer feat.
  * Matches:
- *   - actor flag dnd5e.mageSlayer === true
- *   - item.system.identifier starting with "mage-slayer"
- *   - item.name containing "mage slayer" (case-insensitive, e.g. "Mage Slayer (2024)")
+ *   - actor flag dnd5e.mageSlayer === true or niks-dnd5e-tweaks.mageSlayer === true
+ *   - item.identifier or item.system.identifier starting with "mage-slayer"
+ *   - item.name containing "mage slayer" or "magietöter" (case-insensitive, e.g. "Mage Slayer (2024)")
  *
  * @param {Actor} actor
  * @returns {boolean}
@@ -61,17 +64,17 @@ const MAGE_SLAYER_TTL_MS = 60000;
 function _hasMageSlayer(actor) {
     if (!actor) return false;
 
-    // Check actor flag
-    if (actor.getFlag?.("dnd5e", "mageSlayer")) return true;
+    // Check actor flags
+    if (actor.getFlag?.("dnd5e", "mageSlayer") || actor.getFlag?.(MODULE_ID, "mageSlayer")) return true;
 
     if (!actor.items) return false;
 
     for (const item of actor.items) {
-        const identifier = item.system?.identifier ?? "";
+        const identifier = item.identifier ?? item.system?.identifier ?? "";
         if (identifier === "mage-slayer" || identifier.startsWith("mage-slayer")) return true;
 
         const name = (item.name ?? "").toLowerCase();
-        if (name.includes("mage slayer")) return true;
+        if (name.includes("mage slayer") || name.includes("magietöter")) return true;
     }
 
     return false;
@@ -80,10 +83,10 @@ function _hasMageSlayer(actor) {
 /**
  * Resolve the attacking actor from damage application options.
  * Handles:
- *   - options.originatingMessage (ChatMessage instance or ID)
- *   - options.origin (ChatMessage instance, Item/Activity document, or document UUID string)
+ *   - options.originatingMessage (ChatMessage instance, UUID string, or ID)
+ *   - options.origin (ChatMessage instance, Item/Activity/Actor document, or document UUID string)
  *   - options.message (ChatMessage instance)
- *   - options.workflow / options.item / options.midi (Midi-QOL & system workflows)
+ *   - options.workflow / options.item / options.midi / options.attacker (Midi-QOL & system workflows)
  *
  * @param {object} options
  * @returns {Actor|null}
@@ -97,13 +100,15 @@ function _getAttackerActor(options) {
         if (typeof options.origin === "string") {
             try {
                 const doc = fromUuidSync(options.origin);
-                if (doc?.actor) return doc.actor;
                 if (doc instanceof Actor) return doc;
+                if (doc?.actor) return doc.actor;
             } catch (e) {
                 // Not a valid UUID
             }
         } else if (options.origin instanceof ChatMessage) {
             chatMessage = options.origin;
+        } else if (options.origin instanceof Actor) {
+            return options.origin;
         } else if (options.origin?.actor) {
             return options.origin.actor;
         }
@@ -111,7 +116,8 @@ function _getAttackerActor(options) {
 
     if (chatMessage) {
         if (typeof chatMessage === "string") {
-            chatMessage = game.messages?.get(chatMessage);
+            chatMessage = game.messages?.get(chatMessage)
+                ?? (chatMessage.includes(".") ? fromUuidSync(chatMessage) : null);
         }
 
         if (chatMessage) {
@@ -138,20 +144,24 @@ function _getAttackerActor(options) {
             if (chatActor) return chatActor;
 
             if (origMsg.speaker) {
-                const speakerActor = ChatMessage.getSpeakerActor(origMsg.speaker);
+                const speakerActor = ChatMessage.implementation?.getSpeakerActor?.(origMsg.speaker)
+                    ?? ChatMessage.getSpeakerActor?.(origMsg.speaker);
                 if (speakerActor) return speakerActor;
             }
             if (chatMessage.speaker) {
-                const speakerActor = ChatMessage.getSpeakerActor(chatMessage.speaker);
+                const speakerActor = ChatMessage.implementation?.getSpeakerActor?.(chatMessage.speaker)
+                    ?? ChatMessage.getSpeakerActor?.(chatMessage.speaker);
                 if (speakerActor) return speakerActor;
             }
         }
     }
 
-    // 2. Direct workflow / item references
+    // 2. Direct workflow / item / attacker references
     const wfActor = options?.workflow?.actor
         ?? options?.item?.actor
-        ?? options?.midi?.workflow?.actor;
+        ?? options?.midi?.workflow?.actor
+        ?? options?.attacker?.actor
+        ?? (options?.attacker instanceof Actor ? options.attacker : null);
     if (wfActor) return wfActor;
 
     return null;
@@ -170,27 +180,43 @@ function _processDamageForMageSlayer(defenderActor, amount, options) {
     try {
         if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
 
+        // Skip if this damage event was already processed (e.g. by preApplyDamage)
+        if (options?._nd5tMageSlayerProcessed) return;
+
         // Only care about actual damage
         if (amount <= 0) return;
 
-        // Defender must be concentrating
-        if (!defenderActor?.concentration?.effects?.size) return;
+        // Defender must be concentrating (canonical dnd5e 5.2+ effects set or concentrating status condition)
+        const isConcentrating = (defenderActor?.concentration?.effects?.size > 0)
+            || defenderActor?.statuses?.has("concentrating")
+            || defenderActor?.statuses?.has(CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating");
+        if (!isConcentrating) return;
 
         const attackerActor = _getAttackerActor(options);
         if (!attackerActor) return;
 
         if (!_hasMageSlayer(attackerActor)) return;
 
+        // Prevent redundant re-processing in applyDamage if preApplyDamage handled it
+        if (options) options._nd5tMageSlayerProcessed = true;
+
         debug(`Mage Slayer | ${attackerActor.name} has Mage Slayer — flagging ${defenderActor.name} for concentration disadvantage`);
         const now = Date.now();
-        if (defenderActor.id) _pendingMageSlayerDisadvantage.set(defenderActor.id, now);
+
+        // Always key by UUID (unique across unlinked and linked actors alike)
         if (defenderActor.uuid) _pendingMageSlayerDisadvantage.set(defenderActor.uuid, now);
+
+        // For linked/world actors, also key by ID as a fallback (avoid for unlinked tokens to prevent cross-contamination)
+        if (defenderActor.id && !defenderActor.isToken) {
+            _pendingMageSlayerDisadvantage.set(defenderActor.id, now);
+        }
 
         // Sync flag to other clients so the player client has it when rolling
         game.socket.emit(`module.${MODULE_ID}`, {
             type: "mageSlayerConcentrationDisadvantage",
             actorId: defenderActor.id,
             actorUuid: defenderActor.uuid,
+            isToken: defenderActor.isToken ?? false,
             timestamp: now
         });
     } catch (err) {
@@ -208,7 +234,7 @@ function _onApplyDamage(defenderActor, amount, options) {
     _processDamageForMageSlayer(defenderActor, amount, options);
 }
 
-// ── Concentration Roll hook ───────────────────────────────────────────
+// ── Concentration Roll hooks ──────────────────────────────────────────
 
 /**
  * dnd5e.preRollConcentration — fires inside D20Roll.buildConfigure()
@@ -222,31 +248,50 @@ function _onPreRollConcentration(config, _dialog, _message) {
     try {
         if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
 
-        const actor = config.subject;
+        const actor = config.subject ?? config.actor;
         if (!actor) return;
 
-        const timestamp = _pendingMageSlayerDisadvantage.get(actor.id)
-            ?? _pendingMageSlayerDisadvantage.get(actor.uuid);
+        // Prefer exact actor UUID, fallback to ID for linked actors
+        const timestamp = _pendingMageSlayerDisadvantage.get(actor.uuid)
+            ?? _pendingMageSlayerDisadvantage.get(actor.id);
         if (timestamp === undefined) return;
 
-        // Clean up both keys
-        if (actor.id) _pendingMageSlayerDisadvantage.delete(actor.id);
-        if (actor.uuid) _pendingMageSlayerDisadvantage.delete(actor.uuid);
-
-        // Ignore stale entries older than TTL (60 seconds)
+        // Ignore stale entries older than TTL (5 minutes)
         if (Date.now() - timestamp > MAGE_SLAYER_TTL_MS) {
             debug(`Mage Slayer | Pending disadvantage entry for ${actor.name} expired — skipping`);
+            if (actor.uuid) _pendingMageSlayerDisadvantage.delete(actor.uuid);
+            if (actor.id && !actor.isToken) _pendingMageSlayerDisadvantage.delete(actor.id);
             return;
         }
 
         debug(`Mage Slayer | Injecting disadvantage into concentration save for ${actor.name}`);
         config.disadvantage = true;
-        if (config.rolls?.[0]) {
-            config.rolls[0].options ??= {};
-            config.rolls[0].options.disadvantage = true;
+        for (const roll of config.rolls ?? []) {
+            roll.options ??= {};
+            roll.options.disadvantage = true;
         }
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPreRollConcentration for Mage Slayer:`, err);
+    }
+}
+
+/**
+ * dnd5e.rollConcentration — fires after a concentration save is rolled and evaluated.
+ * Cleanly consumes the pending Mage Slayer disadvantage entry.
+ *
+ * @param {D20Roll[]} rolls
+ * @param {object}    data
+ * @param {Actor5e}   data.subject
+ */
+function _onRollConcentration(rolls, { subject } = {}) {
+    try {
+        const actor = subject ?? rolls?.[0]?.options?.actor;
+        if (!actor) return;
+
+        if (actor.uuid) _pendingMageSlayerDisadvantage.delete(actor.uuid);
+        if (actor.id && !actor.isToken) _pendingMageSlayerDisadvantage.delete(actor.id);
+    } catch (err) {
+        console.error("Nik's DnD5e Tweaks | Error in _onRollConcentration for Mage Slayer:", err);
     }
 }
 
@@ -260,6 +305,7 @@ export function initMageSlayerConcentration() {
     Hooks.on("dnd5e.preApplyDamage", _onPreApplyDamage);
     Hooks.on("dnd5e.applyDamage", _onApplyDamage);
     Hooks.on("dnd5e.preRollConcentration", _onPreRollConcentration);
+    Hooks.on("dnd5e.rollConcentration", _onRollConcentration);
     debug("Mage Slayer Concentration | Initialized");
 }
 
@@ -270,8 +316,7 @@ export function initMageSlayerConcentration() {
 export function onSocketMessage(data) {
     if (data?.type !== "mageSlayerConcentrationDisadvantage") return;
     const now = data.timestamp || Date.now();
-    if (data.actorId) _pendingMageSlayerDisadvantage.set(data.actorId, now);
     if (data.actorUuid) _pendingMageSlayerDisadvantage.set(data.actorUuid, now);
-    debug(`Mage Slayer | Received socket disadvantage flag for actor ${data.actorId || data.actorUuid}`);
+    if (data.actorId && !data.isToken) _pendingMageSlayerDisadvantage.set(data.actorId, now);
+    debug(`Mage Slayer | Received socket disadvantage flag for actor ${data.actorUuid || data.actorId}`);
 }
-

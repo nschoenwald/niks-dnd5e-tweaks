@@ -863,6 +863,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "enablePreventGroupActorRolls",
+                                name: "Prevent Rolling as Group Actors",
+                                hint: "Prevents players from making rolls as group actors (such as when controlling a party exploration token or interacting with a party sheet). The roll automatically falls back to their assigned player character actor instead.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
                                 key: "enablePlayerDamagePrompt",
                                 name: "Player Damage Prompt",
                                 hint: "Whispers a chat card with breakdown (resistances, immunities) and one-click Apply button when damage is rolled against a player.",
