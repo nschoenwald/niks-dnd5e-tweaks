@@ -7,8 +7,6 @@
 
 A consolidated, modular collection of quality-of-life enhancements and smart combat automations for **Foundry VTT (v14)** and the **DnD5e system (6.x)**.
 
-From fluid canvas placement HUDs with mouse-wheel rotation to retroactive advantage toggles and smart concentration tracking, **Nik's DnD5e Tweaks** polishes everyday table gameplay without bloat or forced workflows.
-
 ---
 
 > [!TIP]
