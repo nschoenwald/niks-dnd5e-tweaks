@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.40.1] - 2026-10-08
+### Fixed
+- **Chat Card Styling — Saving Throw Ability Shorthand (`CON Save`)**:
+  - Fixed saving throw action button shorthand and roll card labels failing to display or match properly.
+  - Resolved an issue where Carolingian UI (`crlngn-ui`) theme harmonization had an `!important` rule forcing action buttons to generic `"Save"`, overriding the ability shorthand rules.
+  - Added dedicated ability shorthand overrides to the Carolingian UI theme section and reinforced base ability shorthand CSS declarations with `!important`.
+  - Multi-tiered ability detection reliably extracts the required saving throw ability across all DnD5e 6.x structures:
+    - Button dataset attributes (`dataset.ability`).
+    - Chat message button structures (`message.system.buttons` by index or action).
+    - Chat message button helper (`message.system.getButton()`).
+    - Associated activity save configurations (`activity.save.ability` for Sets, Arrays, and strings).
+    - Button accessibility metadata fallback (`aria-label`, tooltip, and title inspection).
+    - Saving throw roll card data (`message.system.ability`, `message.rolls[0].data`, and flavor text analysis).
+  - Synchronized button accessibility attributes (`aria-label` and `data-tooltip`) to reflect the shorthand label (e.g. `CON Save`).
+
+### Changed
+- **Removed Sub-Setting for Save Ability Shorthand**:
+  - Removed `chatCardSaveAbilityShorthand` (world) and `clientChatCardSaveAbilityShorthand` (client) sub-settings.
+  - Saving throw ability shorthand is now automatically and always enabled whenever **Chat Card Styling Improvements** is active.
+  - Streamlined Settings Dashboard by eliminating redundant nested toggles.
+
 ## [14.40.0] - 2026-10-05
 ### Added
 - **Prevent Rolling as Group Actors**:

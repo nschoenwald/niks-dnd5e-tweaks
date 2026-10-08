@@ -224,17 +224,6 @@ Hooks.once("init", () => {
         }
     });
 
-    game.settings.register(MODULE_ID, "clientChatCardSaveAbilityShorthand", {
-        name: "Saving Throw Ability Shorthand (Personal)",
-        hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards on your screen (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: () => {
-            updateChatCardSaveAbilityShorthand();
-        }
-    });
 
     game.settings.register(MODULE_ID, "clientEnableRetroactiveAdvantage", {
         name: "Retroactive Advantage/Disadvantage (Personal)",
@@ -513,18 +502,6 @@ Hooks.once("init", () => {
         }
     });
 
-    game.settings.register(MODULE_ID, "chatCardSaveAbilityShorthand", {
-        name: "Saving Throw Ability Shorthand",
-        hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards instead of generic Save.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => {
-            updateChatCardSaveAbilityShorthand();
-        }
-    });
 
     game.settings.register(MODULE_ID, "enableRetroactiveAdvantage", {
         name: "Retroactive Advantage/Disadvantage",

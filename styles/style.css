@@ -1401,40 +1401,40 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     content: "Dmg";
 }
 
-body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after,
-body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after {
     content: "Save";
 }
 
-/* Saving Throw Action Buttons with Ability Shorthand */
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after {
-    content: "STR SAVE";
+/* Saving Throw Action Buttons with Ability Shorthand (Always enabled when chat card styling is active) */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after {
+    content: "STR Save" !important;
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after {
-    content: "DEX SAVE";
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after {
+    content: "DEX Save" !important;
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after {
-    content: "CON SAVE";
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after {
+    content: "CON Save" !important;
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after {
-    content: "INT SAVE";
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after {
+    content: "INT Save" !important;
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after {
-    content: "WIS SAVE";
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after {
+    content: "WIS Save" !important;
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after {
-    content: "CHA SAVE";
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after {
+    content: "CHA Save" !important;
 }
 
 body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
@@ -2460,34 +2460,34 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-save-card
     content: "CONC ";
 }
 
-/* Saving Throw Roll Card Micro-Labels with Ability Shorthand */
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+/* Saving Throw Roll Card Micro-Labels with Ability Shorthand (Always enabled when chat card styling is active) */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="str" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "STR SAVE ";
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="dex" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "DEX SAVE ";
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="con" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "CON SAVE ";
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="int" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "INT SAVE ";
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="wis" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "WIS SAVE ";
 }
 
-body.nd5t-chat-card-styling.nd5t-save-shorthand :is(.chat-log, .chat-popout) .message.nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
-body.nd5t-chat-card-styling.nd5t-save-shorthand .chat-message.message.nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message).nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before,
+body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-ability="cha" i]:not([data-nd5t-card-subtype="death"], [data-nd5t-card-subtype="concentration"]) button.dice-roll .result::before {
     content: "CHA SAVE ";
 }
 
@@ -4214,6 +4214,36 @@ body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .mes
 body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after,
 body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])::after {
     content: "Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="str" i]::after {
+    content: "STR Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="dex" i]::after {
+    content: "DEX Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="con" i]::after {
+    content: "CON Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="int" i]::after {
+    content: "INT Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="wis" i]::after {
+    content: "WIS Save" !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after,
+body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after {
+    content: "CHA Save" !important;
 }
 
 body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button.icon:is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,

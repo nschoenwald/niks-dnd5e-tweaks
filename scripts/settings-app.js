@@ -170,19 +170,10 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "clientEnableChatCardStyling",
                                 name: "Chat Card Styling Improvements",
-                                hint: "Applies enhanced action buttons, badges, and color coding to chat cards on your screen (if enabled by the GM).",
+                                hint: "Applies enhanced action buttons with text labels and ability shorthand (e.g. CON Save), roll badges, multi-die indicators, and color coding to chat cards on your screen (if enabled by the GM).",
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
-                            },
-                            {
-                                key: "clientChatCardSaveAbilityShorthand",
-                                name: "Saving Throw Ability Shorthand",
-                                hint: "Adds the ability shorthand (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards on your screen (if enabled by the GM).",
-                                type: "Boolean",
-                                default: true,
-                                scope: "client",
-                                parentKey: "clientEnableChatCardStyling"
                             },
                             {
                                 key: "clientEnableRetroactiveAdvantage",
@@ -564,19 +555,10 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableChatCardStyling",
                                 name: "Chat Card Styling Improvements",
-                                hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
+                                hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save with ability shorthand like CON Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
-                            },
-                            {
-                                key: "chatCardSaveAbilityShorthand",
-                                name: "Saving Throw Ability Shorthand",
-                                hint: "Adds the shorthand for the saving throw ability (STR SAVE, DEX, CON, INT, WIS, CHA) to saving throw action buttons and roll cards instead of generic Save.",
-                                type: "Boolean",
-                                default: true,
-                                scope: "world",
-                                parentKey: "enableChatCardStyling"
                             },
                             {
                                 key: "enableChatScrollFix",

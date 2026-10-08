@@ -98,7 +98,7 @@ Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly 
 Modernizes DnD5e chat cards to make actions and roll results readable at a glance:
 * **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
 * **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
-* **Saving Throw Shorthand**: Replaces generic labels with ability abbreviations (**STR SAVE**, **DEX**, **CON**, **INT**, **WIS**, **CHA**).
+* **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
 
 ### Item Sheet Attunement Tag

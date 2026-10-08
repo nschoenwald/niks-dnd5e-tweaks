@@ -208,9 +208,25 @@ function _tagMessageElement(message, root) {
 
         // Tag saving throw roll cards with the rolled ability (e.g. str, dex, con, int, wis, cha)
         if (rollType === "save") {
-            const ability = message.system?.ability
+            let ability = message.system?.ability
                 ?? message.flags?.dnd5e?.roll?.ability
-                ?? message.rolls?.[0]?.options?.ability;
+                ?? message.rolls?.[0]?.options?.ability
+                ?? message.rolls?.[0]?.data?.roll?.ability
+                ?? message.rolls?.[0]?.data?.ability;
+
+            // Fallback: detect ability from message flavor if not explicit on data models
+            if (!ability && message.flavor) {
+                const flavor = message.flavor.toLowerCase();
+                for (const [ablKey, ablData] of Object.entries(CONFIG.DND5E?.abilities ?? {})) {
+                    const label = ablData.label?.toLowerCase();
+                    const abbr = (ablData.abbreviation ?? ablKey)?.toLowerCase();
+                    if ((label && flavor.includes(label)) || (abbr && flavor.includes(abbr))) {
+                        ability = ablKey;
+                        break;
+                    }
+                }
+            }
+
             if (ability && typeof ability === "string") {
                 root.dataset.nd5tAbility = ability.toLowerCase();
             } else {
@@ -219,21 +235,59 @@ function _tagMessageElement(message, root) {
         }
     }
 
-    // Tag saving throw action buttons with ability shorthand if not already present
-    const saveButtons = root.querySelectorAll('button.icon:is([data-action="rollSave"], [data-forward-action="rollSave"])');
+    // Tag saving throw action buttons with ability shorthand (e.g. "con" -> "CON Save")
+    const saveButtons = root.querySelectorAll('button:is([data-action="rollSave"], [data-forward-action="rollSave"])');
     if (saveButtons.length > 0) {
         const activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
             ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
         for (const btn of saveButtons) {
-            if (!btn.dataset.ability && activity?.save?.ability) {
-                const saveAbility = activity.save.ability instanceof Set
+            let saveAbility = btn.dataset.ability;
+            // 1. Inspect message.system.buttons
+            if (!saveAbility) {
+                const btnIndex = Number(btn.dataset.index);
+                const btnData = Number.isInteger(btnIndex) && message.system?.buttons?.[btnIndex]
+                    ? message.system.buttons[btnIndex]
+                    : message.system?.buttons?.find?.(b => b.action === "rollSave");
+                saveAbility = btnData?.dataset?.ability;
+            }
+            // 2. Fall back to message.system.getButton helper
+            if (!saveAbility && typeof message.system?.getButton === "function") {
+                saveAbility = message.system.getButton(btn)?.dataset?.ability;
+            }
+            // 3. Fall back to associated activity save configuration
+            if (!saveAbility && activity?.save?.ability) {
+                saveAbility = activity.save.ability instanceof Set
                     ? (activity.save.ability.first?.() ?? Array.from(activity.save.ability)[0])
                     : Array.isArray(activity.save.ability)
                         ? activity.save.ability[0]
                         : activity.save.ability;
-                if (saveAbility && typeof saveAbility === "string") {
-                    btn.dataset.ability = saveAbility.toLowerCase();
+            }
+            // 4. Fall back to inspecting aria-label, tooltip, or title for ability names/abbreviations
+            if (!saveAbility) {
+                const textToCheck = `${btn.getAttribute("aria-label") ?? ""} ${btn.dataset.tooltip ?? ""} ${btn.title ?? ""}`.toLowerCase();
+                for (const [ablKey, ablData] of Object.entries(CONFIG.DND5E?.abilities ?? {})) {
+                    const label = ablData.label?.toLowerCase();
+                    const abbr = (ablData.abbreviation ?? ablKey)?.toLowerCase();
+                    if ((label && textToCheck.includes(label)) || (abbr && textToCheck.includes(abbr))) {
+                        saveAbility = ablKey;
+                        break;
+                    }
                 }
+            }
+            if (saveAbility && typeof saveAbility === "string") {
+                const ablLower = saveAbility.toLowerCase();
+                btn.dataset.ability = ablLower;
+                const abilityConfig = CONFIG.DND5E?.abilities?.[ablLower];
+                const abbr = (abilityConfig?.abbreviation ?? ablLower).toUpperCase();
+                const shortLabel = `${abbr} Save`;
+                if (!btn.dataset.originalAriaLabel && btn.hasAttribute("aria-label")) {
+                    btn.dataset.originalAriaLabel = btn.getAttribute("aria-label");
+                }
+                btn.setAttribute("aria-label", shortLabel);
+                if (!btn.dataset.originalTooltip && btn.dataset.tooltip) {
+                    btn.dataset.originalTooltip = btn.dataset.tooltip;
+                }
+                btn.dataset.tooltip = shortLabel;
             }
         }
     }
@@ -520,10 +574,10 @@ function _tagExistingMessages() {
 
 /**
  * Update the saving throw ability shorthand class on document.body and popouts.
+ * Always active whenever chat card styling is enabled.
  */
 export function updateChatCardSaveAbilityShorthand() {
-    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")
-        && isFeatureActive("chatCardSaveAbilityShorthand", "clientChatCardSaveAbilityShorthand");
+    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling");
     if (active) {
         document.body.classList.add("nd5t-save-shorthand");
         for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
@@ -613,6 +667,18 @@ export function disableChatCardStyling() {
         } else {
             msgEl.style.removeProperty("border-color");
         }
+
+        // Restore save button attributes
+        for (const btn of msgEl.querySelectorAll('button:is([data-action="rollSave"], [data-forward-action="rollSave"])')) {
+            if (btn.dataset.originalAriaLabel !== undefined) {
+                btn.setAttribute("aria-label", btn.dataset.originalAriaLabel);
+                delete btn.dataset.originalAriaLabel;
+            }
+            if (btn.dataset.originalTooltip !== undefined) {
+                btn.dataset.tooltip = btn.dataset.originalTooltip;
+                delete btn.dataset.originalTooltip;
+            }
+        }
     }
     log("Chat Card Styling Improvements disabled");
 }
@@ -662,7 +728,7 @@ export function initChatCardStyling() {
         if (doc && !doc.body.classList.contains("nd5t-chat-card-styling")) {
             doc.body.classList.add("nd5t-chat-card-styling");
         }
-        if (doc && isFeatureActive("chatCardSaveAbilityShorthand", "clientChatCardSaveAbilityShorthand") && !doc.body.classList.contains("nd5t-save-shorthand")) {
+        if (doc && !doc.body.classList.contains("nd5t-save-shorthand")) {
             doc.body.classList.add("nd5t-save-shorthand");
         }
         if (app?.message && el) {
