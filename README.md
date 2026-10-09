@@ -285,8 +285,8 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 All features are managed in the **Settings Dashboard** accessible via *Configure Settings > Nik's DnD5e Tweaks*:
 
 * **World Settings (GM Only)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities.
-* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults.
-* **Player-First Access**: When non-GM players open the dashboard, it immediately displays their Personal Preferences tab, and the "Reset Defaults" action resets only their personal client settings.
+* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GM users, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
+* **Player-First Access**: When non-GM players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, and the "Reset Defaults" action resets only their personal client settings.
 
 ---
 

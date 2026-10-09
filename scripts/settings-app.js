@@ -1174,11 +1174,22 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     /** @override */
     async _prepareContext(options) {
         const canModify = game.user.can("SETTINGS_MODIFY");
+        const isGM = Boolean(game.user.isGM);
         if (!this.#activeTab) {
             this.#activeTab = canModify ? "uiVisuals" : "personalPreferences";
         }
 
-        const tabs = NiksTweaksSettingsApp.SETTINGS_SCHEMA.map(tab => {
+        let schema = NiksTweaksSettingsApp.SETTINGS_SCHEMA;
+        if (isGM) {
+            const prefIndex = schema.findIndex(tab => tab.id === "personalPreferences");
+            if (prefIndex !== -1) {
+                schema = [...schema];
+                const [prefTab] = schema.splice(prefIndex, 1);
+                schema.push(prefTab);
+            }
+        }
+
+        const tabs = schema.map(tab => {
             const isActiveTab = tab.id === this.#activeTab;
 
             const sections = tab.sections

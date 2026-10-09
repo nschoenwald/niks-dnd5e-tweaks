@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.40.2] - 2026-10-09
+### Changed
+- **Settings Dashboard — Navigation Tab Order for GM Users**:
+  - Reordered the settings categories in the configuration dashboard (`NiksTweaksSettingsApp`) for GM users so that the **Personal Preferences** tab appears at the bottom of the navigation sidebar rather than at the top.
+  - Keeps the core world-level configuration sections (**UI & Visuals**, **Canvas & Tokens**, **Combat Automation**, and **Utilities & Tools**) front-and-center for GMs while retaining **Personal Preferences** at the very top for non-GM players for quick and intuitive client customization.
+
 ## [14.40.1] - 2026-10-08
 ### Fixed
 - **Chat Card Styling — Saving Throw Ability Shorthand (`CON Save`)**:
