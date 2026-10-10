@@ -134,6 +134,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: false,
                                 scope: "client"
+                            },
+                            {
+                                key: "clientEnableAggregateShortRestRolls",
+                                name: "Aggregate Short Rest Hit Dice Rolls",
+                                hint: "Consolidate your short rest hit dice rolls into a single aggregated chat card and changelog (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
                             }
                         ]
                     },
@@ -588,6 +596,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableAutoCollapsePlayerDamageTrays",
                                 name: "Auto-Collapse Unowned Damage Trays for Players",
                                 hint: "Automatically collapses damage application trays for players when no targeted tokens are owned by them (such as damage rolls targeting NPCs) and DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableAggregateShortRestRolls",
+                                name: "Aggregate Short Rest Hit Dice Rolls",
+                                hint: "Aggregates all hit dice rolls made during a short rest into a single chat card and consolidates changelogs into two summary entries (HP & Hit Dice) when niks-tiny-changelogs is used. Rolls 3D dice per click for the active player without chat spam.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

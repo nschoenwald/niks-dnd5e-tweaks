@@ -51,6 +51,7 @@ import { initDeathSavePrompt } from "./features/combat-automation/death-save-pro
 import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./features/combat-automation/suppress-bloodied-dead.js";
 import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tracker.js";
 import { initPreventGroupActorRolls } from "./features/combat-automation/prevent-group-actor-rolls.js";
+import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
@@ -228,6 +229,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableRetroactiveAdvantage", {
         name: "Retroactive Advantage/Disadvantage (Personal)",
         hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableAggregateShortRestRolls", {
+        name: "Aggregate Short Rest Hit Dice Rolls (Personal)",
+        hint: "Consolidate your short rest hit dice rolls into a single aggregated chat card and changelog (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -563,6 +573,16 @@ Hooks.once("init", () => {
             ui.chat?.render(true);
             if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableAggregateShortRestRolls", {
+        name: "Aggregate Short Rest Hit Dice Rolls",
+        hint: "Aggregates all hit dice rolls made during a short rest into a single chat card and consolidates changelogs into two summary entries, preventing chat spam while preserving all roll details.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
 
@@ -1444,6 +1464,7 @@ Hooks.once("setup", () => {
     initTemplateTargeting();
 
     initCombatExpTracker();
+    initAggregateShortRestRolls();
 
     // Bug fixes
     initFixSkillTooltipOverlap();

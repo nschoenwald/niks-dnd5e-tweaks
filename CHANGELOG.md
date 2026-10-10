@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.41.0] - 2026-10-10
+### Added
+- **Aggregate Short Rest Hit Dice Rolls**:
+  - Automatically aggregates multiple hit dice rolls made during a short rest into a single, clean chat card displaying the consolidated total roll (e.g. `8d8` totaling 81) on one compact line instead of one line per die rolled, eliminating chat log spam while preserving all individual roll breakdowns in the collapsible dice tooltip.
+  - **Single Triggering-Player 3D Dice (Dice So Nice)**: When rolling hit dice in the dialog, 3D dice animate locally on each click strictly for the rolling player, preserving the tactile rolling feedback without cluttering other players' screens or re-rolling all dice in bulk upon rest completion.
+  - **Consolidated Tiny Changelogs Integration**: When used alongside `niks-tiny-changelogs`, suppresses redundant individual HP gain and hit dice spent messages per click and posts exactly two consolidated entries at rest conclusion (one for total hit dice spent and one for total HP recovered).
+  - **Anti-Cheat & Save-Scumming Prevention**: Hit dice expenditure and HP recovery are committed immediately to the database on each click. Closing or canceling the short rest dialog after rolling dice immediately posts the aggregated card and changelogs for the dice rolled, preventing roll-fishing or re-rolling bad outcomes.
+  - **Settings Dashboard Integration**: Configurable via world master setting (**Aggregate Short Rest Hit Dice Rolls**) in **UI & Visuals > Chat Log** (enabled by default) with an optional personal override in **Personal Preferences > Workflow & Action Prompts**.
+
 ## [14.40.2] - 2026-10-09
 ### Changed
 - **Settings Dashboard — Navigation Tab Order for GM Users**:

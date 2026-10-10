@@ -51,6 +51,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Toolbar Limitation](#toolbar-limitation)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile-damage-trays-for-gm)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-unowned-damage-trays-for-players)** | UI & Visuals | ✅ Enabled | No |
+| **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Carolingian UI Theme Harmony](#carolingian-ui-theme-harmony)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
@@ -150,6 +151,13 @@ Turns toolbars scrollable when button count exceeds a configured limit (default:
 ### Auto-Collapse Hostile / Unowned Damage Trays
 * **For GM**: Auto-collapses the interactive damage application tray on hostile monster attacks targeting players.
 * **For Players**: Auto-collapses damage trays when none of the targeted tokens are owned by the player, removing un-actionable clutter.
+
+### Aggregate Short Rest Hit Dice Rolls
+Fixes chat log spam during short rests when characters roll multiple hit dice:
+* **Single Aggregated Chat Card**: Catches all hit dice rolled across the rest session (both manual clicks and "Auto Spend Hit Dice") and summarizes them into a single consolidated roll line (e.g. `HD 81` for `8d8 + 40`). All individual dice rolls, term modifiers, and formulas are preserved inside the collapsible roll breakdown tooltip, eliminating chat log clutter without losing any information.
+* **Targeted 3D Dice (Dice So Nice)**: When rolling hit dice in the dialog, 3D dice animate in real-time only on the active player's screen, preserving tactile rolling satisfaction without cluttering other players' views or re-animating all dice at the end.
+* **Consolidated Tiny Changelogs**: When `niks-tiny-changelogs` is active, suppresses individual per-roll messages and outputs exactly two consolidated entries: one for total Hit Dice expended and one for total HP gained.
+* **Anti-Cheat & Save-Scumming Prevention**: Hit dice and HP changes are committed to the database immediately on every roll. Closing or canceling the short rest dialog after rolling dice immediately posts the aggregated card and changelogs for the dice rolled, preventing roll-fishing or re-rolling bad outcomes.
 
 ### Carolingian UI Theme Harmony
 Seamlessly adapts the Settings Dashboard, floating canvas HUDs, and damage cards to **Carolingian UI** color palettes, typography, top scene navigation offsets, and Combat Carousel legendary action placeholders.
