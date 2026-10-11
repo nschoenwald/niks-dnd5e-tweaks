@@ -183,8 +183,11 @@ async function _onCreateChatMessage(message) {
         // Only process damage rolls from attack activities by default,
         // unless non-attack damage prompts are enabled.
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
-        const activity = message.getAssociatedActivity?.()
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        let activity = null;
+        try {
+            activity = message.getAssociatedActivity?.();
+        } catch {}
+        activity ??= (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
         const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "damage" && rollType !== "healing") return;
 
@@ -325,8 +328,11 @@ async function _onCreateChatMessage_Attack(message) {
 
         // Only process attack rolls from attack activities
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
-        const activity = message.getAssociatedActivity?.()
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        let activity = null;
+        try {
+            activity = message.getAssociatedActivity?.();
+        } catch {}
+        activity ??= (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
         const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "attack") return;
         if (activityType !== "attack") return;
@@ -949,13 +955,16 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
     
     let hasHalfDamage = false;
     if (activityType === "save") {
-        const activity = (typeof damageMessage.getAssociatedActivity === "function" ? damageMessage.getAssociatedActivity() : null)
-            ?? (() => {
-                const activityId = damageMessage.system?.activity?.id ?? damageMessage.getFlag?.("dnd5e", "activity.id");
-                return activityId && sourceItem?.system?.activities
-                    ? (sourceItem.system.activities.get?.(activityId) ?? sourceItem.system.activities[activityId])
-                    : null;
-            })();
+        let activity = null;
+        try {
+            activity = typeof damageMessage.getAssociatedActivity === "function" ? damageMessage.getAssociatedActivity() : null;
+        } catch {}
+        activity ??= (() => {
+            const activityId = damageMessage.system?.activity?.id ?? damageMessage.getFlag?.("dnd5e", "activity.id");
+            return activityId && sourceItem?.system?.activities
+                ? (sourceItem.system.activities.get?.(activityId) ?? sourceItem.system.activities[activityId])
+                : null;
+        })();
         if (activity?.damage?.onSave === "half") {
             hasHalfDamage = true;
         }
@@ -1263,13 +1272,16 @@ function _getGrazeDamage(attackRoll, attackMessage, item) {
     // Determine the damage type from the weapon
     // Try the activity's damage parts first, then the item's base damage
     let damageType = "bludgeoning"; // fallback
-    const activity = (typeof attackMessage.getAssociatedActivity === "function" ? attackMessage.getAssociatedActivity() : null)
-        ?? (() => {
-            const activityId = attackMessage.system?.activity?.id ?? attackMessage.getFlag?.("dnd5e", "activity.id");
-            return activityId && item.system?.activities
-                ? (item.system.activities.get?.(activityId) ?? item.system.activities[activityId])
-                : null;
-        })();
+    let activity = null;
+    try {
+        activity = typeof attackMessage.getAssociatedActivity === "function" ? attackMessage.getAssociatedActivity() : null;
+    } catch {}
+    activity ??= (() => {
+        const activityId = attackMessage.system?.activity?.id ?? attackMessage.getFlag?.("dnd5e", "activity.id");
+        return activityId && item.system?.activities
+            ? (item.system.activities.get?.(activityId) ?? item.system.activities[activityId])
+            : null;
+    })();
     if (activity) {
         const firstPart = activity?.damage?.parts?.[0];
         if (firstPart) {

@@ -96,6 +96,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableWeaponMasteries",
+                                name: "Weapon Mastery Automation",
+                                hint: "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableInitiativePrompt",
                                 name: "Prompt for Initiative",
                                 hint: "Prompts you with the initiative roll dialog when your token is added to combat (if enabled by the GM).",
@@ -867,6 +875,34 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableWeaponMasteries",
+                                name: "Weapon Mastery Automation",
+                                hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Step 1 automates Slow (reducing speed by 10 ft) and Sap (disadvantage on the creature's next attack roll).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "masterySapIcon",
+                                name: "Sap Effect Icon",
+                                hint: "Select an icon for the Sap weapon mastery active effect.",
+                                type: "FilePicker",
+                                filePicker: "image",
+                                default: "icons/skills/melee/sword-damaged-broken-glow-red.webp",
+                                scope: "world",
+                                parentKey: "enableWeaponMasteries"
+                            },
+                            {
+                                key: "masterySlowIcon",
+                                name: "Slow Effect Icon",
+                                hint: "Select an icon for the Slow weapon mastery active effect.",
+                                type: "FilePicker",
+                                filePicker: "image",
+                                default: "icons/creatures/invertebrates/snail-movement-green.webp",
+                                scope: "world",
+                                parentKey: "enableWeaponMasteries"
                             },
                             {
                                 key: "enablePlayerDamagePrompt",

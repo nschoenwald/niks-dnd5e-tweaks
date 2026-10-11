@@ -107,5 +107,14 @@
   "ND5T.CarolingianTheme.Hint": "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
 
   "ND5T.ClearTargets.ButtonTitleGM": "Clear All Targets (All Players)",
-  "ND5T.ClearTargets.ButtonTitlePlayer": "Clear My Targets"
+  "ND5T.ClearTargets.ButtonTitlePlayer": "Clear My Targets",
+
+  "ND5T.WeaponMasteries.Name": "Weapon Mastery Automation",
+  "ND5T.WeaponMasteries.Hint": "Automatically applies weapon masteries to targets when hit by attacks. Step 1 automates Slow and Sap active effects.",
+  "ND5T.WeaponMasteries.ClientName": "Weapon Mastery Automation (Personal)",
+  "ND5T.WeaponMasteries.ClientHint": "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
+  "ND5T.WeaponMasteries.SapIconName": "Sap Effect Icon",
+  "ND5T.WeaponMasteries.SapIconHint": "Icon used for the Sap weapon mastery active effect.",
+  "ND5T.WeaponMasteries.SlowIconName": "Slow Effect Icon",
+  "ND5T.WeaponMasteries.SlowIconHint": "Icon used for the Slow weapon mastery active effect."
 }

@@ -47,6 +47,13 @@ async function _resolveIcon(path) {
 }
 
 export function initLegendaryActionPlaceholders() {
+    // Upstream DnD5e 6.x combat recovery crashes if a combatant has no actor (e.g. legendary placeholders)
+    Hooks.on("dnd5e.combatRecovery", (combatant) => {
+        if (!combatant?.actor || combatant.getFlag?.(MODULE_ID, "isLegendaryPlaceholder")) {
+            return false;
+        }
+    });
+
     Hooks.on("combatStart", async (combat) => {
         try {
             // Only run for the primary GM

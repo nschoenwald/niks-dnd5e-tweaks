@@ -243,8 +243,11 @@ async function _onCreateChatMessage(message, options, userId) {
 
         // Only process attack rolls from attack activities
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
-        const activity = message.getAssociatedActivity?.()
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
+        let activity = null;
+        try {
+            activity = message.getAssociatedActivity?.();
+        } catch {}
+        activity ??= (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
         const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "attack") return;
         if (activityType !== "attack") return;

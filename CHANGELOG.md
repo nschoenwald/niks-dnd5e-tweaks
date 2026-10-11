@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.42.0] - 2026-10-11
+### Added
+- **Weapon Mastery Automation (Slow & Sap)**:
+  - Automates weapon masteries upon successful attack hits made by player characters who possess the required mastery trait.
+  - **Sapped (Weapon Mastery)**: Applies an active effect granting Disadvantage on the target creature's next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the source attacker's next turn.
+  - **Slowed (Weapon Mastery)**: Applies an active effect reducing the target creature's Speed across all active movement modes (walk, fly, swim, climb, burrow) by 10 feet via native DnD5e movement bonus. Automatically expires at the start of the source attacker's next turn.
+  - **Clean Descriptions**: Effect descriptions concisely display the rule text without redundant name prefixes.
+  - **Player Character Restricted**: Weapon masteries apply strictly to player character attacks and will not trigger on NPC attacks.
+  - **Duplicate Prevention & Safe Expiry**: Enforces that a creature can only be sapped or slowed once at a time; hitting a target multiple times with Slow weapons maintains the maximum 10 ft reduction without stacking duplicate effects or cluttering tokens.
+  - **Combat Lifecycle & Expiry Compatibility**: Concurrency-safe effect removal prevents duplicate deletion errors during attacks and round changes, compatible with both native expiry and the module's Disabled Effect Expiry mode.
+  - **Combat Recovery Bugfix**: Prevented an upstream DnD5e 6.x crash (`TypeError: Cannot read properties of null (reading 'performBulkUpdate')`) when combat tracker contains placeholder combatants without an actor.
+  - **Customizable Icons & Settings**: Configurable via world master setting (**Weapon Mastery Automation**) and client preference (**Personal Preferences > Workflow & Action Prompts**), with configurable active effect icons for Sap (`icons/skills/melee/sword-damaged-broken-glow-red.webp`) and Slow (`icons/creatures/invertebrates/snail-movement-green.webp`).
+
 ## [14.41.1] - 2026-10-11
 ### Changed
 - **Clear Targets Token Control Button Order**:

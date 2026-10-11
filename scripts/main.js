@@ -52,6 +52,7 @@ import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./f
 import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tracker.js";
 import { initPreventGroupActorRolls } from "./features/combat-automation/prevent-group-actor-rolls.js";
 import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
+import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
@@ -148,6 +149,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableAutoRollSaveDamage", {
         name: "Auto-Open Damage for Saves (Personal)",
         hint: "Automatically opens the damage roll dialog when you use a Save-type activity with damage (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableWeaponMasteries", {
+        name: "Weapon Mastery Automation (Personal)",
+        hint: "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1071,6 +1081,36 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableWeaponMasteries", {
+        name: "Weapon Mastery Automation",
+        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Step 1 automates Slow (reducing speed by 10 ft until the start of the attacker's next turn) and Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn).",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "masterySapIcon", {
+        name: "Sap Effect Icon",
+        hint: "Icon used for the Sap weapon mastery active effect.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "icons/skills/melee/sword-damaged-broken-glow-red.webp",
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "masterySlowIcon", {
+        name: "Slow Effect Icon",
+        hint: "Icon used for the Slow weapon mastery active effect.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "icons/creatures/invertebrates/snail-movement-green.webp",
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enablePlayerDamagePrompt", {
         name: "Player Damage Prompt",
         hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
@@ -1487,6 +1527,7 @@ Hooks.once("setup", () => {
     initSummonPlacementHUD();
     initClearTargets();
     initPreventGroupActorRolls();
+    initWeaponMasteries();
 });
 
 Hooks.once("ready", async () => {
@@ -1508,6 +1549,10 @@ Hooks.once("ready", async () => {
     game.socket.on(`module.${MODULE_ID}`, (data) => {
         if (data?.action === "clearTargets") {
             onClearTargetsSocket(data);
+            return;
+        }
+        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect") {
+            weaponMasterySocketMessage(data);
             return;
         }
         damagePromptSocketMessage(data);

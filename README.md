@@ -68,6 +68,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Prompt for Attack Damage](#prompt-for-attack-damage)** | Combat & Automation | ✅ For All | Yes |
 | **[Auto-Roll Attack Damage](#auto-roll-attack-damage)** | Combat & Automation | ❌ Disabled | Yes |
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Weapon Mastery Automation (Slow & Sap)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
@@ -239,6 +240,15 @@ Deals damage to a concentrating creature from an attacker with the Mage Slayer f
 
 ### Auto-Open Damage Dialog for Saves
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). Automatically bypassed when midi-qol is active.
+
+### Weapon Mastery Automation
+Automatically creates and manages Active Effects when attacks hit with mastery weapons used by player characters:
+* **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
+* **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
+* **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
+* **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
+* **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
+* *Sub-settings*: Configurable active effect icons for Sap and Slow.
 
 ### Prevent Rolling as Group Actors
 Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.
