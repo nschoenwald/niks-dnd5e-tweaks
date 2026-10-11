@@ -201,7 +201,7 @@ Automatically tilts tokens 90° clockwise when given the Prone or Unconscious co
 Snaps circle and square spell templates to grid intersections instead of cell centers. Hold <kbd>Shift</kbd> while placing to override snapping.
 
 ### Clear Targets Token Control Button
-Adds a dedicated crosshair button to the canvas Token Controls toolbar. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
+Adds a dedicated crosshair button to the canvas Token Controls toolbar, positioned directly below the core Select Targets button. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
 
 ### Auto-Clear Movement History
 Automatically clears token movement history trails at the start of combat and on each turn (GM client).

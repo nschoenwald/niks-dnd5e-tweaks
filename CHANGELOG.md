@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.41.1] - 2026-10-11
+### Changed
+- **Clear Targets Token Control Button Order**:
+  - Reordered the **Clear Targets** action button in the canvas Token Controls toolbar so that it is positioned directly below (after) the core **Select Targets** button instead of at the bottom of the toolbar.
+  - Groups target clearance actions contextually right alongside target selection (both GM "Clear All Targets" and player "Clear My Targets", as well as any auxiliary clear-target tools) for quicker and more intuitive access during play.
+
 ## [14.41.0] - 2026-10-10
 ### Added
 - **Aggregate Short Rest Hit Dice Rolls**:
