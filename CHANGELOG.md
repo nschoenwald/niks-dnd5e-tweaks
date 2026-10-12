@@ -15,6 +15,15 @@ All notable changes to this project will be documented in this file.
   - **Combat Recovery Bugfix**: Prevented an upstream DnD5e 6.x crash (`TypeError: Cannot read properties of null (reading 'performBulkUpdate')`) when combat tracker contains placeholder combatants without an actor.
   - **Customizable Icons & Settings**: Configurable via world master setting (**Weapon Mastery Automation**) and client preference (**Personal Preferences > Workflow & Action Prompts**), with configurable active effect icons for Sap (`icons/skills/melee/sword-damaged-broken-glow-red.webp`) and Slow (`icons/creatures/invertebrates/snail-movement-green.webp`).
 
+### Fixed
+- **Settings Dashboard Core Permission Alignment (`SETTINGS_MODIFY`)**:
+  - Ensured users with Foundry's core **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission (such as Assistant GMs or trusted players granted settings management rights) see the exact same dashboard tab layout as a GM, placing world configuration categories first and positioning Personal Preferences at the bottom.
+  - Non-authorized players continue to see Personal Preferences as their primary landing tab with world settings safely set to read-only.
+  - Hardened child setting reactive states by utilizing explicit `data-scope` attributes on setting rows.
+- **Settings Dashboard JSON Import Enhancements**:
+  - Added world reload confirmation (`SettingsConfig.reloadConfirm()`) to JSON setting imports whenever any imported setting requires a reload.
+  - Added defense-in-depth permission verification to the import file selection handler before applying world configuration changes.
+
 ## [14.41.1] - 2026-10-11
 ### Changed
 - **Clear Targets Token Control Button Order**:

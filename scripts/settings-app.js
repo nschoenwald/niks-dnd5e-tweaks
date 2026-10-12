@@ -1226,13 +1226,12 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
     /** @override */
     async _prepareContext(options) {
         const canModify = game.user.can("SETTINGS_MODIFY");
-        const isGM = Boolean(game.user.isGM);
         if (!this.#activeTab) {
             this.#activeTab = canModify ? "uiVisuals" : "personalPreferences";
         }
 
         let schema = NiksTweaksSettingsApp.SETTINGS_SCHEMA;
-        if (isGM) {
+        if (canModify) {
             const prefIndex = schema.findIndex(tab => tab.id === "personalPreferences");
             if (prefIndex !== -1) {
                 schema = [...schema];
@@ -1432,8 +1431,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             } else {
                 row.classList.remove("nd5t-parent-disabled");
                 // Check overall user permissions before re-enabling
-                const isClient = row.querySelector(".nd5t-badge.client") !== null;
-                const isUser = row.querySelector(".nd5t-badge.user") !== null;
+                const isClient = row.dataset.scope === "client" || row.querySelector(".nd5t-badge.client") !== null;
+                const isUser = row.dataset.scope === "user" || row.querySelector(".nd5t-badge.user") !== null;
                 if (game.user.can("SETTINGS_MODIFY") || isClient || isUser) {
                     controls.forEach(ctrl => ctrl.removeAttribute("disabled"));
                 }
@@ -1667,6 +1666,11 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
      * Handles file selection for JSON import
      */
     async #onFileSelected(event) {
+        if (!game.user.can("SETTINGS_MODIFY")) {
+            ui.notifications.error("You do not have permission to modify world settings.");
+            return;
+        }
+
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -1693,16 +1697,21 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
 
             for (const [key, value] of Object.entries(data.settings)) {
                 // Verify setting exists in registry
-                if (game.settings.settings.has(`${MODULE_ID}.${key}`)) {
+                const settingConfig = game.settings.settings.get(`${MODULE_ID}.${key}`);
+                if (settingConfig) {
                     const current = game.settings.get(MODULE_ID, key);
                     if (current !== value) {
                         await game.settings.set(MODULE_ID, key, value);
                         appliedCount++;
+                        if (settingConfig.requiresReload) requiresReload = true;
                     }
                 }
             }
 
             ui.notifications.info(`Successfully imported ${appliedCount} settings from ${file.name}.`);
+            if (requiresReload) {
+                SettingsConfig.reloadConfirm();
+            }
             this.render();
         } catch (err) {
             log("Failed to import settings file", err);

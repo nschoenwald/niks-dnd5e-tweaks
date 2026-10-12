@@ -302,9 +302,9 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 
 All features are managed in the **Settings Dashboard** accessible via *Configure Settings > Nik's DnD5e Tweaks*:
 
-* **World Settings (GM Only)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities.
-* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GM users, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
-* **Player-First Access**: When non-GM players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, and the "Reset Defaults" action resets only their personal client settings.
+* **World Settings (GMs & Authorized Users)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities. Fully supports Foundry's native **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, allowing Assistant GMs or trusted players with settings rights to configure and save world settings just like a GM.
+* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GMs and authorized users with `SETTINGS_MODIFY`, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
+* **Player-First Access**: When non-authorized players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, world settings are shown read-only (disabled), and the "Reset Defaults" action resets only their personal client settings.
 
 ---
 

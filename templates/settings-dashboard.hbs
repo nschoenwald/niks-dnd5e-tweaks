@@ -50,6 +50,7 @@
                         {{#each this.settings}}
                         <div class="nd5t-setting-row {{#if this.isChild}}nd5t-child-setting{{/if}}" 
                              data-key="{{this.key}}" 
+                             data-scope="{{this.scope}}"
                              {{#if this.parentKey}}data-parent="{{this.parentKey}}"{{/if}}
                              data-search-text="{{this.searchText}}">
                             
