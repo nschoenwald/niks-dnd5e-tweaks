@@ -104,6 +104,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableConditionalDamage",
+                                name: "Conditional Damage Bonuses",
+                                hint: "Offers toggles in damage rolls for Sneak Attack or when concentrating on Hex or Hunter's Mark, remembering your last choice across rolls (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableInitiativePrompt",
                                 name: "Prompt for Initiative",
                                 hint: "Prompts you with the initiative roll dialog when your token is added to combat (if enabled by the GM).",
@@ -919,6 +927,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: "icons/creatures/invertebrates/snail-movement-green.webp",
                                 scope: "world",
                                 parentKey: "enableWeaponMasteries"
+                            },
+                            {
+                                key: "enableConditionalDamage",
+                                name: "Conditional Damage Bonuses",
+                                hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack (scaled to rogue level) and when concentrating on Hex (1d6 Necrotic) or Hunter's Mark (1d6 Force), remembering your last choice across rolls.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
                             },
                             {
                                 key: "enablePlayerDamagePrompt",

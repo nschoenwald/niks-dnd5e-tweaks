@@ -54,6 +54,7 @@ import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tr
 import { initPreventGroupActorRolls } from "./features/combat-automation/prevent-group-actor-rolls.js";
 import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
 import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
+import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
@@ -159,6 +160,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableWeaponMasteries", {
         name: "Weapon Mastery Automation (Personal)",
         hint: "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
+        name: "Conditional Damage Bonuses (Personal)",
+        hint: "Offers toggles in damage rolls for Sneak Attack and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1131,6 +1141,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableConditionalDamage", {
+        name: "Conditional Damage Bonuses",
+        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack (when wielding a ranged or finesse weapon as a Rogue) and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enablePlayerDamagePrompt", {
         name: "Player Damage Prompt",
         hint: "When the GM rolls attack damage against a targeted player token that was hit, whispers a chat message to the owning player with the damage breakdown (accounting for resistances, vulnerabilities, and immunities) and a button to apply the damage.",
@@ -1550,6 +1570,7 @@ Hooks.once("setup", () => {
     initClearTargets();
     initPreventGroupActorRolls();
     initWeaponMasteries();
+    initConditionalDamage();
 });
 
 Hooks.once("ready", async () => {

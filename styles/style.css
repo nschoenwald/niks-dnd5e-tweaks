@@ -4834,3 +4834,14 @@ body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-v
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
 }
+
+/* ============================================================ */
+/*  Conditional Damage Bonuses (Hex & Hunter's Mark)             */
+/* ============================================================ */
+
+/* Ensure intentional line break between spell name and parenthetical bonus */
+.dnd5e2.application.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) label,
+.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) label {
+    white-space: pre-line;
+    line-height: 1.25;
+}

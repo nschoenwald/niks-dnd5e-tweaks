@@ -9,7 +9,7 @@
                         {{#if typeIcon}}
                         <span class="nd5t-damage-icon nd5t-dmg-{{ damageType }}" style="background-color: {{ typeColor }}; -webkit-mask-image: url('{{ typeIcon }}'); mask-image: url('{{ typeIcon }}');" aria-label="{{ typeLabel }}" title="{{ typeLabel }}"></span>
                         {{/if}}
-                        <span class="nd5t-type-name">{{ typeLabel }}</span>
+                        <span class="nd5t-type-name">{{#if ../hasMultipleSections}}{{ typeTotalLabel }}{{else}}{{ typeLabel }}{{/if}}</span>
                     </div>
                     {{#if ../hasMultipleSections}}
                     <span class="nd5t-section-subtotal">{{ sectionTotal }}</span>

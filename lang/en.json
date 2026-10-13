@@ -122,5 +122,13 @@
   "ND5T.RollBreakdownDetails.Hint": "Replaces unlabeled roll breakdown numbers in chat popovers with a comprehensive breakdown showing base dice, attribute bonuses, proficiency, magic bonuses, and active effects.",
   "ND5T.RollBreakdownDetails.ClientName": "Detailed Roll Breakdown Overlay (Personal)",
   "ND5T.RollBreakdownDetails.ClientHint": "Enables detailed roll breakdown popovers on your client (if enabled by the GM).",
-  "ND5T.RollBreakdownDetails.Total": "Total"
+  "ND5T.RollBreakdownDetails.Total": "Total",
+
+  "ND5T.ConditionalDamage.Name": "Conditional Damage Bonuses",
+  "ND5T.ConditionalDamage.Hint": "Offers toggles in damage roll configuration dialogs for Sneak Attack (when wielding a ranged or finesse weapon as a Rogue) and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls.",
+  "ND5T.ConditionalDamage.ClientName": "Conditional Damage Bonuses (Personal)",
+  "ND5T.ConditionalDamage.ClientHint": "Offers toggles in damage rolls for Sneak Attack and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls (if enabled by the GM).",
+  "ND5T.ConditionalDamage.Hex.Label": "Hex\n(+1d6 Necrotic)",
+  "ND5T.ConditionalDamage.HuntersMark.Label": "Hunter's Mark\n(+1d6 Force)",
+  "ND5T.ConditionalDamage.SneakAttack.Label": "Sneak Attack\n(+{formula})"
 }

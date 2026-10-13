@@ -371,7 +371,7 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1 } = {}) {
     const isFormula = activeRolls.length > 1;
 
     const rawFormulaMatch = (die.formula || roll?.formula || "").match(/\[(.*?)\]/);
-    const rawFlavor = die.flavor || die.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
+    const rawFlavor = die.flavor || die.options?.flavor || roll?.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
     const cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
 
     const rawDenom = die.expression || (die.faces ? `d${die.faces}` : "d20");
@@ -664,12 +664,15 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
 
         if (!typeMap.size) return;
 
+        const totalLabel = game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total";
+
         const sections = Array.from(typeMap.values()).map(group => {
             const sortedDice = sortBreakdownDiceRows(group.diceRows);
             const sortedMods = sortBreakdownModifiers(group.modifiers);
             return {
                 damageType: group.damageType,
                 typeLabel: group.typeLabel,
+                typeTotalLabel: `${group.typeLabel} ${totalLabel}`,
                 typeIcon: group.typeIcon,
                 typeColor: group.typeColor,
                 baseDie: sortedDice[0] ?? null,
@@ -680,7 +683,6 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
         });
 
         const grandTotal = damageRolls.reduce((sum, r) => sum + Math.max(0, Number(r.total ?? 0)), 0);
-        const totalLabel = game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total";
 
         const rendered = await foundry.applications.handlebars.renderTemplate(
             "modules/niks-dnd5e-tweaks/templates/chat/roll-breakdown-details.hbs",
