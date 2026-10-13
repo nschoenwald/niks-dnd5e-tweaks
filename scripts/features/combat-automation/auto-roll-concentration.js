@@ -497,6 +497,7 @@ function _onRollConcentration(rolls, { subject: actor } = {}) {
  */
 function _onRenderChatMessage(message, html) {
     if (!html || !(html instanceof HTMLElement)) return;
+    if (html.dataset.nd5tConcentrationProcessed) return;
 
     const isMidiConc = message.flags?.["midi-qol"]?.isConcentrationCheck;
     const isModuleConcSave = message.flags?.[MODULE_ID]?.isConcentrationSave;
@@ -522,7 +523,12 @@ function _onRenderChatMessage(message, html) {
     const isPromptCard = isModuleConcPrompt || hasPromptButtons || isPromptFromDOM;
     const isSaveCard = isModuleConcSave || isMidiConc || isNativeSaveCard;
 
-    if (!isPromptCard && !isSaveCard) return;
+    if (!isPromptCard && !isSaveCard) {
+        html.dataset.nd5tConcentrationProcessed = "true";
+        return;
+    }
+
+    html.dataset.nd5tConcentrationProcessed = "true";
 
     // Resolve the actor
     const actorUuid = message.flags?.[MODULE_ID]?.actorUuid ?? message.flags?.["midi-qol"]?.actorUuid;

@@ -34,9 +34,14 @@ import { MODULE_ID, log, debug } from "../../main.js";
  * @returns {boolean}
  */
 export function shouldCollapseDamageTray(message, html) {
+    if (message?._nd5tShouldCollapseTray !== undefined) return message._nd5tShouldCollapseTray;
+
     // Must have DnD5e's allowPlayerDamageTray enabled
     const allowPlayerDamage = Boolean(game.settings.get("dnd5e", "allowPlayerDamageTray"));
-    if (!allowPlayerDamage) return false;
+    if (!allowPlayerDamage) {
+        if (message) message._nd5tShouldCollapseTray = false;
+        return false;
+    }
 
     const el = html instanceof HTMLElement ? html : html?.[0] instanceof HTMLElement ? html[0] : null;
 
@@ -44,11 +49,19 @@ export function shouldCollapseDamageTray(message, html) {
     const isDamageRoll = message.type === "damage"
         || message.flags?.dnd5e?.roll?.type === "damage"
         || Boolean(el?.querySelector?.("damage-application"));
-    if (!isDamageRoll) return false;
+    if (!isDamageRoll) {
+        if (message) message._nd5tShouldCollapseTray = false;
+        return false;
+    }
+
+    let shouldCollapse = false;
 
     // Case 1: GM view
     if (game.user?.isGM) {
-        if (!game.settings.get(MODULE_ID, "enableAutoCollapseHostileDamageTrays")) return false;
+        if (!game.settings.get(MODULE_ID, "enableAutoCollapseHostileDamageTrays")) {
+            if (message) message._nd5tShouldCollapseTray = false;
+            return false;
+        }
 
         // Determine the source actor and token
         const sourceActor = message.getAssociatedActor?.()
@@ -58,7 +71,10 @@ export function shouldCollapseDamageTray(message, html) {
         const sourceToken = message.getAssociatedToken?.()
             ?? (message.speaker?.token ? canvas.tokens?.get(message.speaker.token) : null);
 
-        if (!sourceActor) return false;
+        if (!sourceActor) {
+            if (message) message._nd5tShouldCollapseTray = false;
+            return false;
+        }
 
         // Check if the source is a hostile NPC
         const isNPC = sourceActor.type === "npc" || !sourceActor.hasPlayerOwner;
@@ -72,38 +88,37 @@ export function shouldCollapseDamageTray(message, html) {
             || (disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && disposition !== 1)
         );
 
-        if (!isHostile) return false;
+        if (isHostile) {
+            // Gather targets
+            const targetActors = _resolveDamageTargets(message, el);
+            if (targetActors.length) {
+                // Check if targets include player characters
+                shouldCollapse = targetActors.some(actor =>
+                    actor?.type === "character" || actor?.hasPlayerOwner
+                );
+            }
+        }
+    } else {
+        // Case 2: Player view
+        if (!game.settings.get(MODULE_ID, "enableAutoCollapsePlayerDamageTrays")) {
+            if (message) message._nd5tShouldCollapseTray = false;
+            return false;
+        }
 
         // Gather targets
         const targetActors = _resolveDamageTargets(message, el);
-        if (!targetActors.length) return false;
-
-        // Check if targets include player characters
-        const hasPlayerCharacterTarget = targetActors.some(actor =>
-            actor?.type === "character" || actor?.hasPlayerOwner
-        );
-
-        return hasPlayerCharacterTarget;
+        if (targetActors.length) {
+            // If the player owns ANY of the targeted actors, keep the tray expanded
+            const ownsAnyTarget = targetActors.some(actor => actor?.isOwner);
+            if (!ownsAnyTarget) {
+                // Unowned targets: player cannot apply damage anyway, so collapse
+                shouldCollapse = true;
+            }
+        }
     }
 
-    // Case 2: Player view
-    if (!game.user?.isGM) {
-        if (!game.settings.get(MODULE_ID, "enableAutoCollapsePlayerDamageTrays")) return false;
-
-        // Gather targets
-        const targetActors = _resolveDamageTargets(message, el);
-        if (!targetActors.length) return false;
-
-        // If the player owns ANY of the targeted actors, keep the tray expanded so they can apply damage / healing
-        const ownsAnyTarget = targetActors.some(actor => actor?.isOwner);
-        if (ownsAnyTarget) return false;
-
-        // The player does not own any of the targets (e.g. rolls targeting NPCs or other players' characters).
-        // Since DnD5e prevents non-GM players from applying damage to unowned tokens, collapse the tray.
-        return true;
-    }
-
-    return false;
+    if (message) message._nd5tShouldCollapseTray = shouldCollapse;
+    return shouldCollapse;
 }
 
 /**
@@ -211,6 +226,8 @@ function _collapseTrayElement(message, html) {
     const el = html instanceof HTMLElement ? html : html?.[0] instanceof HTMLElement ? html[0] : null;
     if (!el) return;
 
+    if (el.dataset.nd5tTrayCollapsed === "true") return;
+
     // If the user has explicitly opened the tray on this card, preserve their explicit choice
     if (message._trayStates?.get("DAMAGE-APPLICATION") === true || message._trayStates?.get("damage-application") === true) {
         return;
@@ -218,6 +235,8 @@ function _collapseTrayElement(message, html) {
 
     const trays = el.querySelectorAll("damage-application");
     if (!trays.length) return;
+
+    el.dataset.nd5tTrayCollapsed = "true";
 
     message._trayStates ??= new Map();
     message._trayStates.set("DAMAGE-APPLICATION", false);

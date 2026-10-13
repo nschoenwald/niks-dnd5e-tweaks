@@ -537,15 +537,25 @@ function _adjustButtonRollResult(btn) {
  */
 function _adjustRollResultPositions(root) {
     if (!root) return;
-    const diceButtons = root.querySelectorAll("button.dice-roll");
-    if (!diceButtons.length) return;
+    // Only buttons with multi-dice expansion (advantage / disadvantage / Elven Accuracy)
+    // possess badges wide enough to require dynamic collision avoidance.
+    const allButtons = root.querySelectorAll("button.dice-roll");
+    if (!allButtons.length) return;
+
+    const multiButtons = [];
+    for (const btn of allButtons) {
+        if (btn.querySelector(".nd5t-d20-multi")) {
+            multiButtons.push(btn);
+        }
+    }
+    if (!multiButtons.length) return;
 
     // Derive the window context from the element's ownerDocument so popout
     // windows use their own observer rather than the main window's observer.
     const win = root.ownerDocument?.defaultView ?? window;
     const observer = _getRollResultResizeObserver(win);
 
-    for (const btn of diceButtons) {
+    for (const btn of multiButtons) {
         observer?.observe(btn);
         if (btn.isConnected && btn.offsetWidth > 0) {
             _adjustButtonRollResult(btn);

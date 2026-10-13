@@ -31,7 +31,6 @@ export function initContextMenuStyling() {
         try {
             if (!isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) return;
             _applyContextMenuStyling(this, menu);
-            _updateMenuTheme(this.element ?? menu.closest("#context-menu"));
         } catch (err) {
             console.error("Nik's DnD5e Tweaks | Error applying context menu styling:", err);
         }
@@ -50,12 +49,15 @@ export function initContextMenuStyling() {
         return result;
     };
 
-    // 3. Final verification after animation / full render
+    // 3. Fallback verification after animation / full render if not yet measured
     ContextMenuClass.prototype._onRender = async function(options = {}) {
         await originalOnRender?.call(this, options);
         try {
             if (isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) {
-                _updateMenuTheme(this.element);
+                const menuEl = this.element;
+                if (menuEl && !menuEl.dataset.nd5tThemeMeasured) {
+                    _updateMenuTheme(menuEl);
+                }
             }
         } catch (err) {
             console.error("Nik's DnD5e Tweaks | Error verifying context menu theme in onRender:", err);
@@ -63,6 +65,65 @@ export function initContextMenuStyling() {
     };
 
     debug("Context Menu Styling | Initialized");
+}
+
+let _cachedContextTerms = null;
+const _cssColorCache = new Map();
+
+/**
+ * Lazily resolve and cache comparison action terms.
+ * @returns {{deleteTerms: Set<string>, duplicateTerms: Set<string>, violetTerms: Set<string>}}
+ */
+function _getContextTerms() {
+    if (_cachedContextTerms) return _cachedContextTerms;
+
+    const deleteTerms = new Set([
+        "delete",
+        "remove",
+        (game.i18n?.localize("SIDEBAR.Delete") || "").toLowerCase(),
+        (game.i18n?.localize("DOCUMENT.Delete") || "").toLowerCase(),
+        (game.i18n?.localize("DND5E.ContextMenuActionDelete") || "").toLowerCase()
+    ].filter(Boolean));
+
+    const duplicateTerms = new Set([
+        "duplicate",
+        "copy",
+        "clone",
+        (game.i18n?.localize("SIDEBAR.Duplicate") || "").toLowerCase(),
+        (game.i18n?.localize("DOCUMENT.Duplicate") || "").toLowerCase(),
+        (game.i18n?.localize("DND5E.ContextMenuActionDuplicate") || "").toLowerCase(),
+        (game.i18n?.localize("COMPENDIUM.Duplicate.Option") || "").toLowerCase()
+    ].filter(Boolean));
+
+    const violetTerms = new Set([
+        "make private",
+        "reveal to everyone",
+        "reveal message",
+        "conceal message",
+        "conceal",
+        "private",
+        (game.i18n?.localize("CHAT.RevealMessage") || "").toLowerCase(),
+        (game.i18n?.localize("CHAT.ConcealMessage") || "").toLowerCase()
+    ].filter(Boolean));
+
+    _cachedContextTerms = { deleteTerms, duplicateTerms, violetTerms };
+    return _cachedContextTerms;
+}
+
+/**
+ * Resolves a CSS color/variable string using a cached DOM probe.
+ * @param {string} varString
+ * @returns {string}
+ */
+function _resolveCssColor(varString) {
+    if (_cssColorCache.has(varString)) return _cssColorCache.get(varString);
+    const probe = document.createElement("div");
+    probe.style.color = varString;
+    document.body.appendChild(probe);
+    const resolved = window.getComputedStyle(probe).color;
+    probe.remove();
+    _cssColorCache.set(varString, resolved);
+    return resolved;
 }
 
 /**
@@ -74,35 +135,7 @@ export function initContextMenuStyling() {
 function _applyContextMenuStyling(contextMenu, menu) {
     if (!menu) return;
 
-    // Localized comparison terms (normalized lowercase)
-    const deleteTerms = new Set([
-        "delete",
-        "remove",
-        (game.i18n.localize("SIDEBAR.Delete") || "").toLowerCase(),
-        (game.i18n.localize("DOCUMENT.Delete") || "").toLowerCase(),
-        (game.i18n.localize("DND5E.ContextMenuActionDelete") || "").toLowerCase()
-    ].filter(Boolean));
-
-    const duplicateTerms = new Set([
-        "duplicate",
-        "copy",
-        "clone",
-        (game.i18n.localize("SIDEBAR.Duplicate") || "").toLowerCase(),
-        (game.i18n.localize("DOCUMENT.Duplicate") || "").toLowerCase(),
-        (game.i18n.localize("DND5E.ContextMenuActionDuplicate") || "").toLowerCase(),
-        (game.i18n.localize("COMPENDIUM.Duplicate.Option") || "").toLowerCase()
-    ].filter(Boolean));
-
-    const violetTerms = new Set([
-        "make private",
-        "reveal to everyone",
-        "reveal message",
-        "conceal message",
-        "conceal",
-        "private",
-        (game.i18n.localize("CHAT.RevealMessage") || "").toLowerCase(),
-        (game.i18n.localize("CHAT.ConcealMessage") || "").toLowerCase()
-    ].filter(Boolean));
+    const { deleteTerms, duplicateTerms, violetTerms } = _getContextTerms();
 
     // 1. Tag based on menuItems metadata if available
     if (Array.isArray(contextMenu.menuItems)) {
@@ -155,11 +188,13 @@ function _applyContextMenuStyling(contextMenu, menu) {
  */
 function _updateMenuTheme(menuEl) {
     if (!menuEl || !menuEl.isConnected) return;
+    if (menuEl.dataset.nd5tThemeMeasured) return;
 
     const isDark = _isMenuBackgroundDark(menuEl);
 
     menuEl.classList.toggle("nd5t-theme-dark", isDark);
     menuEl.classList.toggle("nd5t-theme-light", !isDark);
+    menuEl.dataset.nd5tThemeMeasured = "true";
 }
 
 /**
@@ -177,11 +212,7 @@ function _isMenuBackgroundDark(menuEl) {
         const bgVar = computed.getPropertyValue("--background-color").trim()
             || computed.getPropertyValue("--dnd5e-background-card").trim();
         if (bgVar) {
-            const probe = document.createElement("div");
-            probe.style.color = bgVar;
-            document.body.appendChild(probe);
-            bg = window.getComputedStyle(probe).color;
-            probe.remove();
+            bg = _resolveCssColor(bgVar);
         }
     }
 

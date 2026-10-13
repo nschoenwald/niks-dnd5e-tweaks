@@ -22,18 +22,6 @@ const ABILITY_SHORTHANDS = {
 };
 
 /**
- * Known spell / condition names for common bonus dice denominations.
- * @type {Record<number, string[]>}
- */
-const COMMON_DICE_EFFECTS = {
-    4: ["Bless", "Guidance", "Bane", "Emboldening Bond", "Peace Cleric"],
-    6: ["Bardic Inspiration", "Battle Master", "Maneuver", "Hunter's Mark", "Hex"],
-    8: ["Bardic Inspiration", "Battle Master"],
-    10: ["Bardic Inspiration", "Battle Master"],
-    12: ["Bardic Inspiration"]
-};
-
-/**
  * Tuned accent colors for DnD5e damage types sourced from Nik's Action HUD.
  * @type {Record<string, string>}
  */
@@ -228,178 +216,7 @@ function detectActiveEffectSource(actor, bonusValue, processConfig) {
     return null;
 }
 
-/**
- * Deduce label source for a numeric or parenthetical term if term.flavor is empty.
- *
- * @param {NumericTerm|ParentheticalTerm} term
- * @param {number} currentSign
- * @param {BasicRoll} roll
- * @param {Actor5e|null} actor
- * @param {Item5e|null} item
- * @param {object|null} activity
- * @param {Set<string>} [usedSources=new Set()] - Set of source identifiers already matched to avoid duplicate claims.
- * @returns {string}
- */
-function inferNumericBonusSource(term, currentSign, roll, actor, item, activity, usedSources = new Set()) {
-    const num = Math.abs(Number(term.number ?? term.total ?? 0));
-    const data = roll.data ?? {};
 
-    // 1. Ability Modifier
-    if (!usedSources.has("mod") && data.mod !== undefined && Math.abs(Number(data.mod)) === num) {
-        usedSources.add("mod");
-        const rawAbility = data.roll?.ability || roll.options?.ability || activity?.ability || item?.system?.ability || "mod";
-        const abilityKey = String(rawAbility).toLowerCase();
-        return ABILITY_SHORTHANDS[abilityKey] ?? abilityKey.toUpperCase();
-    }
-
-    // 2. Proficiency Bonus (including Expertise and Half-Proficiency)
-    if (!usedSources.has("prof") && data.prof !== undefined) {
-        const profVal = Number(data.prof);
-        if (profVal === num) {
-            usedSources.add("prof");
-            const isExpertise = Number(data.roll?.proficient) === 2;
-            return isExpertise ? "PB (Expertise)" : "PB";
-        }
-        if (profVal * 2 === num) {
-            usedSources.add("prof");
-            return "PB (Expertise)";
-        }
-        if (profVal * 0.5 === num || Math.floor(profVal * 0.5) === num) {
-            usedSources.add("prof");
-            return "PB (Half)";
-        }
-    }
-
-    // 3. Flat Attack Bonus (@toHit)
-    if (!usedSources.has("toHit") && data.toHit !== undefined && Math.abs(Number(data.toHit)) === num) {
-        usedSources.add("toHit");
-        return "Attack Bonus";
-    }
-
-    // 4. Exhaustion
-    if (!usedSources.has("exhaustion") && data.reductions?.exhaustion !== undefined && Math.abs(Number(data.reductions.exhaustion)) === num) {
-        usedSources.add("exhaustion");
-        const exLevel = actor?.system?.attributes?.exhaustion ?? 1;
-        return `Exhaustion ${exLevel}`;
-    }
-    if (!usedSources.has("exhaustion") && currentSign === -1 && actor?.system?.attributes?.exhaustion) {
-        const exLevel = actor.system.attributes.exhaustion;
-        if (num === exLevel * 2 || num === exLevel) {
-            usedSources.add("exhaustion");
-            return `Exhaustion ${exLevel}`;
-        }
-    }
-
-    // 5. Magic Weapon / Ammo Bonus
-    if (!usedSources.has("weaponMagic") && (data.magicalBonus !== undefined || data.weaponMagic !== undefined)) {
-        const val = Number(data.magicalBonus ?? data.weaponMagic);
-        if (val === num) {
-            usedSources.add("weaponMagic");
-            return "MGC";
-        }
-    }
-    if (!usedSources.has("ammoMagic") && (data.ammoBonus !== undefined || data.ammoMagic !== undefined)) {
-        const val = Number(data.ammoBonus ?? data.ammoMagic);
-        if (val === num) {
-            usedSources.add("ammoMagic");
-            return "Magic Ammo";
-        }
-    }
-    if (!usedSources.has("weaponMagic") && item?.system?.magicalBonus !== undefined && Number(item.system.magicalBonus) === num) {
-        usedSources.add("weaponMagic");
-        return "MGC";
-    }
-
-    // 6. Cover
-    if (!usedSources.has("cover") && data.cover !== undefined && Number(data.cover) === num) {
-        usedSources.add("cover");
-        return num === 2 ? "Half Cover" : (num === 5 ? "Three-Quarters Cover" : "Cover");
-    }
-
-    // 7. Situational Bonus
-    if (!usedSources.has("situational") && data.situational !== undefined && Number(data.situational) === num) {
-        usedSources.add("situational");
-        return "Situational";
-    }
-
-    // 8. Extra Bonus (from skill/check prompt)
-    if (!usedSources.has("extraBonus") && data.extraBonus !== undefined && Number(data.extraBonus) === num) {
-        usedSources.add("extraBonus");
-        return "Bonus";
-    }
-
-    // 9. Item Attack / Damage Bonus
-    if (!usedSources.has("bonus") && data.bonus !== undefined && Number(data.bonus) === num) {
-        usedSources.add("bonus");
-        return "Item Bonus";
-    }
-
-    // 10. Barbarian Rage scaling damage
-    if (!usedSources.has("rage") && actor?.system?.scale?.barbarian?.["rage-damage"]?.value !== undefined) {
-        const rageVal = Number(actor.system.scale.barbarian["rage-damage"].value);
-        if (rageVal === num) {
-            usedSources.add("rage");
-            return "Rage";
-        }
-    }
-
-    // 11. Actor Active Effects / Features check
-    if (actor) {
-        const effectName = detectActiveEffectSource(actor, num, { subject: activity ?? item ?? actor });
-        if (effectName && !usedSources.has(effectName)) {
-            usedSources.add(effectName);
-            return effectName;
-        }
-    }
-
-    return "";
-}
-
-/**
- * Deduce label source for a dice term if term.flavor is empty.
- *
- * @param {DiceTerm} term
- * @param {Actor5e|null} actor
- * @param {object|null} activity
- * @param {BasicRoll} roll
- * @returns {string}
- */
-function inferDiceBonusSource(term, actor, activity, roll) {
-    if (activity?.name && !activity.name.toLowerCase().includes("attack") && !activity.name.toLowerCase().includes("damage")) {
-        return activity.name;
-    }
-
-    if (!actor) return `${term.expression} Bonus`;
-
-    const effects = actor.appliedEffects ?? Array.from(actor.effects?.values() ?? []);
-
-    // 1. Inspect actor effect changes directly for matching dice formula
-    const expr = term.expression?.toLowerCase() ?? "";
-    const denom = `d${term.faces}`;
-    for (const effect of effects) {
-        if (effect.disabled || effect.isSuppressed) continue;
-        for (const change of effect.changes ?? []) {
-            const val = String(change.value ?? "").toLowerCase().trim();
-            if (val.includes(expr) || val.includes(denom)) {
-                return effect.name;
-            }
-        }
-    }
-
-    // 2. Fall back to common spell names heuristic
-    const candidates = COMMON_DICE_EFFECTS[term.faces] ?? [];
-    for (const effect of effects) {
-        if (effect.disabled || effect.isSuppressed) continue;
-        const effectName = effect.name ?? "";
-        for (const candidate of candidates) {
-            if (effectName.toLowerCase().includes(candidate.toLowerCase())) {
-                return effectName;
-            }
-        }
-    }
-
-    return `${term.expression} Bonus`;
-}
 
 /**
  * Strips damage type names from die flavor if the flavor is simply the damage type.
@@ -526,7 +343,7 @@ export function sortBreakdownModifiers(modifiers) {
  * @param {string} [options.fallbackFlavor=""]
  * @returns {object}
  */
-function createDieRow(die, roll, { isBase = false, currentSign = 1, fallbackFlavor = "" } = {}) {
+function createDieRow(die, roll, { isBase = false, currentSign = 1 } = {}) {
     const isD20 = die instanceof CONFIG.Dice?.D20Die || die.faces === 20;
     const critThreshold = die.options?.criticalSuccess ?? CONFIG.Dice?.D20Die?.CRITICAL_SUCCESS_TOTAL ?? 20;
     const fumbleThreshold = die.options?.criticalFailure ?? CONFIG.Dice?.D20Die?.CRITICAL_FAILURE_TOTAL ?? 1;
@@ -554,7 +371,7 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, fallbackFlav
     const isFormula = activeRolls.length > 1;
 
     const rawFormulaMatch = (die.formula || roll?.formula || "").match(/\[(.*?)\]/);
-    const rawFlavor = die.flavor || die.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "") || fallbackFlavor;
+    const rawFlavor = die.flavor || die.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
     const cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
 
     const rawDenom = die.expression || (die.faces ? `d${die.faces}` : "d20");
@@ -594,18 +411,6 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, fallbackFlav
 export async function getDetailedRollBreakdown(roll, options = {}) {
     if (!roll?._evaluated) return null;
 
-    // Retrieve context with resilient ChatMessage fallback (crucial for page reload and non-rolling clients)
-    const message = roll.parent
-        ?? (roll.options?.originatingMessage ? game.messages?.get(roll.options.originatingMessage) : null)
-        ?? game.messages?.find(m => m.rolls?.includes(roll))
-        ?? null;
-
-    if (message && !roll.parent) roll.parent = message;
-
-    const actor = message?.actor ?? (message?.speaker?.actor ? game.actors.get(message.speaker.actor) : null);
-    const item = message?.item ?? null;
-    const activity = message?.system?.activity ?? null;
-
     const terms = roll.terms ?? [];
     if (!terms.length) return null;
 
@@ -626,26 +431,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
     // Process subsequent modifier / bonus terms
     const modifiers = [];
-    const usedSources = new Set();
     let currentSign = 1;
-
-    // Pre-populate usedSources from terms that already have flavor brackets
-    const ABILITY_KEYS = new Set(Object.values(ABILITY_SHORTHANDS).map(a => a.toLowerCase()));
-    for (let i = startIndex; i < terms.length; i++) {
-        const term = terms[i];
-        if (term.flavor) {
-            const flv = term.flavor.toLowerCase().trim();
-            if (ABILITY_KEYS.has(flv) || flv.includes("ability") || ABILITY_KEYS.has(flv.split(" ")[0])) usedSources.add("mod");
-            if (flv === "pb" || flv.startsWith("pb ")) usedSources.add("prof");
-            if (flv.includes("exhaustion")) usedSources.add("exhaustion");
-            if (flv === "mgc" || flv.includes("magic weapon")) usedSources.add("weaponMagic");
-            if (flv.includes("magic ammo")) usedSources.add("ammoMagic");
-            if (flv.includes("cover")) usedSources.add("cover");
-            if (flv.includes("situational")) usedSources.add("situational");
-            if (flv.includes("attack bonus")) usedSources.add("toHit");
-            if (flv.includes("rage")) usedSources.add("rage");
-        }
-    }
 
     for (let i = startIndex; i < terms.length; i++) {
         const term = terms[i];
@@ -658,8 +444,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
         // Dice terms become dice rows
         if (term instanceof foundry.dice.terms.DiceTerm) {
-            const fallbackFlavor = inferDiceBonusSource(term, actor, activity, roll);
-            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign, fallbackFlavor }));
+            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign }));
             currentSign = 1;
             continue;
         }
@@ -667,8 +452,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
         // Parenthetical terms with dice become dice rows
         if (term instanceof foundry.dice.terms.ParentheticalTerm && term.dice?.length) {
             for (const d of term.dice) {
-                const fallbackFlavor = inferDiceBonusSource(d, actor, activity, roll);
-                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign, fallbackFlavor }));
+                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign }));
             }
             currentSign = 1;
             continue;
@@ -679,7 +463,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
         const signStr = signedTotal >= 0 ? "+" : "-";
         const absVal = Math.abs(signedTotal);
 
-        let label = term.flavor ? term.flavor.trim() : "";
+        let label = term.flavor ? term.flavor.trim() : (term.options?.flavor ? String(term.options.flavor).trim() : "");
         if (label) {
             const abilityMatch = label.match(/^(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)(?:\s+(?:bonus|penalty))?$/i);
             if (abilityMatch) {
@@ -687,16 +471,6 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
                 label = ABILITY_SHORTHANDS[key] ?? key.toUpperCase();
             } else if (/^Magic Weapon(?:\s+bonus)?$/i.test(label)) {
                 label = "MGC";
-            }
-        }
-
-        if (term instanceof foundry.dice.terms.NumericTerm) {
-            if (!label) {
-                label = inferNumericBonusSource(term, currentSign, roll, actor, item, activity, usedSources);
-            }
-        } else if (term instanceof foundry.dice.terms.ParentheticalTerm) {
-            if (!label) {
-                label = inferNumericBonusSource(term, currentSign, roll, actor, item, activity, usedSources);
             }
         }
 
@@ -841,6 +615,12 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
     // Avoid duplicate work if already enhanced
     if (breakdownEl.querySelector(".nd5t-roll-breakdown")) return;
 
+    // Fast-path: use cached rendered HTML if available
+    if (message._nd5tBreakdownHtml) {
+        breakdownEl.innerHTML = message._nd5tBreakdownHtml;
+        return;
+    }
+
     try {
         const item = message.item ?? null;
         const isWeapon = item?.type === "weapon";
@@ -913,6 +693,7 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
             }
         );
 
+        message._nd5tBreakdownHtml = rendered;
         breakdownEl.innerHTML = rendered;
     } catch (err) {
         console.error("Nik's DnD5e Tweaks | Error enhancing damage chat message breakdown:", err);
@@ -920,6 +701,26 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
 }
 
 let isInitialized = false;
+
+/**
+ * Trigger lazy rendering for a popover element if not yet populated.
+ * @param {HTMLElement} popoverEl
+ */
+async function _ensurePopoverBreakdown(popoverEl) {
+    if (!popoverEl?.matches?.(".icon-row > .roll-breakdown[popover]")) return;
+    if (popoverEl.querySelector(".nd5t-roll-breakdown")) return;
+    if (popoverEl._nd5tBreakdownLoading) return;
+    popoverEl._nd5tBreakdownLoading = true;
+    try {
+        const chatCard = popoverEl.closest(".chat-message[data-message-id]");
+        if (!chatCard) return;
+        const msgId = chatCard.dataset.messageId;
+        const message = game.messages?.get(msgId);
+        if (message) await enhanceDamageChatMessageBreakdown(message, chatCard);
+    } finally {
+        popoverEl._nd5tBreakdownLoading = false;
+    }
+}
 
 /**
  * Initialize the Detailed Roll Breakdown Overlay feature.
@@ -940,25 +741,23 @@ export function initRollBreakdownDetails() {
     // Tier 2 & 3: Enhanced breakdown rendering for BasicRoll (d20 rolls, checks, saves)
     wrapBasicRollGetTooltip();
 
-    // Damage cards breakdown enhancement
-    Hooks.on("dnd5e.renderChatMessage", (message, html) => {
-        enhanceDamageChatMessageBreakdown(message, html);
-    });
-    Hooks.on("renderChatMessageHTML", (message, html) => {
-        enhanceDamageChatMessageBreakdown(message, html);
-    });
-
-    // Native browser popover listener as safety net for already rendered cards
+    // Lazy on-demand popover rendering: populate breakdown strictly when the popover is opened or clicked.
+    // Avoids eagerly compiling and rendering Handlebars templates across hundreds of historical messages.
     if (typeof document !== "undefined") {
         document.addEventListener("beforetoggle", (event) => {
-            const popover = event.target;
-            if (!popover?.matches?.(".icon-row > .roll-breakdown[popover]")) return;
-            if (popover.querySelector(".nd5t-roll-breakdown")) return;
-            const chatCard = popover.closest(".chat-message[data-message-id]");
-            if (!chatCard) return;
-            const msgId = chatCard.dataset.messageId;
-            const message = game.messages?.get(msgId);
-            if (message) enhanceDamageChatMessageBreakdown(message, chatCard);
+            if (event.newState !== "open") return;
+            _ensurePopoverBreakdown(event.target);
+        }, { capture: true });
+
+        document.addEventListener("pointerdown", (event) => {
+            const btn = event.target?.closest?.('.icon-row button.dice-roll, .icon-row button[popovertarget], .icon-row [popovertarget]');
+            if (!btn) return;
+            const targetId = btn.getAttribute?.("popovertarget");
+            const popover = btn.popoverTargetElement
+                ?? (targetId ? document.getElementById(targetId) : null)
+                ?? (btn.nextElementSibling?.matches?.(".roll-breakdown[popover]") ? btn.nextElementSibling : null)
+                ?? btn.parentElement?.querySelector?.(".roll-breakdown[popover]");
+            if (popover) _ensurePopoverBreakdown(popover);
         }, { capture: true });
     }
 }

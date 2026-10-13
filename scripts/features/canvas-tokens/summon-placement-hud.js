@@ -13,6 +13,8 @@ import { attachHudPositioning } from "./hud-position-helper.js";
 let pendingSummonData = null;
 let activeSummonHudSession = null;
 let pendingCloseTimeout = null;
+let summonPlacementRaf = null;
+let lastSummonChangeArgs = null;
 
 /**
  * Escape HTML characters to prevent XSS in creature / spell names
@@ -336,14 +338,22 @@ function _isSummonPlacement(data, options) {
  */
 function _onSummonPlacementChange(args) {
     if (!activeSummonHudSession) return;
+    lastSummonChangeArgs = args;
+    if (summonPlacementRaf) return;
 
-    const { preview, document, index, count } = args || {};
+    summonPlacementRaf = requestAnimationFrame(() => {
+        summonPlacementRaf = null;
+        const currentArgs = lastSummonChangeArgs;
+        lastSummonChangeArgs = null;
+        if (!activeSummonHudSession || !currentArgs) return;
 
-    if (index !== undefined && count !== undefined) {
-        _updateStepDisplay(index, count);
-    }
+        const { preview, document, index, count } = currentArgs;
+        if (index !== undefined && count !== undefined) {
+            _updateStepDisplay(index, count);
+        }
 
-    _updateDistanceDisplay(preview, document);
+        _updateDistanceDisplay(preview, document);
+    });
 }
 
 /**
@@ -581,6 +591,12 @@ function _updateDistanceDisplay(preview, document) {
     const targetCenter = _getTokenCenter(document) || _getTokenCenter(preview);
     if (!targetCenter) return;
 
+    if (activeSummonHudSession.lastTargetX === targetCenter.x && activeSummonHudSession.lastTargetY === targetCenter.y) {
+        return;
+    }
+    activeSummonHudSession.lastTargetX = targetCenter.x;
+    activeSummonHudSession.lastTargetY = targetCenter.y;
+
     let distance = 0;
     try {
         distance = canvas.grid.measurePath([originCenter, targetCenter]).distance;
@@ -658,6 +674,12 @@ function _closeHudSession(immediate = false) {
     if (pendingCloseTimeout) {
         clearTimeout(pendingCloseTimeout);
         pendingCloseTimeout = null;
+    }
+
+    if (summonPlacementRaf) {
+        cancelAnimationFrame(summonPlacementRaf);
+        summonPlacementRaf = null;
+        lastSummonChangeArgs = null;
     }
 
     if (!activeSummonHudSession) return;

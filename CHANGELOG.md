@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.44.0] - 2026-10-13
+### Changed
+- **Performance & Responsiveness Optimizations**:
+  - **Template Placement & Auto-Targeting**: Added frame-synced coalescing (`requestAnimationFrame`), origin combatant caching, and spatial bounding-box pre-filtering, drastically reducing CPU usage and eliminating cursor lag when aiming area-of-effect spells on scenes with many tokens.
+  - **Roll Breakdown Details**: Chat card breakdowns now render lazily on-demand when opening popovers and parse structured term flavors directly without expensive retroactive chat scans or live actor effect introspection, drastically speeding up popover opening and chat rendering.
+  - **Summon Placement HUD**: Coalesced preview updates and cached grid coordinates during summon positioning to eliminate redundant distance path measurements when hovering within the same grid square.
+  - **Batch Prone & Dead Token Rotation**: Batch-synchronized token rotation updates during scene load into a single database transaction rather than issuing sequential updates per token.
+  - **Auto-Collapse Damage Trays**: Added memoized tray collapse evaluations to prevent redundant actor/token lookups across card rendering hooks.
+  - **Rich Item Tooltips & Attunement Tags**: Optimized tooltip enhancement by switching from full document parsing to lightweight HTML templates, caching localized term lookups, and streamlining tooltip observers for silky-smooth inventory hovering.
+  - **Context Menu Styling**: Cached CSS color variables and deduplicated luminance calculations down to a single check per right-click, eliminating forced layout reflows.
+  - **Chat Card Sizing**: Restricted dice button resize observers strictly to multi-d20 rolls, freeing system resources across large chat logs.
+
 ## [14.43.0] - 2026-10-13
 ### Added
 - **Detailed Roll Breakdown Overlay**:

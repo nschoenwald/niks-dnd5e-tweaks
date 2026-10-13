@@ -14,7 +14,10 @@ let activePlacementActivity = null;
 let activePlacementTimestamp = 0;
 let initialPlacementTargets = null;
 const activePlacementBatchRegionIds = new Set();
-let lastChatActionMessageId = null;
+let _pendingPlacementRAF = null;
+let _lastPlacementChangeArgs = null;
+let _isPlacingRegion = false;
+let _cachedOriginIds = null;
 
 // ── Initialisation ───────────────────────────────────────────────────
 
@@ -103,6 +106,13 @@ export function initTemplateTargeting() {
 
     // Clean up state if canvas tears down
     Hooks.on("canvasTearDown", () => {
+        if (_pendingPlacementRAF) {
+            cancelAnimationFrame(_pendingPlacementRAF);
+            _pendingPlacementRAF = null;
+        }
+        _lastPlacementChangeArgs = null;
+        _isPlacingRegion = false;
+        _cachedOriginIds = null;
         activePlacementActivity = null;
         initialPlacementTargets = null;
         activePlacementBatchRegionIds.clear();
@@ -133,10 +143,13 @@ function _wrapRegionLayerPlaceRegion() {
             return originalPlaceRegion.call(this, data, options);
         }
 
+        _isPlacingRegion = true;
+
         // Capture user targets prior to template placement (only on first region in batch)
         const isFirstRegion = (options._regionIndex ?? 0) === 0;
         if (isFirstRegion) {
             initialPlacementTargets = Array.from(game.user.targets ?? []).map(t => t.id);
+            _cachedOriginIds = null;
         }
 
         // Intercept onChange to update targets in real-time as the preview moves or rotates
@@ -151,6 +164,14 @@ function _wrapRegionLayerPlaceRegion() {
             result = await originalPlaceRegion.call(this, data, options);
             return result;
         } finally {
+            _isPlacingRegion = false;
+            if (_pendingPlacementRAF) {
+                cancelAnimationFrame(_pendingPlacementRAF);
+                _pendingPlacementRAF = null;
+            }
+            _lastPlacementChangeArgs = null;
+            _cachedOriginIds = null;
+
             // If placement was aborted/cancelled (result is null/falsy), restore previous targets
             if (!result) {
                 if (initialPlacementTargets !== null) {
@@ -202,24 +223,33 @@ function _onRegionPlacementChange(args) {
     if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
     if (!canvas?.ready || !canvas?.tokens) return;
 
-    // Collect all preview region documents currently active in this placement session
-    const previewDocs = new Set();
-    if (args?.document) previewDocs.add(args.document);
-    if (args?.preview?.document) previewDocs.add(args.preview.document);
+    _lastPlacementChangeArgs = args;
+    if (_pendingPlacementRAF) return;
+    _pendingPlacementRAF = requestAnimationFrame(() => {
+        _pendingPlacementRAF = null;
+        const currentArgs = _lastPlacementChangeArgs;
+        _lastPlacementChangeArgs = null;
+        if (!canvas?.ready || !canvas?.tokens || !currentArgs) return;
 
-    // Also include any previously confirmed previews from the same batch (e.g. multi-template spells)
-    if (canvas.regions?.preview?.children) {
-        for (const child of canvas.regions.preview.children) {
-            if (child?.document && !child.destroyed) {
-                previewDocs.add(child.document);
+        // Collect all preview region documents currently active in this placement session
+        const previewDocs = new Set();
+        if (currentArgs.document) previewDocs.add(currentArgs.document);
+        if (currentArgs.preview?.document) previewDocs.add(currentArgs.preview.document);
+
+        // Also include any previously confirmed previews from the same batch (e.g. multi-template spells)
+        if (canvas.regions?.preview?.children) {
+            for (const child of canvas.regions.preview.children) {
+                if (child?.document && !child.destroyed) {
+                    previewDocs.add(child.document);
+                }
             }
         }
-    }
 
-    if (!previewDocs.size) return;
+        if (!previewDocs.size) return;
 
-    const targetIds = _getTargetsForRegions(Array.from(previewDocs));
-    _setTargetsIfChanged(targetIds);
+        const targetIds = _getTargetsForRegions(Array.from(previewDocs));
+        _setTargetsIfChanged(targetIds);
+    });
 }
 
 // ── Hook Handlers (Post-Placement) ───────────────────────────────────
@@ -308,6 +338,8 @@ function _isConeOrLine(regionDocs) {
  * @returns {Set<string>}
  */
 function _getOriginatingTokenIds(regionDocs) {
+    if (_isPlacingRegion && _cachedOriginIds && _cachedOriginIds.size > 0) return _cachedOriginIds;
+
     const ids = new Set();
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
 
@@ -352,6 +384,11 @@ function _getOriginatingTokenIds(regionDocs) {
         }
     }
 
+    if (_isPlacingRegion) {
+        _cachedOriginIds = ids;
+    } else {
+        _cachedOriginIds = null;
+    }
     return ids;
 }
 
@@ -385,6 +422,21 @@ function _getTargetsForRegions(regionDocs) {
         let inside = false;
         for (const doc of docs) {
             try {
+                // Fast-path AABB pre-filtering: skip expensive polygon containment
+                // if the token's bounding box does not intersect the region's bounding box
+                const docBounds = doc.bounds ?? doc.object?.bounds;
+                if (docBounds) {
+                    const tw = token.w ?? (token.document?.width ? token.document.width * (canvas.grid?.size ?? 100) : 100);
+                    const th = token.h ?? (token.document?.height ? token.document.height * (canvas.grid?.size ?? 100) : 100);
+                    const tx = token.x;
+                    const ty = token.y;
+                    const overlaps = (tx <= docBounds.x + docBounds.width)
+                        && (tx + tw >= docBounds.x)
+                        && (ty <= docBounds.y + docBounds.height)
+                        && (ty + th >= docBounds.y);
+                    if (!overlaps) continue;
+                }
+
                 if (token.document.testInsideRegion(doc)) {
                     inside = true;
                     break;

@@ -28,6 +28,7 @@ let _hookId = null;
 let _origItemRichTooltip = null;
 let _origItemDataModelRichTooltip = null;
 let _tooltipObserver = null;
+let _cachedMatchLabels = null;
 
 export function initItemSheetAttunementTag() {
     if (!isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) {
@@ -130,6 +131,29 @@ function _unwrapTooltips() {
 }
 
 /**
+ * Lazily resolve and cache canonical attunement match labels across locales.
+ * @returns {Set<string>}
+ */
+function _getMatchLabels() {
+    if (_cachedMatchLabels) return _cachedMatchLabels;
+    _cachedMatchLabels = new Set([
+        game.i18n?.localize("DND5E.AttunementRequired")?.toLowerCase(),
+        game.i18n?.localize("DND5E.AttunementAttuned")?.toLowerCase(),
+        game.i18n?.localize("DND5E.AttunementOptional")?.toLowerCase(),
+        game.i18n?.localize("ND5T.ItemSheetAttunementTag.Required")?.toLowerCase(),
+        game.i18n?.localize("ND5T.ItemSheetAttunementTag.Attuned")?.toLowerCase(),
+        game.i18n?.localize("ND5T.ItemSheetAttunementTag.Optional")?.toLowerCase(),
+        game.i18n?.localize("ND5T.ItemSheetAttunementTag.NoAttunement")?.toLowerCase(),
+        "attunement required",
+        "attuned",
+        "optional attunement",
+        "attunement not required",
+        "no attunement required"
+    ]);
+    return _cachedMatchLabels;
+}
+
+/**
  * Initialize fallback MutationObserver on #tooltip.
  */
 function _initTooltipDOMObserver() {
@@ -142,8 +166,7 @@ function _initTooltipDOMObserver() {
         if (!tooltipEl.classList.contains("item-tooltip") && !tooltipEl.classList.contains("dnd5e-tooltip")) return;
 
         const pills = tooltipEl.querySelector("ul.pills");
-        if (!pills) return;
-        if (pills.querySelector(".nd5t-attunement-pill")) return;
+        if (!pills || pills.querySelector(".nd5t-attunement-pill")) return;
 
         const target = game.tooltip?.element;
         if (!target) return;
@@ -163,7 +186,7 @@ function _initTooltipDOMObserver() {
         _enhanceTooltipDOM(pills, attuneData);
     });
 
-    _tooltipObserver.observe(tooltipEl, { childList: true, subtree: true });
+    _tooltipObserver.observe(tooltipEl, { childList: true });
 }
 
 /**
@@ -178,27 +201,14 @@ function _enhanceTooltipResult(item, result) {
     if (_isConcealed(item)) return result;
 
     const attuneData = _getAttunementData(item);
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(result.content, "text/html");
-    let pillsList = doc.querySelector("ul.pills");
+    const tpl = document.createElement("template");
+    tpl.innerHTML = result.content;
+    const root = tpl.content;
+    let pillsList = root.querySelector("ul.pills");
 
     const existingPills = pillsList ? Array.from(pillsList.querySelectorAll("li.pill")) : [];
     let existingAttunementPill = null;
-
-    const matchLabels = new Set([
-        game.i18n.localize("DND5E.AttunementRequired")?.toLowerCase(),
-        game.i18n.localize("DND5E.AttunementAttuned")?.toLowerCase(),
-        game.i18n.localize("DND5E.AttunementOptional")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Required")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Attuned")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Optional")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.NoAttunement")?.toLowerCase(),
-        "attunement required",
-        "attuned",
-        "optional attunement",
-        "attunement not required",
-        "no attunement required"
-    ]);
+    const matchLabels = _getMatchLabels();
 
     for (const pill of existingPills) {
         const text = pill.querySelector(".label")?.textContent.trim().toLowerCase() || pill.textContent.trim().toLowerCase();
@@ -213,19 +223,19 @@ function _enhanceTooltipResult(item, result) {
         existingAttunementPill.innerHTML = `<i class="${attuneData.icon}" inert></i><span class="label">${attuneData.label}</span>`;
     } else {
         if (!pillsList) {
-            pillsList = doc.createElement("ul");
+            pillsList = document.createElement("ul");
             pillsList.className = "pills";
-            doc.querySelector(".content")?.appendChild(pillsList);
+            root.querySelector(".content")?.appendChild(pillsList);
         }
         if (pillsList) {
-            const li = doc.createElement("li");
+            const li = document.createElement("li");
             li.className = `pill transparent nd5t-attunement-pill nd5t-${attuneData.state}`;
             li.innerHTML = `<i class="${attuneData.icon}" inert></i><span class="label">${attuneData.label}</span>`;
             pillsList.appendChild(li);
         }
     }
 
-    result.content = doc.body.innerHTML;
+    result.content = tpl.innerHTML;
     return result;
 }
 
@@ -238,21 +248,7 @@ function _enhanceTooltipDOM(pillsList, attuneData) {
     if (!pillsList) return;
     const existingPills = Array.from(pillsList.querySelectorAll("li.pill"));
     let existingAttunementPill = null;
-
-    const matchLabels = new Set([
-        game.i18n.localize("DND5E.AttunementRequired")?.toLowerCase(),
-        game.i18n.localize("DND5E.AttunementAttuned")?.toLowerCase(),
-        game.i18n.localize("DND5E.AttunementOptional")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Required")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Attuned")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.Optional")?.toLowerCase(),
-        game.i18n.localize("ND5T.ItemSheetAttunementTag.NoAttunement")?.toLowerCase(),
-        "attunement required",
-        "attuned",
-        "optional attunement",
-        "attunement not required",
-        "no attunement required"
-    ]);
+    const matchLabels = _getMatchLabels();
 
     for (const pill of existingPills) {
         const text = pill.querySelector(".label")?.textContent.trim().toLowerCase() || pill.textContent.trim().toLowerCase();
