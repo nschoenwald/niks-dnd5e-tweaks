@@ -14,6 +14,7 @@ import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendi
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
 import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/ui-visuals/chat-scroll-fix.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling, updateChatCardSaveAbilityShorthand } from "./features/ui-visuals/chat-card-styling.js";
+import { initRollBreakdownDetails } from "./features/ui-visuals/roll-breakdown-details.js";
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
 import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
@@ -233,6 +234,15 @@ Hooks.once("init", () => {
             if (value && game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
         }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableRollBreakdownDetails", {
+        name: "Detailed Roll Breakdown Overlay (Personal)",
+        hint: "Displays the comprehensive breakdown showing the base die and modifier sources when clicking roll totals (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
     });
 
 
@@ -520,6 +530,16 @@ Hooks.once("init", () => {
             if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
             else disableChatCardStyling();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableRollBreakdownDetails", {
+        name: "Detailed Roll Breakdown Overlay",
+        hint: "Replaces the unlabeled numbers in the roll total popover with a comprehensive breakdown showing the base die, dice rolls, and where every bonus/penalty originates.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
 
@@ -1468,6 +1488,7 @@ Hooks.once("init", () => {
 
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
+    initRollBreakdownDetails();
     initDisableUndergroundTokenHiding();
     initToolbarLimitation();
 });
@@ -1518,6 +1539,7 @@ Hooks.once("setup", () => {
     initCarolingianHarmony();
     initChatScrollFix();
     initChatCardStyling();
+    initRollBreakdownDetails();
     initRetroactiveAdvantage();
     initHidePrivateGMRolls();
     initAutoCollapseDamageTrays();

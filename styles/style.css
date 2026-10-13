@@ -4364,3 +4364,473 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
     flex-direction: column;
     gap: 4px;
 }
+
+/* ==========================================================================
+   Detailed Roll Breakdown Overlay (v14.43.0)
+   ========================================================================== */
+
+.roll-breakdown .nd5t-roll-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    min-width: 220px;
+    max-width: 320px;
+    font-family: var(--font-primary, "Signika", sans-serif);
+    color: var(--color-text-primary, #191813);
+}
+
+.nd5t-roll-breakdown .nd5t-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    min-height: 24px;
+    border-bottom: 1px dotted var(--color-border-subtle, rgba(0, 0, 0, 0.18));
+}
+
+.nd5t-roll-breakdown .nd5t-breakdown-row:last-child,
+.nd5t-roll-breakdown .nd5t-breakdown-modifiers .nd5t-breakdown-row:last-child {
+    border-bottom: none !important;
+}
+
+.nd5t-roll-breakdown .nd5t-row-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nd5t-roll-breakdown .nd5t-row-right {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-inline-start: 12px;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* Base Die Row & Formula Elements */
+.nd5t-roll-breakdown .nd5t-die-badge {
+    display: inline-block;
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: var(--font-size-11, 11px);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-text-secondary, #7a7971);
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.15));
+    border-radius: 3px;
+    padding: 1px 5px;
+    letter-spacing: 0.04em;
+}
+
+.nd5t-roll-breakdown .nd5t-die-badge.mini {
+    font-size: 10px;
+    padding: 0 4px;
+}
+
+.nd5t-roll-breakdown .nd5t-dice-rolls,
+.nd5t-roll-breakdown .nd5t-dice-formula {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.nd5t-roll-breakdown .nd5t-formula-op {
+    font-family: var(--font-primary, "Signika", sans-serif);
+    font-size: var(--font-size-12, 12px);
+    font-weight: 700;
+    color: var(--color-text-secondary, #7a7971);
+    padding: 0 1px;
+}
+
+.nd5t-roll-breakdown .nd5t-die-roll {
+    font-family: var(--font-primary, "Signika", sans-serif);
+    font-size: var(--font-size-14, 14px);
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.nd5t-roll-breakdown .nd5t-die-roll.discarded {
+    opacity: 0.4;
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
+.nd5t-roll-breakdown .nd5t-die-roll.critical,
+.nd5t-roll-breakdown .nd5t-die-roll.max,
+.nd5t-roll-breakdown .nd5t-die-roll.success,
+.nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value {
+    color: var(--dnd5e-color-success, #2a8a40);
+    text-shadow: 0 0 6px rgba(42, 138, 64, 0.3);
+}
+
+.nd5t-roll-breakdown .nd5t-die-roll.fumble,
+.nd5t-roll-breakdown .nd5t-die-roll.min,
+.nd5t-roll-breakdown .nd5t-die-roll.failure,
+.nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value {
+    color: var(--dnd5e-color-failure, #8b0000);
+    text-shadow: 0 0 6px rgba(139, 0, 0, 0.3);
+}
+
+.nd5t-roll-breakdown .nd5t-base-die .nd5t-value {
+    font-size: var(--font-size-15, 15px);
+    font-weight: 700;
+}
+
+/* Dice breakdown rows */
+.nd5t-roll-breakdown .nd5t-breakdown-dice {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Modifiers */
+.nd5t-roll-breakdown .nd5t-breakdown-modifiers {
+    display: flex;
+    flex-direction: column;
+}
+
+.nd5t-roll-breakdown .nd5t-modifier .nd5t-mod-value,
+.nd5t-roll-breakdown .nd5t-modifier .nd5t-mod-formula {
+    font-family: var(--font-primary, "Signika", sans-serif);
+    font-size: var(--font-size-13, 13px);
+    font-weight: 700;
+}
+
+.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
+    color: var(--color-text-primary, #191813);
+}
+
+.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
+    color: var(--dnd5e-color-failure, #8b0000);
+}
+
+.nd5t-roll-breakdown .nd5t-mod-source {
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: var(--font-size-12, 12px);
+    font-weight: 600;
+    color: var(--color-text-secondary, #59574d);
+    letter-spacing: 0.02em;
+}
+
+.nd5t-roll-breakdown .nd5t-modifier .nd5t-subtotal {
+    font-family: var(--font-primary, "Signika", sans-serif);
+    font-size: var(--font-size-13, 13px);
+    font-weight: 700;
+}
+
+.nd5t-roll-breakdown .nd5t-dice-rolls.mini .nd5t-die-roll.mini {
+    font-size: var(--font-size-11, 11px);
+    padding: 0 3px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 2px;
+}
+
+/* Total Summary Row */
+.nd5t-roll-breakdown .nd5t-total-row {
+    border-top: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.25));
+    border-bottom: none;
+    padding-top: 5px;
+    margin-top: 2px;
+}
+
+.nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label {
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: var(--font-size-12, 12px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary, #7a7971);
+}
+
+.nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value {
+    font-size: var(--font-size-16, 16px);
+    font-weight: 700;
+    color: var(--color-text-primary, #191813);
+}
+
+/* Damage Sections */
+.nd5t-roll-breakdown .nd5t-damage-sections {
+    display: flex;
+    flex-direction: column;
+}
+
+.nd5t-roll-breakdown .nd5t-damage-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px dashed var(--color-border-subtle, rgba(0, 0, 0, 0.18));
+}
+
+.nd5t-roll-breakdown .nd5t-damage-section:last-child,
+.nd5t-roll-breakdown .nd5t-damage-section:last-of-type,
+.nd5t-roll-breakdown .nd5t-damage-section:has(+ .nd5t-total-row) {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+}
+
+.nd5t-roll-breakdown .nd5t-damage-type-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1px 0 3px 0;
+}
+
+.nd5t-roll-breakdown .nd5t-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--dnd5e-font-roboto-condensed, sans-serif);
+    font-size: var(--font-size-11, 11px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-primary, #191813);
+}
+
+.nd5t-roll-breakdown .nd5t-damage-icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    background-color: var(--nd5t-dmg-color, #191813);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.45));
+}
+
+/* Explicit fallback colors for damage type icons matching Nik's Action HUD */
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-acid { background-color: #9ecc4e; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-bludgeoning { background-color: #799fe0; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-cold { background-color: #8be0f7; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-fire { background-color: #ff6e42; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-force { background-color: #b86bfc; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-lightning { background-color: #4dc2ff; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-necrotic { background-color: #6bbe6b; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-piercing { background-color: #cbd5e1; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-poison { background-color: #b066f5; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-psychic { background-color: #ff54ad; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-radiant { background-color: #ffd154; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-slashing { background-color: #f05252; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-thunder { background-color: #63a4d8; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-healing { background-color: #48d689; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-temphp { background-color: #38bdf8; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-all,
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-any { background-color: #e2e8f0; }
+
+.nd5t-roll-breakdown .nd5t-section-subtotal {
+    font-family: var(--font-primary, "Signika", sans-serif);
+    font-size: var(--font-size-13, 13px);
+    font-weight: 700;
+    color: var(--color-text-primary, #191813);
+}
+
+/* Dark Chat Mode overrides: ONLY apply when the chat log or popout is actively in dark theme,
+   never when Foundry applications are dark while chat remains on parchment / Carolingian UI */
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .roll-breakdown .nd5t-roll-breakdown {
+    color: var(--color-text-light-primary, #e6e5d8);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child) {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child) {
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-type-badge,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-section-subtotal {
+    color: var(--color-text-light-primary, #e6e5d8);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-total-row {
+    border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--color-text-light-secondary, #b5b3a4);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.critical,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.max,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.success,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value {
+    color: #4cd964;
+    text-shadow: 0 0 6px rgba(76, 217, 100, 0.4);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.fumble,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.min,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.failure,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value {
+    color: #ff6b6b;
+    text-shadow: 0 0 6px rgba(255, 107, 107, 0.4);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-mod-source,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-formula-op {
+    color: var(--color-text-light-secondary, #b5b3a4);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
+    color: var(--color-text-light-primary, #e6e5d8);
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
+    color: #ff6b6b;
+}
+
+:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value {
+    color: var(--color-text-light-primary, #ffffff);
+}
+
+/* Parchment / Carolingian UI Protection: Ensure dark text always persists on light parchment,
+   even when body has .theme-dark due to dark application windows */
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .roll-breakdown .nd5t-roll-breakdown,
+body.crlngn-ui .roll-breakdown .nd5t-roll-breakdown,
+body.nd5t-crlngn-theme-active .roll-breakdown .nd5t-roll-breakdown {
+    color: #191813 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child),
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child),
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child) {
+    border-bottom-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child),
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child),
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child) {
+    border-bottom-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-type-badge,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-type-badge,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-type-badge {
+    color: #191813 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-section-subtotal,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-section-subtotal,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-section-subtotal {
+    color: #191813 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row {
+    border-top-color: rgba(0, 0, 0, 0.25) !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge {
+    background: rgba(0, 0, 0, 0.06) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: #59574d !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #191813 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll.critical,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll.critical,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll.critical,
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value {
+    color: #2a8a40 !important;
+    text-shadow: 0 0 6px rgba(42, 138, 64, 0.3) !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll.fumble,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll.fumble,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll.fumble,
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value {
+    color: #8b0000 !important;
+    text-shadow: 0 0 6px rgba(139, 0, 0, 0.3) !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-mod-source,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-mod-source,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-mod-source,
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-formula-op,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-formula-op,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-formula-op {
+    color: #59574d !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
+    color: #191813 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
+    color: #8b0000 !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label {
+    color: #59574d !important;
+}
+
+body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value,
+body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value,
+body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value {
+    color: #191813 !important;
+}
+
+/* Explicitly guarantee no bottom border leaks right above the total line */
+.nd5t-roll-breakdown :is(.nd5t-breakdown-row:last-child, .nd5t-damage-section:last-child, .nd5t-damage-section:last-of-type, .nd5t-breakdown-modifiers:last-child > .nd5t-breakdown-row:last-child, .nd5t-breakdown-dice:last-child > .nd5t-breakdown-row:last-child),
+.nd5t-roll-breakdown .nd5t-damage-sections > .nd5t-damage-section:last-child,
+.nd5t-roll-breakdown .nd5t-damage-section:has(+ .nd5t-total-row),
+.nd5t-roll-breakdown > :nth-last-child(2),
+.nd5t-roll-breakdown > :nth-last-child(2) .nd5t-breakdown-row:last-child,
+.nd5t-roll-breakdown > :nth-last-child(2) .nd5t-damage-section:last-child,
+.nd5t-roll-breakdown > :nth-last-child(2) .nd5t-breakdown-modifiers:last-child .nd5t-breakdown-row:last-child,
+.nd5t-roll-breakdown > :nth-last-child(2) .nd5t-breakdown-dice:last-child .nd5t-breakdown-row:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}

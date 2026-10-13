@@ -34,6 +34,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | Feature | Category | Default | Player Preference? |
 |---|---|:---:|:---:|
 | **[Retroactive Advantage / Disadvantage](#retroactive-advantage--disadvantage)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Detailed Roll Breakdown Overlay](#detailed-roll-breakdown-overlay)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
@@ -102,6 +103,22 @@ Modernizes DnD5e chat cards to make actions and roll results readable at a glanc
 * **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
 * **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
+
+### Detailed Roll Breakdown Overlay
+Transforms the native DnD5e roll breakdown popover (opened by clicking on the roll total button on chat cards) into a comprehensive, readable breakdown showing the base die and the origin of every bonus or penalty:
+* **Attack, Check, Save & Damage Rolls**: Fully supports all d20 checks and damage cards.
+* **Damage Cards Breakdown & Consolidation**: Consolidates damage rolls of the same damage type (e.g. base weapon damage, *Vicious* dice, and *Great Weapon Master*) into a single unified section per damage type, displaying damage type badges with icons, subtotals, and grand total.
+* **Intuitive Sorting Order**:
+  * **Dice at the Top**: All rolled dice are placed at the top of the breakdown, starting with base weapon damage (or base d20 on checks/saves/attacks) followed by additional dice (e.g. *Vicious*, *Bless*).
+  * **Modifiers Below**: Modifiers appear below the dice, beginning with ability modifiers (`STR`, `DEX`, `CON`, `INT`, `WIS`, `CHA`) at the top, followed by all other bonuses and penalties sorted alphabetically by modifier name (e.g. `GWM`, `MGC`, `PB`, `Rage`).
+* **Source Identification**: Clearly shows where modifiers originate using clean shorthands instead of empty blank spaces (e.g. `+3 (STR)`, `+2 (PB)`, `+1 (MGC)`, `+1d4 [ 3 ] (Bless)`, `-2 (Exhaustion 1)`).
+* **Base Die & Right-Oriented Dice**: Displays the base die (e.g. `d20`, `2d6`) with dice results aligned to the right, critical/fumble color accents, and addition formulas for multi-dice rolls (e.g. `[1] + [1] = 2`).
+* **Feature & Die Flavor Labels**: Preserves and displays custom bracketed die flavors (such as `[Vicious]` on `2d6[Vicious]`) directly on the die row alongside its denomination.
+* **Bonus Dice**: Formats bonus dice (like *Bless*, *Guidance*, *Bardic Inspiration*) with their formula, rolled result, and originating spell/effect name.
+* **Condition Reductions**: Color-codes penalties such as Exhaustion or *Bane*.
+* **Two-Tier Architecture**: Proactively annotates roll formulas at roll creation and retroactively deduces sources for rolls already in chat history.
+* **Theme Harmony**: High contrast text styling across parchment chat logs, Carolingian UI, and dark Foundry themes.
+* **Vibrant Damage Type Icons**: Renders damage type icons with dedicated accent colors matching Nik's Action HUD (e.g. Slashing in red, Fire in orange-red, Cold in light blue, Radiant in gold) using CSS masking and subtle drop-shadows, ensuring clear visibility against parchment, white, or dark overlay backgrounds.
 
 ### Item Sheet Attunement Tag
 Adds a prominent **Attunement Required** or **No Attunement Required** badge to magic item sheets and rich item tooltips.

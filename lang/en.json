@@ -116,5 +116,11 @@
   "ND5T.WeaponMasteries.SapIconName": "Sap Effect Icon",
   "ND5T.WeaponMasteries.SapIconHint": "Icon used for the Sap weapon mastery active effect.",
   "ND5T.WeaponMasteries.SlowIconName": "Slow Effect Icon",
-  "ND5T.WeaponMasteries.SlowIconHint": "Icon used for the Slow weapon mastery active effect."
+  "ND5T.WeaponMasteries.SlowIconHint": "Icon used for the Slow weapon mastery active effect.",
+
+  "ND5T.RollBreakdownDetails.Name": "Detailed Roll Breakdown Overlay",
+  "ND5T.RollBreakdownDetails.Hint": "Replaces unlabeled roll breakdown numbers in chat popovers with a comprehensive breakdown showing base dice, attribute bonuses, proficiency, magic bonuses, and active effects.",
+  "ND5T.RollBreakdownDetails.ClientName": "Detailed Roll Breakdown Overlay (Personal)",
+  "ND5T.RollBreakdownDetails.ClientHint": "Enables detailed roll breakdown popovers on your client (if enabled by the GM).",
+  "ND5T.RollBreakdownDetails.Total": "Total"
 }

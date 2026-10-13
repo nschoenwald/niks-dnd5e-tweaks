@@ -192,6 +192,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnableRollBreakdownDetails",
+                                name: "Detailed Roll Breakdown Overlay",
+                                hint: "Displays the comprehensive breakdown showing the base die and modifier sources (e.g. +3 STR bonus, +2 PB, +1d4 Bless, -2 Exhaustion 1) when clicking roll totals (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableRetroactiveAdvantage",
                                 name: "Retroactive Advantage/Disadvantage",
                                 hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
@@ -572,6 +580,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableChatCardStyling",
                                 name: "Chat Card Styling Improvements",
                                 hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save with ability shorthand like CON Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enableRollBreakdownDetails",
+                                name: "Detailed Roll Breakdown Overlay",
+                                hint: "Replaces the unlabeled numbers in the roll total popover with a comprehensive breakdown showing the base die, dice rolls, and where every bonus/penalty originates (e.g. +3 STR bonus, +2 PB, +1d4 Bless, -2 Exhaustion 1).",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

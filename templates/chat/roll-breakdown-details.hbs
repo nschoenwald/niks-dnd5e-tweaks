@@ -1,0 +1,287 @@
+<div class="nd5t-roll-breakdown{{#if isDamageCard}} nd5t-damage-breakdown{{/if}}">
+    {{#if isDamageCard}}
+        <div class="nd5t-damage-sections">
+            {{#each sections}}
+            <div class="nd5t-damage-section">
+                {{#if typeLabel}}
+                <div class="nd5t-damage-type-header">
+                    <div class="nd5t-type-badge">
+                        {{#if typeIcon}}
+                        <span class="nd5t-damage-icon nd5t-dmg-{{ damageType }}" style="background-color: {{ typeColor }}; -webkit-mask-image: url('{{ typeIcon }}'); mask-image: url('{{ typeIcon }}');" aria-label="{{ typeLabel }}" title="{{ typeLabel }}"></span>
+                        {{/if}}
+                        <span class="nd5t-type-name">{{ typeLabel }}</span>
+                    </div>
+                    {{#if ../hasMultipleSections}}
+                    <span class="nd5t-section-subtotal">{{ sectionTotal }}</span>
+                    {{/if}}
+                </div>
+                {{/if}}
+
+                {{!-- Dice Section --}}
+                {{#if diceRows.length}}
+                <div class="nd5t-breakdown-dice">
+                    {{#each diceRows}}
+                    <div class="nd5t-breakdown-row nd5t-base-die{{#if isCritical}} critical{{/if}}{{#if isFumble}} fumble{{/if}}">
+                        <div class="nd5t-row-left">
+                            <span class="nd5t-die-badge">{{ denomination }}</span>
+                            {{#if flavor}}
+                            <span class="nd5t-mod-source">{{ flavor }}</span>
+                            {{/if}}
+                        </div>
+                        <div class="nd5t-row-right">
+                            {{#if isSingleDie}}
+                            <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
+                            {{else if hasAdvantageOrDisadvantage}}
+                            <div class="nd5t-dice-rolls">
+                                {{#each rolls}}
+                                <span class="nd5t-die-roll {{ classes }}{{#unless active}} discarded{{/unless}}">{{ result }}</span>
+                                {{/each}}
+                            </div>
+                            {{else if isFormula}}
+                            <div class="nd5t-dice-formula">
+                                {{#each discardedRolls}}
+                                <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                {{#each activeRolls}}
+                                {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                <span class="nd5t-formula-op">=</span>
+                                <strong class="nd5t-value">{{ total }}</strong>
+                            </div>
+                            {{else}}
+                            <strong class="nd5t-value">{{ total }}</strong>
+                            {{/if}}
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else if baseDie}}
+                <div class="nd5t-breakdown-row nd5t-base-die{{#if baseDie.isCritical}} critical{{/if}}{{#if baseDie.isFumble}} fumble{{/if}}">
+                    <div class="nd5t-row-left">
+                        <span class="nd5t-die-badge">{{ baseDie.denomination }}</span>
+                        {{#if baseDie.flavor}}
+                        <span class="nd5t-mod-source">{{ baseDie.flavor }}</span>
+                        {{/if}}
+                    </div>
+                    <div class="nd5t-row-right">
+                        {{#if baseDie.isSingleDie}}
+                        <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{ baseDie.singleRoll.result }}</span>
+                        {{else if baseDie.hasAdvantageOrDisadvantage}}
+                        <div class="nd5t-dice-rolls">
+                            {{#each baseDie.rolls}}
+                            <span class="nd5t-die-roll {{ classes }}{{#unless active}} discarded{{/unless}}">{{ result }}</span>
+                            {{/each}}
+                        </div>
+                        {{else if baseDie.isFormula}}
+                        <div class="nd5t-dice-formula">
+                            {{#each baseDie.discardedRolls}}
+                            <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            {{#each baseDie.activeRolls}}
+                            {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                            <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            <span class="nd5t-formula-op">=</span>
+                            <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                        </div>
+                        {{else}}
+                        <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                        {{/if}}
+                    </div>
+                </div>
+                {{/if}}
+
+                {{!-- Modifiers & Bonuses --}}
+                {{#if modifiers.length}}
+                <div class="nd5t-breakdown-modifiers">
+                    {{#each modifiers}}
+                    <div class="nd5t-breakdown-row nd5t-modifier{{#if isPositive}} positive{{else}} negative{{/if}}{{#if isDie}} die-bonus{{/if}}">
+                        <div class="nd5t-row-left">
+                            {{#if isDie}}
+                                {{#if label}}
+                                <span class="nd5t-mod-source">{{ label }}</span>
+                                <span class="nd5t-die-badge mini">{{ formula }}</span>
+                                {{else}}
+                                <span class="nd5t-die-badge mini">{{ formula }}</span>
+                                {{/if}}
+                            {{else}}
+                                <span class="nd5t-mod-source">{{ displayLabel }}</span>
+                            {{/if}}
+                        </div>
+                        <div class="nd5t-row-right">
+                            {{#if isDie}}
+                                {{#if isSingleDie}}
+                                <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
+                                {{else if isFormula}}
+                                <div class="nd5t-dice-formula">
+                                    {{#each discardedRolls}}
+                                    <span class="nd5t-die-roll mini discarded {{ classes }}">{{ result }}</span>
+                                    {{/each}}
+                                    {{#each activeRolls}}
+                                    {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                    <span class="nd5t-die-roll mini {{ classes }}">{{ result }}</span>
+                                    {{/each}}
+                                    <span class="nd5t-formula-op">=</span>
+                                    <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                                </div>
+                                {{else}}
+                                <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                                {{/if}}
+                            {{else}}
+                                <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                            {{/if}}
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+        </div>
+
+    {{else}}
+        <div class="nd5t-roll-details">
+            {{#if typeLabel}}
+            <div class="nd5t-damage-type-header">
+                <div class="nd5t-type-badge">
+                    {{#if typeIcon}}
+                    <span class="nd5t-damage-icon nd5t-dmg-{{ damageType }}" style="background-color: {{ typeColor }}; -webkit-mask-image: url('{{ typeIcon }}'); mask-image: url('{{ typeIcon }}');" aria-label="{{ typeLabel }}" title="{{ typeLabel }}"></span>
+                    {{/if}}
+                    <span class="nd5t-type-name">{{ typeLabel }}</span>
+                </div>
+            </div>
+            {{/if}}
+
+            {{!-- Dice Section --}}
+            {{#if diceRows.length}}
+            <div class="nd5t-breakdown-dice">
+                {{#each diceRows}}
+                <div class="nd5t-breakdown-row nd5t-base-die{{#if isCritical}} critical{{/if}}{{#if isFumble}} fumble{{/if}}">
+                    <div class="nd5t-row-left">
+                        <span class="nd5t-die-badge">{{ denomination }}</span>
+                        {{#if flavor}}
+                        <span class="nd5t-mod-source">{{ flavor }}</span>
+                        {{/if}}
+                    </div>
+                    <div class="nd5t-row-right">
+                        {{#if isSingleDie}}
+                        <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
+                        {{else if hasAdvantageOrDisadvantage}}
+                        <div class="nd5t-dice-rolls">
+                            {{#each rolls}}
+                            <span class="nd5t-die-roll {{ classes }}{{#unless active}} discarded{{/unless}}">{{ result }}</span>
+                            {{/each}}
+                        </div>
+                        {{else if isFormula}}
+                        <div class="nd5t-dice-formula">
+                            {{#each discardedRolls}}
+                            <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            {{#each activeRolls}}
+                            {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                            <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            <span class="nd5t-formula-op">=</span>
+                            <strong class="nd5t-value">{{ total }}</strong>
+                        </div>
+                        {{else}}
+                        <strong class="nd5t-value">{{ total }}</strong>
+                        {{/if}}
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            {{else if baseDie}}
+            <div class="nd5t-breakdown-row nd5t-base-die{{#if baseDie.isCritical}} critical{{/if}}{{#if baseDie.isFumble}} fumble{{/if}}">
+                <div class="nd5t-row-left">
+                    <span class="nd5t-die-badge">{{ baseDie.denomination }}</span>
+                    {{#if baseDie.flavor}}
+                    <span class="nd5t-mod-source">{{ baseDie.flavor }}</span>
+                    {{/if}}
+                </div>
+                <div class="nd5t-row-right">
+                    {{#if baseDie.isSingleDie}}
+                    <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{ baseDie.singleRoll.result }}</span>
+                    {{else if baseDie.hasAdvantageOrDisadvantage}}
+                    <div class="nd5t-dice-rolls">
+                        {{#each baseDie.rolls}}
+                        <span class="nd5t-die-roll {{ classes }}{{#unless active}} discarded{{/unless}}">{{ result }}</span>
+                        {{/each}}
+                    </div>
+                    {{else if baseDie.isFormula}}
+                    <div class="nd5t-dice-formula">
+                        {{#each baseDie.discardedRolls}}
+                        <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                        {{/each}}
+                        {{#each baseDie.activeRolls}}
+                        {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                        <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                        {{/each}}
+                        <span class="nd5t-formula-op">=</span>
+                        <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                    </div>
+                    {{else}}
+                    <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                    {{/if}}
+                </div>
+            </div>
+            {{/if}}
+
+            {{!-- Modifiers & Bonuses --}}
+            {{#if modifiers.length}}
+            <div class="nd5t-breakdown-modifiers">
+                {{#each modifiers}}
+                <div class="nd5t-breakdown-row nd5t-modifier{{#if isPositive}} positive{{else}} negative{{/if}}{{#if isDie}} die-bonus{{/if}}">
+                    <div class="nd5t-row-left">
+                        {{#if isDie}}
+                            {{#if label}}
+                            <span class="nd5t-mod-source">{{ label }}</span>
+                            <span class="nd5t-die-badge mini">{{ formula }}</span>
+                            {{else}}
+                            <span class="nd5t-die-badge mini">{{ formula }}</span>
+                            {{/if}}
+                        {{else}}
+                            <span class="nd5t-mod-source">{{ displayLabel }}</span>
+                        {{/if}}
+                    </div>
+                    <div class="nd5t-row-right">
+                        {{#if isDie}}
+                            {{#if isSingleDie}}
+                            <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
+                            {{else if isFormula}}
+                            <div class="nd5t-dice-formula">
+                                {{#each discardedRolls}}
+                                <span class="nd5t-die-roll mini discarded {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                {{#each activeRolls}}
+                                {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                <span class="nd5t-die-roll mini {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                <span class="nd5t-formula-op">=</span>
+                                <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                            </div>
+                            {{else}}
+                            <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                            {{/if}}
+                        {{else}}
+                            <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                        {{/if}}
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+        </div>
+    {{/if}}
+
+    {{!-- Total Summary Footer --}}
+    <div class="nd5t-breakdown-row nd5t-total-row">
+        <div class="nd5t-row-left">
+            <span class="nd5t-total-label">{{#if totalLabel}}{{ totalLabel }}{{else}}TOTAL{{/if}}</span>
+        </div>
+        <div class="nd5t-row-right">
+            <strong class="nd5t-total-value">{{ total }}</strong>
+        </div>
+    </div>
+</div>
