@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.45.2] - 2026-10-14
+## [14.45.1] - 2026-10-14
+### Added
+- **Conditional Damage: Great Weapon Master (2024 Rules)**:
+  - Automatically available under 2024 (modern) rules for characters possessing the Great Weapon Master feat (`great-weapon-master`) when attacking with a Heavy weapon.
+  - Adds a toggle in the damage configuration dialog to add bonus damage equal to your Proficiency Bonus (+PB), flavored as `GWM` and matching the weapon's damage type.
+  - Automatically resets back to enabled after being toggled off for a single roll (such as a bonus action, reaction, or Cleave secondary attack), saving players the effort of manually re-enabling it on subsequent turns.
+- **Conditional Damage: Cleave Weapon Mastery (Damage Malus)**:
+  - Automatically available under 2024 (modern) rules when attacking with a weapon featuring the Cleave mastery (e.g. Greataxe, Halberd).
+  - Provides a toggle for the secondary attack that removes your ability score modifier from the damage formula (unless negative).
+  - Disabled by default and strictly one-off (never remembered for subsequent rolls), ensuring normal attacks always include your full ability score modifier without accidental carry-over.
+
 ### Improved
 - **Conditional Damage Dialog: Zero-Layout-Shift Formula Display**:
   - Eliminated dialog height jumping and layout shifts when toggling conditional damage bonuses (Sneak Attack, Great Weapon Master, Cleave, Hex, Hunter's Mark).
@@ -12,22 +22,9 @@ All notable changes to this project will be documented in this file.
   - Removed unnecessary hardcoded line breaks between bonus names and bonus numbers (e.g. `Hex (+1d6 Necrotic)`, `Cleave (-6)`).
   - Fixed an issue where DnD5e's default standard-form flex ratio (40% label / 60% form-fields) artificially restricted the label width, causing longer names like `Great Weapon Master (+6)` to wrap despite ample available space. Checkbox labels now occupy the full available width of the row.
   - When width is genuinely constrained, labels wrap cleanly between the bonus name and the bonus number rather than breaking mid-phrase or mid-bonus.
-- **Conditional Damage: Great Weapon Master Auto-Re-Enable**:
-  - Great Weapon Master now automatically resets back to enabled after being toggled off for a single roll (such as a bonus action attack, reaction attack, or Cleave secondary attack), saving players the effort of manually re-enabling it on subsequent turns.
 - **Roll Breakdown Overlay: Active Effect Damage Bonus Detection (e.g. Rage)**:
   - Fixed an issue where the Barbarian Rage damage bonus (and other damage bonuses originating from active effects) displayed as generic "Modifier" in the Detailed Roll Breakdown Overlay.
   - Active effect damage bonuses now resolve and display the exact name of their originating active effect (e.g. `Rage` or localized equivalent `Kampfrausch`) alongside the bonus value.
-
-## [14.45.1] - 2026-10-14
-### Added
-- **Conditional Damage: Great Weapon Master (2024 Rules)**:
-  - Automatically available under 2024 (modern) rules for characters possessing the Great Weapon Master feat (`great-weapon-master`) when attacking with a Heavy weapon.
-  - Adds a toggle in the damage configuration dialog to add bonus damage equal to your Proficiency Bonus (+PB), flavored as `GWM` and matching the weapon's damage type.
-  - Remembers your toggle preference across attacks, keeping it active while applying GWM and easily disabled when appropriate.
-- **Conditional Damage: Cleave Weapon Mastery (Damage Malus)**:
-  - Automatically available under 2024 (modern) rules when attacking with a weapon featuring the Cleave mastery (e.g. Greataxe, Halberd).
-  - Provides a toggle for the secondary attack that removes your ability score modifier from the damage formula (unless negative).
-  - Disabled by default and strictly one-off (never remembered for subsequent rolls), ensuring normal attacks always include your full ability score modifier without accidental carry-over.
 
 ## [14.45.0] - 2026-10-13
 ### Added
