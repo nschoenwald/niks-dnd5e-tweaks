@@ -125,13 +125,14 @@
   "ND5T.RollBreakdownDetails.Total": "Total",
 
   "ND5T.ConditionalDamage.Name": "Conditional Damage Bonuses",
-  "ND5T.ConditionalDamage.Hint": "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
+  "ND5T.ConditionalDamage.Hint": "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
   "ND5T.ConditionalDamage.ClientName": "Conditional Damage Bonuses (Personal)",
-  "ND5T.ConditionalDamage.ClientHint": "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
+  "ND5T.ConditionalDamage.ClientHint": "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
   "ND5T.ConditionalDamage.Hex.Label": "Hex (+1d6 Necrotic)",
   "ND5T.ConditionalDamage.HuntersMark.Label": "Hunter's Mark (+1d6 Force)",
   "ND5T.ConditionalDamage.SneakAttack.Label": "Sneak Attack (+{formula})",
   "ND5T.ConditionalDamage.GreatWeaponMaster.Label": "Great Weapon Master (+{formula})",
+  "ND5T.ConditionalDamage.BrutalStrike.Label": "Brutal Strike (+{formula})",
   "ND5T.ConditionalDamage.Cleave.Label": "Cleave (-{formula})",
   "ND5T.ConditionalDamage.Cleave.NoMalusLabel": "Cleave (No Malus)",
   "ND5T.ConditionalDamage.InactivePlaceholder": "(Inactive)"

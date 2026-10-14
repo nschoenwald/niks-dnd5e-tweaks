@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.2] - 2026-10-14
+### Added
+- **Conditional Damage: Brutal Strike**:
+  - Automatically available for characters possessing the Brutal Strike feature (`brutal-strike`) when attacking with a melee weapon, thrown weapon, or unarmed strike using Strength.
+  - Adds an opt-in toggle in the damage configuration dialog to deal extra damage (`1d10`, increasing to `2d10` at 17th level).
+  - Matches the damage type and properties (magical, silvered, etc.) of the weapon or unarmed strike.
+  - Defaults to disabled on every roll and does not save state across attacks, automatically resetting to disabled for subsequent rolls.
+
 ## [14.45.1] - 2026-10-14
 ### Added
 - **Conditional Damage: Great Weapon Master (2024 Rules)**:

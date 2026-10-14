@@ -1,11 +1,12 @@
 /**
- * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master & Cleave)
+ * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master, Brutal Strike & Cleave)
  *
  * Offers toggles in damage roll configuration dialogs when an actor is actively
  * concentrating on Hex or Hunter's Mark, attacks with a ranged or finesse weapon (Sneak Attack),
  * attacks with a Heavy weapon under 2024 rules with Great Weapon Master (+PB bonus flavored with GWM),
+ * attacks with Brutal Strike (@scale.barbarian.brutal-strike bonus matching weapon damage type, reset to disabled),
  * or attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative).
- * Remembers choices per actor (except Cleave, which is disabled by default and strictly one-off).
+ * Remembers choices per actor (except Cleave and Brutal Strike, which are disabled by default and strictly one-off).
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
@@ -251,6 +252,161 @@ export function actorHasGreatWeaponMaster(actor) {
 }
 
 /**
+ * Check whether an actor possesses the Brutal Strike feature by identifier.
+ *
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+export function actorHasBrutalStrike(actor) {
+    if (!actor) return false;
+    const items = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []);
+    return items.some(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        const name = (i.name || "").toLowerCase();
+        return id === "brutal-strike"
+            || id === "brutal_strike"
+            || id.includes("brutal-strike")
+            || id.includes("brutal_strike")
+            || name.includes("brutal strike");
+    });
+}
+
+/**
+ * Determine whether an attack is eligible for Brutal Strike.
+ * Under 2024 PHB rules, Brutal Strike applies to a Strength-based attack roll
+ * dealt by a weapon or Unarmed Strike. Spells, non-weapon items, and ranged weapons
+ * that cannot be thrown with Strength (e.g. bows, crossbows) do NOT qualify.
+ *
+ * @param {Item5e|null} item
+ * @param {Activity|null} [activity=null]
+ * @param {DamageRollProcessConfiguration|null} [config=null]
+ * @param {Actor5e|null} [actor=null]
+ * @returns {boolean}
+ */
+export function isEligibleBrutalStrikeAttack(item, activity = null, config = null, actor = null) {
+    if (!item) return false;
+    if (item.type === "spell") return false;
+
+    // Must be a weapon or unarmed strike
+    const isWeapon = item.type === "weapon";
+    const isUnarmed = activity?.attack?.type?.classification === "unarmed"
+        || item.identifier === "unarmed-strike"
+        || (item.system?.identifier || "").includes("unarmed-strike")
+        || (item.name || "").toLowerCase().includes("unarmed strike");
+    if (!isWeapon && !isUnarmed) return false;
+
+    // Disallow spell attacks
+    const actionType = activity?.actionType ?? item.system?.actionType;
+    if (actionType === "msak" || actionType === "rsak") return false;
+
+    // Check weapon type: ranged weapons (simpleR, martialR) must have thrown property to use Strength
+    const weaponType = item.system?.type?.value;
+    const isRangedWeapon = weaponType === "simpleR" || weaponType === "martialR"
+        || CONFIG.DND5E?.weaponTypeMap?.[weaponType] === "ranged";
+
+    if (isRangedWeapon) {
+        const props = item.system?.properties;
+        const hasThrown = Array.isArray(props)
+            ? (props.includes("thr") || props.includes("thrown"))
+            : (props instanceof Set ? (props.has("thr") || props.has("thrown")) : Boolean(props?.thr || props?.thrown));
+        if (!hasThrown) return false;
+    }
+
+    // Check explicit ability: if set to something other than "str" or default, not Strength-based
+    const baseRoll = config?.rolls?.[0];
+    const abilityKey = baseRoll?.data?.roll?.ability
+        ?? activity?.ability
+        ?? activity?.attack?.ability
+        ?? item.system?.ability;
+    if (abilityKey && abilityKey !== "default" && abilityKey !== "str") {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Resolve the Brutal Strike scale value formula for display and fallback calculation.
+ * Resolves @scale.barbarian.brutal-strike advancement on the Barbarian class,
+ * falling back to 1d10 (or 2d10 at level 17+).
+ *
+ * @param {Actor5e|null} actor
+ * @returns {string}
+ */
+export function getBrutalStrikeFormula(actor) {
+    if (!actor) return "1d10";
+
+    // 1. Check Barbarian class scale values
+    const classes = actor.itemTypes?.class ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "class");
+    const barbarianClass = classes.find(c => {
+        const id = (c.identifier || c.system?.identifier || "").toLowerCase();
+        const name = (c.name || "").toLowerCase();
+        return id === "barbarian" || name === "barbarian";
+    });
+
+    const barbarianScale = actor.system?.scale?.[barbarianClass?.identifier]
+        ?? actor.system?.scale?.barbarian
+        ?? barbarianClass?.scaleValues
+        ?? {};
+
+    let scaleObj = barbarianScale["brutal-strike"] ?? barbarianScale["brutalStrike"] ?? barbarianScale["brutal_strike"];
+    if (!scaleObj && actor.system?.scale) {
+        for (const [classKey, classScale] of Object.entries(actor.system.scale)) {
+            if (classScale && typeof classScale === "object") {
+                for (const [key, val] of Object.entries(classScale)) {
+                    if (key.toLowerCase().includes("brutal")) {
+                        scaleObj = val;
+                        break;
+                    }
+                }
+            }
+            if (scaleObj) break;
+        }
+    }
+
+    const rawFormula = scaleObj?.formula ?? (typeof scaleObj === "string" ? scaleObj : scaleObj?.value);
+    if (rawFormula) return String(rawFormula);
+
+    // 2. Fallback based on Barbarian class level if available (1d10 at lvl 9+, 2d10 at lvl 17+)
+    if (barbarianClass) {
+        const levels = Number(barbarianClass.system?.levels ?? 0);
+        if (levels >= 17) return "2d10";
+        if (levels >= 9) return "1d10";
+    }
+
+    // 3. Fallback to feature item damage parts if present, or improved-brutal-strike-2 feature
+    const feats = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "feat");
+    const hasImpBrutal2 = feats.some(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        const name = (i.name || "").toLowerCase();
+        return id.includes("improved-brutal-strike-2") || id.includes("improved_brutal_strike_2") || name.includes("improved brutal strike (2)");
+    });
+    if (hasImpBrutal2) return "2d10";
+
+    const brutalItem = feats.find(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        return id === "brutal-strike" || id === "brutal_strike";
+    });
+    if (brutalItem) {
+        const activities = brutalItem.system?.activities;
+        if (activities) {
+            const list = activities.values ? Array.from(activities.values()) : Object.values(activities);
+            for (const act of list) {
+                const part = act.damage?.parts?.[0];
+                if (part?.number && part?.denomination) {
+                    return `${part.number}d${part.denomination}`;
+                }
+                if (part?.formula && !part.formula.includes("@scale")) {
+                    return part.formula;
+                }
+            }
+        }
+    }
+
+    return "1d10";
+}
+
+/**
  * Determine whether a weapon has the Heavy property.
  *
  * @param {Item5e|null} item
@@ -340,7 +496,7 @@ export function removeAbilityModifierFromParts(parts) {
  * @returns {boolean}
  */
 export function getActorConditionalPreference(actor, bonusId, defaultVal = true) {
-    if (!actor || bonusId === "cleave") return false;
+    if (!actor || bonusId === "cleave" || bonusId === "brutalStrike") return false;
     if (bonusId === "greatWeaponMaster") {
         // Great Weapon Master defaults to enabled on rolls unless explicitly toggled off in memory for that action
         const key = actor.uuid || actor.id;
@@ -368,7 +524,7 @@ export function getActorConditionalPreference(actor, bonusId, defaultVal = true)
  * @param {boolean} active
  */
 export async function setActorConditionalPreference(actor, bonusId, active) {
-    if (!actor || bonusId === "cleave") return;
+    if (!actor || bonusId === "cleave" || bonusId === "brutalStrike") return;
     const key = actor.uuid || actor.id;
 
     // Update in-memory cache immediately
@@ -518,6 +674,22 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         });
     }
 
+    // --- 5. Brutal Strike (Barbarian class feature: @scale.barbarian.brutal-strike) ---
+    if (actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor)) {
+        const brutalFormulaDisplay = getBrutalStrikeFormula(actor);
+        activeBonuses.push({
+            id: "brutalStrike",
+            spellName: "Brutal Strike",
+            formula: `${brutalFormulaDisplay}[Brutal Strike]`,
+            formulaDisplay: brutalFormulaDisplay,
+            damageType: baseDamageType,
+            flavor: "Brutal Strike",
+            labelKey: "ND5T.ConditionalDamage.BrutalStrike.Label",
+            defaultLabel: `Brutal Strike (+${brutalFormulaDisplay})`,
+            defaultActive: false
+        });
+    }
+
     return activeBonuses;
 }
 
@@ -542,6 +714,14 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
     if (def.formulaDisplay && !isNaN(Number(def.formulaDisplay))) {
         if (data.prof === undefined || def.id === "greatWeaponMaster") {
             data.prof = Number(def.formulaDisplay);
+        }
+    }
+
+    if (def.id === "brutalStrike") {
+        data.scale ??= {};
+        data.scale.barbarian ??= {};
+        if (!data.scale.barbarian["brutal-strike"] || typeof data.scale.barbarian["brutal-strike"] === "object") {
+            data.scale.barbarian["brutal-strike"] = def.formulaDisplay || "1d10";
         }
     }
 
@@ -614,7 +794,9 @@ function _onPreRollDamage(config, dialog, message) {
 
     // Prepare bonus metadata on the process configuration
     config._nd5tConditionalBonuses = activeDefs.map(def => {
-        const lastChoice = def.id === "cleave" ? false : getActorConditionalPreference(actor, def.id, def.defaultActive);
+        const lastChoice = (def.id === "cleave" || def.id === "brutalStrike")
+            ? false
+            : getActorConditionalPreference(actor, def.id, def.defaultActive);
         return {
             ...def,
             actor,
@@ -641,7 +823,7 @@ function _onPreRollDamage(config, dialog, message) {
 
         const alreadyPresent = config.rolls.some(r => r.options?._nd5tConditionalId === bonus.id);
         if (!alreadyPresent) {
-            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster") ? baseProperties : [];
+            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike") ? baseProperties : [];
             config.rolls.push(createConditionalRollConfig(bonus, baseRollData, { isCritical, properties }));
         }
     }
@@ -670,7 +852,7 @@ function _ensureAllConditionalRollsInConfig(config) {
 
         let rollConfig = config.rolls.find(r => r.options?._nd5tConditionalId === bonus.id);
         if (!rollConfig) {
-            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster") ? baseProperties : [];
+            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike") ? baseProperties : [];
             rollConfig = createConditionalRollConfig(bonus, baseRollData, { isCritical, properties });
             if (!bonus.active) {
                 rollConfig.options._nd5tInactive = true;
@@ -913,8 +1095,8 @@ function _patchDamageRollConfigurationDialog() {
                             bonus.active = false;
                         }
 
-                        // Keep Sneak Attack and Great Weapon Master aligned with weapon damage type and properties
-                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster") && selectedBaseType) {
+                        // Keep Sneak Attack, Great Weapon Master, and Brutal Strike aligned with weapon damage type and properties
+                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike") && selectedBaseType) {
                             bonus.damageType = selectedBaseType;
                             roll.options.type = selectedBaseType;
                             if (roll.data?.roll) {
@@ -983,7 +1165,7 @@ function _patchDamageRollConfigurationDialog() {
                             bonus.active = false;
                         }
 
-                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster") && selectedBaseType) {
+                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike") && selectedBaseType) {
                             bonus.damageType = selectedBaseType;
                             roll.options.type = selectedBaseType;
                             if (roll.data?.roll) {
@@ -993,8 +1175,8 @@ function _patchDamageRollConfigurationDialog() {
                         }
                     }
 
-                    // Persist selection so subsequent rolls remember it
-                    if (bonus.actor && bonus.id !== "cleave") {
+                    // Persist selection so subsequent rolls remember it (exempt cleave and brutalStrike)
+                    if (bonus.actor && bonus.id !== "cleave" && bonus.id !== "brutalStrike") {
                         if (bonus.id === "greatWeaponMaster" && !isChecked) {
                             // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
                             // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.

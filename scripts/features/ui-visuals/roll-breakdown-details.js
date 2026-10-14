@@ -273,7 +273,7 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
     const DAMAGE_KEY_REGEX = /(?:bonuses\.(?:[a-z]{4}|all)\.damage|rolls\.damage\.[a-z]{4}\.bonus)/i;
 
     const targetNum = Number(targetVal);
-    const hasTargetNum = !isNaN(targetNum) && Number.isFinite(targetNum);
+    const hasTargetNum = !isNaN(targetNum) && Number.isFinite(targetNum) && targetNum !== 0;
     const targetStr = String(targetVal).replace(/^[+-]\s*/, "").trim().toLowerCase();
 
     for (const effect of effects) {
