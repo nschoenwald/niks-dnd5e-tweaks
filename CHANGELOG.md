@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.4] - 2026-10-14
+### Added
+- **Conditional Damage: Savage Attacker (2024 Rules)**:
+  - Characters with the Savage Attacker feat now get an optional toggle on weapon attacks to roll the weapon's damage dice twice and use the higher result.
+  - Enabled by default on your first eligible weapon attack each turn, and automatically turns off for subsequent attacks that turn once used.
+- **Conditional Damage: Charger (2024 Rules)**:
+  - Characters with the Charger feat gain an opt-in toggle for +1d8 bonus damage on melee attacks (weapons and unarmed strikes), matching the attack's damage type.
+  - In combat, automatically verifies that you have moved at least 10 feet on your turn before offering the bonus. Always available outside combat.
+  - Defaults to off on each roll so you can choose when to apply your once-per-turn charge.
+- **Conditional Damage: Boon of Irresistible Offense (2024 Rules)**:
+  - Characters with this Epic Boon automatically receive extra damage equal to their boosted ability score whenever rolling a natural 20 on an attack roll.
+  - Always enabled by default whenever offered on a natural 20, matching the attack's damage type.
+- **Detailed Roll Breakdown: Dice Pool Support**:
+  - The detailed roll breakdown popover now cleanly displays dice rolled with Savage Attacker and other dice pools, showing the kept dice and proper labels.
+### Improved
+- **Conditional Damage**:
+  - Sneak Attack is now once per turn in combat: it defaults to on until used, then defaults to off for the rest of that turn.
+  - Brutal Strike is no longer offered on finesse weapons when your Dexterity modifier is higher than Strength.
+  - Cleave is only offered to player characters for weapons whose Cleave mastery they have actually unlocked (never for NPCs).
+  - Hex and Hunter's Mark no longer trigger from similarly named effects (e.g. Hexblade's Curse); Boon of Irresistible Offense only applies to attack rolls.
+  - Savage Attacker keeps weapon die modifiers and is hidden for flat-damage weapons.
+
 ## [14.45.3] - 2026-10-14
 ### Improved
 - **Conditional Damage: Great Weapon Master (Turn-Based Combat Validation)**:

@@ -476,7 +476,7 @@ export function sortBreakdownModifiers(modifiers) {
  * @param {string} [options.fallbackFlavor=""]
  * @returns {object}
  */
-function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null, claimedEffectIds = null } = {}) {
+function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null, claimedEffectIds = null, flavor = "", fallbackFlavor = "" } = {}) {
     const isD20 = die instanceof CONFIG.Dice?.D20Die || die.faces === 20;
     const critThreshold = die.options?.criticalSuccess ?? CONFIG.Dice?.D20Die?.CRITICAL_SUCCESS_TOTAL ?? 20;
     const fumbleThreshold = die.options?.criticalFailure ?? CONFIG.Dice?.D20Die?.CRITICAL_FAILURE_TOTAL ?? 1;
@@ -504,8 +504,12 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
     const isFormula = activeRolls.length > 1;
 
     const rawFormulaMatch = (die.formula || roll?.formula || "").match(/\[(.*?)\]/);
-    const rawFlavor = die.flavor || die.options?.flavor || roll?.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
+    const rawFlavor = die.flavor || die.options?.flavor || flavor || fallbackFlavor || roll?.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
     let cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
+
+    if (!cleanFlavor && (flavor || fallbackFlavor)) {
+        cleanFlavor = extractCleanDieFlavor(flavor || fallbackFlavor, roll);
+    }
 
     if (!cleanFlavor && actor) {
         const expression = die.expression || (die.faces ? `${die.number ?? 1}d${die.faces}` : "");
@@ -573,6 +577,25 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
     } else if (terms[0] instanceof foundry.dice.terms.Die) {
         startIndex = 1;
         diceRows.push(createDieRow(terms[0], roll, { isBase, actor, claimedEffectIds }));
+    } else if (terms[0] instanceof foundry.dice.terms.PoolTerm) {
+        startIndex = 1;
+        const poolResults = terms[0].results ?? [];
+        const activeRolls = terms[0].rolls?.filter((_, idx) => {
+            const res = poolResults[idx];
+            return res ? (res.active !== false && !res.discarded) : true;
+        }) ?? [];
+        const rollsToUse = activeRolls.length ? activeRolls : (terms[0].rolls ?? []);
+        const isSavage = Boolean(roll.options?._nd5tSavageAttacker || roll.options?.savageAttacker || terms[0].options?._nd5tSavageAttacker);
+        for (const subRoll of rollsToUse) {
+            for (const d of subRoll.dice ?? []) {
+                diceRows.push(createDieRow(d, roll, {
+                    isBase,
+                    actor,
+                    claimedEffectIds,
+                    flavor: d.flavor || terms[0].flavor || (isSavage ? "Savage Attacker" : "")
+                }));
+            }
+        }
     }
 
     // Process subsequent modifier / bonus terms
@@ -599,6 +622,29 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
         if (term instanceof foundry.dice.terms.ParentheticalTerm && term.dice?.length) {
             for (const d of term.dice) {
                 diceRows.push(createDieRow(d, roll, { isBase: false, currentSign, actor, claimedEffectIds }));
+            }
+            currentSign = 1;
+            continue;
+        }
+
+        // Pool terms with dice become dice rows
+        if (term instanceof foundry.dice.terms.PoolTerm) {
+            const poolResults = term.results ?? [];
+            const activeRolls = term.rolls?.filter((_, idx) => {
+                const res = poolResults[idx];
+                return res ? (res.active !== false && !res.discarded) : true;
+            }) ?? [];
+            const rollsToUse = activeRolls.length ? activeRolls : (term.rolls ?? []);
+            for (const subRoll of rollsToUse) {
+                for (const d of subRoll.dice ?? []) {
+                    diceRows.push(createDieRow(d, roll, {
+                        isBase: false,
+                        currentSign,
+                        actor,
+                        claimedEffectIds,
+                        flavor: d.flavor || term.flavor || (term.options?.critical ? ((roll.options?._nd5tSavageAttacker || roll.options?.savageAttacker) ? "Savage Attacker (Crit)" : (game.i18n?.localize("DND5E.CriticalHit") || "Critical Hit")) : "")
+                    }));
+                }
             }
             currentSign = 1;
             continue;
