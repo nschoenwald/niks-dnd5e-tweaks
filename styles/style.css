@@ -4839,9 +4839,67 @@ body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-v
 /*  Conditional Damage Bonuses (Hex & Hunter's Mark)             */
 /* ============================================================ */
 
-/* Ensure intentional line break between spell name and parenthetical bonus */
-.dnd5e2.application.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) label,
-.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) label {
-    white-space: pre-line;
+/* Ensure conditional damage toggles in roll configuration give full available width to the label */
+.dnd5e2.application.roll-configuration .form-group:has(input[name*="nd5t.conditional"]),
+.roll-configuration .form-group:has(input[name*="nd5t.conditional"]),
+.dnd5e2.application.roll-configuration .form-group.nd5t-conditional-group,
+.roll-configuration .form-group.nd5t-conditional-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.dnd5e2.application.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) > label,
+.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) > label,
+.dnd5e2.application.roll-configuration .form-group.nd5t-conditional-group > label,
+.roll-configuration .form-group.nd5t-conditional-group > label {
+    flex: 1 1 auto !important;
+    max-width: calc(100% - 36px);
     line-height: 1.25;
+    overflow-wrap: break-word;
+}
+
+.dnd5e2.application.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) > .form-fields,
+.roll-configuration .form-group:has(input[name*="nd5t.conditional"]) > .form-fields,
+.dnd5e2.application.roll-configuration .form-group.nd5t-conditional-group > .form-fields,
+.roll-configuration .form-group.nd5t-conditional-group > .form-fields {
+    flex: 0 0 auto !important;
+    width: auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Inactive conditional damage bonus row in DamageRollConfigurationDialog */
+.dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll,
+.roll-configuration .formulas > li.nd5t-inactive-roll {
+    opacity: 0.35;
+    filter: grayscale(0.85);
+    user-select: none;
+}
+
+.dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll .formula,
+.roll-configuration .formulas > li.nd5t-inactive-roll .formula {
+    text-decoration: line-through;
+    color: var(--color-text-subtle, #888);
+}
+
+.dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll .label,
+.roll-configuration .formulas > li.nd5t-inactive-roll .label {
+    opacity: 0.7;
+}
+
+.dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll input,
+.dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll select,
+.roll-configuration .formulas > li.nd5t-inactive-roll input,
+.roll-configuration .formulas > li.nd5t-inactive-roll select {
+    pointer-events: none;
+    background: transparent;
+    border-style: dashed;
+    opacity: 0.6;
+}
+
+.dnd5e2.application.roll-configuration .formulas > li,
+.roll-configuration .formulas > li {
+    transition: opacity 0.2s ease, filter 0.2s ease;
 }

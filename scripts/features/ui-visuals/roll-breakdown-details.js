@@ -72,7 +72,12 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
     if (!rollConfig?.parts || !Array.isArray(rollConfig.parts)) return;
 
     const data = rollConfig.data ?? {};
-    const actor = processConfig?.subject?.actor ?? (processConfig?.subject instanceof Actor ? processConfig.subject : null);
+    const actor = processConfig?.subject?.actor
+        ?? (processConfig?.subject instanceof Actor ? processConfig.subject : null)
+        ?? processConfig?.actor
+        ?? rollConfig?.options?.actor
+        ?? rollConfig?.data?.actor
+        ?? null;
 
     // Identify ability shorthand
     const rawAbility = data.roll?.ability || rollConfig.options?.ability || processConfig?.ability || "mod";
@@ -102,56 +107,67 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
         // If part already has flavor bracket, do not re-tag
         if (trimmed.includes("[") && trimmed.includes("]")) return part;
 
-        if (trimmed === "@mod") {
-            return `@mod[${abilityLabel}]`;
+        // Extract any leading sign e.g. "+@scale.barbarian.rage-damage", "+4", "-2"
+        const signMatch = trimmed.match(/^([+-])\s*(.*)$/);
+        const sign = signMatch ? signMatch[1] : "";
+        const clean = signMatch ? signMatch[2].trim() : trimmed;
+
+        if (clean === "@mod") {
+            return sign === "-" ? `-@mod[${abilityLabel}]` : `@mod[${abilityLabel}]`;
         }
 
-        const abilityModMatch = trimmed.match(/^@abilities\.([a-z]{3})\.mod$/i);
+        const abilityModMatch = clean.match(/^@abilities\.([a-z]{3})\.mod$/i);
         if (abilityModMatch) {
             const abl = ABILITY_SHORTHANDS[abilityModMatch[1].toLowerCase()] ?? abilityModMatch[1].toUpperCase();
-            return `${trimmed}[${abl}]`;
+            return sign === "-" ? `-${clean}[${abl}]` : `${clean}[${abl}]`;
         }
 
-        if (trimmed === "@prof") {
-            return `@prof[${pbLabel}]`;
+        if (clean === "@prof") {
+            return sign === "-" ? `-${clean}[${pbLabel}]` : `${clean}[${pbLabel}]`;
         }
 
-        if (trimmed === "@toHit") {
+        if (clean === "@toHit") {
             return "@toHit[Attack Bonus]";
         }
 
-        if (trimmed === "@extraBonus") {
+        if (clean === "@extraBonus") {
             return "@extraBonus[Bonus]";
         }
 
-        if (trimmed === "@weaponMagic" || trimmed === "@magicalBonus") {
-            return `${trimmed}[MGC]`;
+        if (clean === "@weaponMagic" || clean === "@magicalBonus") {
+            return `${clean}[MGC]`;
         }
 
-        if (trimmed === "@ammoMagic" || trimmed === "@ammoBonus") {
-            return `${trimmed}[Magic Ammo]`;
+        if (clean === "@ammoMagic" || clean === "@ammoBonus") {
+            return `${clean}[Magic Ammo]`;
         }
 
-        if (trimmed === "@cover") {
+        if (clean === "@cover") {
             const coverVal = Number(data.cover ?? 0);
             const coverText = coverVal === 2 ? "Half Cover" : (coverVal === 5 ? "Three-Quarters Cover" : "Cover");
             return `@cover[${coverText}]`;
         }
 
-        if (trimmed.startsWith("@scale.")) {
-            const scaleKey = trimmed.replace("@scale.", "");
-            if (scaleKey.includes("rage")) return `${trimmed}[Rage]`;
-            if (scaleKey.includes("sneak-attack")) return `${trimmed}[Sneak Attack]`;
-            if (scaleKey.includes("divine-strike")) return `${trimmed}[Divine Strike]`;
-            if (scaleKey.includes("brutal-strike")) return `${trimmed}[Brutal Strike]`;
-            if (scaleKey.includes("inspiration")) return `${trimmed}[Bardic Inspiration]`;
-            const parts = scaleKey.split(".");
-            const lastPart = parts[parts.length - 1].replace(/-/g, " ");
-            return `${trimmed}[${lastPart.capitalize()}]`;
+        if (clean.startsWith("@scale.")) {
+            const scaleKey = clean.replace("@scale.", "");
+            let tag = null;
+            if (scaleKey.includes("rage")) {
+                const effectName = actor ? findActiveEffectForDamageBonus(actor, clean, { rollData: data }) : null;
+                tag = effectName || "Rage";
+            }
+            else if (scaleKey.includes("sneak-attack")) tag = "Sneak Attack";
+            else if (scaleKey.includes("divine-strike")) tag = "Divine Strike";
+            else if (scaleKey.includes("brutal-strike")) tag = "Brutal Strike";
+            else if (scaleKey.includes("inspiration")) tag = "Bardic Inspiration";
+            else {
+                const parts = scaleKey.split(".");
+                tag = parts[parts.length - 1].replace(/-/g, " ").capitalize();
+            }
+            return sign === "-" ? `-${clean}[${tag}]` : `${clean}[${tag}]`;
         }
 
-        if (trimmed.startsWith("@reductions.")) {
-            const statusKey = trimmed.replace("@reductions.", "");
+        if (clean.startsWith("@reductions.")) {
+            const statusKey = clean.replace("@reductions.", "");
             if (statusKey === "exhaustion") {
                 return `@reductions.exhaustion[Exhaustion ${exhaustionLevel}]`;
             }
@@ -161,17 +177,25 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
             return `@reductions.${statusKey}[${statusLabel}]`;
         }
 
-        if (trimmed === "@situational") {
+        if (clean === "@situational") {
             return "@situational[Situational]";
         }
 
-        if (trimmed === "@bonus") {
+        if (clean === "@bonus") {
             return "@bonus[Item Bonus]";
         }
 
-        if (trimmed === "@ruleBonus") {
+        if (clean === "@ruleBonus") {
             const effectName = detectActiveEffectSource(actor, data.ruleBonus, processConfig);
             return effectName ? `@ruleBonus[${effectName}]` : "@ruleBonus[Bonus]";
+        }
+
+        // Check if this part matches an active effect damage bonus on the actor
+        if (actor) {
+            const effectName = findActiveEffectForDamageBonus(actor, clean, { rollData: data });
+            if (effectName) {
+                return sign === "-" ? `-${clean}[${effectName}]` : `${clean}[${effectName}]`;
+            }
         }
 
         return part;
@@ -190,14 +214,25 @@ function detectActiveEffectSource(actor, bonusValue, processConfig) {
     if (!actor?.appliedEffects?.length && !actor?.effects?.size) return null;
     const effects = actor.appliedEffects ?? Array.from(actor.effects.values());
     const bonusStr = String(bonusValue ?? "").toLowerCase().trim();
+    const rollData = actor.getRollData ? actor.getRollData() : {};
 
     // Check active effects for matching changes
     for (const effect of effects) {
         if (effect.disabled || effect.isSuppressed) continue;
         for (const change of effect.changes ?? []) {
-            const val = String(change.value ?? "").toLowerCase().trim();
+            let val = String(change.value ?? "").toLowerCase().trim();
             if (val === bonusStr || (bonusStr && val.includes(bonusStr))) {
                 return effect.name;
+            }
+            if (val.includes("@")) {
+                try {
+                    const replaced = Roll.replaceFormulaData(val, rollData).toLowerCase().trim();
+                    if (replaced === bonusStr || (bonusStr && replaced.includes(bonusStr))) {
+                        return effect.name;
+                    }
+                } catch {
+                    // Ignore replacement errors
+                }
             }
         }
     }
@@ -210,6 +245,104 @@ function detectActiveEffectSource(actor, bonusValue, processConfig) {
             if (name.includes("guidance")) return "Guidance";
             if (name.includes("bane")) return "Bane";
             if (name.includes("emboldening")) return "Emboldening Bond";
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Find the name of an active effect providing a specific damage bonus on an actor.
+ *
+ * @param {Actor5e|null} actor
+ * @param {string|number} targetVal - Numeric value or formula string of the bonus.
+ * @param {object} [options={}]
+ * @param {object} [options.rollData]
+ * @param {Roll} [options.roll]
+ * @param {Set<string>} [options.claimedEffectIds]
+ * @returns {string|null}
+ */
+export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
+    if (!actor || targetVal === undefined || targetVal === null) return null;
+    const effects = actor.appliedEffects ?? (actor.effects ? Array.from(actor.effects.values()) : []);
+    if (!effects.length) return null;
+
+    const rollData = options.rollData ?? (actor.getRollData ? actor.getRollData() : {});
+    const claimedEffectIds = options.claimedEffectIds;
+
+    const DAMAGE_KEY_REGEX = /(?:bonuses\.(?:[a-z]{4}|all)\.damage|rolls\.damage\.[a-z]{4}\.bonus)/i;
+
+    const targetNum = Number(targetVal);
+    const hasTargetNum = !isNaN(targetNum) && Number.isFinite(targetNum);
+    const targetStr = String(targetVal).replace(/^[+-]\s*/, "").trim().toLowerCase();
+
+    for (const effect of effects) {
+        if (effect.disabled || effect.isSuppressed) continue;
+        if (claimedEffectIds && claimedEffectIds.has(effect.id)) continue;
+
+        const changes = effect.changes ?? [];
+        for (const change of changes) {
+            const key = String(change.key ?? "");
+            if (!DAMAGE_KEY_REGEX.test(key) && !key.toLowerCase().includes("damage")) continue;
+
+            const rawVal = String(change.value ?? "").trim();
+            if (!rawVal) continue;
+
+            const strippedVal = rawVal.replace(/^[+-]\s*/, "").trim().toLowerCase();
+
+            // Direct formula string comparison (e.g. "@scale.barbarian.rage-damage")
+            if (targetStr && (strippedVal === targetStr || rawVal.toLowerCase() === targetStr)) {
+                if (claimedEffectIds) claimedEffectIds.add(effect.id);
+                return effect.name;
+            }
+
+            // Resolve rollData in the change value
+            let evaluatedStr = strippedVal;
+            if (evaluatedStr.includes("@")) {
+                try {
+                    evaluatedStr = Roll.replaceFormulaData(rawVal, rollData).replace(/^[+-]\s*/, "").trim().toLowerCase();
+                } catch {
+                    // Ignore formula evaluation errors
+                }
+            }
+
+            // String match after rollData replacement
+            if (targetStr && evaluatedStr === targetStr) {
+                if (claimedEffectIds) claimedEffectIds.add(effect.id);
+                return effect.name;
+            }
+
+            // Numeric comparison if target is numeric
+            if (hasTargetNum) {
+                const evalNum = Number(evaluatedStr);
+                if (!isNaN(evalNum) && Math.abs(evalNum) === Math.abs(targetNum)) {
+                    if (claimedEffectIds) claimedEffectIds.add(effect.id);
+                    return effect.name;
+                }
+            }
+        }
+    }
+
+    // Heuristic fallback for Rage / Kampfrausch effects
+    for (const effect of effects) {
+        if (effect.disabled || effect.isSuppressed) continue;
+        if (claimedEffectIds && claimedEffectIds.has(effect.id)) continue;
+        const name = (effect.name ?? "").toLowerCase();
+        if (name.includes("rage") || name.includes("kampfrausch")) {
+            if (hasTargetNum) {
+                const rageScale = actor.system?.scale?.barbarian?.["rage-damage"]?.value
+                    ?? actor.system?.scale?.barbarian?.["rage-damage"]
+                    ?? null;
+                const rageNum = rageScale !== null ? Number(rageScale) : null;
+                if (rageNum !== null && !isNaN(rageNum) && Math.abs(rageNum) === Math.abs(targetNum)) {
+                    if (claimedEffectIds) claimedEffectIds.add(effect.id);
+                    return effect.name;
+                }
+            }
+            if (targetStr.includes("rage")) {
+                if (claimedEffectIds) claimedEffectIds.add(effect.id);
+                return effect.name;
+            }
         }
     }
 
@@ -343,7 +476,7 @@ export function sortBreakdownModifiers(modifiers) {
  * @param {string} [options.fallbackFlavor=""]
  * @returns {object}
  */
-function createDieRow(die, roll, { isBase = false, currentSign = 1 } = {}) {
+function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null, claimedEffectIds = null } = {}) {
     const isD20 = die instanceof CONFIG.Dice?.D20Die || die.faces === 20;
     const critThreshold = die.options?.criticalSuccess ?? CONFIG.Dice?.D20Die?.CRITICAL_SUCCESS_TOTAL ?? 20;
     const fumbleThreshold = die.options?.criticalFailure ?? CONFIG.Dice?.D20Die?.CRITICAL_FAILURE_TOTAL ?? 1;
@@ -372,7 +505,13 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1 } = {}) {
 
     const rawFormulaMatch = (die.formula || roll?.formula || "").match(/\[(.*?)\]/);
     const rawFlavor = die.flavor || die.options?.flavor || roll?.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
-    const cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
+    let cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
+
+    if (!cleanFlavor && actor) {
+        const expression = die.expression || (die.faces ? `${die.number ?? 1}d${die.faces}` : "");
+        const effectName = findActiveEffectForDamageBonus(actor, expression, { claimedEffectIds });
+        if (effectName) cleanFlavor = effectName;
+    }
 
     const rawDenom = die.expression || (die.faces ? `d${die.faces}` : "d20");
     const denomination = rawDenom.replace(/\[.*?\]/g, "").trim().toUpperCase();
@@ -414,6 +553,13 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
     const terms = roll.terms ?? [];
     if (!terms.length) return null;
 
+    const actor = options.actor
+        ?? roll.parent?.actor
+        ?? (roll.parent?.speaker ? ChatMessage.getSpeakerActor(roll.parent.speaker) : null)
+        ?? (roll.options?.actor ? game.actors?.get(roll.options.actor) : null)
+        ?? null;
+    const claimedEffectIds = new Set();
+
     const diceRows = [];
     const isBase = options.isBase ?? Boolean(roll.options?.base || roll.base);
 
@@ -423,10 +569,10 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
     if (d20) {
         startIndex = 1;
-        diceRows.push(createDieRow(d20, roll, { isBase: true }));
+        diceRows.push(createDieRow(d20, roll, { isBase: true, actor, claimedEffectIds }));
     } else if (terms[0] instanceof foundry.dice.terms.Die) {
         startIndex = 1;
-        diceRows.push(createDieRow(terms[0], roll, { isBase }));
+        diceRows.push(createDieRow(terms[0], roll, { isBase, actor, claimedEffectIds }));
     }
 
     // Process subsequent modifier / bonus terms
@@ -444,7 +590,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
         // Dice terms become dice rows
         if (term instanceof foundry.dice.terms.DiceTerm) {
-            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign }));
+            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign, actor, claimedEffectIds }));
             currentSign = 1;
             continue;
         }
@@ -452,7 +598,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
         // Parenthetical terms with dice become dice rows
         if (term instanceof foundry.dice.terms.ParentheticalTerm && term.dice?.length) {
             for (const d of term.dice) {
-                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign }));
+                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign, actor, claimedEffectIds }));
             }
             currentSign = 1;
             continue;
@@ -471,6 +617,16 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
                 label = ABILITY_SHORTHANDS[key] ?? key.toUpperCase();
             } else if (/^Magic Weapon(?:\s+bonus)?$/i.test(label)) {
                 label = "MGC";
+            }
+        }
+
+        if (!label && actor) {
+            const effectName = findActiveEffectForDamageBonus(actor, absVal, {
+                roll,
+                claimedEffectIds
+            });
+            if (effectName) {
+                label = effectName;
             }
         }
 
@@ -624,6 +780,9 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
     try {
         const item = message.item ?? null;
         const isWeapon = item?.type === "weapon";
+        const actor = message.actor
+            ?? (message.speaker ? ChatMessage.getSpeakerActor(message.speaker) : null)
+            ?? null;
         const typeMap = new Map();
 
         for (let i = 0; i < damageRolls.length; i++) {
@@ -631,7 +790,7 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
             if (!roll.parent) roll.parent = message;
 
             const isBase = Boolean(roll.options?.base || roll.base || (isWeapon && i === 0));
-            const data = await getDetailedRollBreakdown(roll, { isBase });
+            const data = await getDetailedRollBreakdown(roll, { isBase, actor });
             if (!data) continue;
 
             const damageType = String(roll.options?.type ?? "untyped").toLowerCase();
@@ -737,6 +896,9 @@ export function initRollBreakdownDetails() {
 
     // Tier 1: Proactive formula tagging during roll construction
     Hooks.on("dnd5e.postBuildRollConfig", (processConfig, rollConfig, index) => {
+        tagRollConfigParts(processConfig, rollConfig, index);
+    });
+    Hooks.on("dnd5e.postBuildDamageRollConfig", (processConfig, rollConfig, index) => {
         tagRollConfigParts(processConfig, rollConfig, index);
     });
 

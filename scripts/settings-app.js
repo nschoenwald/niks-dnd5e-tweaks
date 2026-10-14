@@ -106,7 +106,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "clientEnableConditionalDamage",
                                 name: "Conditional Damage Bonuses",
-                                hint: "Offers toggles in damage rolls for Sneak Attack or when concentrating on Hex or Hunter's Mark, remembering your last choice across rolls (if enabled by the GM).",
+                                hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
@@ -931,7 +931,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableConditionalDamage",
                                 name: "Conditional Damage Bonuses",
-                                hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack (scaled to rogue level) and when concentrating on Hex (1d6 Necrotic) or Hunter's Mark (1d6 Force), remembering your last choice across rolls.",
+                                hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

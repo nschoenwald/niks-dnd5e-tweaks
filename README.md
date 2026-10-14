@@ -69,7 +69,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Prompt for Attack Damage](#prompt-for-attack-damage)** | Combat & Automation | ✅ For All | Yes |
 | **[Auto-Roll Attack Damage](#auto-roll-attack-damage)** | Combat & Automation | ❌ Disabled | Yes |
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Conditional Damage Bonuses (Hex & Hunter's Mark)](#conditional-damage-bonuses-hex--hunters-mark)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM & Cleave)](#conditional-damage-bonuses-sneak-attack-hex--hunters-mark)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Weapon Mastery Automation (Slow & Sap)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
@@ -268,15 +268,17 @@ Automatically creates and manages Active Effects when attacks hit with mastery w
 * **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
 * *Sub-settings*: Configurable active effect icons for Sap and Slow.
 
-### Conditional Damage Bonuses (Sneak Attack, Hex & Hunter's Mark)
+### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master & Cleave)
 Offers seamless toggles in damage roll configuration dialogs for conditional damage bonuses:
 * **Sneak Attack**: Available for Rogues and monsters/NPCs with Sneak Attack features (e.g. Assassin, Spy) when attacking with a finesse or ranged weapon. Automatically resolves the native scale value formula (e.g. `1d6`, `2d6`, etc.) and inherits the weapon's damage type and magical properties.
+* **Great Weapon Master (2024 Rules)**: Under 2024 (modern) rules, characters possessing the `great-weapon-master` feat gain an optional toggle when attacking with Heavy weapons to deal extra damage equal to their Proficiency Bonus (+PB), flavored with `GWM` and matching the weapon's damage type.
+* **Cleave Weapon Mastery (Damage Malus)**: When attacking with a weapon featuring the Cleave mastery under 2024 rules, provides a toggle for the secondary attack that removes the ability score modifier from the damage formula (unless negative). Disabled by default and strictly one-off (never remembered for subsequent rolls).
 * **Hex (+1d6 Necrotic)**: Adds `1d6 necrotic` damage when hitting your hexed target while concentrating on Hex.
 * **Hunter's Mark (+1d6 Force)**: Adds `1d6 force` damage when hitting your quarry while concentrating on Hunter's Mark.
-* **Persistent Choice Memory**: Remembers whether each bonus was toggled ON or OFF across attacks and fast-forward rolls, so players can keep bonuses enabled while attacking their quarry and quickly toggle them off when striking other creatures or after expending their once-per-turn Sneak Attack.
-* **Live Reactive Preview & Dynamic Sync**: Toggling bonuses or changing weapon damage types in the dialog updates the formula line, dice preview, and Sneak Attack damage type in real time.
+* **Persistent Choice Memory**: Remembers whether each bonus was toggled ON or OFF across attacks and fast-forward rolls (Cleave is exempted and always disabled by default), so players can keep bonuses enabled while attacking their quarry and quickly toggle them off when striking other creatures or after expending their once-per-turn Sneak Attack.
+* **Live Reactive Preview & Zero-Layout-Shift**: Toggling bonuses or changing weapon damage types in the dialog updates the formula line, dice preview, and Sneak Attack/GWM damage types in real time. Inactive bonus formula rows are stably preserved and cleanly greyed out with disabled inputs, eliminating window jumping and layout shifts.
 * **Critical Hit Doubling**: Automatically doubles bonus dice on critical hits according to 5e rules, while properly preventing weapon-specific extra critical dice (e.g. Savage Attacks or Brutal Critical) from duplicating onto conditional damage pools.
-* **Detailed Breakdown Integration**: Labels each bonus distinctly (`Sneak Attack`, `Hex`, `Hunter's Mark`) with proper damage type icons in the Detailed Roll Breakdown Overlay, and explicitly labels damage type headers as subtotals (e.g. `PIERCING TOTAL 8`, `FORCE TOTAL 5`) across multi-damage cards.
+* **Detailed Breakdown Integration**: Labels each bonus distinctly (`Sneak Attack`, `Hex`, `Hunter's Mark`, `GWM`) with proper damage type icons in the Detailed Roll Breakdown Overlay, and explicitly labels damage type headers as subtotals (e.g. `PIERCING TOTAL 8`, `FORCE TOTAL 5`) across multi-damage cards.
 
 ### Prevent Rolling as Group Actors
 Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.

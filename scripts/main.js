@@ -168,7 +168,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
         name: "Conditional Damage Bonuses (Personal)",
-        hint: "Offers toggles in damage rolls for Sneak Attack and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls (if enabled by the GM).",
+        hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1143,7 +1143,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
-        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack (when wielding a ranged or finesse weapon as a Rogue) and active Hex or Hunter's Mark concentration effects, remembering your last choice across rolls.",
+        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
         scope: "world",
         config: false,
         type: Boolean,

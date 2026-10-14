@@ -2,18 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.2] - 2026-10-14
+### Improved
+- **Conditional Damage Dialog: Zero-Layout-Shift Formula Display**:
+  - Eliminated dialog height jumping and layout shifts when toggling conditional damage bonuses (Sneak Attack, Great Weapon Master, Cleave, Hex, Hunter's Mark).
+  - All eligible conditional bonus formula rows remain stably rendered in the dialog from the start; when a bonus is toggled off, its formula row is cleanly greyed out with a strike-through and disabled inputs rather than being abruptly removed from the DOM.
+  - The dice preview at the top dynamically reflects only active rolls, providing an instant, rock-solid, and responsive rolling experience.
+- **Conditional Damage Dialog: Smart Label Formatting & Full-Width Wrapping**:
+  - Removed unnecessary hardcoded line breaks between bonus names and bonus numbers (e.g. `Hex (+1d6 Necrotic)`, `Cleave (-6)`).
+  - Fixed an issue where DnD5e's default standard-form flex ratio (40% label / 60% form-fields) artificially restricted the label width, causing longer names like `Great Weapon Master (+6)` to wrap despite ample available space. Checkbox labels now occupy the full available width of the row.
+  - When width is genuinely constrained, labels wrap cleanly between the bonus name and the bonus number rather than breaking mid-phrase or mid-bonus.
+- **Conditional Damage: Great Weapon Master Auto-Re-Enable**:
+  - Great Weapon Master now automatically resets back to enabled after being toggled off for a single roll (such as a bonus action attack, reaction attack, or Cleave secondary attack), saving players the effort of manually re-enabling it on subsequent turns.
+- **Roll Breakdown Overlay: Active Effect Damage Bonus Detection (e.g. Rage)**:
+  - Fixed an issue where the Barbarian Rage damage bonus (and other damage bonuses originating from active effects) displayed as generic "Modifier" in the Detailed Roll Breakdown Overlay.
+  - Active effect damage bonuses now resolve and display the exact name of their originating active effect (e.g. `Rage` or localized equivalent `Kampfrausch`) alongside the bonus value.
+
+## [14.45.1] - 2026-10-14
+### Added
+- **Conditional Damage: Great Weapon Master (2024 Rules)**:
+  - Automatically available under 2024 (modern) rules for characters possessing the Great Weapon Master feat (`great-weapon-master`) when attacking with a Heavy weapon.
+  - Adds a toggle in the damage configuration dialog to add bonus damage equal to your Proficiency Bonus (+PB), flavored as `GWM` and matching the weapon's damage type.
+  - Remembers your toggle preference across attacks, keeping it active while applying GWM and easily disabled when appropriate.
+- **Conditional Damage: Cleave Weapon Mastery (Damage Malus)**:
+  - Automatically available under 2024 (modern) rules when attacking with a weapon featuring the Cleave mastery (e.g. Greataxe, Halberd).
+  - Provides a toggle for the secondary attack that removes your ability score modifier from the damage formula (unless negative).
+  - Disabled by default and strictly one-off (never remembered for subsequent rolls), ensuring normal attacks always include your full ability score modifier without accidental carry-over.
+
 ## [14.45.0] - 2026-10-13
 ### Added
 - **Conditional Damage Bonuses (Sneak Attack, Hex & Hunter's Mark)**:
   - **Sneak Attack**: Automatically available for characters with Rogue class levels as well as NPCs/monsters with Sneak Attack features (e.g. Assassin, Spy) when attacking with a finesse or ranged weapon. Resolves the Rogue's native scale value formula (e.g. `1d6`, `2d6`, etc.) and seamlessly inherits the weapon's damage type and magical properties.
   - Automatically detects active concentration effects for **Hex** and **Hunter's Mark** on the rolling actor across all system languages.
   - Adds intuitive toggle checkboxes in the damage roll configuration dialog to add **+1d6 Necrotic** (Hex), **+1d6 Force** (Hunter's Mark), or **Sneak Attack** damage.
-  - **Formatted Labels**: Breaks bonus labels cleanly with line breaks between the feature name and bonus damage for optimal dialog readability.
   - **Remembers Last Choice**: Remembers whether each bonus was enabled or disabled per actor, keeping it on while attacking your designated quarry and easily toggled off when targeting someone else or after expending Sneak Attack.
   - **Live Reactive Preview & Dynamic Sync**: Toggling bonuses or changing weapon damage types in the dialog updates the formula, dice breakdown, and Sneak Attack damage type in real time.
   - **Full Critical Hit Support**: Automatically doubles bonus dice on critical hits according to 5e rules while properly safeguarding weapon-specific bonus dice (like Savage Attacks or Brutal Critical) from leaking into conditional damage.
   - **Roll Breakdown Overlay Labels**: Passes distinct `Sneak Attack`, `Hex`, and `Hunter's Mark` labels and damage type icons directly to the Detailed Roll Breakdown Overlay.
-  - **Damage Type Subtotals**: Multi-damage cards now explicitly label damage type headers as subtotals (e.g. `PIERCING TOTAL 8` and `FORCE TOTAL 5`) to clearly distinguish section subtotals from the final card total.
   - Configurable under **Combat Automation** and in **Personal Preferences**.
 
 ## [14.44.0] - 2026-10-13
