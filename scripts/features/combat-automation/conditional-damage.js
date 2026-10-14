@@ -425,6 +425,106 @@ export function isEligibleHeavyWeapon(item) {
 }
 
 /**
+ * Determine whether an active, started combat encounter exists for an actor or token.
+ * Only returns a combat if the actor or token is an active combatant in it.
+ *
+ * @param {Actor5e|null} [actor=null]
+ * @param {TokenDocument|Token|null} [token=null]
+ * @returns {Combat|null} The active combat encounter, or null if no started combat exists for this actor.
+ */
+export function getActiveCombat(actor = null, token = null) {
+    try {
+        const tokenDoc = (token instanceof foundry.documents.TokenDocument)
+            ? token
+            : (token?.document
+                ?? (typeof token === "string" ? canvas?.scene?.tokens?.get(token) : null)
+                ?? (actor?.isToken ? actor.token : null)
+                ?? actor?.getActiveTokens?.(true, true)?.[0]
+                ?? null);
+
+        // Check game.combat (currently viewed/active encounter)
+        const currentCombat = game.combat ?? game.combats?.active;
+        if (currentCombat?.active && currentCombat.started) {
+            if (tokenDoc) {
+                if (currentCombat.getCombatantsByToken?.(tokenDoc)?.length) return currentCombat;
+            } else if (actor && currentCombat.getCombatantsByActor?.(actor)?.length) {
+                return currentCombat;
+            }
+        }
+
+        // Check all combats in the world that are active and have started
+        if (game.combats) {
+            for (const combat of game.combats) {
+                if (!combat.active || !combat.started) continue;
+                if (tokenDoc) {
+                    if (combat.getCombatantsByToken?.(tokenDoc)?.length) return combat;
+                } else if (actor && combat.getCombatantsByActor?.(actor)?.length) {
+                    return combat;
+                }
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Check whether it is currently the attacker's turn in combat.
+ * If there is no active, started combat encounter involving the attacker, this returns true
+ * because out-of-combat attacks are not restricted by combat turn order.
+ *
+ * @param {Actor5e|null} actor
+ * @param {TokenDocument|Token|string|null} [token=null]
+ * @returns {boolean} True if there is no active combat for the attacker or if it is the attacker's turn.
+ */
+export function isAttackerCombatTurn(actor, token = null) {
+    if (!actor) return false;
+
+    try {
+        const combat = getActiveCombat(actor, token);
+        // If there is no active, started combat involving the actor, turn restriction does not apply
+        if (!combat || !combat.started) return true;
+
+        const currentCombatant = combat.combatant;
+        if (!currentCombatant) return false;
+
+        const tokenDoc = (token instanceof foundry.documents.TokenDocument)
+            ? token
+            : (token?.document
+                ?? (typeof token === "string" ? canvas?.scene?.tokens?.get(token) : null)
+                ?? (actor.isToken ? actor.token : null)
+                ?? actor.getActiveTokens?.(true, true)?.[0]
+                ?? null);
+
+        // 1. If we have a specific token, check if it matches the current combatant's token
+        if (tokenDoc && currentCombatant.tokenId) {
+            if (currentCombatant.tokenId === tokenDoc.id) return true;
+            // If the actor is an unlinked token, non-matching tokenId means it is another token's turn
+            if (actor.isToken) return false;
+            // If this token itself is registered in the combat, non-matching tokenId means it is not this token's turn
+            if (combat.getCombatantsByToken?.(tokenDoc)?.length) return false;
+        }
+
+        // 2. Direct actor document or UUID match
+        if (currentCombatant.actor === actor) return true;
+        if (currentCombatant.actor?.uuid && currentCombatant.actor.uuid === actor.uuid) return true;
+
+        // 3. Actor ID match (for linked actors)
+        if (currentCombatant.actorId && currentCombatant.actorId === actor.id && !actor.isToken) {
+            return true;
+        }
+
+        // 4. Check via combat's registered combatants for this actor
+        const actorCombatants = combat.getCombatantsByActor?.(actor) ?? [];
+        return actorCombatants.some(c => c.id === currentCombatant.id);
+    } catch {
+        return true;
+    }
+}
+
+/**
  * Determine if a weapon is eligible for Cleave weapon mastery.
  *
  * @param {Item5e|null} item
@@ -554,7 +654,7 @@ export async function setActorConditionalPreference(actor, bonusId, active) {
  * @param {object|null} [context.config=null]
  * @returns {Array<object>} Array of active definition objects
  */
-export function getActiveConditionalBonuses(actor, { item = null, activity = null, config = null } = {}) {
+export function getActiveConditionalBonuses(actor, { item = null, activity = null, config = null, dialog = null, message = null } = {}) {
     if (!actor) return [];
     const activeBonuses = [];
 
@@ -639,8 +739,25 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         });
     }
 
-    // --- 3. Great Weapon Master (2024 Modern Rules: +PB damage on heavy weapons) ---
-    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item)) {
+    // --- 3. Great Weapon Master (2024 Modern Rules: +PB damage on heavy weapons on attacker's turn) ---
+    const speakerTokenDoc = message?.data?.speaker?.token
+        ? (canvas?.scene?.tokens?.get(message.data.speaker.token) ?? null)
+        : null;
+    const controlledTokenDoc = (canvas?.ready && canvas.tokens?.controlled?.length)
+        ? (canvas.tokens.controlled.find(t => t.actor?.id === actor.id || t.actor === actor)?.document ?? null)
+        : null;
+
+    const token = actor.token
+        ?? activity?.token
+        ?? activity?.item?.actor?.token
+        ?? dialog?.options?.token
+        ?? config?.token
+        ?? speakerTokenDoc
+        ?? controlledTokenDoc
+        ?? (canvas?.ready && actor.getActiveTokens ? actor.getActiveTokens(true, true)?.[0] : null)
+        ?? null;
+
+    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item) && isAttackerCombatTurn(actor, token)) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         activeBonuses.push({
             id: "greatWeaponMaster",
@@ -757,7 +874,7 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
  * @param {BasicRollDialogConfiguration} dialog
  * @param {BasicRollMessageConfiguration} message
  */
-function _onPreRollDamage(config, dialog, message) {
+function _onPreRollDamage(config, dialog = {}, message = {}) {
     if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
 
     // Healing rolls cannot receive attack-dependent damage bonuses
@@ -776,9 +893,11 @@ function _onPreRollDamage(config, dialog, message) {
 
     // Resolve the rolling actor
     const actor = config.subject?.actor
-        ?? dialog.options?.actor
+        ?? dialog?.options?.actor
         ?? (config.subject?.item?.actor)
         ?? (config.rolls?.[0]?.data?.actor)
+        ?? (message?.data?.speaker ? ChatMessage.getSpeakerActor?.(message.data.speaker) : null)
+        ?? (canvas?.tokens?.controlled?.[0]?.actor)
         ?? null;
     if (!actor) return;
 
@@ -788,8 +907,8 @@ function _onPreRollDamage(config, dialog, message) {
         ?? (actor.items?.get(config.rolls?.[0]?.data?.item?.id ?? config.rolls?.[0]?.data?.item?._id))
         ?? null;
 
-    // Detect active conditional bonuses (Hex, Hunter's Mark, Sneak Attack)
-    const activeDefs = getActiveConditionalBonuses(actor, { item, activity: config.subject, config });
+    // Detect active conditional bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, etc.)
+    const activeDefs = getActiveConditionalBonuses(actor, { item, activity: config.subject, config, dialog, message });
     if (!activeDefs.length) return;
 
     // Prepare bonus metadata on the process configuration

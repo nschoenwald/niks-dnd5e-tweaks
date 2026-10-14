@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.3] - 2026-10-14
+### Improved
+- **Conditional Damage: Great Weapon Master (Turn-Based Combat Validation)**:
+  - Great Weapon Master now checks whether it is the attacker's turn whenever an active combat encounter is underway.
+  - If it is not the attacker's turn in an active combat (such as during an opportunity attack, reaction strike, or Commander's Strike on an ally's turn), the Great Weapon Master damage bonus is not offered. This directly reflects the 2024 rules where Heavy Weapon Mastery only applies to attacks made as part of the Attack action on your turn.
+  - Outside of active combat (e.g. exploration mode or before combat starts), the bonus remains available as normal.
+
 ## [14.45.2] - 2026-10-14
 ### Added
 - **Conditional Damage: Brutal Strike**:
