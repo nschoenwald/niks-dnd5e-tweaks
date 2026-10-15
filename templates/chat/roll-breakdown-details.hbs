@@ -32,7 +32,26 @@
                             {{/if}}
                         </div>
                         <div class="nd5t-row-right">
-                            {{#if isSingleDie}}
+                            {{#if hasMultiplier}}
+                            <div class="nd5t-dice-formula">
+                                {{#each discardedRolls}}
+                                <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                {{#if isSingleDieRoll}}
+                                <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
+                                {{else}}
+                                <span class="nd5t-formula-op">(</span>
+                                {{#each activeRolls}}
+                                {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                <span class="nd5t-formula-op">)</span>
+                                {{/if}}
+                                <span class="nd5t-formula-op">{{ multiplierFormula }}</span>
+                                <span class="nd5t-formula-op">=</span>
+                                <strong class="nd5t-value">{{ total }}</strong>
+                            </div>
+                            {{else if isSingleDie}}
                             <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
                             {{else if hasAdvantageOrDisadvantage}}
                             <div class="nd5t-dice-rolls">
@@ -68,7 +87,26 @@
                         {{/if}}
                     </div>
                     <div class="nd5t-row-right">
-                        {{#if baseDie.isSingleDie}}
+                        {{#if baseDie.hasMultiplier}}
+                        <div class="nd5t-dice-formula">
+                            {{#each baseDie.discardedRolls}}
+                            <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            {{#if baseDie.isSingleDieRoll}}
+                            <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{#if baseDie.sign}}{{baseDie.sign}}{{/if}}{{ baseDie.singleRoll.result }}</span>
+                            {{else}}
+                            <span class="nd5t-formula-op">(</span>
+                            {{#each baseDie.activeRolls}}
+                            {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                            <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            <span class="nd5t-formula-op">)</span>
+                            {{/if}}
+                            <span class="nd5t-formula-op">{{ baseDie.multiplierFormula }}</span>
+                            <span class="nd5t-formula-op">=</span>
+                            <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                        </div>
+                        {{else if baseDie.isSingleDie}}
                         <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{ baseDie.singleRoll.result }}</span>
                         {{else if baseDie.hasAdvantageOrDisadvantage}}
                         <div class="nd5t-dice-rolls">
@@ -110,11 +148,33 @@
                                 {{/if}}
                             {{else}}
                                 <span class="nd5t-mod-source">{{ displayLabel }}</span>
+                                {{#if formula}}
+                                <span class="nd5t-die-badge mini">{{ formula }}</span>
+                                {{/if}}
                             {{/if}}
                         </div>
                         <div class="nd5t-row-right">
                             {{#if isDie}}
-                                {{#if isSingleDie}}
+                                {{#if hasMultiplier}}
+                                <div class="nd5t-dice-formula">
+                                    {{#each discardedRolls}}
+                                    <span class="nd5t-die-roll mini discarded {{ classes }}">{{ result }}</span>
+                                    {{/each}}
+                                    {{#if isSingleDieRoll}}
+                                    <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
+                                    {{else}}
+                                    <span class="nd5t-formula-op">(</span>
+                                    {{#each activeRolls}}
+                                    {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                    <span class="nd5t-die-roll mini {{ classes }}">{{ result }}</span>
+                                    {{/each}}
+                                    <span class="nd5t-formula-op">)</span>
+                                    {{/if}}
+                                    <span class="nd5t-formula-op">{{ multiplierFormula }}</span>
+                                    <span class="nd5t-formula-op">=</span>
+                                    <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                                </div>
+                                {{else if isSingleDie}}
                                 <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
                                 {{else if isFormula}}
                                 <div class="nd5t-dice-formula">
@@ -168,7 +228,26 @@
                         {{/if}}
                     </div>
                     <div class="nd5t-row-right">
-                        {{#if isSingleDie}}
+                        {{#if hasMultiplier}}
+                        <div class="nd5t-dice-formula">
+                            {{#each discardedRolls}}
+                            <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            {{#if isSingleDieRoll}}
+                            <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
+                            {{else}}
+                            <span class="nd5t-formula-op">(</span>
+                            {{#each activeRolls}}
+                            {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                            <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                            {{/each}}
+                            <span class="nd5t-formula-op">)</span>
+                            {{/if}}
+                            <span class="nd5t-formula-op">{{ multiplierFormula }}</span>
+                            <span class="nd5t-formula-op">=</span>
+                            <strong class="nd5t-value">{{ total }}</strong>
+                        </div>
+                        {{else if isSingleDie}}
                         <span class="nd5t-die-roll {{ singleRoll.classes }}">{{#if sign}}{{sign}}{{/if}}{{ singleRoll.result }}</span>
                         {{else if hasAdvantageOrDisadvantage}}
                         <div class="nd5t-dice-rolls">
@@ -204,7 +283,26 @@
                     {{/if}}
                 </div>
                 <div class="nd5t-row-right">
-                    {{#if baseDie.isSingleDie}}
+                    {{#if baseDie.hasMultiplier}}
+                    <div class="nd5t-dice-formula">
+                        {{#each baseDie.discardedRolls}}
+                        <span class="nd5t-die-roll discarded {{ classes }}">{{ result }}</span>
+                        {{/each}}
+                        {{#if baseDie.isSingleDieRoll}}
+                        <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{#if baseDie.sign}}{{baseDie.sign}}{{/if}}{{ baseDie.singleRoll.result }}</span>
+                        {{else}}
+                        <span class="nd5t-formula-op">(</span>
+                        {{#each baseDie.activeRolls}}
+                        {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                        <span class="nd5t-die-roll {{ classes }}">{{ result }}</span>
+                        {{/each}}
+                        <span class="nd5t-formula-op">)</span>
+                        {{/if}}
+                        <span class="nd5t-formula-op">{{ baseDie.multiplierFormula }}</span>
+                        <span class="nd5t-formula-op">=</span>
+                        <strong class="nd5t-value">{{ baseDie.total }}</strong>
+                    </div>
+                    {{else if baseDie.isSingleDie}}
                     <span class="nd5t-die-roll {{ baseDie.singleRoll.classes }}">{{ baseDie.singleRoll.result }}</span>
                     {{else if baseDie.hasAdvantageOrDisadvantage}}
                     <div class="nd5t-dice-rolls">
@@ -246,11 +344,33 @@
                             {{/if}}
                         {{else}}
                             <span class="nd5t-mod-source">{{ displayLabel }}</span>
+                            {{#if formula}}
+                            <span class="nd5t-die-badge mini">{{ formula }}</span>
+                            {{/if}}
                         {{/if}}
                     </div>
                     <div class="nd5t-row-right">
                         {{#if isDie}}
-                            {{#if isSingleDie}}
+                            {{#if hasMultiplier}}
+                            <div class="nd5t-dice-formula">
+                                {{#each discardedRolls}}
+                                <span class="nd5t-die-roll mini discarded {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                {{#if isSingleDieRoll}}
+                                <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
+                                {{else}}
+                                <span class="nd5t-formula-op">(</span>
+                                {{#each activeRolls}}
+                                {{#unless @first}}<span class="nd5t-formula-op">+</span>{{/unless}}
+                                <span class="nd5t-die-roll mini {{ classes }}">{{ result }}</span>
+                                {{/each}}
+                                <span class="nd5t-formula-op">)</span>
+                                {{/if}}
+                                <span class="nd5t-formula-op">{{ multiplierFormula }}</span>
+                                <span class="nd5t-formula-op">=</span>
+                                <span class="nd5t-subtotal">{{ formattedValue }}</span>
+                            </div>
+                            {{else if isSingleDie}}
                             <span class="nd5t-die-roll mini {{ singleRoll.classes }}">{{ sign }}{{ singleRoll.result }}</span>
                             {{else if isFormula}}
                             <div class="nd5t-dice-formula">

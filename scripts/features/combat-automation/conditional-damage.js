@@ -1676,10 +1676,19 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
 function _onPreRollDamage(config, dialog = {}, message = {}) {
     if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
 
+    // Must be a damage roll hook
+    if (config.hookNames && !config.hookNames.includes("damage")) return;
+
+    // Initiative rolls or rolls with non-damage subjects must never receive conditional damage bonuses
+    if (config.rolls?.some(r => r.options?.type === "initiative" || r.data?.roll?.type === "initiative")) return;
+
     // Healing rolls cannot receive attack-dependent damage bonuses
     const rollType = config.subject?.type ?? message?.type ?? message?.system?.type ?? message?.data?.type;
     if (rollType === "heal") return;
     if (config.rolls?.some(r => r.options?.type === "healing" || r.options?.type === "temphp")) return;
+
+    // Damage rolls are associated with activities/items, not an Actor directly (e.g. rollInitiative passes subject: this [Actor])
+    if (config.subject instanceof Actor) return;
 
     // Conditional damage bonuses strictly require hitting with an attack.
     // If an activity subject is defined and is NOT an attack activity (e.g. SaveActivity like Fireball,
@@ -1785,6 +1794,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
  * @param {DamageRollProcessConfiguration} config
  */
 function _ensureAllConditionalRollsInConfig(config) {
+    if (!config || (config.hookNames && !config.hookNames.includes("damage"))) return;
     const bonuses = config._nd5tConditionalBonuses;
     if (!bonuses?.length) return;
 
@@ -1875,7 +1885,10 @@ function _patchDamageRollConfigurationDialog() {
     // 1. Ensure all eligible conditional bonus rolls are included upfront when the dialog is configured
     const origConfigure = DialogClass.configure;
     DialogClass.configure = async function(config = {}, dialog = {}, message = {}) {
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage") && config._nd5tConditionalBonuses?.length) {
+        const isDamage = config.hookNames?.includes("damage")
+            || (this.rollType && this.rollType === CONFIG.Dice?.DamageRoll)
+            || (this.name === "DamageRollConfigurationDialog");
+        if (isDamage && isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage") && config._nd5tConditionalBonuses?.length) {
             _ensureAllConditionalRollsInConfig(config);
         }
         return origConfigure.call(this, config, dialog, message);
@@ -1887,6 +1900,10 @@ function _patchDamageRollConfigurationDialog() {
         context = await origPrepareFormulasContext.call(this, context, options);
 
         if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+            return context;
+        }
+
+        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
             return context;
         }
 
@@ -1947,6 +1964,10 @@ function _patchDamageRollConfigurationDialog() {
             return context;
         }
 
+        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
+            return context;
+        }
+
         const bonuses = this.config?._nd5tConditionalBonuses;
         if (!bonuses?.length) return context;
 
@@ -2002,15 +2023,17 @@ function _patchDamageRollConfigurationDialog() {
     DialogClass.prototype._onRender = function(context, options) {
         origOnRender?.call(this, context, options);
 
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
-            _updateFormulaRowStates(this);
-        }
+        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
+        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) return;
+
+        _updateFormulaRowStates(this);
     };
 
     // 5. Synchronize rolls in real time on form change (_onChangeForm) without layout shift
     const origOnChangeForm = DialogClass.prototype._onChangeForm;
     DialogClass.prototype._onChangeForm = function(formConfig, event) {
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
             const bonuses = this.config?._nd5tConditionalBonuses;
             if (bonuses?.length && this.form) {
                 const formData = new foundry.applications.ux.FormDataExtended(this.form);
@@ -2091,7 +2114,8 @@ function _patchDamageRollConfigurationDialog() {
     // 6. Finalize rolls and persist last user choice (_finalizeRolls)
     const origFinalizeRolls = DialogClass.prototype._finalizeRolls;
     DialogClass.prototype._finalizeRolls = function(action) {
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
             const bonuses = this.config?._nd5tConditionalBonuses;
             if (bonuses?.length && this.form) {
                 const formData = new foundry.applications.ux.FormDataExtended(this.form);
@@ -2194,7 +2218,8 @@ function _patchDamageRollConfigurationDialog() {
         }
 
         const allRolls = origFinalizeRolls.call(this, action);
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
             return (allRolls ?? []).filter(r => !r.options?._nd5tInactive);
         }
         return allRolls;

@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.9] - 2026-10-15
+### Fixed
+- **Multiplicative Modifiers in Detailed Roll Breakdown**:
+  - Fixed an issue where rolls with multiplication or division (e.g. Expertise `@prof * 2`, half proficiency `@prof / 2`, multiplied damage dice `1d8 * 2`, or manual bonuses like `2 * 2`) were incorrectly broken down into separate additive terms.
+  - Multiplied and divided flat bonuses now evaluate to their proper final total and display their calculation formula badge (e.g. `PB (Expertise) [2 × 2] +4` instead of separate `+2` and `+2` lines), including parenthetical modifier expressions (e.g. `(@prof * 2)` or `(2 * 2)`).
+  - Multiplied dice rows (e.g. `1d8 * 2` or `(1d8 + 1d6) * 2`) now correctly apply the multiplier to the rolled dice result (e.g. `[5] × 2 = 10`), preserving all dice in parenthetical multi-die formulas instead of dropping secondary dice.
+  - Fixed negative signs on multiplied terms (e.g. `- 2 * 2`) to correctly evaluate as negative values rather than canceling out or converting to positive additions.
+  - Formula tagging now recognizes multipliers in roll configuration parts (e.g. `@prof * 2`, `@prof*2`, `@mod * 2`, `2 * @prof`), ensuring terms receive their proper label tags upon roll construction.
+  - Supported chained flavor tagging for compound part strings (such as monster stat block formulas like `8 + @mod + @prof`), ensuring all variables within the string receive their respective tags.
+  - Fixed an issue in active effect bonus matching where penalty rolls (e.g. `-1d4` from *Bane*) could erroneously match positive bonus effects (e.g. *Bless* or *Guidance*), and vice versa.
+  - Added active effect claim tracking during roll configuration to prevent identical numeric bonuses from falsely matching the same active effect twice.
+
+## [14.45.8] - 2026-10-15
+### Fixed
+- **Situational & Extra Bonus Syntax Errors**:
+  - Fixed a syntax error when manually entering a situational or extra bonus containing flavor tags (such as `1d6[necrotic]`) on damage rolls, ability checks, or rolls with active conditional damage (e.g. Hex).
+  - Prevented double-bracket annotations (`1d6[necrotic][Situational]`, `1d4[guidance][Bonus]`) that caused Foundry's formula parser to fail.
+  - Preserved leading minus signs when subtracting tagged formula bonuses (e.g. `-@situational` or `-@ruleBonus`).
+- **Roll Initiative Dialog & Detailed Roll Breakdown**:
+  - Fixed an issue where damage bonuses from active effects (such as Hex) could erroneously appear in the Roll Initiative configuration dialog formula and breakdown.
+  - Restricted active effect damage bonus detection strictly to damage rolls, ensuring initiative, ability checks, and saving throws never search for or display damage bonuses.
+  - Fixed a regression where saving throw active effect bonuses (e.g. Aura of Protection) were misclassified as initiative checks and omitted from the breakdown.
+  - Fixed an issue where numeric check bonuses (e.g. +1 from Jack of All Trades or items) could trigger false-positive matches against dice terms in unrelated active effects (e.g. matching "1" inside "1d6").
+  - Fixed active effect detection for negative dice penalties (such as *Bane* applying `-1d4`).
+  - Restricted *Emboldening Bond* active effect detection strictly to attack rolls, ability checks, and saving throws.
+
 ## [14.45.7] - 2026-10-15
 ### Fixed
 - **Detailed Roll Breakdown**:

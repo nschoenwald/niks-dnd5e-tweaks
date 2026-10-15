@@ -117,6 +117,7 @@ Transforms the native DnD5e roll breakdown popover (opened by clicking on the ro
 * **Base Die & Right-Oriented Dice**: Displays the base die (e.g. `d20`, `2d6`) with dice results aligned to the right, critical/fumble color accents, and addition formulas for multi-dice rolls (e.g. `[1] + [1] = 2`).
 * **Feature & Die Flavor Labels**: Preserves and displays custom bracketed die flavors (such as `[Vicious]` on `2d6[Vicious]`) directly on the die row alongside its denomination.
 * **Bonus Dice**: Formats bonus dice (like *Bless*, *Guidance*, *Bardic Inspiration*) with their formula, rolled result, and originating spell/effect name.
+* **Multiplicative Modifiers & Formulas**: Accurately handles rolls containing multiplication or division (e.g. Expertise `@prof * 2`, half proficiency `@prof / 2`, multiplied damage dice `1d8 * 2`, or manual bonuses `2 * 2`), evaluating final totals correctly and displaying calculation formula badges (e.g. `[2 × 2]`) and multiplier steps (e.g. `[ 5 ] × 2 = 10`).
 * **Condition Reductions**: Color-codes penalties such as Exhaustion or *Bane*.
 * **Two-Tier Architecture**: Proactively annotates roll formulas at roll creation and retroactively deduces sources for rolls already in chat history.
 * **Theme Harmony**: High contrast text styling across parchment chat logs, Carolingian UI, and dark Foundry themes.
