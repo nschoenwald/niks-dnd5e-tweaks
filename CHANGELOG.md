@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.5] - 2026-10-15
+### Fixed
+- **Detailed Roll Breakdown**: Fixed the breakdown popover being hard to read in dark mode. Text, borders and dice chips now match the popover background for every combination of Interface, App and Chat light/dark settings.
+
 ## [14.45.4] - 2026-10-14
 ### Added
 - **Conditional Damage: Savage Attacker (2024 Rules)**:

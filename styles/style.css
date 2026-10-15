@@ -4641,185 +4641,82 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
     color: var(--color-text-primary, #191813);
 }
 
-/* Dark Chat Mode overrides: ONLY apply when the chat log or popout is actively in dark theme,
-   never when Foundry applications are dark while chat remains on parchment / Carolingian UI */
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .roll-breakdown .nd5t-roll-breakdown {
-    color: var(--color-text-light-primary, #e6e5d8);
+/* Theme handling: dnd5e paints the popover background (`--dnd5e-background-parchment`) via
+   `@scope (.theme-light|.theme-dark) to (.themed)` - i.e. from the nearest theme-class ancestor
+   (Chat log if the Chat theme is set, otherwise the Interface sidebar / chat popout / App body).
+   We mirror that exact scoping for our text palette so text and background can never disagree,
+   for every Interface / App / Chat combination. Do NOT use light-dark()/color-scheme here:
+   Foundry only sets `color-scheme` on `.themed` elements and body, which can diverge from
+   dnd5e's scope (e.g. `.theme-*` without `.themed`, or body without a theme class).
+   Unscoped default = dnd5e's base (parchment) = light palette; this is also the graceful
+   fallback if @scope were unsupported, since dnd5e's dark background would not apply either. */
+.nd5t-roll-breakdown {
+    --nd5t-bd-text: #191813;
+    --nd5t-bd-text-secondary: #59574d;
+    --nd5t-bd-total: #191813;
+    --nd5t-bd-border: rgba(0, 0, 0, 0.18);
+    --nd5t-bd-border-strong: rgba(0, 0, 0, 0.25);
+    --nd5t-bd-chip-bg: rgba(0, 0, 0, 0.06);
+    --nd5t-bd-chip-border: rgba(0, 0, 0, 0.15);
+    --nd5t-bd-success: #2a8a40;
+    --nd5t-bd-failure: #8b0000;
 }
 
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child) {
-    border-bottom-color: rgba(255, 255, 255, 0.12);
+@scope (.theme-light) to (.themed) {
+    .nd5t-roll-breakdown {
+        --nd5t-bd-text: #191813;
+        --nd5t-bd-text-secondary: #59574d;
+        --nd5t-bd-total: #191813;
+        --nd5t-bd-border: rgba(0, 0, 0, 0.18);
+        --nd5t-bd-border-strong: rgba(0, 0, 0, 0.25);
+        --nd5t-bd-chip-bg: rgba(0, 0, 0, 0.06);
+        --nd5t-bd-chip-border: rgba(0, 0, 0, 0.15);
+        --nd5t-bd-success: #2a8a40;
+        --nd5t-bd-failure: #8b0000;
+    }
 }
 
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child) {
-    border-bottom-color: rgba(255, 255, 255, 0.15);
+@scope (.theme-dark) to (.themed) {
+    .nd5t-roll-breakdown {
+        --nd5t-bd-text: #e6e5d8;
+        --nd5t-bd-text-secondary: #b5b3a4;
+        --nd5t-bd-total: #ffffff;
+        --nd5t-bd-border: rgba(255, 255, 255, 0.14);
+        --nd5t-bd-border-strong: rgba(255, 255, 255, 0.22);
+        --nd5t-bd-chip-bg: rgba(255, 255, 255, 0.08);
+        --nd5t-bd-chip-border: rgba(255, 255, 255, 0.15);
+        --nd5t-bd-success: #4cd964;
+        --nd5t-bd-failure: #ff6b6b;
+    }
 }
 
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-type-badge,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-section-subtotal {
-    color: var(--color-text-light-primary, #e6e5d8);
-}
+.roll-breakdown .nd5t-roll-breakdown,
+.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
+.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
+.nd5t-roll-breakdown .nd5t-type-badge,
+.nd5t-roll-breakdown .nd5t-section-subtotal { color: var(--nd5t-bd-text); }
+.nd5t-roll-breakdown .nd5t-mod-source,
+.nd5t-roll-breakdown .nd5t-formula-op,
+.nd5t-roll-breakdown .nd5t-die-badge,
+.nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label { color: var(--nd5t-bd-text-secondary); }
+.nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value { color: var(--nd5t-bd-total); }
+.nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child),
+.nd5t-roll-breakdown .nd5t-damage-section:not(:last-child) { border-bottom-color: var(--nd5t-bd-border); }
+.nd5t-roll-breakdown .nd5t-total-row { border-top-color: var(--nd5t-bd-border-strong); }
+.nd5t-roll-breakdown .nd5t-die-badge { background: var(--nd5t-bd-chip-bg); border-color: var(--nd5t-bd-chip-border); }
+.nd5t-roll-breakdown .nd5t-die-roll { background: var(--nd5t-bd-chip-bg); }
+.nd5t-roll-breakdown .nd5t-die-roll.critical,
+.nd5t-roll-breakdown .nd5t-die-roll.max,
+.nd5t-roll-breakdown .nd5t-die-roll.success,
+.nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value { color: var(--nd5t-bd-success); }
+.nd5t-roll-breakdown .nd5t-die-roll.fumble,
+.nd5t-roll-breakdown .nd5t-die-roll.min,
+.nd5t-roll-breakdown .nd5t-die-roll.failure,
+.nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
+.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
+.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal { color: var(--nd5t-bd-failure); }
 
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-total-row {
-    border-top-color: rgba(255, 255, 255, 0.2);
-}
 
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: var(--color-text-light-secondary, #b5b3a4);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.critical,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.max,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.success,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value {
-    color: #4cd964;
-    text-shadow: 0 0 6px rgba(76, 217, 100, 0.4);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.fumble,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.min,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-die-roll.failure,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value {
-    color: #ff6b6b;
-    text-shadow: 0 0 6px rgba(255, 107, 107, 0.4);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-mod-source,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-formula-op {
-    color: var(--color-text-light-secondary, #b5b3a4);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
-    color: var(--color-text-light-primary, #e6e5d8);
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
-    color: #ff6b6b;
-}
-
-:is(.chat-log.theme-dark, .chat-popout.theme-dark, #chat.theme-dark, .themed.theme-dark #chat-log):not(.crlngn-ui):not(.nd5t-crlngn-theme-active) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value {
-    color: var(--color-text-light-primary, #ffffff);
-}
-
-/* Parchment / Carolingian UI Protection: Ensure dark text always persists on light parchment,
-   even when body has .theme-dark due to dark application windows */
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .roll-breakdown .nd5t-roll-breakdown,
-body.crlngn-ui .roll-breakdown .nd5t-roll-breakdown,
-body.nd5t-crlngn-theme-active .roll-breakdown .nd5t-roll-breakdown {
-    color: #191813 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child),
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child),
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-breakdown-row:not(:last-child) {
-    border-bottom-color: rgba(0, 0, 0, 0.18) !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child),
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child),
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-damage-section:not(:last-child) {
-    border-bottom-color: rgba(0, 0, 0, 0.18) !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-type-badge,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-type-badge,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-type-badge {
-    color: #191813 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-section-subtotal,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-section-subtotal,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-section-subtotal {
-    color: #191813 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row {
-    border-top-color: rgba(0, 0, 0, 0.25) !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die .nd5t-die-badge {
-    background: rgba(0, 0, 0, 0.06) !important;
-    border-color: rgba(0, 0, 0, 0.15) !important;
-    color: #59574d !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll {
-    background: rgba(0, 0, 0, 0.05) !important;
-    color: #191813 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll.critical,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll.critical,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll.critical,
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die.critical .nd5t-value {
-    color: #2a8a40 !important;
-    text-shadow: 0 0 6px rgba(42, 138, 64, 0.3) !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-die-roll.fumble,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-die-roll.fumble,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-die-roll.fumble,
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value {
-    color: #8b0000 !important;
-    text-shadow: 0 0 6px rgba(139, 0, 0, 0.3) !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-mod-source,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-mod-source,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-mod-source,
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-formula-op,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-formula-op,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-formula-op {
-    color: #59574d !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
-    color: #191813 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
-    color: #8b0000 !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-label {
-    color: #59574d !important;
-}
-
-body.theme-dark :is(.chat-log:not(.theme-dark), .chat-popout:not(.theme-dark), #chat:not(.theme-dark)) .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value,
-body.crlngn-ui .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value,
-body.nd5t-crlngn-theme-active .nd5t-roll-breakdown .nd5t-total-row .nd5t-total-value {
-    color: #191813 !important;
-}
 
 /* Explicitly guarantee no bottom border leaks right above the total line */
 .nd5t-roll-breakdown :is(.nd5t-breakdown-row:last-child, .nd5t-damage-section:last-child, .nd5t-damage-section:last-of-type, .nd5t-breakdown-modifiers:last-child > .nd5t-breakdown-row:last-child, .nd5t-breakdown-dice:last-child > .nd5t-breakdown-row:last-child),
