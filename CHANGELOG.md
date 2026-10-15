@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.45.9] - 2026-10-15
+## [14.45.8] - 2026-10-15
 ### Fixed
 - **Multiplicative Modifiers in Detailed Roll Breakdown**:
   - Fixed an issue where rolls with multiplication or division (e.g. Expertise `@prof * 2`, half proficiency `@prof / 2`, multiplied damage dice `1d8 * 2`, or manual bonuses like `2 * 2`) were incorrectly broken down into separate additive terms.
@@ -13,9 +13,6 @@ All notable changes to this project will be documented in this file.
   - Supported chained flavor tagging for compound part strings (such as monster stat block formulas like `8 + @mod + @prof`), ensuring all variables within the string receive their respective tags.
   - Fixed an issue in active effect bonus matching where penalty rolls (e.g. `-1d4` from *Bane*) could erroneously match positive bonus effects (e.g. *Bless* or *Guidance*), and vice versa.
   - Added active effect claim tracking during roll configuration to prevent identical numeric bonuses from falsely matching the same active effect twice.
-
-## [14.45.8] - 2026-10-15
-### Fixed
 - **Situational & Extra Bonus Syntax Errors**:
   - Fixed a syntax error when manually entering a situational or extra bonus containing flavor tags (such as `1d6[necrotic]`) on damage rolls, ability checks, or rolls with active conditional damage (e.g. Hex).
   - Prevented double-bracket annotations (`1d6[necrotic][Situational]`, `1d4[guidance][Bonus]`) that caused Foundry's formula parser to fail.
