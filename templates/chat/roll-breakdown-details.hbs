@@ -1,4 +1,7 @@
-<div class="nd5t-roll-breakdown{{#if isDamageCard}} nd5t-damage-breakdown{{/if}}">
+<div class="dice-tooltip-collapser">
+    <div class="dice-tooltip">
+        <div class="wrapper">
+            <div class="nd5t-roll-breakdown{{#if isDamageCard}} nd5t-damage-breakdown{{/if}}">
     {{#if isDamageCard}}
         <div class="nd5t-damage-sections">
             {{#each sections}}
@@ -282,6 +285,9 @@
         </div>
         <div class="nd5t-row-right">
             <strong class="nd5t-total-value">{{ total }}</strong>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>

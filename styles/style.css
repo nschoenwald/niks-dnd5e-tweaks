@@ -4369,15 +4369,53 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
    Detailed Roll Breakdown Overlay (v14.43.0)
    ========================================================================== */
 
-.roll-breakdown .nd5t-roll-breakdown {
+/* Container layout inside popovers (.roll-breakdown) and standard dice cards (.dice-roll) */
+.roll-breakdown .dice-tooltip-collapser,
+.roll-breakdown .dice-tooltip,
+.roll-breakdown .wrapper {
+    display: contents;
+}
+
+.roll-breakdown .nd5t-roll-breakdown,
+.dice-roll .nd5t-roll-breakdown,
+.inline-roll .nd5t-roll-breakdown {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    font-family: var(--font-primary, "Signika", sans-serif);
+    color: var(--color-text-primary, #191813);
+}
+
+.roll-breakdown .nd5t-roll-breakdown,
+.inline-roll .nd5t-roll-breakdown {
     padding: 8px 12px;
     min-width: 220px;
     max-width: 320px;
-    font-family: var(--font-primary, "Signika", sans-serif);
-    color: var(--color-text-primary, #191813);
+}
+
+.dice-roll .nd5t-roll-breakdown {
+    padding: 6px 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.dice-roll .dice-result .nd5t-total-row {
+    display: none !important;
+}
+
+.dice-result .dice-tooltip-collapser {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 250ms ease;
+}
+
+.dice-roll.expanded .dice-tooltip-collapser {
+    grid-template-rows: 1fr;
+}
+
+.dice-result .dice-tooltip-collapser > .dice-tooltip {
+    overflow: hidden;
+    min-height: 0;
 }
 
 .nd5t-roll-breakdown .nd5t-breakdown-row {
@@ -4690,7 +4728,7 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
     }
 }
 
-.roll-breakdown .nd5t-roll-breakdown,
+.nd5t-roll-breakdown,
 .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
 .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
 .nd5t-roll-breakdown .nd5t-type-badge,

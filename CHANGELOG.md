@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.7] - 2026-10-15
+### Fixed
+- **Detailed Roll Breakdown**:
+  - Fixed an issue where regular dice rolls (rolls made without an attack, check, or save) had their breakdown displayed immediately inside the chat card instead of remaining collapsed until clicking the roll total.
+  - Added proper accordion collapse structure (`.dice-tooltip-collapser` and `.dice-tooltip`) to roll breakdown templates, restoring smooth click-to-expand behavior in standard chat cards while preserving popover overlays on activity cards.
+  - Suppressed redundant total row in standard chat card roll breakdowns where the roll total button is already displayed immediately below the breakdown.
+
 ## [14.45.6] - 2026-10-15
 ### Fixed
 - **Conditional Damage (Boon of Irresistible Offense)**:

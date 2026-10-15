@@ -107,7 +107,7 @@ Modernizes DnD5e chat cards to make actions and roll results readable at a glanc
 
 ### Detailed Roll Breakdown Overlay
 Transforms the native DnD5e roll breakdown popover (opened by clicking on the roll total button on chat cards) into a comprehensive, readable breakdown showing the base die and the origin of every bonus or penalty:
-* **Attack, Check, Save & Damage Rolls**: Fully supports all d20 checks and damage cards.
+* **All Roll Types**: Fully supports attacks, checks, saves, damage cards, and regular dice rolls (which collapse into the chat card's roll accordion until clicked).
 * **Theme Aware**: Text and borders follow the light/dark theme of the chat card automatically, for any combination of Interface, App and Chat theme settings.
 * **Damage Cards Breakdown & Consolidation**: Consolidates damage rolls of the same damage type (e.g. base weapon damage, *Vicious* dice, and *Great Weapon Master*) into a single unified section per damage type, displaying damage type badges with icons, subtotals, and grand total.
 * **Intuitive Sorting Order**:
