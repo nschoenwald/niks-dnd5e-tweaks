@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.45.6] - 2026-10-15
+### Fixed
+- **Conditional Damage (Boon of Irresistible Offense)**:
+  - Fixed an issue where natural 20 attack checks could fail to inspect the originating attack card when rolled from chat, preventing false positives from prior cached rolls.
+  - Fixed an issue where multiple attacks from the same item card (e.g. Extra Attack) could allow a prior natural 20 to leak onto a subsequent non-critical attack roll's damage.
+  - Fixed an issue where standalone root attack messages could be skipped during origin inspection due to identical message references.
+  - Prevented damage messages with d20 dice from being falsely inspected as attack rolls.
+  - Prevented out-of-combat attack rolls from leaking across the encounter boundary into started combat encounters.
+  - Made direct attack rolls authoritative so non-critical attacks do not fall through to cached critical hit states.
+- **Detailed Roll Breakdown**:
+  - Fixed candidate dice rolling maximum or minimum values under Savage Attacker being falsely flagged as critical hits or fumbles, while ensuring duplicated critical hit pool dice receive proper critical hit styling without erroneously forcing max-roll styling on low critical dice.
+  - Fixed discarded candidate dice in Savage Attacker pools missing the `.discarded` class in their roll data model.
+  - Fixed base weapon damage dice displaying `(Crit)` alongside duplicated critical hit dice under Savage Attacker, ensuring only the critical bonus dice carry the critical hit label.
+  - Fixed secondary damage popovers on multi-damage messages failing to populate when opened or hovered.
+  - Fixed hover pre-caching to reliably trigger when moving the cursor across chat cards and rows via bubbling pointer events.
+### Improved
+- **Conditional Damage (Charger & Brutal Strike)**:
+  - Both Charger and Brutal Strike now strictly enforce their once-per-turn rules during combat, preventing multiple uses on the same turn when attacking multiple times with Extra Attack.
+  - Brutal Strike is now offered exclusively on the Barbarian's own turn in combat, matching 2024 RAW.
+- **Conditional Damage (Boon of Irresistible Offense & Memory)**:
+  - Natural 20 attack roll detection now links to combat turns and features an extended 3-minute grace period outside combat, ensuring slow-paced scenes or reaction adjudications do not cause missed bonuses.
+  - Replaced full Roll instance caching with lightweight primitive flags and added automatic cleanup on attack rolls, turn changes, and combat deletion.
+- **Conditional Damage (Reliability & Timing)**:
+  - Fixed an issue where toggling Savage Attacker and Cleave together could produce inconsistent formulas depending on toggle order.
+  - Fast-forward rolls (holding Shift or configuring rolls to skip prompts) now reliably track once-per-turn bonus usage and attack Nat 20 states.
+  - Flat conditional damage bonuses (Great Weapon Master and Boon of Irresistible Offense) now explicitly prevent numeric multiplication when critical hit numeric modifiers are configured.
+- **Detailed Roll Breakdown**:
+  - Fixed an issue where unflavored base weapon dice could erroneously inherit flavor labels from subsequent modifier terms (e.g. displaying STR next to a base damage die).
+  - Unlabeled base weapon dice now clearly display the weapon's name (e.g. Longsword, Dagger, or Unarmed Strike) by correctly querying associated items on chat messages.
+  - Single-die pool rolls like Savage Attacker now cleanly display both rolled dice with the discarded die struck through (e.g. `[7] [~~3~~]`), matching standard advantage display.
+  - Hovering over roll cards and rendering new chat messages during gameplay now pre-caches breakdown popovers for instantaneous, zero-delay rendering with no popover layout jumps, while deferring historical messages on startup to keep world loading fast.
+
 ## [14.45.5] - 2026-10-15
 ### Fixed
 - **Detailed Roll Breakdown**: Fixed the breakdown popover being hard to read in dark mode. Text, borders and dice chips now match the popover background for every combination of Interface, App and Chat light/dark settings.

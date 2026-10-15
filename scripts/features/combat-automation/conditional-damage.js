@@ -1,12 +1,15 @@
 /**
- * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master, Brutal Strike & Cleave)
+ * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Cleave, & Boon of Irresistible Offense)
  *
  * Offers toggles in damage roll configuration dialogs when an actor is actively
  * concentrating on Hex or Hunter's Mark, attacks with a ranged or finesse weapon (Sneak Attack),
  * attacks with a Heavy weapon under 2024 rules with Great Weapon Master (+PB bonus flavored with GWM),
- * attacks with Brutal Strike (@scale.barbarian.brutal-strike bonus matching weapon damage type, reset to disabled),
- * or attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative).
- * Remembers choices per actor (except Cleave and Brutal Strike, which are disabled by default and strictly one-off).
+ * attacks with Brutal Strike (@scale.barbarian.brutal-strike bonus matching weapon damage type, once per turn),
+ * attacks after moving 10+ ft with Charger (+1d8 bonus, once per turn),
+ * attacks with Savage Attacker (rolling weapon damage dice twice and keeping higher, once per turn),
+ * attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative),
+ * or scores a natural 20 attack roll with Boon of Irresistible Offense (+Ability Score bonus).
+ * Remembers choices per actor (except one-offs and once-per-turn bonuses).
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
@@ -204,12 +207,12 @@ export function isEligibleSneakAttackWeapon(item, activity = null, config = null
 
     // A melee weapon lacking finesse is strictly ineligible under 5e RAW, even if thrown (e.g. handaxe/spear)
     const weaponType = item.system?.type?.value;
-    const isMeleeWeapon = weaponType === "simpleM" || weaponType === "martialM";
+    const classification = item.system?.attackType ?? item.system?.classification ?? CONFIG.DND5E?.weaponTypeMap?.[weaponType];
+    const isMeleeWeapon = classification === "melee" || weaponType === "simpleM" || weaponType === "martialM";
     if (isMeleeWeapon) return false;
 
     // 2. Ranged weapon type check ("simpleR", "martialR", or weaponTypeMap)
-    if (weaponType === "simpleR" || weaponType === "martialR") return true;
-    if (CONFIG.DND5E?.weaponTypeMap?.[weaponType] === "ranged") return true;
+    if (classification === "ranged" || weaponType === "simpleR" || weaponType === "martialR") return true;
 
     // 3. Ranged attack activity classification (e.g. rwak) for non-melee weapons, honoring thrown/ranged attack modes
     const actionType = activity?.getActionType?.(config?.attackMode) ?? activity?.actionType ?? item.system?.actionType;
@@ -940,14 +943,8 @@ export function removeAbilityModifierFromParts(parts) {
 }
 
 /**
- * Track the combat turn in which an actor last applied Savage Attacker.
- * Keyed by actor UUID or ID -> turn key string `${combat.id}-r${round}-t${turn}`.
- * @type {Map<string, string>}
- */
-const _lastSavageAttackerTurn = new Map();
-
-/**
- * Track once-per-turn bonuses (e.g. Sneak Attack). Keyed by `${actorKey}|${bonusId}` -> turn key string.
+ * Track once-per-turn bonuses (e.g. Sneak Attack, Savage Attacker, Charger, Brutal Strike).
+ * Keyed by `${actorKey}|${bonusId}` -> turn key string `${combat.id}-r${round}-t${turn}`.
  * @type {Map<string, string>}
  */
 const _bonusTurnUsage = new Map();
@@ -978,6 +975,21 @@ export function markBonusUsedThisTurn(actor, bonusId, turnKey) {
 }
 
 /**
+ * Clean up turn usage tracking entries for a deleted combat encounter.
+ *
+ * @param {string} combatId
+ */
+export function clearCombatTurnUsage(combatId) {
+    if (!combatId) return;
+    const prefix = `${combatId}-`;
+    for (const [key, turnKey] of _bonusTurnUsage.entries()) {
+        if (typeof turnKey === "string" && turnKey.startsWith(prefix)) {
+            _bonusTurnUsage.delete(key);
+        }
+    }
+}
+
+/**
  * Construct a unique string key representing the current combat turn.
  *
  * @param {Combat|null} combat
@@ -992,36 +1004,81 @@ export function getCombatTurnKey(combat, actor = null, token = null) {
 
 /**
  * Determine whether Savage Attacker has already been used by the actor on the specified combat turn.
+ * Maintained for backward compatibility, delegates to `hasUsedBonusThisTurn`.
  *
  * @param {Actor5e|null} actor
  * @param {string|null} turnKey
  * @returns {boolean}
  */
 export function hasUsedSavageAttackerThisTurn(actor, turnKey) {
-    if (!actor || !turnKey) return false;
-    const key = actor.uuid || actor.id;
-    return _lastSavageAttackerTurn.get(key) === turnKey;
+    return hasUsedBonusThisTurn(actor, "savageAttacker", turnKey);
 }
 
 /**
  * Mark Savage Attacker as having been expended on the current combat turn for an actor.
+ * Maintained for backward compatibility, delegates to `markBonusUsedThisTurn`.
  *
  * @param {Actor5e|null} actor
  * @param {string|null} turnKey
  */
 export function markSavageAttackerUsed(actor, turnKey) {
-    if (!actor || !turnKey) return;
-    const key = actor.uuid || actor.id;
-    _lastSavageAttackerTurn.set(key, turnKey);
+    markBonusUsedThisTurn(actor, "savageAttacker", turnKey);
 }
 
 /**
  * In-memory map of the most recent attack roll evaluated for each actor,
- * used to correlate damage rolls with attack d20 results.
+ * used to correlate damage rolls with attack d20 results (e.g. for Boon of Irresistible Offense).
+ * Stores lightweight primitive flags rather than retaining full Roll instances in memory.
  * Keyed by actor UUID or ID.
- * @type {Map<string, { roll: BasicRoll, time: number, activityId?: string, itemId?: string, messageId?: string }>}
+ * @type {Map<string, { isNatural20: boolean, time: number, turnKey: string|null, combatId: string|null, activityId?: string, itemId?: string, messageId?: string, damageRolled?: boolean }>}
  */
 const _lastAttackRollsByActor = new Map();
+
+const ATTACK_ROLL_OUT_OF_COMBAT_TTL_MS = 180000; // 3 minutes out of combat for narrative / GM adjudication
+const ATTACK_ROLL_COMBAT_TTL_MS = 60000;         // 1 minute safety TTL within combat
+
+/**
+ * Prune stale attack roll entries from memory.
+ */
+function _pruneStaleAttackRolls() {
+    const now = Date.now();
+    for (const [key, entry] of _lastAttackRollsByActor.entries()) {
+        const ttl = entry.combatId ? ATTACK_ROLL_COMBAT_TTL_MS : ATTACK_ROLL_OUT_OF_COMBAT_TTL_MS;
+        if (now - (entry.time ?? 0) >= ttl) {
+            _lastAttackRollsByActor.delete(key);
+        }
+    }
+}
+
+/**
+ * Record evaluated attack roll metadata for an actor.
+ *
+ * @param {Actor5e} actor
+ * @param {BasicRoll|Roll} roll
+ * @param {object} [options={}]
+ * @param {string} [options.activityId]
+ * @param {string} [options.itemId]
+ * @param {string} [options.messageId]
+ */
+function _recordAttackRoll(actor, roll, { activityId, itemId, messageId } = {}) {
+    if (!actor || !roll) return;
+    _pruneStaleAttackRolls();
+
+    const actorKey = actor.uuid || actor.id;
+    const combat = getActiveCombat(actor);
+    const turnKey = getCombatTurnKey(combat, actor);
+
+    _lastAttackRollsByActor.set(actorKey, {
+        isNatural20: isRollD20Natural20(roll),
+        time: Date.now(),
+        turnKey,
+        combatId: combat?.id ?? null,
+        activityId,
+        itemId,
+        messageId,
+        damageRolled: false
+    });
+}
 
 /**
  * Check whether a given roll's d20 was an active (kept) natural 20.
@@ -1070,17 +1127,30 @@ export function isRollD20Natural20(roll) {
  * @returns {boolean}
  */
 export function didAttackRollNatural20(actor, { config, dialog, message, activity } = {}) {
-    // 1. Direct roll on config
+    _pruneStaleAttackRolls();
+
+    // 1. Direct roll on config (authoritative if provided)
     const directRoll = config?.attackRoll ?? config?.rolls?.[0]?.options?.attackRoll;
-    if (directRoll && isRollD20Natural20(directRoll)) return true;
+    if (directRoll) return isRollD20Natural20(directRoll);
 
     // Inspect a chat message for attack d20 results.
     // Returns true/false when the message (or its associated attack messages) contains d20 rolls, null when it has none.
     const inspectMessage = (msg) => {
         if (!msg) return null;
-        const rolls = [...(msg.rolls ?? [])];
+        let rolls = [];
         if (typeof msg.getAssociatedRolls === "function") {
-            for (const attackMsg of msg.getAssociatedRolls("attack") ?? []) rolls.push(...(attackMsg.rolls ?? []));
+            const attackMessages = msg.getAssociatedRolls("attack");
+            if (attackMessages?.length) {
+                const latest = attackMessages[attackMessages.length - 1];
+                rolls = latest?.rolls ?? [];
+            }
+        }
+        if (!rolls.length) {
+            const isDamage = msg.type === "damage"
+                || msg.system?.constructor?.name === "DamageMessageData"
+                || (CONFIG.ChatMessage?.dataModels?.damage && msg.system instanceof CONFIG.ChatMessage.dataModels.damage);
+            if (isDamage) return null;
+            rolls = [...(msg.rolls ?? [])];
         }
         const hasD20 = rolls.some(r => (r.dice ?? []).some(d => d.faces === 20));
         if (!hasD20) return null;
@@ -1088,12 +1158,18 @@ export function didAttackRollNatural20(actor, { config, dialog, message, activit
     };
 
     // 2. Direct message origin (authoritative: a found origin attack must not fall through to the time-based cache)
-    const originId = message?.data?.system?.origin
+    const rawOrigin = message?.system?.origin
+        ?? message?.data?.system?.origin
+        ?? (typeof message?.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
         ?? config?.event?.target?.closest?.("[data-message-id]")?.dataset?.messageId
         ?? dialog?.options?.originatingMessage;
 
-    if (originId) {
-        const result = inspectMessage(game.messages?.get(originId));
+    const originMessage = (rawOrigin instanceof foundry.documents.BaseChatMessage || (rawOrigin && typeof rawOrigin === "object" && rawOrigin.id))
+        ? rawOrigin
+        : (typeof rawOrigin === "string" ? game.messages?.get(rawOrigin) : null);
+
+    if (originMessage) {
+        const result = inspectMessage(originMessage);
         if (result !== null) return result;
     }
 
@@ -1101,19 +1177,36 @@ export function didAttackRollNatural20(actor, { config, dialog, message, activit
     if (config?.event?.target) {
         const chatCard = config.event.target.closest?.(".chat-message");
         const msgId = chatCard?.dataset?.messageId;
-        if (msgId && msgId !== originId) {
+        if (msgId && msgId !== originMessage?.id) {
             const result = inspectMessage(game.messages?.get(msgId));
             if (result !== null) return result;
         }
     }
 
-    // 4. In-memory cached attack roll for this actor within the last 60 seconds
+    // 4. In-memory cached attack roll for this actor
     if (actor) {
         const actorKey = actor.uuid || actor.id;
         const cached = _lastAttackRollsByActor.get(actorKey);
-        if (cached && !cached.damageRolled && (Date.now() - cached.time < 60000)) {
-            if (!activity || !cached.activityId || cached.activityId === activity.id) {
-                if (isRollD20Natural20(cached.roll)) return true;
+        if (cached && !cached.damageRolled) {
+            const combat = getActiveCombat(actor);
+            const inCombat = Boolean(combat?.active && combat.started);
+            const currentTurnKey = getCombatTurnKey(combat, actor);
+            const now = Date.now();
+
+            // Out-of-combat attack rolls must never leak across the boundary into a started combat
+            const isValidTurn = inCombat
+                ? Boolean(cached.combatId && cached.turnKey && cached.turnKey === currentTurnKey)
+                : !cached.combatId;
+            const ttl = cached.combatId ? ATTACK_ROLL_COMBAT_TTL_MS : ATTACK_ROLL_OUT_OF_COMBAT_TTL_MS;
+            const isFresh = (now - (cached.time ?? 0)) < ttl;
+
+            if (isValidTurn && isFresh) {
+                const activityMatches = !activity || !cached.activityId || cached.activityId === activity.id;
+                const itemId = activity?.item?.id ?? config?.subject?.item?.id;
+                const itemMatches = !itemId || !cached.itemId || cached.itemId === itemId;
+                if (activityMatches && itemMatches) {
+                    if (cached.isNatural20) return true;
+                }
             }
         }
     }
@@ -1360,11 +1453,15 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         ?? (canvas?.ready && actor.getActiveTokens ? actor.getActiveTokens(false, true)?.[0] : null)
         ?? null;
 
+    const combat = getActiveCombat(actor, token);
+    const inCombat = Boolean(combat?.active && combat.started);
+    const turnKey = getCombatTurnKey(combat, actor, token);
+    const isMyTurn = isAttackerCombatTurn(actor, token);
+
     // --- 2. Sneak Attack (Rogue class scale value on ranged or finesse weapon; once per turn) ---
     const rogueData = getRogueData(actor);
     if (rogueData && isEligibleSneakAttackWeapon(item, activity, config)) {
         // In combat, Sneak Attack defaults off once it has been used this turn (and is not remembered across turns)
-        const sneakTurnKey = getCombatTurnKey(getActiveCombat(actor, token), actor, token);
         activeBonuses.push({
             id: "sneakAttack",
             spellName: "Sneak Attack",
@@ -1374,14 +1471,13 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
             flavor: "Sneak Attack",
             labelKey: "ND5T.ConditionalDamage.SneakAttack.Label",
             defaultLabel: `Sneak Attack (+${rogueData.formula})`,
-            turnKey: sneakTurnKey,
-            defaultActive: !hasUsedBonusThisTurn(actor, "sneakAttack", sneakTurnKey)
+            turnKey,
+            defaultActive: !hasUsedBonusThisTurn(actor, "sneakAttack", turnKey)
         });
     }
 
     // --- 3. Great Weapon Master (2024 Modern Rules: +PB damage on heavy weapons on attacker's turn) ---
-
-    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item) && isAttackerCombatTurn(actor, token)) {
+    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item) && isMyTurn) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         activeBonuses.push({
             id: "greatWeaponMaster",
@@ -1415,28 +1511,31 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         });
     }
 
-    // --- 5. Brutal Strike (Barbarian class feature: @scale.barbarian.brutal-strike) ---
-    if (actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor)) {
-        const brutalFormulaDisplay = getBrutalStrikeFormula(actor);
-        activeBonuses.push({
-            id: "brutalStrike",
-            spellName: "Brutal Strike",
-            formula: `${brutalFormulaDisplay}[Brutal Strike]`,
-            formulaDisplay: brutalFormulaDisplay,
-            damageType: baseDamageType,
-            flavor: "Brutal Strike",
-            labelKey: "ND5T.ConditionalDamage.BrutalStrike.Label",
-            defaultLabel: `Brutal Strike (+${brutalFormulaDisplay})`,
-            defaultActive: false
-        });
+    // --- 5. Brutal Strike (2024 Modern Rules: @scale.barbarian.brutal-strike on Barbarian's turn, once per turn) ---
+    if (isModernRules() && actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor) && isMyTurn) {
+        const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "brutalStrike", turnKey);
+        if (!hasUsedThisTurn) {
+            const brutalFormulaDisplay = getBrutalStrikeFormula(actor);
+            activeBonuses.push({
+                id: "brutalStrike",
+                spellName: "Brutal Strike",
+                formula: `${brutalFormulaDisplay}[Brutal Strike]`,
+                formulaDisplay: brutalFormulaDisplay,
+                damageType: baseDamageType,
+                flavor: "Brutal Strike",
+                turnKey,
+                labelKey: "ND5T.ConditionalDamage.BrutalStrike.Label",
+                defaultLabel: `Brutal Strike (+${brutalFormulaDisplay})`,
+                defaultActive: false
+            });
+        }
     }
 
-    // --- 6. Charger (2024 Modern Rules: +1d8 damage on melee attack after moving at least 10 ft on your turn) ---
+    // --- 6. Charger (2024 Modern Rules: +1d8 damage on melee attack after moving at least 10 ft on your turn, once per turn) ---
     if (isModernRules() && actorHasCharger(actor) && isEligibleChargerAttack(item, activity, config)) {
-        const combat = getActiveCombat(actor, token);
-        const inCombat = Boolean(combat?.active && combat.started);
+        const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "charger", turnKey);
         const isEligibleTurnAndMovement = !inCombat
-            || (isAttackerCombatTurn(actor, token) && hasAttackerMovedChargerDistance(actor, token, 10));
+            || (!hasUsedThisTurn && isMyTurn && hasAttackerMovedChargerDistance(actor, token, 10));
 
         if (isEligibleTurnAndMovement) {
             activeBonuses.push({
@@ -1446,6 +1545,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
                 formulaDisplay: "1d8",
                 damageType: baseDamageType,
                 flavor: "Charger",
+                turnKey,
                 labelKey: "ND5T.ConditionalDamage.Charger.Label",
                 defaultLabel: "Charger (+1d8)",
                 defaultActive: false
@@ -1453,11 +1553,9 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         }
     }
 
-    // --- 7. Savage Attacker (2024 Modern Rules: Roll weapon damage dice twice and use either roll) ---
+    // --- 7. Savage Attacker (2024 Modern Rules: Roll weapon damage dice twice and use either roll, once per turn) ---
     if (isModernRules() && actorHasSavageAttacker(actor) && isEligibleSavageAttackerAttack(item, activity, config)) {
-        const combat = getActiveCombat(actor, token);
-        const turnKey = getCombatTurnKey(combat, actor, token);
-        const hasUsedThisTurn = hasUsedSavageAttackerThisTurn(actor, turnKey);
+        const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "savageAttacker", turnKey);
 
         const weaponDice = getWeaponBaseDiceFormula(config?.rolls?.[0], item, activity);
         // Flat-damage weapons have no dice to roll twice
@@ -1539,11 +1637,15 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
         }
     }
 
+    const isFlatBonus = def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense";
     const rollOptions = {
         type: def.damageType,
         flavor: def.flavor,
         _nd5tConditionalId: def.id,
-        critical: { bonusDice: 0 }
+        critical: {
+            bonusDice: 0,
+            ...(isFlatBonus ? { multiplyNumeric: false } : {})
+        }
     };
 
     if (properties?.length) {
@@ -1575,7 +1677,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
     if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
 
     // Healing rolls cannot receive attack-dependent damage bonuses
-    const rollType = config.subject?.type ?? message?.data?.type;
+    const rollType = config.subject?.type ?? message?.type ?? message?.system?.type ?? message?.data?.type;
     if (rollType === "heal") return;
     if (config.rolls?.some(r => r.options?.type === "healing" || r.options?.type === "temphp")) return;
 
@@ -1593,6 +1695,8 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
         ?? dialog?.options?.actor
         ?? (config.subject?.item?.actor)
         ?? (config.rolls?.[0]?.data?.actor)
+        ?? (typeof message?.getAssociatedActor === "function" ? message.getAssociatedActor() : null)
+        ?? (message?.speaker ? ChatMessage.getSpeakerActor?.(message.speaker) : null)
         ?? (message?.data?.speaker ? ChatMessage.getSpeakerActor?.(message.data.speaker) : null)
         ?? (canvas?.tokens?.controlled?.[0]?.actor)
         ?? null;
@@ -1610,11 +1714,15 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
 
     // Prepare bonus metadata on the process configuration
     config._nd5tConditionalBonuses = activeDefs.map(def => {
-        const lastChoice = (def.id === "cleave" || def.id === "brutalStrike" || def.id === "charger" || def.id === "boonOfIrresistibleOffense" || (def.id === "sneakAttack" && def.turnKey))
+        const isOneOffOrTurnTracked = def.id === "cleave"
+            || def.id === "brutalStrike"
+            || def.id === "charger"
+            || def.id === "boonOfIrresistibleOffense"
+            || def.id === "savageAttacker"
+            || (def.id === "sneakAttack" && def.turnKey);
+        const lastChoice = isOneOffOrTurnTracked
             ? def.defaultActive
-            : (def.id === "savageAttacker"
-                ? def.defaultActive
-                : getActorConditionalPreference(actor, def.id, def.defaultActive));
+            : getActorConditionalPreference(actor, def.id, def.defaultActive);
         return {
             ...def,
             actor,
@@ -1627,25 +1735,27 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
     const baseProperties = baseRoll?.options?.properties ?? [];
     const isCritical = Boolean(config.isCritical);
 
+    const isFastForward = dialog.configure === false || Boolean(config.event?.shiftKey) || Boolean(config.options?.fastForward);
+
     if (baseRoll) {
         baseRoll._nd5tOriginalParts = [...(baseRoll.parts ?? [])];
         baseRoll._nd5tOriginalMod = baseRoll.data?.mod;
 
         const savageBonus = config._nd5tConditionalBonuses.find(b => b.id === "savageAttacker" && b.active);
-        const isFastForward = dialog.configure === false || Boolean(config.event?.shiftKey) || Boolean(config.options?.fastForward);
         if (savageBonus) {
             baseRoll.parts = applySavageAttackerToParts(baseRoll._nd5tOriginalParts);
             baseRoll.options ??= {};
             baseRoll.options._nd5tSavageAttacker = true;
-            if (savageBonus.turnKey && isFastForward) {
-                markSavageAttackerUsed(actor, savageBonus.turnKey);
+        }
+    }
+
+    if (isFastForward) {
+        for (const bonus of config._nd5tConditionalBonuses) {
+            if (bonus.active && bonus.turnKey) {
+                markBonusUsedThisTurn(actor, bonus.id, bonus.turnKey);
             }
         }
-        const sneakBonus = config._nd5tConditionalBonuses.find(b => b.id === "sneakAttack" && b.active);
-        if (sneakBonus?.turnKey && isFastForward) {
-            markBonusUsedThisTurn(actor, "sneakAttack", sneakBonus.turnKey);
-        }
-        if (isFastForward && actor) {
+        if (actor) {
             const actorKey = actor.uuid || actor.id;
             const cached = _lastAttackRollsByActor.get(actorKey);
             if (cached) cached.damageRolled = true;
@@ -1912,39 +2022,41 @@ function _patchDamageRollConfigurationDialog() {
                 const selectedBaseType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
                     || baseRoll?.options?.type;
 
+                // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
+                const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
+                const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
+
+                if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
+                    baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
+                    baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
+
+                    let currentParts = [...baseRoll._nd5tOriginalParts];
+                    if (isSavageActive) {
+                        currentParts = applySavageAttackerToParts(currentParts);
+                        baseRoll.options ??= {};
+                        baseRoll.options._nd5tSavageAttacker = true;
+                    } else if (baseRoll.options?._nd5tSavageAttacker) {
+                        delete baseRoll.options._nd5tSavageAttacker;
+                    }
+
+                    if (isCleaveActive) {
+                        const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
+                        if (abilityMod > 0) {
+                            currentParts = removeAbilityModifierFromParts(currentParts);
+                            if (baseRoll.data) baseRoll.data.mod = 0;
+                        }
+                    } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
+                        baseRoll.data.mod = baseRoll._nd5tOriginalMod;
+                    }
+
+                    baseRoll.parts = currentParts;
+                }
+
                 for (const bonus of bonuses) {
                     const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
+                    bonus.active = isChecked;
 
                     if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
-                        bonus.active = isChecked;
-                        if (baseRoll) {
-                            baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
-                            baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
-
-                            const isCleaveActive = bonuses.find(b => b.id === "cleave")?.active ?? false;
-                            const isSavageActive = bonuses.find(b => b.id === "savageAttacker")?.active ?? false;
-
-                            let currentParts = [...baseRoll._nd5tOriginalParts];
-                            if (isSavageActive) {
-                                currentParts = applySavageAttackerToParts(currentParts);
-                                baseRoll.options ??= {};
-                                baseRoll.options._nd5tSavageAttacker = true;
-                            } else {
-                                if (baseRoll.options?._nd5tSavageAttacker) delete baseRoll.options._nd5tSavageAttacker;
-                            }
-                            if (isCleaveActive) {
-                                const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
-                                if (abilityMod > 0) {
-                                    currentParts = removeAbilityModifierFromParts(currentParts);
-                                    if (baseRoll.data) baseRoll.data.mod = 0;
-                                }
-                            } else {
-                                if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
-                                    baseRoll.data.mod = baseRoll._nd5tOriginalMod;
-                                }
-                            }
-                            baseRoll.parts = currentParts;
-                        }
                         continue;
                     }
 
@@ -1955,10 +2067,8 @@ function _patchDamageRollConfigurationDialog() {
                     if (roll) {
                         if (isChecked) {
                             delete roll.options._nd5tInactive;
-                            bonus.active = true;
                         } else {
                             roll.options._nd5tInactive = true;
-                            bonus.active = false;
                         }
 
                         // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
@@ -1992,41 +2102,43 @@ function _patchDamageRollConfigurationDialog() {
                 const selectedBaseType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
                     || baseRoll?.options?.type;
 
+                // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
+                const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
+                const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
+
+                if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
+                    baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
+                    baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
+
+                    let currentParts = [...baseRoll._nd5tOriginalParts];
+                    if (isSavageActive) {
+                        currentParts = applySavageAttackerToParts(currentParts);
+                        baseRoll.options ??= {};
+                        baseRoll.options._nd5tSavageAttacker = true;
+                    } else if (baseRoll.options?._nd5tSavageAttacker) {
+                        delete baseRoll.options._nd5tSavageAttacker;
+                    }
+
+                    if (isCleaveActive) {
+                        const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
+                        if (abilityMod > 0) {
+                            currentParts = removeAbilityModifierFromParts(currentParts);
+                            if (baseRoll.data) baseRoll.data.mod = 0;
+                        }
+                    } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
+                        baseRoll.data.mod = baseRoll._nd5tOriginalMod;
+                    }
+
+                    baseRoll.parts = currentParts;
+                }
+
                 for (const bonus of bonuses) {
                     const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
+                    bonus.active = isChecked;
 
                     if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
-                        bonus.active = isChecked;
-                        if (baseRoll) {
-                            baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
-                            baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
-
-                            const isCleaveActive = bonuses.find(b => b.id === "cleave")?.active ?? false;
-                            const isSavageActive = bonuses.find(b => b.id === "savageAttacker")?.active ?? false;
-
-                            let currentParts = [...baseRoll._nd5tOriginalParts];
-                            if (isSavageActive) {
-                                currentParts = applySavageAttackerToParts(currentParts);
-                                baseRoll.options ??= {};
-                                baseRoll.options._nd5tSavageAttacker = true;
-                            } else {
-                                if (baseRoll.options?._nd5tSavageAttacker) delete baseRoll.options._nd5tSavageAttacker;
-                            }
-                            if (isCleaveActive) {
-                                const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
-                                if (abilityMod > 0) {
-                                    currentParts = removeAbilityModifierFromParts(currentParts);
-                                    if (baseRoll.data) baseRoll.data.mod = 0;
-                                }
-                            } else {
-                                if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
-                                    baseRoll.data.mod = baseRoll._nd5tOriginalMod;
-                                }
-                            }
-                            baseRoll.parts = currentParts;
-                        }
                         if (bonus.id === "savageAttacker" && isChecked && bonus.turnKey) {
-                            markSavageAttackerUsed(bonus.actor, bonus.turnKey);
+                            markBonusUsedThisTurn(bonus.actor, "savageAttacker", bonus.turnKey);
                         }
                         continue;
                     }
@@ -2038,10 +2150,8 @@ function _patchDamageRollConfigurationDialog() {
                     if (roll) {
                         if (isChecked) {
                             delete roll.options._nd5tInactive;
-                            bonus.active = true;
                         } else {
                             roll.options._nd5tInactive = true;
-                            bonus.active = false;
                         }
 
                         if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") && selectedBaseType) {
@@ -2054,19 +2164,13 @@ function _patchDamageRollConfigurationDialog() {
                         }
                     }
 
-                    if (bonus.id === "boonOfIrresistibleOffense" && isChecked && bonus.actor) {
-                        const actorKey = bonus.actor.uuid || bonus.actor.id;
-                        const cached = _lastAttackRollsByActor.get(actorKey);
-                        if (cached) cached.damageRolled = true;
+                    // Record once-per-turn usage
+                    if (isChecked && bonus.turnKey) {
+                        markBonusUsedThisTurn(bonus.actor, bonus.id, bonus.turnKey);
                     }
 
-                    // Persist selection so subsequent rolls remember it (exempt cleave, brutalStrike, charger, savageAttacker, and boonOfIrresistibleOffense)
-                    if (bonus.id === "sneakAttack" && isChecked && bonus.turnKey) {
-                        markBonusUsedThisTurn(bonus.actor, "sneakAttack", bonus.turnKey);
-                    }
-
-                    // In combat, Sneak Attack's default is governed by once-per-turn tracking instead of remembered choices
-                    const isTurnTracked = bonus.id === "sneakAttack" && Boolean(bonus.turnKey);
+                    // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses)
+                    const isTurnTracked = Boolean(bonus.turnKey);
                     if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense") {
                         if (bonus.id === "greatWeaponMaster" && !isChecked) {
                             // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
@@ -2076,6 +2180,15 @@ function _patchDamageRollConfigurationDialog() {
                             setActorConditionalPreference(bonus.actor, bonus.id, isChecked);
                         }
                     }
+                }
+
+                // Mark cached attack roll as rolled
+                const primaryActor = this.config.rolls?.[0]?.data?.actor
+                    ?? bonuses[0]?.actor;
+                const actorKey = primaryActor?.uuid || primaryActor?.id;
+                if (actorKey) {
+                    const cached = _lastAttackRollsByActor.get(actorKey);
+                    if (cached) cached.damageRolled = true;
                 }
             }
         }
@@ -2109,10 +2222,7 @@ export function initConditionalDamage() {
         if (!roll) return;
         const actor = subject?.actor ?? roll.data?.actor;
         if (!actor) return;
-        const actorKey = actor.uuid || actor.id;
-        _lastAttackRollsByActor.set(actorKey, {
-            roll,
-            time: Date.now(),
+        _recordAttackRoll(actor, roll, {
             activityId: subject?.id,
             itemId: subject?.item?.id
         });
@@ -2120,9 +2230,13 @@ export function initConditionalDamage() {
 
     Hooks.on("createChatMessage", (message) => {
         const rollType = message.getFlag?.("dnd5e", "roll.type") ?? message.flags?.dnd5e?.roll?.type;
-        if (rollType === "attack" && message.rolls?.length) {
-            const actor = message.getAssociatedActor?.()
-                ?? (message.speaker?.actor ? game.actors?.get(message.speaker.actor) : null);
+        const isAttack = rollType === "attack"
+            || message.type === "attack"
+            || message.system?.constructor?.name === "AttackMessageData";
+        if (isAttack && message.rolls?.length) {
+            const actor = (typeof message.getAssociatedActor === "function" ? message.getAssociatedActor() : null)
+                ?? (message.speaker?.actor ? game.actors?.get(message.speaker.actor) : null)
+                ?? (message.speaker ? ChatMessage.getSpeakerActor?.(message.speaker) : null);
             if (actor) {
                 const actorKey = actor.uuid || actor.id;
                 const existing = _lastAttackRollsByActor.get(actorKey);
@@ -2132,16 +2246,42 @@ export function initConditionalDamage() {
                 const itemId = message.getAssociatedItem?.()?.id
                     ?? message.getFlag?.("dnd5e", "item.id")
                     ?? existing?.itemId;
-                _lastAttackRollsByActor.set(actorKey, {
-                    roll: message.rolls[0],
-                    time: Date.now(),
-                    messageId: message.id,
+                _recordAttackRoll(actor, message.rolls[0], {
                     activityId,
-                    itemId
+                    itemId,
+                    messageId: message.id
                 });
             }
         }
     });
+
+    // Mark cached attack rolls as having rolled damage when a damage roll is executed
+    Hooks.on("dnd5e.rollDamage", (rolls, { subject } = {}) => {
+        const actor = subject?.actor
+            ?? rolls?.[0]?.data?.actor
+            ?? (rolls?.[0]?.options?.actor ? game.actors?.get(rolls[0].options.actor) : null)
+            ?? (typeof rolls?.[0]?.parent?.getAssociatedActor === "function" ? rolls[0].parent.getAssociatedActor() : null);
+        if (!actor) return;
+        const actorKey = actor.uuid || actor.id;
+        const cached = _lastAttackRollsByActor.get(actorKey);
+        if (cached) cached.damageRolled = true;
+    });
+
+    // Clean up combat turn usage tracking and combat attack cache when a combat encounter is removed
+    Hooks.on("deleteCombat", (combat) => {
+        clearCombatTurnUsage(combat?.id);
+        if (combat?.id) {
+            for (const [key, entry] of _lastAttackRollsByActor.entries()) {
+                if (entry.combatId === combat.id) {
+                    _lastAttackRollsByActor.delete(key);
+                }
+            }
+        }
+    });
+
+    // Periodically prune stale attacks as combat turns or rounds progress
+    Hooks.on("combatTurn", () => _pruneStaleAttackRolls());
+    Hooks.on("combatRound", () => _pruneStaleAttackRolls());
 
     // Patch DamageRollConfigurationDialog once configuration class is available
     if (CONFIG.Dice?.DamageRoll?.DefaultConfigurationDialog) {

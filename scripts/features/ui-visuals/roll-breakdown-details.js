@@ -80,9 +80,22 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
         ?? null;
 
     // Identify ability shorthand
-    const rawAbility = data.roll?.ability || rollConfig.options?.ability || processConfig?.ability || "mod";
-    const abilityKey = String(rawAbility).toLowerCase();
-    const abilityLabel = ABILITY_SHORTHANDS[abilityKey] ?? abilityKey.toUpperCase();
+    let rawAbility = data.roll?.ability
+        || rollConfig.options?.ability
+        || processConfig?.ability
+        || processConfig?.subject?.attack?.ability
+        || processConfig?.subject?.ability
+        || processConfig?.subject?.item?.system?.ability
+        || null;
+
+    if (!rawAbility && actor?.system?.abilities && data.mod !== undefined) {
+        const modNum = Number(data.mod);
+        const matchedKey = Object.keys(ABILITY_SHORTHANDS).find(key => actor.system.abilities[key]?.mod === modNum);
+        if (matchedKey) rawAbility = matchedKey;
+    }
+
+    const abilityKey = String(rawAbility || "mod").toLowerCase();
+    const abilityLabel = ABILITY_SHORTHANDS[abilityKey] ?? (abilityKey === "mod" ? "MOD" : abilityKey.toUpperCase());
 
     // Identify exhaustion level
     const exhaustionLevel = actor?.system?.attributes?.exhaustion
@@ -476,7 +489,7 @@ export function sortBreakdownModifiers(modifiers) {
  * @param {string} [options.fallbackFlavor=""]
  * @returns {object}
  */
-function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null, claimedEffectIds = null, flavor = "", fallbackFlavor = "" } = {}) {
+function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null, item = null, claimedEffectIds = null, flavor = "", fallbackFlavor = "" } = {}) {
     const isD20 = die instanceof CONFIG.Dice?.D20Die || die.faces === 20;
     const critThreshold = die.options?.criticalSuccess ?? CONFIG.Dice?.D20Die?.CRITICAL_SUCCESS_TOTAL ?? 20;
     const fumbleThreshold = die.options?.criticalFailure ?? CONFIG.Dice?.D20Die?.CRITICAL_FAILURE_TOTAL ?? 1;
@@ -484,9 +497,11 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
     const rolls = die.results?.map(r => {
         const isCrit = isD20 ? r.result >= critThreshold : Boolean(r.critical || die.options?.critical);
         const isFumble = isD20 ? r.result <= fumbleThreshold : Boolean(r.fumble);
-        const coreClasses = die.getResultCSS ? die.getResultCSS(r).filterJoin(" ") : (r.discarded ? "discarded" : "");
-        const extraClasses = isCrit ? "critical max" : (isFumble ? "fumble min" : "");
-        const combinedClasses = [coreClasses, extraClasses].filter(Boolean).join(" ");
+        const cssArray = die.getResultCSS ? die.getResultCSS(r) : [];
+        const coreClasses = typeof cssArray.filterJoin === "function" ? cssArray.filterJoin(" ") : (Array.isArray(cssArray) ? cssArray.filter(Boolean).join(" ") : String(cssArray || ""));
+        const discardedClass = (r.discarded || r.active === false) ? "discarded" : "";
+        const extraClasses = isD20 ? (isCrit ? "critical max" : (isFumble ? "fumble min" : "")) : (isCrit ? "critical" : (isFumble ? "fumble" : ""));
+        const combinedClasses = Array.from(new Set([coreClasses, discardedClass, extraClasses].join(" ").split(/\s+/).filter(Boolean))).join(" ");
 
         return {
             result: die.getResultLabel ? die.getResultLabel(r) : r.result,
@@ -503,8 +518,8 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
     const hasAdvantageOrDisadvantage = activeRolls.length === 1 && discardedRolls.length > 0;
     const isFormula = activeRolls.length > 1;
 
-    const rawFormulaMatch = (die.formula || roll?.formula || "").match(/\[(.*?)\]/);
-    const rawFlavor = die.flavor || die.options?.flavor || flavor || fallbackFlavor || roll?.options?.flavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
+    const rawFormulaMatch = die?.formula ? die.formula.match(/\[(.*?)\]/) : null;
+    const rawFlavor = die?.flavor || die?.options?.flavor || flavor || fallbackFlavor || (rawFormulaMatch ? rawFormulaMatch[1] : "");
     let cleanFlavor = extractCleanDieFlavor(rawFlavor, roll);
 
     if (!cleanFlavor && (flavor || fallbackFlavor)) {
@@ -512,15 +527,19 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
     }
 
     if (!cleanFlavor && actor) {
-        const expression = die.expression || (die.faces ? `${die.number ?? 1}d${die.faces}` : "");
+        const expression = die?.expression || (die?.faces ? `${die.number ?? 1}d${die.faces}` : "");
         const effectName = findActiveEffectForDamageBonus(actor, expression, { claimedEffectIds });
         if (effectName) cleanFlavor = effectName;
     }
 
-    const rawDenom = die.expression || (die.faces ? `d${die.faces}` : "d20");
+    if (!cleanFlavor && isBase && item?.name) {
+        cleanFlavor = item.name;
+    }
+
+    const rawDenom = die?.expression || (die?.faces ? `d${die.faces}` : "d20");
     const denomination = rawDenom.replace(/\[.*?\]/g, "").trim().toUpperCase();
 
-    const signedTotal = Number(die.total ?? 0) * currentSign;
+    const signedTotal = Number(die?.total ?? 0) * currentSign;
     const sign = currentSign < 0 ? "-" : "";
 
     return {
@@ -535,7 +554,7 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
         singleRoll: isSingleDie ? activeRolls[0] : null,
         hasAdvantageOrDisadvantage,
         isFormula,
-        isCritical: Boolean(roll?.isCritical || (isD20 && die.isCriticalSuccess) || die.options?.critical),
+        isCritical: Boolean(roll?.isCritical || (isD20 && die.isCriticalSuccess) || die?.options?.critical),
         isFumble: Boolean(roll?.isFumble || (isD20 && die.isCriticalFailure)),
         hasAdvantage: Boolean(roll?.hasAdvantage),
         hasDisadvantage: Boolean(roll?.hasDisadvantage),
@@ -544,11 +563,112 @@ function createDieRow(die, roll, { isBase = false, currentSign = 1, actor = null
 }
 
 /**
+ * Create die row(s) for a PoolTerm (e.g. Savage Attacker {1d8, 1d8}kh).
+ * If the pool consists of single candidate dice, combines them into an advantage/disadvantage
+ * style roll row showing kept and discarded dice. Otherwise extracts dice from the winning roll.
+ *
+ * @param {PoolTerm} poolTerm
+ * @param {Roll} roll
+ * @param {object} [options={}]
+ * @returns {object[]}
+ */
+function createPoolDieRows(poolTerm, roll, { isBase = false, currentSign = 1, actor = null, item = null, claimedEffectIds = null, defaultFlavor = "" } = {}) {
+    if (!poolTerm) return [];
+    const poolResults = poolTerm.results ?? [];
+    const isSavage = Boolean(roll?.options?._nd5tSavageAttacker || roll?.options?.savageAttacker || poolTerm.options?._nd5tSavageAttacker);
+    const subRolls = poolTerm.rolls ?? [];
+
+    const isSingleDicePool = subRolls.length > 1
+        && subRolls.every(r => r.dice?.length === 1 && (r.dice[0].number ?? 1) === 1);
+
+    if (isSingleDicePool) {
+        const combinedRolls = [];
+        for (let rIdx = 0; rIdx < subRolls.length; rIdx++) {
+            const subRoll = subRolls[rIdx];
+            const poolRes = poolResults[rIdx];
+            const d = subRoll.dice[0];
+            const dieRes = d.results?.[0] ?? { result: subRoll.total };
+            const isActive = poolRes ? (poolRes.active !== false && !poolRes.discarded) : true;
+            const isCrit = Boolean(d.isCriticalSuccess || d.options?.critical || poolTerm.options?.critical || (d.faces === 20 && dieRes.result === 20));
+            const isFumble = Boolean(d.isCriticalFailure || (d.faces === 20 && dieRes.result === 1));
+            const cssArray = d.getResultCSS ? d.getResultCSS(dieRes) : [];
+            const coreClasses = typeof cssArray.filterJoin === "function" ? cssArray.filterJoin(" ") : (Array.isArray(cssArray) ? cssArray.filter(Boolean).join(" ") : String(cssArray || ""));
+            const discardedClass = !isActive ? "discarded" : "";
+            const extraClasses = isCrit ? "critical" : (isFumble ? "fumble" : "");
+            const combinedClasses = Array.from(new Set([coreClasses, discardedClass, extraClasses].join(" ").split(/\s+/).filter(Boolean))).join(" ");
+            combinedRolls.push({
+                result: d.getResultLabel ? d.getResultLabel(dieRes) : dieRes.result,
+                classes: combinedClasses,
+                active: isActive,
+                isCritical: isCrit,
+                isFumble: isFumble
+            });
+        }
+
+        const winningRoll = subRolls.find((_, idx) => poolResults[idx]?.active !== false && !poolResults[idx]?.discarded) ?? subRolls[0];
+        const winningDie = winningRoll?.dice?.[0];
+        const activeRolls = combinedRolls.filter(r => r.active !== false);
+        const discardedRolls = combinedRolls.filter(r => r.active === false);
+        const fallbackFaces = poolTerm.terms?.[0]?.match?.(/d(\d+)/i)?.[1];
+        const denomination = winningDie ? `D${winningDie.faces}` : (fallbackFaces ? `D${fallbackFaces}` : "D8");
+        const savageLabel = defaultFlavor || (poolTerm.options?.critical ? "Savage Attacker (Crit)" : "Savage Attacker");
+        const cleanFlavor = isSavage
+            ? savageLabel
+            : (poolTerm.flavor || defaultFlavor || (isBase && item?.name ? item.name : ""));
+
+        return [{
+            denomination,
+            flavor: cleanFlavor,
+            total: Number(poolTerm.total ?? 0) * currentSign,
+            sign: currentSign < 0 ? "-" : "",
+            rolls: combinedRolls,
+            activeRolls,
+            discardedRolls,
+            isSingleDie: false,
+            singleRoll: null,
+            hasAdvantageOrDisadvantage: true,
+            isFormula: false,
+            isCritical: Boolean(roll?.isCritical || winningDie?.options?.critical || poolTerm.options?.critical),
+            isFumble: Boolean(roll?.isFumble),
+            hasAdvantage: true,
+            hasDisadvantage: false,
+            isBase
+        }];
+    }
+
+    // Fallback for multi-die pools (e.g. {2d6, 2d6}kh)
+    const activeSubRolls = subRolls.filter((_, idx) => {
+        const res = poolResults[idx];
+        return res ? (res.active !== false && !res.discarded) : true;
+    });
+    const rollsToUse = activeSubRolls.length ? activeSubRolls : subRolls;
+    const savageMultiLabel = defaultFlavor || (poolTerm.options?.critical ? "Savage Attacker (Crit)" : "Savage Attacker");
+    const poolFlavor = isSavage ? savageMultiLabel : (poolTerm.flavor || defaultFlavor || (isBase && item?.name ? item.name : ""));
+
+    const rows = [];
+    for (const subRoll of rollsToUse) {
+        for (const d of subRoll.dice ?? []) {
+            rows.push(createDieRow(d, roll, {
+                isBase,
+                currentSign,
+                actor,
+                item,
+                claimedEffectIds,
+                flavor: d.flavor || poolFlavor
+            }));
+        }
+    }
+    return rows;
+}
+
+/**
  * Generate structured breakdown data for a Roll instance.
  *
  * @param {BasicRoll} roll
  * @param {object} [options={}]
  * @param {boolean} [options.isBase] - Explicit override for whether the primary die is base weapon damage.
+ * @param {Actor5e} [options.actor]
+ * @param {Item5e} [options.item]
  * @returns {Promise<object|null>}
  */
 export async function getDetailedRollBreakdown(roll, options = {}) {
@@ -558,9 +678,16 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
     if (!terms.length) return null;
 
     const actor = options.actor
+        ?? (typeof roll.parent?.getAssociatedActor === "function" ? roll.parent.getAssociatedActor() : null)
         ?? roll.parent?.actor
         ?? (roll.parent?.speaker ? ChatMessage.getSpeakerActor(roll.parent.speaker) : null)
         ?? (roll.options?.actor ? game.actors?.get(roll.options.actor) : null)
+        ?? null;
+    const item = options.item
+        ?? roll.item
+        ?? (typeof roll.parent?.getAssociatedItem === "function" ? roll.parent.getAssociatedItem() : null)
+        ?? roll.parent?.item
+        ?? (roll.options?.item ? game.items?.get(roll.options.item) : null)
         ?? null;
     const claimedEffectIds = new Set();
 
@@ -573,29 +700,15 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
     if (d20) {
         startIndex = 1;
-        diceRows.push(createDieRow(d20, roll, { isBase: true, actor, claimedEffectIds }));
+        diceRows.push(createDieRow(d20, roll, { isBase: true, actor, item, claimedEffectIds }));
     } else if (terms[0] instanceof foundry.dice.terms.Die) {
         startIndex = 1;
-        diceRows.push(createDieRow(terms[0], roll, { isBase, actor, claimedEffectIds }));
+        diceRows.push(createDieRow(terms[0], roll, { isBase, actor, item, claimedEffectIds }));
     } else if (terms[0] instanceof foundry.dice.terms.PoolTerm) {
         startIndex = 1;
-        const poolResults = terms[0].results ?? [];
-        const activeRolls = terms[0].rolls?.filter((_, idx) => {
-            const res = poolResults[idx];
-            return res ? (res.active !== false && !res.discarded) : true;
-        }) ?? [];
-        const rollsToUse = activeRolls.length ? activeRolls : (terms[0].rolls ?? []);
         const isSavage = Boolean(roll.options?._nd5tSavageAttacker || roll.options?.savageAttacker || terms[0].options?._nd5tSavageAttacker);
-        for (const subRoll of rollsToUse) {
-            for (const d of subRoll.dice ?? []) {
-                diceRows.push(createDieRow(d, roll, {
-                    isBase,
-                    actor,
-                    claimedEffectIds,
-                    flavor: d.flavor || terms[0].flavor || (isSavage ? "Savage Attacker" : "")
-                }));
-            }
-        }
+        const defaultFlavor = isSavage ? "Savage Attacker" : "";
+        diceRows.push(...createPoolDieRows(terms[0], roll, { isBase, currentSign: 1, actor, item, claimedEffectIds, defaultFlavor }));
     }
 
     // Process subsequent modifier / bonus terms
@@ -613,7 +726,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
         // Dice terms become dice rows
         if (term instanceof foundry.dice.terms.DiceTerm) {
-            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign, actor, claimedEffectIds }));
+            diceRows.push(createDieRow(term, roll, { isBase: false, currentSign, actor, item, claimedEffectIds }));
             currentSign = 1;
             continue;
         }
@@ -621,7 +734,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
         // Parenthetical terms with dice become dice rows
         if (term instanceof foundry.dice.terms.ParentheticalTerm && term.dice?.length) {
             for (const d of term.dice) {
-                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign, actor, claimedEffectIds }));
+                diceRows.push(createDieRow(d, roll, { isBase: false, currentSign, actor, item, claimedEffectIds }));
             }
             currentSign = 1;
             continue;
@@ -629,23 +742,18 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
 
         // Pool terms with dice become dice rows
         if (term instanceof foundry.dice.terms.PoolTerm) {
-            const poolResults = term.results ?? [];
-            const activeRolls = term.rolls?.filter((_, idx) => {
-                const res = poolResults[idx];
-                return res ? (res.active !== false && !res.discarded) : true;
-            }) ?? [];
-            const rollsToUse = activeRolls.length ? activeRolls : (term.rolls ?? []);
-            for (const subRoll of rollsToUse) {
-                for (const d of subRoll.dice ?? []) {
-                    diceRows.push(createDieRow(d, roll, {
-                        isBase: false,
-                        currentSign,
-                        actor,
-                        claimedEffectIds,
-                        flavor: d.flavor || term.flavor || (term.options?.critical ? ((roll.options?._nd5tSavageAttacker || roll.options?.savageAttacker) ? "Savage Attacker (Crit)" : (game.i18n?.localize("DND5E.CriticalHit") || "Critical Hit")) : "")
-                    }));
-                }
-            }
+            const isSavage = Boolean(roll.options?._nd5tSavageAttacker || roll.options?.savageAttacker || term.options?._nd5tSavageAttacker);
+            const defaultFlavor = (term.options?.critical || roll.isCritical)
+                ? (isSavage ? "Savage Attacker (Crit)" : (game.i18n?.localize("DND5E.CriticalHit") || "Critical Hit"))
+                : (isSavage ? "Savage Attacker" : "");
+            diceRows.push(...createPoolDieRows(term, roll, {
+                isBase: false,
+                currentSign,
+                actor,
+                item,
+                claimedEffectIds,
+                defaultFlavor
+            }));
             currentSign = 1;
             continue;
         }
@@ -702,7 +810,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
     const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (damageType ? damageType.toUpperCase() : "");
     const typeIcon = typeConfig?.icon ?? null;
     const typeColor = getDamageTypeColor(damageType);
-    const totalLabel = game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total";
+    const totalLabel = game.i18n?.localize ? (game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total") : "Total";
 
     return {
         baseDie: sortedDice[0] ?? null,
@@ -722,6 +830,7 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
  */
 function wrapBasicRollGetTooltip() {
     if (!CONFIG.Dice?.BasicRoll) return;
+    if (CONFIG.Dice.BasicRoll.prototype._nd5tWrappedGetTooltip) return;
 
     const originalGetTooltip = CONFIG.Dice.BasicRoll.prototype.getTooltip;
 
@@ -744,6 +853,7 @@ function wrapBasicRollGetTooltip() {
 
         return originalGetTooltip.call(this);
     };
+    CONFIG.Dice.BasicRoll.prototype._nd5tWrappedGetTooltip = true;
 }
 
 /**
@@ -799,19 +909,25 @@ export function patchDamageApplicationCalculateDamage() {
  * @param {ChatMessage5e} message
  * @param {HTMLElement|JQuery} html
  */
-export async function enhanceDamageChatMessageBreakdown(message, html) {
+export async function enhanceDamageChatMessageBreakdown(message, html, targetPopover = null) {
     if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
-    if (!message?.rolls?.length) return;
+    if (!message?.rolls?.length) {
+        if (targetPopover) targetPopover._nd5tBreakdownSkipped = true;
+        return;
+    }
 
     const isDamageMsg = message.system?.constructor?.name === "DamageMessageData"
         || (CONFIG.ChatMessage?.dataModels?.damage && message.system instanceof CONFIG.ChatMessage.dataModels.damage);
     const damageRolls = message.rolls.filter(r => (CONFIG.Dice?.DamageRoll && r instanceof CONFIG.Dice.DamageRoll) || isDamageMsg);
-    if (!damageRolls.length) return;
+    if (!damageRolls.length) {
+        if (targetPopover) targetPopover._nd5tBreakdownSkipped = true;
+        return;
+    }
 
     const root = html instanceof HTMLElement ? html : html?.[0];
     if (!root) return;
 
-    const breakdownEl = root.querySelector(".icon-row > .roll-breakdown[popover]");
+    const breakdownEl = targetPopover ?? root.querySelector(".roll-breakdown[popover]");
     if (!breakdownEl) return;
 
     // Avoid duplicate work if already enhanced
@@ -824,9 +940,12 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
     }
 
     try {
-        const item = message.item ?? null;
+        const item = (typeof message.getAssociatedItem === "function" ? message.getAssociatedItem() : null)
+            ?? message.item
+            ?? null;
         const isWeapon = item?.type === "weapon";
-        const actor = message.actor
+        const actor = (typeof message.getAssociatedActor === "function" ? message.getAssociatedActor() : null)
+            ?? message.actor
             ?? (message.speaker ? ChatMessage.getSpeakerActor(message.speaker) : null)
             ?? null;
         const typeMap = new Map();
@@ -836,7 +955,7 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
             if (!roll.parent) roll.parent = message;
 
             const isBase = Boolean(roll.options?.base || roll.base || (isWeapon && i === 0));
-            const data = await getDetailedRollBreakdown(roll, { isBase, actor });
+            const data = await getDetailedRollBreakdown(roll, { isBase, actor, item });
             if (!data) continue;
 
             const damageType = String(roll.options?.type ?? "untyped").toLowerCase();
@@ -869,7 +988,7 @@ export async function enhanceDamageChatMessageBreakdown(message, html) {
 
         if (!typeMap.size) return;
 
-        const totalLabel = game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total";
+        const totalLabel = game.i18n?.localize ? (game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total") : "Total";
 
         const sections = Array.from(typeMap.values()).map(group => {
             const sortedDice = sortBreakdownDiceRows(group.diceRows);
@@ -912,18 +1031,21 @@ let isInitialized = false;
 /**
  * Trigger lazy rendering for a popover element if not yet populated.
  * @param {HTMLElement} popoverEl
+ * @param {ChatMessage} [message=null]
  */
-async function _ensurePopoverBreakdown(popoverEl) {
-    if (!popoverEl?.matches?.(".icon-row > .roll-breakdown[popover]")) return;
+async function _ensurePopoverBreakdown(popoverEl, message = null) {
+    if (!popoverEl?.matches?.(".roll-breakdown[popover]")) return;
     if (popoverEl.querySelector(".nd5t-roll-breakdown")) return;
-    if (popoverEl._nd5tBreakdownLoading) return;
+    if (popoverEl._nd5tBreakdownLoading || popoverEl._nd5tBreakdownSkipped) return;
     popoverEl._nd5tBreakdownLoading = true;
     try {
-        const chatCard = popoverEl.closest(".chat-message[data-message-id]");
-        if (!chatCard) return;
-        const msgId = chatCard.dataset.messageId;
-        const message = game.messages?.get(msgId);
-        if (message) await enhanceDamageChatMessageBreakdown(message, chatCard);
+        const chatCard = popoverEl.closest(".chat-message[data-message-id], .message[data-message-id]")
+            ?? popoverEl.closest(".chat-message, .message")
+            ?? popoverEl.parentElement;
+        const msgId = chatCard?.dataset?.messageId;
+        const targetMessage = message ?? (msgId ? game.messages?.get(msgId) : null);
+        if (targetMessage && chatCard) await enhanceDamageChatMessageBreakdown(targetMessage, chatCard, popoverEl);
+        else if (!targetMessage) popoverEl._nd5tBreakdownSkipped = true;
     } finally {
         popoverEl._nd5tBreakdownLoading = false;
     }
@@ -941,18 +1063,25 @@ export function initRollBreakdownDetails() {
     log("Initializing Detailed Roll Breakdown Overlay");
 
     // Tier 1: Proactive formula tagging during roll construction
+    // dnd5e.postBuildRollConfig fires exactly once for all roll types (attacks, damage, checks, saves, tools)
     Hooks.on("dnd5e.postBuildRollConfig", (processConfig, rollConfig, index) => {
-        tagRollConfigParts(processConfig, rollConfig, index);
-    });
-    Hooks.on("dnd5e.postBuildDamageRollConfig", (processConfig, rollConfig, index) => {
         tagRollConfigParts(processConfig, rollConfig, index);
     });
 
     // Tier 2 & 3: Enhanced breakdown rendering for BasicRoll (d20 rolls, checks, saves)
     wrapBasicRollGetTooltip();
 
-    // Lazy on-demand popover rendering: populate breakdown strictly when the popover is opened or clicked.
-    // Avoids eagerly compiling and rendering Handlebars templates across hundreds of historical messages.
+    // Pre-cache breakdown for newly rendered chat messages (Foundry V14 hook)
+    Hooks.on("renderChatMessageHTML", (message, html) => {
+        if (!game.ready) return;
+        if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+        const popovers = html?.querySelectorAll?.(".roll-breakdown[popover]") ?? [];
+        for (const popover of popovers) {
+            _ensurePopoverBreakdown(popover, message);
+        }
+    });
+
+    // Lazy on-demand popover rendering: populate breakdown when opened, clicked, or hovered.
     if (typeof document !== "undefined") {
         document.addEventListener("beforetoggle", (event) => {
             if (event.newState !== "open") return;
@@ -969,5 +1098,13 @@ export function initRollBreakdownDetails() {
                 ?? btn.parentElement?.querySelector?.(".roll-breakdown[popover]");
             if (popover) _ensurePopoverBreakdown(popover);
         }, { capture: true });
+
+        // Pre-cache on hover so opening the popover is instantaneous and flicker-free
+        document.addEventListener("pointerover", (event) => {
+            const row = event.target?.closest?.(".icon-row, .chat-message");
+            if (!row) return;
+            const popovers = row.querySelectorAll?.(".roll-breakdown[popover]") ?? [];
+            for (const popover of popovers) _ensurePopoverBreakdown(popover);
+        }, { capture: true, passive: true });
     }
 }
