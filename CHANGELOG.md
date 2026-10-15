@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.0] - 2026-10-16
+### Fixed
+- **Pact Magic Formula Scaling**:
+  - Fixed an issue where the character sheet Formula column and activity rows displayed unscaled base damage/healing formulas (e.g. 2d10 instead of 4d10) for leveled Pact Magic spells.
+  - Formulas now accurately scale to the caster's pact slot level in both the main spell row and expanded activity details, automatically adapting when leveling up or when pact slots are overridden.
+  - Added configurable world and personal preference settings in the Settings Dashboard under Sheets & Toolbars.
+- **DnD5e 6.0.6 Shims Compatibility**:
+  - Guarded against an upstream DnD5e 6.0.6 `TypeError: Cannot redefine property: walk` in `MovementField._shim` and `SensesField._shim` when actor data preparation runs multiple times.
+
 ## [14.45.8] - 2026-10-15
 ### Fixed
 - **Detailed Roll Breakdown**:

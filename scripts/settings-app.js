@@ -232,6 +232,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "client"
                             },
                             {
+                                key: "clientEnablePactSpellFormulaScaling",
+                                name: "Fix Pact Magic Formula Scaling",
+                                hint: "Displays scaled damage and healing formulas for Pact Magic spells in the Formula column and activity rows of character sheets based on your caster's pact slot level (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableItemSheetAttunementTag",
                                 name: "Item Sheet Attunement Tag",
                                 hint: "Shows the attunement tag on magic item sheets (if enabled by the GM).",
@@ -459,6 +467,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableSheetPopoutButton",
                                 name: "Sheet Pop-out Button",
                                 hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets to detach into a separate window without the 3-dot menu.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "enablePactSpellFormulaScaling",
+                                name: "Fix Pact Magic Formula Scaling",
+                                hint: "Displays scaled damage and healing formulas for Pact Magic spells in the Formula column and activity rows of character sheets based on the caster's pact slot level.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"

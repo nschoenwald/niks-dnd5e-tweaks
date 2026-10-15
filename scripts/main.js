@@ -61,6 +61,7 @@ import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-log
 
 // Patches
 import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip-overlap.js";
+import { initFixPactSpellScaling, refreshAllPactSpellScaling } from "./features/patches/fix-pact-spell-scaling.js";
 
 // Settings Dashboard
 import { NiksTweaksSettingsApp } from "./settings-app.js";
@@ -297,6 +298,16 @@ Hooks.once("init", () => {
             if (value && game.settings.get(MODULE_ID, "enableSheetPopoutButton")) initSheetPopoutButton();
             else disableSheetPopoutButton();
         }
+    });
+
+    game.settings.register(MODULE_ID, "clientEnablePactSpellFormulaScaling", {
+        name: "Fix Pact Magic Formula Scaling (Personal)",
+        hint: "Displays scaled damage and healing formulas for Pact Magic spells in the Formula column and activity rows of character sheets based on your caster's pact slot level (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => refreshAllPactSpellScaling()
     });
 
     game.settings.register(MODULE_ID, "clientEnableItemSheetAttunementTag", {
@@ -716,6 +727,17 @@ Hooks.once("init", () => {
             if (isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) initSheetPopoutButton();
             else disableSheetPopoutButton();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enablePactSpellFormulaScaling", {
+        name: "Fix Pact Magic Formula Scaling",
+        hint: "Displays scaled damage and healing formulas for Pact Magic spells in the Formula column and activity rows of character sheets based on the caster's pact slot level.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshAllPactSpellScaling()
     });
 
     game.settings.register(MODULE_ID, "enableItemSheetAttunementTag", {
@@ -1511,6 +1533,7 @@ Hooks.once("init", () => {
     initRollBreakdownDetails();
     initDisableUndergroundTokenHiding();
     initToolbarLimitation();
+    initFixPactSpellScaling();
 });
 
 Hooks.once("setup", () => {

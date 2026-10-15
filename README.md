@@ -40,6 +40,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Sheet Pop-out Button](#sheet-pop-out-button)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Pact Magic Formula Scaling Fix](#pact-magic-formula-scaling-fix)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Clean Sheet Window Titles](#clean-sheet-window-titles)** | UI & Visuals | ✅ Enabled | No |
 | **[Context Menu Styling](#context-menu-styling)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Reliable Chat Log Auto-Scroll](#reliable-chat-log-auto-scroll)** | UI & Visuals | ✅ Enabled | No |
@@ -140,6 +141,9 @@ Persistently highlights the recommended roll mode button (Advantage or Disadvant
 
 ### Sheet Pop-out Button
 Adds a dedicated **↗ pop-out button** to Actor and Item sheet window headers to detach them into separate browser windows with one click. Automatically hides when already detached.
+
+### Pact Magic Formula Scaling Fix
+Fixes an upstream DnD5e 6.x issue where Pact Magic spells on character and NPC sheets display unscaled base damage/healing formulas (e.g. 2d10 instead of 4d10 for a 1st-level *Hellish Rebuke* on a 5th-level Warlock) in the Formula column and activity rows. Formulas now dynamically scale to the caster's derived pact slot level.
 
 ### Clean Sheet Window Titles
 Removes redundant type prefixes (e.g. *"Non Player Character:"*) from sheet headers, displaying clean titles like *"Goblin Archer"* or *"Potion of Healing"*.
@@ -328,9 +332,10 @@ Enables comprehensive diagnostic logging in the browser console.
 ---
 
 ## 🛠️ Silent System Patches
-
+ 
 Patches are zero-configuration, always-on fixes for confirmed upstream system or core bugs:
 * **Skill Tooltip Overlap**: Fixes character sheet skill and tool list reference tooltips appearing directly on top of neighboring rows, ensuring clickable links remain unobstructed.
+* **Pact Magic Formula Scaling**: Dynamically corrects damage and healing formulas for Pact Magic spells to reflect the caster's pact slot level in sheet inventory rows and activity tables.
 
 ---
 
