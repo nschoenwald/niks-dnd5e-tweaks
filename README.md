@@ -99,12 +99,16 @@ Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly 
 * **3D Animation & Rules Support**: Animates newly evaluated dice with Dice So Nice. Supports Elven Accuracy (3d20) and Halfling Lucky. Automatically recalculates attack hit/miss badges, criticals, and fumbles.
 * *Sub-settings*: **Show Only on Hover** (reveals cleanly on mouse hover to keep chat compact).
 
+<img width="297" height="202" alt="image" src="https://github.com/user-attachments/assets/a04c6f5b-859a-41f4-bada-ea7e9750a83c" />
+
 ### Chat Card Styling Improvements
 Modernizes DnD5e chat cards to make actions and roll results readable at a glance:
 * **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
 * **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
 * **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
+
+<img width="300" height="582" alt="image" src="https://github.com/user-attachments/assets/9003a1e8-7499-4b79-aea7-bbd3c9704ea2" />
 
 ### Detailed Roll Breakdown Overlay
 Transforms the native DnD5e roll breakdown popover (opened by clicking on the roll total button on chat cards) into a comprehensive, readable breakdown showing the base die and the origin of every bonus or penalty:
@@ -131,10 +135,14 @@ Adds a prominent **Attunement Required** or **No Attunement Required** badge to 
 * **Concealment Friendly**: Fully respects unidentified item concealment from players.
 * *Sub-settings*: **Tag Placement** (Header & Description Pills, Header Badge Only, Description Pills Only, Header Subtitle Only), **Show in Item Tooltips**.
 
+<img width="494" height="762" alt="image" src="https://github.com/user-attachments/assets/9b0bf9fa-1d2d-4da4-9f7e-bf08eb08d63e" />
+
 ### Item / Spell / Feature Add: Choice Dialog
 Clicking the `+` button on character sheets (Items, Spells, or Features) presents a choice between creating an empty item or opening the Compendium Browser.
 * **Smart Filtering**: Automatically pre-filters the browser by class/subclass and spell level (including Eldritch Knight, Arcane Trickster, and Mystic Arts), feats for features, and physical items for inventory.
 * **Bypass Shortcut**: Hold <kbd>Shift</kbd> while clicking `+` to skip the dialog and create directly.
+
+<img width="448" height="156" alt="image" src="https://github.com/user-attachments/assets/0e6ddd89-f26a-4254-a740-aa97595ca6b0" />
 
 ### Roll Mode Highlight
 Persistently highlights the recommended roll mode button (Advantage or Disadvantage) in d20 roll dialogs based on system conditions and features.
@@ -199,6 +207,8 @@ A floating glassmorphic banner appears during spell and item template placement:
 * **Emanation Guidance**: Displays target token attachment guidance with visual feedback.
 * **Auto-Attach Self Emanations**: Automatically binds self-targeted emanations (*Spirit Guardians*, *Holy Aura*, etc.) directly to the caster token without manual placement.
 * **Cancel Shortcut**: Clean cancellation via <kbd>ESC</kbd>, Right-Click, or the interactive HUD Cancel button.
+
+<img width="774" height="677" alt="image" src="https://github.com/user-attachments/assets/aeb11a42-ec74-424a-84e1-6521cb3fd092" />
 
 ### Auto-Target Tokens in Spell Templates
 Automatically selects and targets tokens inside spell templates during placement and updates targets in real time.
