@@ -108,7 +108,7 @@ Modernizes DnD5e chat cards to make actions and roll results readable at a glanc
 * **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
 
-<img width="300" height="582" alt="image" src="https://github.com/user-attachments/assets/9003a1e8-7499-4b79-aea7-bbd3c9704ea2" />
+<img width="295" height="581" alt="image" src="https://github.com/user-attachments/assets/9dc57592-74e8-428f-b6aa-cc4d6cfde6ac" />
 
 ### Detailed Roll Breakdown Overlay
 Transforms the native DnD5e roll breakdown popover (opened by clicking on the roll total button on chat cards) into a comprehensive, readable breakdown showing the base die and the origin of every bonus or penalty:
