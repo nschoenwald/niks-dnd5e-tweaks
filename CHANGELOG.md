@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.1] - 2026-10-16
+### Fixed
+- **Self Effect Application & Concentration**:
+  - Fixed an issue where applying self-effects from concentration spells via the whispered "Apply Effect" prompt card merged with and overwrote the caster's existing "Concentrating: [Spell]" effect.
+  - The concentration effect and buff effects are now kept strictly separate, ensuring both are active concurrently as intended.
+  - Applied effects now correctly link to concentration (`flags.dnd5e.dependentOn`), properly terminating when concentration is broken or ended.
+  - Non-concentration spells and features are guarded against accidental concentration linking.
+  - Fixed an edge case on "Undo" where undoing an already-deleted or expired temporary effect could fall back to and disable the source effect template inside the Item document.
+- **Automated Conditions 5e (AC5e) Integration**:
+  - Fixed an issue where effect changes configured in `system.changes` (including AC5e flags like advantage/disadvantage) were omitted when applying or re-enabling self-effects.
+  - Ensured `system.changes` evaluations via `ActiveEffect.implementation.forApplication` are preserved across both fresh creations and re-enabling existing effects without dot-key collision in Foundry V14 data models.
+
 ## [14.46.0] - 2026-10-16
 ### Fixed
 - **Pact Magic Formula Scaling**:

@@ -408,10 +408,50 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         debug(`Self Effect Application | Item "${activity.item?.name}" on "${actor.name}" has ${unappliedEffects.length} unapplied self-targeted effect(s).`);
 
-        await _sendSelfEffectPrompt(actor, activity, unappliedEffects);
+        // Check if there is an active concentration effect from this activity/item
+        const requiresConcentration = activity.requiresConcentration || activity.item?.requiresConcentration;
+        const concentrationId = results?.message?.system?.concentration;
+        let concentrationEffect = concentrationId ? actor.effects.get(concentrationId) : null;
+        if (!concentrationEffect && results?.effects?.length) {
+            concentrationEffect = results.effects.find(e => _isConcentrationEffect(e)) || null;
+        }
+        if (!concentrationEffect && requiresConcentration && actor.concentration?.effects?.size > 0) {
+            const itemUuid = activity.item?.uuid;
+            const itemId = activity.item?.id;
+            concentrationEffect = Array.from(actor.concentration.effects).find(e => {
+                const itemFlag = e.getFlag?.("dnd5e", "item");
+                return itemFlag?.id === itemId || itemFlag?.uuid === itemUuid || e.origin === itemUuid;
+            }) || null;
+        }
+        const concentrationUuid = concentrationEffect?.uuid || null;
+
+        await _sendSelfEffectPrompt(actor, activity, unappliedEffects, {
+            concentrationUuid,
+            message: results?.message
+        });
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPostUseActivity for Self Effect Application:`, err);
     }
+}
+
+/**
+ * Helper to determine whether an ActiveEffect is a concentration effect.
+ * Concentration effects track spell concentration in DnD5e and must never be
+ * merged with, overwritten by, or deleted during buff application.
+ *
+ * @param {ActiveEffect5e|object} effect
+ * @returns {boolean}
+ */
+function _isConcentrationEffect(effect) {
+    if (!effect) return false;
+    if (effect.system?.type === "concentrating") return true;
+    const concentratingId = CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating";
+    if (effect.statuses instanceof Set) {
+        if (effect.statuses.has("concentrating") || effect.statuses.has(concentratingId)) return true;
+    } else if (Array.isArray(effect.statuses)) {
+        if (effect.statuses.includes("concentrating") || effect.statuses.includes(concentratingId)) return true;
+    }
+    return false;
 }
 
 /**
@@ -437,8 +477,11 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
         // Ignore static/passive item transfer effect definitions on the actor
         if (e.transfer) return false;
 
-        // Match exact effect UUID or flag origin
-        if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid)) return true;
+        // Concentration effects are tracked separately and must never be matched as this buff effect
+        if (_isConcentrationEffect(e)) return false;
+
+        // Match exact effect UUID, module flag, or duplicateSource stats
+        if (effectUuid && (e.uuid === effectUuid || e.id === effect.id || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid || e._stats?.duplicateSource === effectUuid || e._stats?.compendiumSource === effectUuid || e.origin === effectUuid)) return true;
 
         // Match by status ID overlap
         if (effectStatuses.length > 0 && e.statuses?.size > 0) {
@@ -448,8 +491,8 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
         // Match by exact clean item name or effect name
         const eName = _cleanName(e.name || e.label);
         if (eName) {
-            if (cleanItemName && eName === cleanItemName) return true;
             if (cleanEffectName && eName === cleanEffectName) return true;
+            if (cleanItemName && eName === cleanItemName) return true;
         }
 
         return false;
@@ -486,8 +529,11 @@ function _getWhisperTargets(actor) {
  * @param {Actor5e} actor
  * @param {Activity} activity
  * @param {ActiveEffect5e[]} effects
+ * @param {object} [options]
+ * @param {string|null} [options.concentrationUuid]
+ * @param {ChatMessage|null} [options.message]
  */
-async function _sendSelfEffectPrompt(actor, activity, effects) {
+async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUuid = null, message = null } = {}) {
     const item = activity.item;
     const whisperUsers = _getWhisperTargets(actor);
 
@@ -551,8 +597,13 @@ async function _sendSelfEffectPrompt(actor, activity, effects) {
             [MODULE_ID]: {
                 selfEffectPrompt: true,
                 actorUuid: actor.uuid,
+                activityUuid: activity.uuid,
+                itemUuid: activity.item?.uuid,
+                usageMessageUuid: message?.uuid,
+                concentrationUuid: concentrationUuid,
+                spellLevel: message?.system?.level ?? activity.item?.system?.level ?? null,
                 effects: effectFlagData,       // effectUuid → effect plain object (for apply)
-                effectsApplied: {}             // effectUuid → created effect id on actor (for undo)
+                effectsApplied: {}             // createdEffectId → effectUuid (for undo)
             }
         }
     });
@@ -642,9 +693,62 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
 
         // Try to fetch source effect document (e.g. from item or actor)
         const sourceEffect = effectUuid ? await fromUuid(effectUuid) : null;
-        const itemUuid = effectUuid ? effectUuid.split(".ActiveEffect")[0] : null;
-        const cleanTargetName = (effectName || effectData.name || effectData.label || "").trim().toLowerCase();
+        const flagsData = message.flags?.[MODULE_ID] ?? {};
+        const activityUuid = flagsData.activityUuid;
+        const itemUuid = flagsData.itemUuid || (effectUuid ? effectUuid.split(".ActiveEffect")[0] : null);
+        const usageMessageUuid = flagsData.usageMessageUuid;
+        const spellLevel = flagsData.spellLevel;
+
+        // Resolve activity and item first
+        const activity = activityUuid ? await fromUuid(activityUuid) : null;
+        const item = itemUuid ? await fromUuid(itemUuid) : (activity?.item ?? sourceEffect?.parent);
+        const requiresConcentration = activity?.requiresConcentration ?? item?.requiresConcentration ?? false;
+
+        // Resolve concentration effect if present and required
+        let concentrationUuid = flagsData.concentrationUuid || null;
+        if (concentrationUuid) {
+            const conc = await fromUuid(concentrationUuid);
+            if (!conc || conc.disabled) concentrationUuid = null;
+        }
+        if (!concentrationUuid && requiresConcentration && actor.concentration?.effects?.size > 0) {
+            const itemId = item?.id ?? itemUuid?.split(".")?.pop();
+            const conc = Array.from(actor.concentration.effects).find(e => {
+                const itemFlag = e.getFlag?.("dnd5e", "item");
+                return itemFlag?.id === itemId || itemFlag?.uuid === itemUuid || e.origin === itemUuid;
+            });
+            if (conc && !conc.disabled) concentrationUuid = conc.uuid;
+        }
+
+        const sourceKey = (sourceEffect?.inCompendium || effectData._stats?.compendiumSource) ? "compendiumSource" : "duplicateSource";
+        const cleanTargetName = _cleanName(effectName || effectData.name || effectData.label);
         const effectStatuses = effectData.statuses ? Array.from(effectData.statuses) : [];
+        const usageMessage = usageMessageUuid ? await fromUuid(usageMessageUuid) : message;
+
+        // Get dynamic changes from activity if available (e.g. scaling or duration overrides)
+        const activityChanges = activity?.getAppliedEffectChanges?.(
+            sourceEffect ?? { duration: effectData.duration ?? {}, ...effectData },
+            { chatMessage: usageMessage, target: actor }
+        ) ?? {};
+
+        const changes = foundry.utils.mergeObject(activityChanges, {
+            flags: {
+                dnd5e: {
+                    dependentOn: concentrationUuid || undefined,
+                    spellLevel: spellLevel || undefined
+                },
+                [MODULE_ID]: {
+                    sourceEffectUuid: effectUuid
+                }
+            },
+            system: {
+                origin: {
+                    [activity ? "activity" : "item"]: activity?.uuid ?? itemUuid ?? sourceEffect?.parent?.uuid,
+                    effect: concentrationUuid || undefined,
+                    message: usageMessageUuid || undefined,
+                    profile: activity ? activity.effects?.find(e => (e.uuid === effectUuid) || (e._id === sourceEffect?.id))?._id : undefined
+                }
+            }
+        });
 
         if (sourceEffect && sourceEffect.transfer) {
             debug(`Self Effect Application | Enabling transferred source effect "${sourceEffect.name}" (${sourceEffect.id}) on ${actor.name}`);
@@ -652,51 +756,104 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
             createdId = sourceEffect.id;
 
             // Clean up any stale duplicate non-transfer effects created on actor by earlier module versions
+            // CRITICAL: NEVER delete or match a concentration effect!
             const duplicateEffect = actor.effects.find(e =>
                 e !== sourceEffect &&
                 e.parent === actor &&
                 !e.transfer &&
-                (e.origin === effectUuid || e.origin === itemUuid || (cleanTargetName && (e.name || e.label || "").trim().toLowerCase() === cleanTargetName))
+                !_isConcentrationEffect(e) &&
+                (e.origin === effectUuid || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid || (e._stats?.[sourceKey] === effectUuid))
             );
             if (duplicateEffect) {
                 debug(`Self Effect Application | Cleaning up stale duplicate effect "${duplicateEffect.name}" (${duplicateEffect.id}) on ${actor.name}`);
                 await duplicateEffect.delete();
             }
         } else {
-            // Find existing non-transfer effect on actor: match by effect UUID, status ID overlap, parent item UUID, or normalized name/label
+            // Find existing non-transfer effect on actor:
+            // Match by source effect UUID, duplicateSource, module flag, or exact origin/name if disabled.
+            // CRITICAL: NEVER match a concentration effect!
             const existingEffect = actor.effects.find(e => {
-                if (e.transfer) return false; // Ignore static passive item transfer definitions
-                if (effectUuid && (e.uuid === effectUuid || e.id === sourceEffect?.id || e.origin === effectUuid)) return true;
-                if (effectStatuses.length > 0 && e.statuses?.size > 0) {
-                    if (effectStatuses.some(s => e.statuses.has(s))) return true;
+                if (e.transfer) return false;
+                if (_isConcentrationEffect(e)) return false;
+
+                // Match by DnD5e's duplicateSource / compendiumSource
+                if (effectUuid && (e._stats?.[sourceKey] === effectUuid || e._stats?.duplicateSource === effectUuid || e._stats?.compendiumSource === effectUuid)) return true;
+
+                // Match by module flag
+                if (effectUuid && e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid) return true;
+
+                // Match by exact origin UUID (ActiveEffect UUID, not item UUID)
+                if (effectUuid && e.origin === effectUuid) return true;
+
+                // Match by exact clean name ONLY IF disabled (re-enabling previously disabled effect)
+                if (e.disabled && cleanTargetName) {
+                    const eName = _cleanName(e.name || e.label);
+                    if (eName === cleanTargetName) return true;
                 }
-                if (itemUuid && e.origin === itemUuid) return true;
-                const eName = (e.name || e.label || "").trim().toLowerCase();
-                if (cleanTargetName && eName && (eName === cleanTargetName || eName.includes(cleanTargetName) || cleanTargetName.includes(eName))) return true;
+
                 return false;
             });
 
             if (existingEffect) {
-                debug(`Self Effect Application | Enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
-                const updateData = {
+                debug(`Self Effect Application | Re-enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
+                const baseDuration = foundry.utils.deepClone(effectData.duration ?? {});
+                delete baseDuration.startTime;
+                delete baseDuration.startRound;
+                delete baseDuration.startTurn;
+                baseDuration.expired = false;
+
+                const updateData = foundry.utils.mergeObject({
+                    _id: existingEffect.id,
                     disabled: false,
-                    origin: effectUuid || existingEffect.origin
-                };
-                if (effectData.changes && effectData.changes.length > 0) updateData.changes = effectData.changes;
-                if (effectData.duration) updateData.duration = effectData.duration;
+                    duration: baseDuration,
+                    start: ActiveEffect.implementation.getEffectStart?.() ?? { startTime: game.time.worldTime }
+                }, changes);
+
                 if (effectStatuses.length > 0) updateData.statuses = effectStatuses;
                 if (effectData.img) updateData.img = effectData.img;
                 if (effectData.name) updateData.name = effectData.name;
 
+                // Properly handle changes in both DnD5e 6.x (system.changes) and legacy (changes)
+                const baseChanges = sourceEffect?.system?.changes ?? effectData.system?.changes;
+                if (baseChanges) {
+                    let systemChanges = foundry.utils.deepClone(baseChanges);
+                    if (typeof ActiveEffect.implementation.forApplication === "function") {
+                        systemChanges = await ActiveEffect.implementation.forApplication(systemChanges, activity ?? item ?? actor, actor);
+                    }
+                    updateData.system = updateData.system ?? {};
+                    updateData.system.changes = systemChanges;
+                } else if (effectData.changes) {
+                    updateData.changes = foundry.utils.deepClone(effectData.changes);
+                }
+
                 await existingEffect.update(updateData);
                 createdId = existingEffect.id;
             } else {
-                const data = foundry.utils.deepClone(effectData);
-                delete data._id;
-                data.disabled = false;
-                data.transfer = false;
-                if (effectUuid) data.origin = effectUuid;
+                const baseData = sourceEffect?.toObject ? sourceEffect.toObject() : foundry.utils.deepClone(effectData);
+                delete baseData._id;
+
+                const data = foundry.utils.mergeObject(baseData, {
+                    disabled: false,
+                    transfer: false,
+                    origin: effectUuid || itemUuid || undefined,
+                    _stats: {
+                        [sourceKey]: effectUuid,
+                        [sourceEffect?.inCompendium ? "duplicateSource" : "compendiumSource"]: null
+                    }
+                });
+
                 if (effectStatuses.length > 0) data.statuses = effectStatuses;
+
+                foundry.utils.mergeObject(data, changes);
+
+                // For DnD5e 6.x, evaluate changes via ActiveEffect.implementation.forApplication
+                if (data.system?.changes && typeof ActiveEffect.implementation.forApplication === "function") {
+                    data.system.changes = await ActiveEffect.implementation.forApplication(
+                        data.system.changes,
+                        activity ?? item ?? actor,
+                        actor
+                    );
+                }
 
                 const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
                 createdId = created?.id;
@@ -829,16 +986,26 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, actorU
         // Look up the created effect document directly on the actor first
         let effect = actor?.effects?.get(createdId);
         if (!effect && effectUuid) {
-            effect = await fromUuid(effectUuid);
+            // Only fall back to effectUuid if it was a transferred effect on an item
+            const candidate = await fromUuid(effectUuid);
+            if (candidate?.transfer) effect = candidate;
         }
 
         if (effect) {
-            // Disable the effect on undo rather than deleting it.
-            // Deleting can permanently destroy the source effect if it lives on the actor or item.
-            await effect.update({ disabled: true });
-            debug(`Self Effect Application | ✓ Disabled effect ${createdId} on "${actor?.name ?? actorUuid}"`);
+            // Guard: Never touch or remove a concentration effect on undo
+            if (!_isConcentrationEffect(effect)) {
+                if (effect.parent === actor && !effect.transfer) {
+                    await effect.delete();
+                    debug(`Self Effect Application | ✓ Deleted effect ${createdId} on "${actor?.name ?? actorUuid}"`);
+                } else {
+                    await effect.update({ disabled: true });
+                    debug(`Self Effect Application | ✓ Disabled effect ${createdId} on "${actor?.name ?? actorUuid}"`);
+                }
+            } else {
+                debug(`Self Effect Application | Skipped undo for concentration effect ${createdId} on "${actor?.name ?? actorUuid}"`);
+            }
         } else {
-            debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor?.name ?? actorUuid}"`);
+            debug(`Self Effect Application | Effect ${createdId} no longer found on "${actor?.name ?? actorUuid}" (already removed or expired)`);
         }
 
         // Build a new effectsApplied without this effect's entry.

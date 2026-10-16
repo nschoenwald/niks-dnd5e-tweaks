@@ -294,7 +294,9 @@ Offers seamless toggles in damage roll configuration dialogs for conditional dam
 Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.
 
 ### Self Effect Application Prompt
-When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*), whispers a chat card with one-click **Apply** and **Undo** buttons.
+When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*, *Blur*), whispers a chat card with one-click **Apply** and **Undo** buttons.
+* Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
+* Seamless compatibility with **Automated Conditions 5e (AC5e)** dynamic condition flags.
 * *Sub-setting*: **Always Prompt Features** (comma-separated names like `Mage Armor`).
 
 ### Legendary Action Placeholders
