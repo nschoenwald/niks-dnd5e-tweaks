@@ -4369,7 +4369,20 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
    Detailed Roll Breakdown Overlay (v14.43.0)
    ========================================================================== */
 
-/* Container layout inside popovers (.roll-breakdown) and standard dice cards (.dice-roll) */
+/* When .roll-breakdown contains the detailed breakdown, ensure the popover container
+   fits its content and aligns to prevent overflow on the right edge of the sidebar/viewport */
+.roll-breakdown:has(.nd5t-roll-breakdown) {
+    right: anchor(end);
+    left: auto;
+    inset-inline-end: anchor(end);
+    inset-inline-start: auto;
+    width: max-content;
+    min-width: min(anchor-size(width, 220px), 320px);
+    max-width: min(320px, calc(100vw - 16px));
+    box-sizing: border-box;
+    position-try-fallbacks: flip-inline, flip-block, flip-block flip-inline;
+}
+
 .roll-breakdown .dice-tooltip-collapser,
 .roll-breakdown .dice-tooltip,
 .roll-breakdown .wrapper {
@@ -4386,11 +4399,19 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
     color: var(--color-text-primary, #191813);
 }
 
-.roll-breakdown .nd5t-roll-breakdown,
+.roll-breakdown .nd5t-roll-breakdown {
+    padding: 8px 12px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .inline-roll .nd5t-roll-breakdown {
     padding: 8px 12px;
     min-width: 220px;
     max-width: 320px;
+    box-sizing: border-box;
 }
 
 .dice-roll .nd5t-roll-breakdown {

@@ -1449,7 +1449,9 @@ async function _ensurePopoverBreakdown(popoverEl, message = null) {
         const msgId = chatCard?.dataset?.messageId;
         const targetMessage = message ?? (msgId ? game.messages?.get(msgId) : null);
         if (targetMessage && chatCard) await enhanceDamageChatMessageBreakdown(targetMessage, chatCard, popoverEl);
-        else if (!targetMessage) popoverEl._nd5tBreakdownSkipped = true;
+        else if (!targetMessage && game.ready && msgId && game.messages && !game.messages.has(msgId)) {
+            popoverEl._nd5tBreakdownSkipped = true;
+        }
     } finally {
         popoverEl._nd5tBreakdownLoading = false;
     }
@@ -1482,6 +1484,26 @@ export function initRollBreakdownDetails() {
         const popovers = html?.querySelectorAll?.(".roll-breakdown[popover]") ?? [];
         for (const popover of popovers) {
             _ensurePopoverBreakdown(popover, message);
+        }
+    });
+
+    // Pre-cache recent historical messages once the world and messages collection are fully ready
+    Hooks.once("ready", () => {
+        if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+        const popovers = Array.from(document.querySelectorAll("#chat-log .roll-breakdown[popover]")).slice(-30);
+        for (const popover of popovers) {
+            _ensurePopoverBreakdown(popover);
+        }
+    });
+
+    // Pre-cache when chat log renders or loads batches
+    Hooks.on("renderChatLog", (app, html) => {
+        if (!game.ready) return;
+        if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+        const root = html instanceof HTMLElement ? html : html?.[0];
+        const popovers = Array.from(root?.querySelectorAll?.(".roll-breakdown[popover]") ?? []).slice(-30);
+        for (const popover of popovers) {
+            _ensurePopoverBreakdown(popover);
         }
     });
 

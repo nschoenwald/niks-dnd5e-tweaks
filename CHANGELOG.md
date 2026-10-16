@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.2] - 2026-10-16
+### Fixed
+- **Detailed Roll Breakdown Sidebar Alignment & Viewport Cutoff**:
+  - Fixed an issue where the detailed roll breakdown popover did not adapt cleanly to the sidebar width, cutting off dice formulas, modifier badges, and totals at the right screen edge on high-resolution displays (such as 1440p) or when classic scrollbars reduced the available chat log width.
+  - Aligned popover anchoring to the trigger button's end edge with inward expansion and automatic inline/block flip fallbacks (`flip-inline`, `flip-block`), guaranteeing the breakdown and its parchment/dark background box always remain 100% visible on screen without spilling over sidebar borders.
+  - Fixed a race condition where opening an un-cached historical roll popover replaced its inner DOM mid-open before anchor layout finished.
+  - Automatically pre-caches recent historical roll cards on world ready and chat log renders, ensuring instantaneous, flicker-free, and correctly sized popovers on first click.
+- **Template Auto-Targeting & Canvas Teardown**:
+  - Fixed a `ReferenceError: lastChatActionMessageId is not defined` occurring during `canvasTearDown` when switching or viewing scenes.
+
 ## [14.46.1] - 2026-10-16
 ### Fixed
 - **Self Effect Application & Concentration**:

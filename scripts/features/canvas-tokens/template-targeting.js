@@ -18,6 +18,7 @@ let _pendingPlacementRAF = null;
 let _lastPlacementChangeArgs = null;
 let _isPlacingRegion = false;
 let _cachedOriginIds = null;
+let lastChatActionMessageId = null;
 
 // ── Initialisation ───────────────────────────────────────────────────
 
