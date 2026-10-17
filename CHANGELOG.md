@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.3] - 2026-10-17
+### Added
+- **Chat Card Styling: Enlarged Targeted / Selected Button & Stacked Targets**:
+  - Replaced the tiny 24px icon button in activity/usage cards and damage/effects application trays with an enlarged, full-height button displaying both the mode icon and a clear, dynamic text label (**Targeted** or **Selected**).
+  - The toggle button automatically stretches vertically to match the height of the targets list beside it.
+  - Reorganized target pills into clean, vertically stacked full-width rows with token names on the left and status pips or damage/healing calculations neatly right-aligned.
+  - Fully compatible with all Foundry V14 and DnD5e theme combinations (light parchment, dark mode, Core Interface, and Core Apps).
+
 ## [14.46.2] - 2026-10-16
 ### Fixed
 - **Detailed Roll Breakdown Sidebar Alignment & Viewport Cutoff**:

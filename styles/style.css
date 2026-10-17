@@ -1798,6 +1798,151 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     /* light crimson text */
 }
 
+/* ─── Recorded Targets: Enlarged Targeted/Selected Button & Stacked Pills ─── */
+
+/* Container layout */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row {
+    align-items: stretch;
+    display: flex;
+    gap: 6px;
+    margin-block: 4px;
+}
+
+/* Enlarged Toggle Button (matches height of stacked targets, displays icon + text) */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle {
+    --button-size: unset;
+    block-size: unset !important;
+    min-height: 26px;
+    inline-size: auto !important;
+    min-width: 82px;
+    align-self: stretch;
+    margin-inline-start: 0 !important;
+    padding: 6px 10px;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--border-radius-default, 4px);
+    font-family: var(--dnd5e-font-roboto-condensed);
+    font-size: var(--font-size-12);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Icon sizing inside toggle button */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle::before,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle::before {
+    font-size: inherit;
+    line-height: 1;
+}
+
+/* Label text via dynamic aria-label with localized fallbacks */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle::after,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle::after {
+    content: "Targeted";
+    content: attr(aria-label);
+    font-size: inherit;
+    line-height: 1;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle[data-mode="selected"]::after,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle[data-mode="selected"]::after {
+    content: "Selected";
+    content: attr(aria-label);
+}
+
+/* Vertically stacked target pills */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 !important;
+    padding: 0;
+    min-width: 0;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets > li,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets > li {
+    width: 100%;
+    display: flex;
+    margin: 0;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets > li > target-pill,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets > li > target-pill {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 3px 8px;
+    border-radius: var(--border-radius-default, 3px);
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets > li.none.pill,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets > li.none.pill {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3px 8px;
+    box-sizing: border-box;
+}
+
+/* Light Mode colors */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle {
+    background: oklch(94% 0.015 80) !important;
+    border: 1px solid oklch(72% 0.03 80) !important;
+    color: oklch(30% 0.03 80) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle:hover:not(:disabled),
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle:hover:not(:disabled) {
+    background: oklch(97% 0.02 80) !important;
+    border-color: var(--dnd5e-color-gold, #996e28) !important;
+    color: var(--dnd5e-color-gold, #996e28) !important;
+}
+
+/* Dark Mode colors */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message recorded-targets .icon-row > button.target-source-toggle,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark recorded-targets .icon-row > button.target-source-toggle,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) recorded-targets .icon-row > button.target-source-toggle {
+    background: oklch(26% 0.015 260 / 0.85) !important;
+    border: 1px solid oklch(42% 0.02 260) !important;
+    color: oklch(85% 0.015 260) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message recorded-targets .icon-row > button.target-source-toggle:hover:not(:disabled),
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark recorded-targets .icon-row > button.target-source-toggle:hover:not(:disabled),
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) recorded-targets .icon-row > button.target-source-toggle:hover:not(:disabled) {
+    background: oklch(30% 0.02 260) !important;
+    border-color: var(--dnd5e-color-gold, #c99e58) !important;
+    color: var(--dnd5e-color-gold, #c99e58) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message recorded-targets .icon-row > ul.targets > li > target-pill,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark recorded-targets .icon-row > ul.targets > li > target-pill,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) recorded-targets .icon-row > ul.targets > li > target-pill {
+    border-color: oklch(45% 0.04 65 / 0.7);
+}
+
+/* Disabled state */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle:disabled,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
 /* ─── Attack & Damage Distinct Card Styling ─── */
 
 /* Default / Light Theme Color Tokens */
