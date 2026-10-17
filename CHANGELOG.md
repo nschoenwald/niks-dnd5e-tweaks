@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.4] - 2026-10-17
+### Added
+- **Auto-Collapse Healing & Temporary HP Trays**:
+  - Auto-collapse now fully recognizes and supports healing and temporary HP application trays alongside standard damage rolls.
+  - **Smart Mistarget Recovery for Players**: When a player rolls healing or temporary HP while still targeting an enemy NPC (an assumed mistarget from earlier combat actions), the application tray stays open instead of auto-collapsing and automatically switches targeting mode to **Selected** tokens. Players can immediately select themselves or an ally on the canvas to apply healing without needing to reopen or reconfigure the tray.
+  - GMs continue to have hostile damage and healing abilities targeting player characters collapsed automatically, delegating resolution to players.
+  - Hardened tray synchronization and performance across popout chat windows and notification cards.
+
 ## [14.46.3] - 2026-10-17
 ### Added
 - **Chat Card Styling: Enlarged Targeted / Selected Button & Stacked Targets**:

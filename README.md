@@ -183,9 +183,10 @@ Adds `+` and `-` buttons to the NPC Hit Points configuration dialog to quickly s
 ### Toolbar Limitation
 Turns toolbars scrollable when button count exceeds a configured limit (default: 20), preventing overcrowded canvas controls.
 
-### Auto-Collapse Hostile / Unowned Damage Trays
-* **For GM**: Auto-collapses the interactive damage application tray on hostile monster attacks targeting players.
-* **For Players**: Auto-collapses damage trays when none of the targeted tokens are owned by the player, removing un-actionable clutter.
+### Auto-Collapse Hostile / Unowned Damage & Healing Trays
+* **For GM**: Auto-collapses the interactive damage/healing application tray on hostile monster attacks and abilities targeting player characters (delegating application to players).
+* **For Players**: Auto-collapses trays when none of the targeted tokens are owned by the active player (such as damage rolls targeting enemy NPCs), removing un-actionable clutter.
+* **Healing & Temporary HP Mistarget Recovery**: When a player rolls healing or temporary HP while accidentally still targeting an enemy NPC from previous combat actions, the tray remains open and automatically switches targeting mode to **Selected** tokens, allowing players to immediately select their token or ally and apply healing without manual tray tweaking.
 
 ### Aggregate Short Rest Hit Dice Rolls
 Fixes chat log spam during short rests when characters roll multiple hit dice:

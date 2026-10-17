@@ -600,13 +600,23 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoCollapseHostileDamageTrays", {
         name: "Auto-Collapse Hostile Damage Trays for GM",
-        hint: "Automatically collapses damage application trays for the GM on damage rolls originating from hostile NPCs targeting player characters when DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+        hint: "Automatically collapses damage and healing application trays for the GM on rolls originating from hostile NPCs targeting player characters when DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
         scope: "world",
         config: false,
         type: Boolean,
         default: true,
         restricted: true,
         onChange: () => {
+            game.messages?.forEach(m => {
+                delete m._nd5tShouldCollapseTray;
+                delete m._nd5tIsHealingMistarget;
+                delete m._nd5tHadHtml;
+                if (m._nd5tAutoCollapsed) {
+                    m._trayStates?.delete("DAMAGE-APPLICATION");
+                    m._trayStates?.delete("damage-application");
+                    delete m._nd5tAutoCollapsed;
+                }
+            });
             ui.chat?.render(true);
             if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
         }
@@ -614,13 +624,23 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoCollapsePlayerDamageTrays", {
         name: "Auto-Collapse Unowned Damage Trays for Players",
-        hint: "Automatically collapses damage application trays for players when no targeted tokens are owned by them (such as damage rolls targeting NPCs) and DnD5e's 'Allow Players to Apply Damage' setting is enabled.",
+        hint: "Automatically collapses damage application trays for players when no targeted tokens are owned by them (such as damage rolls targeting NPCs). For healing or temporary HP rolls aimed at enemies, the tray remains open and automatically switches to selected tokens.",
         scope: "world",
         config: false,
         type: Boolean,
         default: true,
         restricted: true,
         onChange: () => {
+            game.messages?.forEach(m => {
+                delete m._nd5tShouldCollapseTray;
+                delete m._nd5tIsHealingMistarget;
+                delete m._nd5tHadHtml;
+                if (m._nd5tAutoCollapsed) {
+                    m._trayStates?.delete("DAMAGE-APPLICATION");
+                    m._trayStates?.delete("damage-application");
+                    delete m._nd5tAutoCollapsed;
+                }
+            });
             ui.chat?.render(true);
             if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
         }
