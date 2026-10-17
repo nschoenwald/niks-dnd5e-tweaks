@@ -163,25 +163,39 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
 
         let modified = false;
 
-        if (/@mod\b/.test(clean)) {
-            clean = clean.replace(/@mod\b/g, `@mod[${abilityLabel}]`);
+        // Attribute tags must only match standalone terms or arithmetic operands (+, -, *, /, %, or in parentheses/commas).
+        // They must never match attributes inside dice term definitions or modifiers (e.g. exploding dice "1d8x@mod=8",
+        // keep dice "1d8kh@mod", reroll "1d8ro<=@mod", faces "1d@mod", or count "(@mod)d6").
+        const lookbehind = "(?<=^|[\\s+\\-*/(%])";
+        const lookahead = "(?=$|[\\s+\\-*/%,]|\\)(?!\\s*[dD]))";
+
+        const modRegex = new RegExp(`${lookbehind}@mod${lookahead}`, "g");
+        const replacedMod = clean.replace(modRegex, `@mod[${abilityLabel}]`);
+        if (replacedMod !== clean) {
+            clean = replacedMod;
             modified = true;
         }
 
-        if (/@abilities\.([a-z]{3})\.mod\b/i.test(clean)) {
-            clean = clean.replace(/@abilities\.([a-z]{3})\.mod\b/gi, (match, ablKey) => {
-                const abl = ABILITY_SHORTHANDS[ablKey.toLowerCase()] ?? ablKey.toUpperCase();
-                return `${match}[${abl}]`;
-            });
+        const ablRegex = new RegExp(`${lookbehind}@abilities\\.([a-z]{3})\\.mod${lookahead}`, "gi");
+        const replacedAbl = clean.replace(ablRegex, (match, ablKey) => {
+            const abl = ABILITY_SHORTHANDS[ablKey.toLowerCase()] ?? ablKey.toUpperCase();
+            return `${match}[${abl}]`;
+        });
+        if (replacedAbl !== clean) {
+            clean = replacedAbl;
             modified = true;
         }
 
-        if (/@prof\b/.test(clean)) {
+        const profRegex = new RegExp(`${lookbehind}@prof${lookahead}`, "g");
+        if (profRegex.test(clean)) {
             const isPartExpertise = /\*\s*2\b/.test(clean) || /\b2\s*\*/.test(clean) || isExpertise;
             const isPartHalf = /\/\s*2\b/.test(clean) || /\*\s*0?\.5\b/.test(clean) || isHalf;
             const targetPbLabel = isPartExpertise ? "PB (Expertise)" : (isPartHalf ? "PB (Half)" : pbLabel);
-            clean = clean.replace(/@prof\b/g, `@prof[${targetPbLabel}]`);
-            modified = true;
+            const replacedProf = clean.replace(new RegExp(`${lookbehind}@prof${lookahead}`, "g"), `@prof[${targetPbLabel}]`);
+            if (replacedProf !== clean) {
+                clean = replacedProf;
+                modified = true;
+            }
         }
 
         if (clean === "@toHit") {
@@ -214,9 +228,10 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0) {
             modified = true;
         }
 
-        if (clean.includes("@scale.")) {
+        const scaleRegex = new RegExp(`${lookbehind}@scale\\.([\\w.-]+)${lookahead}`, "g");
+        if (scaleRegex.test(clean)) {
             let scaleHandled = false;
-            clean = clean.replace(/@scale\.([\w.-]+)/g, (match, scaleKey) => {
+            clean = clean.replace(new RegExp(`${lookbehind}@scale\\.([\\w.-]+)${lookahead}`, "g"), (match, scaleKey) => {
                 const scaleVal = foundry.utils.getProperty(data, `scale.${scaleKey}`) ?? "";
                 if (String(scaleVal).includes("[")) return match;
 

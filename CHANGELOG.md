@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.5] - 2026-10-17
+### Fixed
+- **Roll Breakdown Formula Parsing for Exploding & Irregular Dice Modifiers**:
+  - Fixed a syntax error (`SyntaxError: Expected [*/], [+-], or end of input but "=" found`) that occurred when opening the damage roll dialog for spells or attacks using dice formulas with internal modifiers or attributes, such as *Sorcerous Burst* (`1d8x@mod=8`).
+  - Proactive formula tagging now strictly checks that attribute references (`@mod`, `@prof`, `@abilities.<abl>.mod`, `@scale.<key>`) are standalone terms or arithmetic operands before applying flavor labels, ensuring attributes that define dice mechanics (such as explosion limits, keep/drop amounts, or reroll thresholds) remain intact without syntax corruption.
+
 ## [14.46.4] - 2026-10-17
 ### Added
 - **Auto-Collapse Healing & Temporary HP Trays**:
