@@ -123,6 +123,7 @@
   "ND5T.RollBreakdownDetails.ClientName": "Detailed Roll Breakdown Overlay (Personal)",
   "ND5T.RollBreakdownDetails.ClientHint": "Enables detailed roll breakdown popovers on your client (if enabled by the GM).",
   "ND5T.RollBreakdownDetails.Total": "Total",
+  "ND5T.DamageType.Pure": "Pure",
 
   "ND5T.ConditionalDamage.Name": "Conditional Damage Bonuses",
   "ND5T.ConditionalDamage.Hint": "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",

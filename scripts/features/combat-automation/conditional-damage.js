@@ -1427,13 +1427,26 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         }
     }
 
-    // Match the weapon's base damage type for sneak attack and great weapon master
-    const baseDamageType = config?.rolls?.[0]?.options?.type
-        ?? config?.rolls?.[0]?.options?.types?.[0]
-        ?? item?.system?.damage?.base?.types?.first?.()
-        ?? item?.system?.damage?.base?.type
-        ?? activity?.damage?.parts?.[0]?.types?.first?.()
-        ?? "piercing";
+    // Match the weapon's base damage type for generic bonuses (Sneak Attack, GWM, Brutal Strike, Charger, Boon of Irresistible Offense).
+    // If the weapon's base damage does not specify a damage type, generic bonuses remain untyped (null).
+    const getFirstType = (types) => {
+        if (!types) return null;
+        if (typeof types.first === "function") return types.first() ?? null;
+        if (Array.isArray(types)) return types[0] ?? null;
+        if (types instanceof Set) return types.values().next().value ?? null;
+        return null;
+    };
+
+    let rawBaseType = null;
+    if (config?.rolls?.length) {
+        rawBaseType = config.rolls[0]?.options?.type ?? config.rolls[0]?.options?.types?.[0] ?? null;
+    } else {
+        rawBaseType = getFirstType(activity?.damage?.parts?.[0]?.types)
+            ?? getFirstType(item?.system?.damage?.base?.types)
+            ?? item?.system?.damage?.base?.type
+            ?? null;
+    }
+    const baseDamageType = (typeof rawBaseType === "string" && rawBaseType.trim()) ? rawBaseType.trim() : null;
 
     // Resolve the attacking token (used for combat turn checks)
     const speakerTokenDoc = message?.data?.speaker?.token
@@ -1622,7 +1635,8 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
 export function createConditionalRollConfig(def, rollData = {}, { isCritical = false, properties = [] } = {}) {
     const data = foundry.utils.deepClone(rollData);
     data.roll ??= {};
-    data.roll.damageType = def.damageType;
+    const damageType = (typeof def.damageType === "string" && def.damageType.trim()) ? def.damageType.trim() : null;
+    data.roll.damageType = damageType;
 
     // Only Great Weapon Master's @prof formula needs its roll data overridden
     if (def.id === "greatWeaponMaster" && def.formulaDisplay && !isNaN(Number(def.formulaDisplay))) {
@@ -1639,7 +1653,7 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
 
     const isFlatBonus = def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense";
     const rollOptions = {
-        type: def.damageType,
+        type: damageType,
         flavor: def.flavor,
         _nd5tConditionalId: def.id,
         critical: {
@@ -1647,6 +1661,10 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
             ...(isFlatBonus ? { multiplyNumeric: false } : {})
         }
     };
+
+    if (damageType) {
+        rollOptions.types = [damageType];
+    }
 
     if (properties?.length) {
         rollOptions.properties = [...properties];
@@ -1853,6 +1871,7 @@ function _updateFormulaRowStates(app) {
             li.dataset.nd5tConditionalId = conditionalId;
         }
 
+
         const inputs = li.querySelectorAll("input, select");
         inputs.forEach(input => {
             input.disabled = isInactive;
@@ -1894,16 +1913,36 @@ function _patchDamageRollConfigurationDialog() {
         return origConfigure.call(this, config, dialog, message);
     };
 
-    // 2. Filter dice in _prepareFormulasContext so inactive rolls do not display dice at the top
+    // 2. Filter dice in _prepareFormulasContext and label untyped damage as "Pure"
     const origPrepareFormulasContext = DialogClass.prototype._prepareFormulasContext;
     DialogClass.prototype._prepareFormulasContext = async function(context, options) {
         context = await origPrepareFormulasContext.call(this, context, options);
 
-        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
             return context;
         }
 
-        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
+        // Relabel untyped damage parts from "Formula" to "Pure" and assign the pure damage icon
+        const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
+        const pureIcon = "systems/dnd5e/icons/svg/damage/all.svg";
+        for (const entry of context.rolls ?? []) {
+            if (!entry.damageConfig && !entry.damageTypes) {
+                const rollType = (typeof entry.roll?.options?.type === "string") ? entry.roll.options.type.trim() : null;
+                const isUntyped = !rollType || rollType.toLowerCase() === "untyped" || rollType.toLowerCase() === "none" || rollType.toLowerCase() === "pure";
+                if (isUntyped) {
+                    entry.damageConfig = {
+                        label: pureLabel,
+                        icon: pureIcon
+                    };
+                } else {
+                    entry.damageConfig = {
+                        label: rollType.charAt(0).toUpperCase() + rollType.slice(1)
+                    };
+                }
+            }
+        }
+
+        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
             return context;
         }
 
@@ -2042,8 +2081,9 @@ function _patchDamageRollConfigurationDialog() {
                 const baseProperties = baseRoll?.options?.properties ?? [];
 
                 // Dynamically resolve weapon damage type selected in the form
-                const selectedBaseType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
+                const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
                     || baseRoll?.options?.type;
+                const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
 
                 // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
                 const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
@@ -2095,16 +2135,23 @@ function _patchDamageRollConfigurationDialog() {
                         }
 
                         // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
-                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") && selectedBaseType) {
-                            bonus.damageType = selectedBaseType;
-                            roll.options.type = selectedBaseType;
+                        if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                            bonus.damageType = resolvedType;
+                            roll.options.type = resolvedType;
+                            if (resolvedType) {
+                                roll.options.types = [resolvedType];
+                            } else {
+                                delete roll.options.types;
+                            }
                             if (roll.data?.roll) {
-                                roll.data.roll.damageType = selectedBaseType;
+                                roll.data.roll.damageType = resolvedType;
                             }
                             roll.options.properties = [...baseProperties];
                         }
                     }
                 }
+
+                _updateFormulaRowStates(this);
             }
         }
 
@@ -2123,8 +2170,9 @@ function _patchDamageRollConfigurationDialog() {
                 const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
                 const baseProperties = baseRoll?.options?.properties ?? [];
 
-                const selectedBaseType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
+                const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
                     || baseRoll?.options?.type;
+                const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
 
                 // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
                 const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
@@ -2178,11 +2226,16 @@ function _patchDamageRollConfigurationDialog() {
                             roll.options._nd5tInactive = true;
                         }
 
-                        if ((bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") && selectedBaseType) {
-                            bonus.damageType = selectedBaseType;
-                            roll.options.type = selectedBaseType;
+                        if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                            bonus.damageType = resolvedType;
+                            roll.options.type = resolvedType;
+                            if (resolvedType) {
+                                roll.options.types = [resolvedType];
+                            } else {
+                                delete roll.options.types;
+                            }
                             if (roll.data?.roll) {
-                                roll.data.roll.damageType = selectedBaseType;
+                                roll.data.roll.damageType = resolvedType;
                             }
                             roll.options.properties = [...baseProperties];
                         }

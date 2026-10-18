@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.6] - 2026-10-18
+### Changed
+- **Conditional Damage: Untyped Base Weapon Handling**:
+  - Generic conditional damage bonuses (Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense) now remain untyped when rolled with an attack or weapon whose base damage does not specify a damage type, rather than falling back to piercing damage.
+- **Damage Roll Dialog & Breakdown: "Pure" Label & Icon for Untyped Damage**:
+  - Untyped damage roll parts in the damage roll configuration dialog are now cleanly labeled as **Pure** alongside the damage icon instead of the generic system label "Formula".
+  - Detailed Roll Breakdown popovers and chat card breakdown headers display **Pure** with its corresponding damage icon for untyped damage rolls.
+- **Manifest Compatibility**:
+  - Added a maximum compatibility version limit (`6.0.99`) for the DnD5e system.
+### Fixed
+- **Detailed Roll Breakdown: Non-Damage Roll Tooltips**:
+  - Fixed an issue where d20 attack rolls, skill checks, saving throws, and initiative rolls erroneously displayed a "Pure" damage header in their breakdown tooltips.
+
 ## [14.46.5] - 2026-10-17
 ### Fixed
 - **Roll Breakdown Formula Parsing for Exploding & Irregular Dice Modifiers**:

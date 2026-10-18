@@ -4836,7 +4836,9 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-healing { background-color: #48d689; }
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-temphp { background-color: #38bdf8; }
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-all,
-.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-any { background-color: #e2e8f0; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-any,
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-untyped,
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-pure { background-color: #e2e8f0; }
 
 .nd5t-roll-breakdown .nd5t-section-subtotal {
     font-family: var(--font-primary, "Signika", sans-serif);

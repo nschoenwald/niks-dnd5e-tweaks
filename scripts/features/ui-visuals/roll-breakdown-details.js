@@ -42,8 +42,17 @@ export const DAMAGE_TYPE_COLORS = Object.freeze({
     healing: "#48d689",
     temphp: "#38bdf8",
     all: "#e2e8f0",
-    any: "#e2e8f0"
+    any: "#e2e8f0",
+    untyped: "#e2e8f0",
+    pure: "#e2e8f0"
 });
+
+/**
+ * Built-in pure/untyped damage icon asset path.
+ * @type {string}
+ */
+export const PURE_DAMAGE_ICON = "systems/dnd5e/icons/svg/damage/all.svg";
+
 
 /**
  * Retrieve the subtle accent color for a given damage type key.
@@ -1224,11 +1233,24 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
     const sortedDice = sortBreakdownDiceRows(diceRows);
     const sortedMods = sortBreakdownModifiers(modifiers);
 
-    const damageType = roll.options?.type;
-    const typeConfig = CONFIG.DND5E?.damageTypes?.[damageType] ?? CONFIG.DND5E?.healingTypes?.[damageType] ?? null;
-    const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (damageType ? damageType.toUpperCase() : "");
-    const typeIcon = typeConfig?.icon ?? null;
-    const typeColor = getDamageTypeColor(damageType);
+    const isDamage = isDamageRoll(roll);
+    let damageType = null;
+    let typeConfig = null;
+    let typeLabel = "";
+    let typeIcon = null;
+    let typeColor = null;
+
+    if (isDamage) {
+        const rawType = (typeof roll.options?.type === "string") ? roll.options.type.trim() : "";
+        const isUntyped = !rawType || rawType.toLowerCase() === "untyped" || rawType.toLowerCase() === "none" || rawType.toLowerCase() === "pure";
+        damageType = isUntyped ? "untyped" : rawType.toLowerCase();
+        typeConfig = CONFIG.DND5E?.damageTypes?.[damageType] ?? CONFIG.DND5E?.healingTypes?.[damageType] ?? null;
+        const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
+        typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (isUntyped ? pureLabel.toUpperCase() : rawType.toUpperCase());
+        typeIcon = typeConfig?.icon ?? (isUntyped ? PURE_DAMAGE_ICON : null);
+        typeColor = getDamageTypeColor(damageType);
+    }
+
     const totalLabel = game.i18n?.localize ? (game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total") : "Total";
 
     return {
@@ -1377,11 +1399,15 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
             const data = await getDetailedRollBreakdown(roll, { isBase, actor, item });
             if (!data) continue;
 
-            const damageType = String(roll.options?.type ?? "untyped").toLowerCase();
+            const rawType = (typeof roll.options?.type === "string") ? roll.options.type.trim() : "";
+            const isUntyped = !rawType || rawType.toLowerCase() === "untyped" || rawType.toLowerCase() === "none" || rawType.toLowerCase() === "pure";
+            const damageType = isUntyped ? "untyped" : rawType.toLowerCase();
+
             if (!typeMap.has(damageType)) {
                 const typeConfig = CONFIG.DND5E?.damageTypes?.[damageType] ?? CONFIG.DND5E?.healingTypes?.[damageType] ?? null;
-                const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (damageType !== "untyped" ? damageType.toUpperCase() : "");
-                const typeIcon = typeConfig?.icon ?? null;
+                const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
+                const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (isUntyped ? pureLabel.toUpperCase() : rawType.toUpperCase());
+                const typeIcon = typeConfig?.icon ?? (isUntyped ? PURE_DAMAGE_ICON : null);
                 const typeColor = getDamageTypeColor(damageType);
 
                 typeMap.set(damageType, {
