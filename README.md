@@ -289,6 +289,9 @@ Automatically creates and manages Active Effects when attacks hit with mastery w
 * *Sub-settings*: Configurable active effect icons for Sap and Slow.
 
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
+
+<img width="394" height="595" alt="image" src="https://github.com/user-attachments/assets/5a754d05-167a-472c-943e-440fb347fd5f" />
+
 Offers seamless toggles in damage roll configuration dialogs for conditional damage bonuses:
 * **Sneak Attack**: Available for Rogues and monsters/NPCs with Sneak Attack features (e.g. Assassin, Spy) when attacking with a finesse or ranged weapon. Automatically resolves the native scale value formula (e.g. `1d6`, `2d6`, etc.) and inherits the weapon's damage type and magical properties. In combat it is enabled by default only until used once per turn, then defaults to off for later attacks that turn; outside combat it remembers your last choice.
 * **Great Weapon Master (2024 Rules)**: Under 2024 (modern) rules, characters possessing the `great-weapon-master` feat gain an optional toggle when attacking with Heavy weapons to deal extra damage equal to their Proficiency Bonus (+PB), flavored with `GWM` and matching the weapon's damage type. When an active combat encounter is underway, this bonus is offered strictly on the attacker's own turn (and withheld on opportunity attacks, reaction strikes, or attacks on other turns, since Heavy Weapon Mastery only applies to attacks from the Attack action on your turn). Outside of combat, it remains available for out-of-combat attacks.
