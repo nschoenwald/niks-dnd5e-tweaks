@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.46.7] - 2026-10-19
+### Fixed
+- **Detailed Roll Breakdown: AC5e Bonus Damage & Cross-Roll Attribution**:
+  - Fixed an issue where bonus damage rolls added by Automated Conditions 5e (AC5e) or active effects (e.g. *Divine Favor*, radiant riders) could be mislabeled with existing weapon bonuses (such as *Dueling*) instead of their actual effect name.
+  - Accurately respects AC5e opt-in selections so unchecked bonuses are not attributed to other modifiers.
+  - Prevents weapon attack damage bonuses from duplicating across secondary rolls in both the roll configuration dialog and chat breakdown popovers.
+  - Resolved a breakdown rendering issue when evaluating modifier chunks.
+
 ## [14.46.6] - 2026-10-18
 ### Added
 - **Legendary Action Placeholders: Auto-Skip When No Uses Left**:
