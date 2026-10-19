@@ -215,7 +215,7 @@ A floating glassmorphic banner appears during spell and item template placement:
 
 ### Auto-Target Tokens in Spell Templates
 Automatically selects and targets tokens inside spell templates during placement and updates targets in real time.
-* **Directional Caster Exclusion**: Cones and lines exclude the caster token from targeting.
+* **Origin / Source Token Exclusion**: Cones and lines/rays exclude the caster from targeting, and emanations exclude the token that is both the source and the attached token for the region in accordance with D&D 5e / 2024 rules.
 * **Chat Synchronization**: Updates targets directly on spell chat cards for subsequent saving throws and damage application.
 * **GM Privacy**: Non-GM players only target tokens visible to them.
 
@@ -317,8 +317,8 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * *Sub-setting*: **Always Prompt Features** (comma-separated names like `Mage Armor`).
 
 ### Legendary Action Placeholders
-Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking.
-* *Sub-settings*: **Show to Players**, **Custom Icon**.
+Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
+* *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
 
 ### Prompt for Death Saves
 Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.

@@ -1089,6 +1089,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders", {
+        name: "↳ Auto-Skip When No Uses Left",
+        hint: "Automatically skips legendary action placeholder turns in the combat tracker when no creature in the encounter has legendary action uses remaining.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ── Phase 2: Actions, Rolls & Damage Prompts ────────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoRollSaveDamage", {

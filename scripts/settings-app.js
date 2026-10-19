@@ -855,6 +855,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: "icons/svg/combat.svg",
                                 scope: "world",
                                 parentKey: "enableLegendaryActionPlaceholders"
+                            },
+                            {
+                                key: "autoSkipEmptyLegendaryPlaceholders",
+                                name: "Auto-Skip When No Uses Left",
+                                hint: "Automatically skip legendary action placeholder turns in the combat tracker when no creature in the encounter has legendary action uses remaining.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableLegendaryActionPlaceholders"
                             }
                         ]
                     },

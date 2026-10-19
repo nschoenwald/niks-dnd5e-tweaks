@@ -3,7 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [14.46.6] - 2026-10-18
+### Added
+- **Legendary Action Placeholders: Auto-Skip When No Uses Left**:
+  - Automatically skips legendary action placeholder turns in the combat tracker when all legendary creatures in the encounter have spent their legendary actions or have no uses remaining (including defeated or dead creatures).
+  - Added a new sub-setting ("↳ Auto-Skip When No Uses Left", enabled by default) allowing GMs to toggle this automatic skipping behavior.
+  - Highly performance-optimized with cached legendary creature detection, short-circuit lookups, and zero overhead on regular turn transitions.
+
 ### Changed
+- **Template Auto-Targeting: Source Token Exclusion for Emanations**:
+  - In accordance with D&D 5e / 2024 rules (where an emanation's origin is not included in its area of effect unless its creator decides otherwise), auto-targeting excludes a token for an emanation template if and only if that token is both the source (caster/creator) and the attached token for the region. Emanations attached to other creatures or unattached ground areas do not exclude the attached target or the caster.
 - **Conditional Damage: Untyped Base Weapon Handling**:
   - Generic conditional damage bonuses (Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense) now remain untyped when rolled with an attack or weapon whose base damage does not specify a damage type, rather than falling back to piercing damage.
 - **Damage Roll Dialog & Breakdown: "Pure" Label & Icon for Untyped Damage**:
@@ -11,6 +19,7 @@ All notable changes to this project will be documented in this file.
   - Detailed Roll Breakdown popovers and chat card breakdown headers display **Pure** with its corresponding damage icon for untyped damage rolls.
 - **Manifest Compatibility**:
   - Added a maximum compatibility version limit (`6.0.99`) for the DnD5e system.
+
 ### Fixed
 - **Detailed Roll Breakdown: Non-Damage Roll Tooltips**:
   - Fixed an issue where d20 attack rolls, skill checks, saving throws, and initiative rolls erroneously displayed a "Pure" damage header in their breakdown tooltips.

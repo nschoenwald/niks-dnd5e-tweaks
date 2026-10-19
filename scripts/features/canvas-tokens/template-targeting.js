@@ -3,7 +3,7 @@
  * Description: Automatically targets tokens enclosed within spell or ability templates placed on the canvas in real time.
  *
  * @introduced v14.19.0
- * @updated v14.35.0 (Full Foundry V14 & DnD5e v6 RegionLayer placement support)
+ * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 
@@ -66,6 +66,7 @@ export function initTemplateTargeting() {
         if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) return;
         if (!Array.isArray(created) || !created.length) return;
 
+        if (activity) activePlacementActivity = activity;
         for (const r of created) {
             if (r?.id) activePlacementBatchRegionIds.add(r.id);
         }
@@ -81,6 +82,8 @@ export function initTemplateTargeting() {
             }
             lastChatActionMessageId = null;
         }
+
+        activePlacementActivity = null;
     });
 
     // Sync newly targeted tokens to the usage chat message so save & damage buttons have targets
@@ -183,7 +186,10 @@ function _wrapRegionLayerPlaceRegion() {
             } else if ((options._regionIndex ?? 0) >= (options._regionCount ?? 1) - 1) {
                 // Batch completed successfully
                 initialPlacementTargets = null;
-                activePlacementActivity = null;
+                // Retain activePlacementActivity briefly for createRegion / postCreateMeasuredTemplate hooks
+                setTimeout(() => {
+                    activePlacementActivity = null;
+                }, 5000);
             }
         }
     };
@@ -310,86 +316,152 @@ function _onCreateRegion(regionDoc, options, userId) {
 // ── Containment Helpers ──────────────────────────────────────────────
 
 /**
- * Check if the active placement or any of the given region documents represent a cone or line/ray template.
+ * Template types that originate from a creature/object and exclude that origin from the area of effect.
+ * Under D&D 5e / 2024 rules:
+ * - Cones and lines/rays originate from the caster but do not affect the caster.
+ * - Emanations originate from a creature or object and explicitly exclude that origin unless stated otherwise.
+ */
+const EXCLUDED_ORIGIN_TEMPLATE_TYPES = new Set(["cone", "line", "ray", "emanation", "radius"]);
+
+/**
+ * Check if the active placement or any of the given region documents represent a template
+ * that excludes an originating token (cone, line/ray, or emanation).
  * @param {RegionDocument|RegionDocument[]} regionDocs
  * @returns {boolean}
  */
-function _isConeOrLine(regionDocs) {
-    const actType = activePlacementActivity?.target?.template?.type;
-    if (actType && ["cone", "line", "ray"].includes(actType)) return true;
+function _shouldExcludeOrigin(regionDocs) {
+    const act = activePlacementActivity;
+    const actType = act?.target?.template?.type;
+    const actShape = dnd5e?.config?.areaTargetTypes?.[actType]?.template;
+    if (actType && (EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(actType) || (actShape && EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(actShape)))) {
+        return true;
+    }
 
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
     for (const doc of docs) {
         if (!doc) continue;
         const shapes = doc.shapes ?? [];
         for (const shape of shapes) {
-            if (shape?.type && ["cone", "line", "ray"].includes(shape.type)) return true;
+            if (shape?.type && EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(shape.type)) return true;
         }
         const templateT = doc.flags?.core?.MeasuredTemplate?.t;
-        if (templateT && ["cone", "ray"].includes(templateT)) return true;
-        const dnd5eType = doc.flags?.dnd5e?.dimensions?.type;
-        if (dnd5eType && ["cone", "line", "ray"].includes(dnd5eType)) return true;
+        if (templateT && (templateT === "cone" || templateT === "ray" || EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(templateT))) return true;
+        const activityUuid = doc.flags?.dnd5e?.activity;
+        if (activityUuid) {
+            try {
+                const docActivity = fromUuidSync(activityUuid, { strict: false });
+                const docActType = docActivity?.target?.template?.type;
+                const docActShape = dnd5e?.config?.areaTargetTypes?.[docActType]?.template;
+                if (docActType && (EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(docActType) || (docActShape && EXCLUDED_ORIGIN_TEMPLATE_TYPES.has(docActShape)))) {
+                    return true;
+                }
+            } catch (err) {}
+        }
     }
     return false;
 }
 
 /**
- * Retrieve token IDs for the originating caster token(s) of the active template.
+ * Retrieve token IDs for the originating source token(s) of the active template.
+ * Under D&D 5e / 2024 rules:
+ * - Directional templates (cone, line, ray) originate from the caster and exclude the caster.
+ * - Emanations originate from the attached token, but are only excluded if that attached token
+ *   is also the source (caster/creator) of the emanation.
+ *
  * @param {RegionDocument|RegionDocument[]} regionDocs
  * @returns {Set<string>}
  */
 function _getOriginatingTokenIds(regionDocs) {
-    if (_isPlacingRegion && _cachedOriginIds && _cachedOriginIds.size > 0) return _cachedOriginIds;
-
     const ids = new Set();
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
 
+    // 1. Resolve source / caster tokens (cached during live placement RAF loop)
+    let sourceTokenIds = null;
+    if (_isPlacingRegion && _cachedOriginIds !== null) {
+        sourceTokenIds = _cachedOriginIds;
+    } else {
+        sourceTokenIds = new Set();
+        for (const doc of docs) {
+            if (!doc) continue;
+            const originUuid = doc.flags?.dnd5e?.origin;
+            if (originUuid) {
+                try {
+                    const originDoc = fromUuidSync(originUuid, { strict: false });
+                    if (originDoc) {
+                        if (originDoc instanceof Actor || typeof originDoc.getActiveTokens === "function") {
+                            const active = originDoc.getActiveTokens?.(false, true) ?? originDoc.getActiveTokens?.() ?? [];
+                            for (const t of active) {
+                                if (t?.id) sourceTokenIds.add(t.id);
+                            }
+                        } else if (originDoc.id) {
+                            sourceTokenIds.add(originDoc.id);
+                        }
+                    }
+                } catch (err) {}
+            }
+        }
+
+        const act = activePlacementActivity;
+        if (act) {
+            try {
+                const usageToken = act.getUsageToken?.();
+                if (usageToken?.id) sourceTokenIds.add(usageToken.id);
+            } catch (err) {}
+
+            const actor = act.actor ?? act.item?.actor;
+            if (actor) {
+                try {
+                    const activeTokens = actor.getActiveTokens?.(false, true) ?? actor.getActiveTokens?.() ?? [];
+                    for (const t of activeTokens) {
+                        if (t?.id) sourceTokenIds.add(t.id);
+                    }
+                } catch (err) {}
+            }
+        }
+
+        if (!sourceTokenIds.size) {
+            for (const token of canvas.tokens?.controlled ?? []) {
+                sourceTokenIds.add(token.id);
+            }
+            if (game.user.character) {
+                try {
+                    for (const t of game.user.character.getActiveTokens?.() ?? []) {
+                        if (t?.id) sourceTokenIds.add(t.id);
+                    }
+                } catch (err) {}
+            }
+        }
+
+        if (_isPlacingRegion) {
+            _cachedOriginIds = sourceTokenIds;
+        } else {
+            _cachedOriginIds = null;
+        }
+    }
+
+    // 2. Evaluate each document to determine excluded origin tokens
     for (const doc of docs) {
         if (!doc) continue;
-        const originUuid = doc.flags?.dnd5e?.origin;
-        if (originUuid) {
-            try {
-                const originDoc = fromUuidSync(originUuid, { strict: false });
-                if (originDoc?.id) ids.add(originDoc.id);
-            } catch (err) {}
+        const shapes = doc.shapes ?? [];
+        const isEmanation = shapes.some(s => s.type === "emanation")
+            || activePlacementActivity?.target?.template?.type === "radius"
+            || activePlacementActivity?.target?.template?.type === "emanation";
+
+        if (isEmanation) {
+            // A token is only excluded for an emanation if it is BOTH the source AND the attached token
+            const attached = doc.attachment?.token ?? doc._source?.attachment?.token;
+            const attachedId = typeof attached === "string" ? attached : attached?.id;
+            if (attachedId && sourceTokenIds.has(attachedId)) {
+                ids.add(attachedId);
+            }
+        } else {
+            // For directional templates (cone, line, ray), exclude the source/caster token(s)
+            for (const id of sourceTokenIds) {
+                ids.add(id);
+            }
         }
     }
 
-    if (activePlacementActivity) {
-        try {
-            const usageToken = activePlacementActivity.getUsageToken?.();
-            if (usageToken?.id) ids.add(usageToken.id);
-        } catch (err) {}
-
-        const actor = activePlacementActivity.actor ?? activePlacementActivity.item?.actor;
-        if (actor) {
-            try {
-                const activeTokens = actor.getActiveTokens?.(false, true) ?? actor.getActiveTokens?.() ?? [];
-                for (const t of activeTokens) {
-                    if (t?.id) ids.add(t.id);
-                }
-            } catch (err) {}
-        }
-    }
-
-    if (!ids.size) {
-        for (const token of canvas.tokens?.controlled ?? []) {
-            ids.add(token.id);
-        }
-        if (game.user.character) {
-            try {
-                for (const t of game.user.character.getActiveTokens?.() ?? []) {
-                    if (t?.id) ids.add(t.id);
-                }
-            } catch (err) {}
-        }
-    }
-
-    if (_isPlacingRegion) {
-        _cachedOriginIds = ids;
-    } else {
-        _cachedOriginIds = null;
-    }
     return ids;
 }
 
@@ -397,7 +469,7 @@ function _getOriginatingTokenIds(regionDocs) {
  * Calculate which tokens fall inside any of the specified Region documents.
  * Uses native TokenDocument#testInsideRegion() API.
  * Respects token visibility so non-GMs cannot auto-target hidden tokens.
- * For cone and ray/line templates, always excludes the originating token.
+ * For cone, ray/line, and emanation templates, always excludes the originating token.
  *
  * @param {RegionDocument|RegionDocument[]} regionDocs  One or more Region documents to test against.
  * @returns {string[]}                                  Array of token IDs enclosed by the regions.
@@ -407,8 +479,8 @@ function _getTargetsForRegions(regionDocs) {
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
     if (!docs.length) return [];
 
-    const isDirectional = _isConeOrLine(docs);
-    const originIds = isDirectional ? _getOriginatingTokenIds(docs) : null;
+    const shouldExcludeOrigin = _shouldExcludeOrigin(docs);
+    const originIds = shouldExcludeOrigin ? _getOriginatingTokenIds(docs) : null;
 
     const targetIds = [];
     for (const token of canvas.tokens.placeables) {
@@ -417,7 +489,7 @@ function _getTargetsForRegions(regionDocs) {
         // Non-GMs cannot target tokens they cannot see
         if (!token.visible && !game.user.isGM) continue;
 
-        // For cone and ray/line templates, always exclude the originating token
+        // For cone, ray/line, and emanation templates, always exclude the originating token
         if (originIds?.has(token.id)) continue;
 
         let inside = false;
