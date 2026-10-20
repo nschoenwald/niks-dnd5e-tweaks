@@ -88,6 +88,164 @@ export function isDamageRoll(roll) {
 }
 
 /**
+ * Extract an explicit damage or healing type from a formula part string if present in bracketed syntax.
+ * (e.g. `1d8[radiant]` -> `"radiant"`).
+ *
+ * @param {string} part
+ * @returns {string|null} The normalized lower-case damage type key, or null if no valid damage type tag was found.
+ */
+export function getExplicitDamageTypeFromPart(part) {
+    if (typeof part !== "string") return null;
+    for (const match of part.matchAll(/\[([a-zA-Z0-9_-]+)\]/g)) {
+        const cleanType = match[1]?.trim().toLowerCase();
+        if (CONFIG.DND5E?.damageTypes?.[cleanType] || CONFIG.DND5E?.healingTypes?.[cleanType]) {
+            return cleanType;
+        }
+    }
+    return null;
+}
+
+/**
+ * Splits a composite formula string on top-level addition and subtraction operators (+ and -),
+ * respecting nested parentheses and bracket tags.
+ *
+ * @param {string} formulaStr
+ * @returns {string[]}
+ */
+export function splitAdditiveFormulaParts(formulaStr) {
+    if (typeof formulaStr !== "string") return [formulaStr];
+    const parts = [];
+    let depth = 0;
+    let current = "";
+    for (let i = 0; i < formulaStr.length; i++) {
+        const char = formulaStr[i];
+        if (char === "[" || char === "(") depth++;
+        else if (char === "]" || char === ")") depth = Math.max(0, depth - 1);
+
+        if (depth === 0 && (char === "+" || char === "-") && current.trim()) {
+            parts.push(current.trim());
+            current = char === "-" ? "-" : "";
+        } else {
+            current += char;
+        }
+    }
+    if (current.trim()) parts.push(current.trim());
+    return parts;
+}
+
+/**
+ * Inspects a pending damage roll configuration and splits any formula parts that declare an
+ * explicit damage type differing from the parent roll's damage type into their own distinct
+ * roll configuration entry (e.g. `1d8[radiant]` from Radiant Strikes / Divine Favor).
+ *
+ * @param {DamageRollProcessConfiguration} config
+ * @param {DamageRollDialogConfiguration} [dialog]
+ * @param {DamageRollMessageConfiguration} [message]
+ */
+export function splitTypedDamageParts(config, dialog, message) {
+    if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+    if (!config?.rolls?.length) return;
+
+    const newRolls = [];
+    for (const rollConfig of config.rolls) {
+        if (!Array.isArray(rollConfig.parts) || rollConfig.parts.length === 0) {
+            newRolls.push(rollConfig);
+            continue;
+        }
+
+        // Avoid re-splitting conditional damage rolls, AC5e synthetic bonus rolls, or already split rolls
+        if (
+            rollConfig.options?._nd5tTypedBonus
+            || rollConfig.options?._nd5tConditionalId
+            || rollConfig.options?.["automated-conditions-5e"]?.syntheticBonusRoll
+            || rollConfig.options?.ac5e?.syntheticBonusRoll
+        ) {
+            newRolls.push(rollConfig);
+            continue;
+        }
+
+        const baseType = (typeof rollConfig.options?.type === "string") ? rollConfig.options.type.trim().toLowerCase() : "";
+
+        // Flatten any composite formula parts by top-level addition/subtraction
+        const flattenedParts = [];
+        for (const rawPart of rollConfig.parts) {
+            if (typeof rawPart === "string" && (rawPart.includes("+") || rawPart.includes("-")) && rawPart.includes("[")) {
+                flattenedParts.push(...splitAdditiveFormulaParts(rawPart));
+            } else {
+                flattenedParts.push(rawPart);
+            }
+        }
+
+        const partsToKeep = [];
+        const typedPartsByType = new Map(); // damageType -> string[]
+
+        for (const part of flattenedParts) {
+            const detectedType = getExplicitDamageTypeFromPart(part);
+            if (detectedType && detectedType !== baseType) {
+                if (!typedPartsByType.has(detectedType)) {
+                    typedPartsByType.set(detectedType, []);
+                }
+                typedPartsByType.get(detectedType).push(part);
+            } else {
+                partsToKeep.push(part);
+            }
+        }
+
+        if (!typedPartsByType.size) {
+            rollConfig.parts = flattenedParts;
+            newRolls.push(rollConfig);
+            continue;
+        }
+
+        // If all parts were typed and belong to a single new type, retype rollConfig in-place
+        if (partsToKeep.length === 0 && typedPartsByType.size === 1) {
+            const [singleType, parts] = typedPartsByType.entries().next().value;
+            rollConfig.parts = parts;
+            rollConfig.options = rollConfig.options ?? {};
+            rollConfig.options.type = singleType;
+            rollConfig.options.types = [singleType];
+            if (rollConfig.data?.roll?.damage) {
+                rollConfig.data.roll.damage.type = singleType;
+            }
+            newRolls.push(rollConfig);
+            continue;
+        }
+
+        // Keep remaining parts in rollConfig (if any)
+        if (partsToKeep.length > 0) {
+            rollConfig.parts = partsToKeep;
+            newRolls.push(rollConfig);
+        }
+
+        // Create new roll configurations for each distinct typed damage part
+        for (const [damageType, parts] of typedPartsByType.entries()) {
+            const newRollConfig = foundry.utils.deepClone(rollConfig);
+            newRollConfig.parts = parts;
+
+            newRollConfig.options = newRollConfig.options ?? {};
+            newRollConfig.options.type = damageType;
+            newRollConfig.options.types = [damageType];
+            newRollConfig.options._nd5tTypedBonus = true;
+
+            newRollConfig.data = newRollConfig.data ?? {};
+            if (newRollConfig.data.roll?.damage) {
+                newRollConfig.data.roll.damage.type = damageType;
+            }
+
+            // Propagate critical hit flag if present on parent process config or roll
+            if (config.isCritical || rollConfig.options?.isCritical || rollConfig.data?.roll?.isCritical) {
+                newRollConfig.options.isCritical = true;
+                foundry.utils.setProperty(newRollConfig, "data.roll.isCritical", true);
+            }
+
+            newRolls.push(newRollConfig);
+        }
+    }
+
+    config.rolls = newRolls;
+}
+
+/**
  * Proactively tag roll configuration parts with bracketed flavor tags
  * during roll creation (e.g. @mod[STR], @prof[PB], @reductions.exhaustion[Exhaustion 1]).
  *
@@ -1299,21 +1457,29 @@ export function processModifierChunk(chunk, roll, { actor = null, claimedEffectI
     }
 
     let label = "";
+    let modDamageType = null;
     for (const t of terms) {
-        const flav = t.flavor ? t.flavor.trim() : (t.options?.flavor ? String(t.options.flavor).trim() : "");
-        if (flav) {
-            label = flav;
-            break;
+        const flav = (t.flavor ? t.flavor.trim() : (t.options?.flavor ? String(t.options.flavor).trim() : "")).toLowerCase();
+        if (CONFIG.DND5E?.damageTypes?.[flav] || CONFIG.DND5E?.healingTypes?.[flav]) {
+            modDamageType = flav;
+        }
+        const formulaMatch = t.formula ? t.formula.match(/\[([a-zA-Z0-9_-]+)\]/) : null;
+        if (formulaMatch) {
+            const formType = formulaMatch[1].trim().toLowerCase();
+            if (CONFIG.DND5E?.damageTypes?.[formType] || CONFIG.DND5E?.healingTypes?.[formType]) {
+                modDamageType = formType;
+            }
+        }
+        if (flav && !label) {
+            label = t.flavor ? t.flavor.trim() : (t.options?.flavor ? String(t.options.flavor).trim() : "");
         }
         if (t instanceof foundry.dice.terms.ParentheticalTerm && t.roll?.terms) {
             for (const pt of t.roll.terms) {
                 const pfl = pt.flavor ? pt.flavor.trim() : (pt.options?.flavor ? String(pt.options.flavor).trim() : "");
-                if (pfl) {
+                if (pfl && !label) {
                     label = pfl;
-                    break;
                 }
             }
-            if (label) break;
         }
     }
 
@@ -1349,16 +1515,19 @@ export function processModifierChunk(chunk, roll, { actor = null, claimedEffectI
         }
     }
 
-    if (!label && actor && isDamageRoll(roll)) {
-        const damageType = String(roll.options?.type ?? "").trim().toLowerCase();
+    const isModFlavorStandardTag = !label || isStandardDamageOrAttributeTag(label) || (modDamageType && label.toLowerCase() === modDamageType);
+    if (isModFlavorStandardTag && actor && isDamageRoll(roll)) {
+        const damageTypeForLookup = modDamageType || String(roll.options?.type ?? "").trim().toLowerCase();
         const effectName = findActiveEffectForDamageBonus(actor, absVal, {
             roll,
-            damageType,
+            damageType: damageTypeForLookup,
             isBase,
             claimedEffectIds
         });
         if (effectName) {
             label = effectName;
+        } else if (modDamageType && label.toLowerCase() === modDamageType) {
+            label = "";
         }
     }
 
@@ -1383,7 +1552,8 @@ export function processModifierChunk(chunk, roll, { actor = null, claimedEffectI
         rawLabel: label,
         formula: (label && isCompound) ? formula : "",
         isPositive,
-        isDie: false
+        isDie: false,
+        damageType: modDamageType || roll.options?.type || null
     };
 }
 
@@ -1450,11 +1620,32 @@ function createDieRow(die, roll, {
         cleanFlavor = extractCleanDieFlavor(flavor || fallbackFlavor, roll);
     }
 
-    if (!cleanFlavor && actor && isDamageRoll(roll)) {
+    let dieDamageType = null;
+    const candidateType = (rawFlavor || "").trim().toLowerCase();
+    if (CONFIG.DND5E?.damageTypes?.[candidateType] || CONFIG.DND5E?.healingTypes?.[candidateType]) {
+        dieDamageType = candidateType;
+    } else if (rawFormulaMatch) {
+        const formulaType = rawFormulaMatch[1].trim().toLowerCase();
+        if (CONFIG.DND5E?.damageTypes?.[formulaType] || CONFIG.DND5E?.healingTypes?.[formulaType]) {
+            dieDamageType = formulaType;
+        }
+    }
+
+    const isFlavorStandardTag = !cleanFlavor || isStandardDamageOrAttributeTag(cleanFlavor) || (dieDamageType && cleanFlavor.toLowerCase() === dieDamageType);
+    if (isFlavorStandardTag && actor && isDamageRoll(roll)) {
         const expression = die?.expression || (die?.faces ? `${die.number ?? 1}d${die.faces}` : "");
-        const damageType = String(roll.options?.type ?? "").trim().toLowerCase();
-        const effectName = findActiveEffectForDamageBonus(actor, expression, { claimedEffectIds, roll, damageType, isBase });
-        if (effectName) cleanFlavor = effectName;
+        const damageTypeForLookup = dieDamageType || String(roll.options?.type ?? "").trim().toLowerCase();
+        const effectName = findActiveEffectForDamageBonus(actor, expression, {
+            claimedEffectIds,
+            roll,
+            damageType: damageTypeForLookup,
+            isBase
+        });
+        if (effectName) {
+            cleanFlavor = effectName;
+        } else if (dieDamageType && cleanFlavor.toLowerCase() === dieDamageType) {
+            cleanFlavor = "";
+        }
     }
 
     if (claimedEffectIds && cleanFlavor && !isStandardDamageOrAttributeTag(cleanFlavor)) {
@@ -1497,7 +1688,8 @@ function createDieRow(die, roll, {
         isFumble: Boolean(roll?.isFumble || (isD20 && die.isCriticalFailure)),
         hasAdvantage: Boolean(roll?.hasAdvantage),
         hasDisadvantage: Boolean(roll?.hasDisadvantage),
-        isBase
+        isBase,
+        damageType: dieDamageType || roll.options?.type || null
     };
 }
 
@@ -1588,7 +1780,8 @@ function createPoolDieRows(poolTerm, roll, {
             isFumble: Boolean(roll?.isFumble),
             hasAdvantage: true,
             hasDisadvantage: false,
-            isBase
+            isBase,
+            damageType: roll?.options?.type || null
         }];
     }
 
@@ -1907,22 +2100,15 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
         const typeMap = new Map();
         const claimedEffectIds = new Set();
 
-        for (let i = 0; i < damageRolls.length; i++) {
-            const roll = damageRolls[i];
-            if (!roll.parent) roll.parent = message;
-
-            const isBase = Boolean(roll.options?.base || roll.base || (isWeapon && i === 0));
-            const data = await getDetailedRollBreakdown(roll, { isBase, actor, item, claimedEffectIds });
-            if (!data) continue;
-
-            const rawType = (typeof roll.options?.type === "string") ? roll.options.type.trim() : "";
-            const isUntyped = !rawType || rawType.toLowerCase() === "untyped" || rawType.toLowerCase() === "none" || rawType.toLowerCase() === "pure";
-            const damageType = isUntyped ? "untyped" : rawType.toLowerCase();
+        const ensureTypeGroup = (rawType) => {
+            const cleanType = (typeof rawType === "string") ? rawType.trim().toLowerCase() : "";
+            const isUntyped = !cleanType || cleanType === "untyped" || cleanType === "none" || cleanType === "pure";
+            const damageType = isUntyped ? "untyped" : cleanType;
 
             if (!typeMap.has(damageType)) {
                 const typeConfig = CONFIG.DND5E?.damageTypes?.[damageType] ?? CONFIG.DND5E?.healingTypes?.[damageType] ?? null;
                 const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
-                const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (isUntyped ? pureLabel.toUpperCase() : rawType.toUpperCase());
+                const typeLabel = typeConfig?.labelShort ?? typeConfig?.label ?? (isUntyped ? pureLabel.toUpperCase() : damageType.toUpperCase());
                 const typeIcon = typeConfig?.icon ?? (isUntyped ? PURE_DAMAGE_ICON : null);
                 const typeColor = getDamageTypeColor(damageType);
 
@@ -1936,15 +2122,44 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
                     sectionTotal: 0
                 });
             }
+            return typeMap.get(damageType);
+        };
 
-            const group = typeMap.get(damageType);
-            if (data.diceRows?.length) {
-                group.diceRows.push(...data.diceRows);
+        for (let i = 0; i < damageRolls.length; i++) {
+            const roll = damageRolls[i];
+            if (!roll.parent) roll.parent = message;
+
+            const isBase = Boolean(roll.options?.base || roll.base || (isWeapon && i === 0));
+            const data = await getDetailedRollBreakdown(roll, { isBase, actor, item, claimedEffectIds });
+            if (!data) continue;
+
+            const rollDamageType = (typeof roll.options?.type === "string") ? roll.options.type.trim().toLowerCase() : "";
+
+            // Check if this roll has mixed damage types across its dice or modifiers
+            const hasMultipleTypesInRoll = (data.diceRows ?? []).some(d => d.damageType && d.damageType.toLowerCase() !== rollDamageType)
+                || (data.modifiers ?? []).some(m => m.damageType && m.damageType.toLowerCase() !== rollDamageType);
+
+            if (!hasMultipleTypesInRoll) {
+                // Standard case: all terms belong to roll's damage type
+                const group = ensureTypeGroup(rollDamageType);
+                if (data.diceRows?.length) group.diceRows.push(...data.diceRows);
+                if (data.modifiers?.length) group.modifiers.push(...data.modifiers);
+                group.sectionTotal += Number(roll.total ?? 0);
+            } else {
+                // Partitioned case: distribute dice and modifiers into their respective damage types
+                for (const dieRow of data.diceRows ?? []) {
+                    const targetType = (dieRow.damageType ? dieRow.damageType.toLowerCase() : null) || rollDamageType;
+                    const group = ensureTypeGroup(targetType);
+                    group.diceRows.push(dieRow);
+                    group.sectionTotal += Number(dieRow.total ?? 0);
+                }
+                for (const mod of data.modifiers ?? []) {
+                    const targetType = (mod.damageType ? mod.damageType.toLowerCase() : null) || rollDamageType;
+                    const group = ensureTypeGroup(targetType);
+                    group.modifiers.push(mod);
+                    group.sectionTotal += Number(mod.signedTotal ?? 0);
+                }
             }
-            if (data.modifiers?.length) {
-                group.modifiers.push(...data.modifiers);
-            }
-            group.sectionTotal += Number(roll.total ?? 0);
         }
 
         if (!typeMap.size) return;
@@ -2025,7 +2240,11 @@ export function initRollBreakdownDetails() {
 
     log("Initializing Detailed Roll Breakdown Overlay");
 
-    // Tier 1: Proactive formula tagging during roll construction
+    // Tier 1: Proactive formula tagging and typed bonus damage splitting during roll construction
+    Hooks.on("dnd5e.preRollDamage", (config, dialog, message) => {
+        splitTypedDamageParts(config, dialog, message);
+    });
+
     // dnd5e.postBuildRollConfig fires exactly once for all roll types (attacks, damage, checks, saves, tools)
     Hooks.on("dnd5e.postBuildRollConfig", (processConfig, rollConfig, index, hookOptions) => {
         tagRollConfigParts(processConfig, rollConfig, index, hookOptions);

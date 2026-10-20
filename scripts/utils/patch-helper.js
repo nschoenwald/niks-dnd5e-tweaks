@@ -102,20 +102,22 @@ export function patchMethod(target, fn, type = "MIXED", options = {}) {
             chain.push(fn);
             debug(`patchMethod | Appended additional handler to existing chain for "${target}".`);
         }
-        // If a new handler needs MIXED but the target was registered as WRAPPER, upgrade libWrapper registration
-        if (type === "MIXED" && _registeredTypes.get(target) === "WRAPPER" && isLibWrapperActive()) {
-            try {
-                const libWrapperTarget = target.endsWith("#get") ? target.slice(0, -4) : target;
-                globalThis.libWrapper.unregister(MODULE_ID, libWrapperTarget);
-                const dispatcher = function (...dispatcherArgs) {
-                    const [wrapped, ...args] = dispatcherArgs;
-                    return _executeChain(chain, wrapped, this, args);
-                };
-                globalThis.libWrapper.register(MODULE_ID, libWrapperTarget, dispatcher, "MIXED", options);
-                _registeredTypes.set(target, "MIXED");
-                debug(`patchMethod | Upgraded "${target}" registration to MIXED via libWrapper.`);
-            } catch (err) {
-                console.warn(`${MODULE_ID} | libWrapper upgrade to MIXED failed for "${target}":`, err);
+        // If a new handler needs MIXED but the target was registered as WRAPPER, upgrade registration
+        if (type === "MIXED" && _registeredTypes.get(target) === "WRAPPER") {
+            _registeredTypes.set(target, "MIXED");
+            if (isLibWrapperActive()) {
+                try {
+                    const libWrapperTarget = target.endsWith("#get") ? target.slice(0, -4) : target;
+                    globalThis.libWrapper.unregister(MODULE_ID, libWrapperTarget);
+                    const dispatcher = function (...dispatcherArgs) {
+                        const [wrapped, ...args] = dispatcherArgs;
+                        return _executeChain(chain, wrapped, this, args);
+                    };
+                    globalThis.libWrapper.register(MODULE_ID, libWrapperTarget, dispatcher, "MIXED", options);
+                    debug(`patchMethod | Upgraded "${target}" registration to MIXED via libWrapper.`);
+                } catch (err) {
+                    console.warn(`${MODULE_ID} | libWrapper upgrade to MIXED failed for "${target}":`, err);
+                }
             }
         }
         return true;

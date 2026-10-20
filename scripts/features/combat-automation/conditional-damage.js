@@ -1818,7 +1818,7 @@ function _ensureAllConditionalRollsInConfig(config) {
     if (!bonuses?.length) return;
 
     config.rolls ??= [];
-    const baseIndex = config.rolls.findIndex(r => !r.options?._nd5tConditionalId);
+    const baseIndex = config.rolls.findIndex(r => !r.options?._nd5tConditionalId && !r.options?._nd5tTypedBonus);
     const baseRoll = baseIndex >= 0 ? config.rolls[baseIndex] : config.rolls[0];
     const baseRollData = baseRoll?.data ?? {};
     const baseProperties = baseRoll?.options?.properties ?? [];
@@ -2093,7 +2093,7 @@ function _patchDamageRollConfigurationDialog() {
                 const bonuses = this.config?._nd5tConditionalBonuses;
                 if (bonuses?.length && this.form) {
                     const formData = new foundry.applications.ux.FormDataExtended(this.form);
-                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
+                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId && !r.options?._nd5tTypedBonus);
                     const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
                     const baseProperties = baseRoll?.options?.properties ?? [];
 
@@ -2186,7 +2186,7 @@ function _patchDamageRollConfigurationDialog() {
                 const bonuses = this.config?._nd5tConditionalBonuses;
                 if (bonuses?.length && this.form) {
                     const formData = new foundry.applications.ux.FormDataExtended(this.form);
-                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
+                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId && !r.options?._nd5tTypedBonus);
                     const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
                     const baseProperties = baseRoll?.options?.properties ?? [];
 

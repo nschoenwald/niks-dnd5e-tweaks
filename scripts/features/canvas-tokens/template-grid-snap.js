@@ -74,7 +74,8 @@ function _handleShapeSnappedPoint(wrapped, point) {
     }
 
     const grid = this.grid ?? canvas.grid;
-    if (grid?.isGridless) {
+    if (!grid) return wrapped(point);
+    if (grid.isGridless) {
         return { x: Math.round(point.x), y: Math.round(point.y) };
     }
 

@@ -146,7 +146,7 @@ function _wrapRegionLayerPlaceRegion() {
                 activeTemplateConfig = null;
             }
         }
-    }, "WRAPPER");
+    }, "MIXED");
 }
 
 /**

@@ -394,10 +394,10 @@ export function initRetroactiveAdvantage() {
             );
         }
 
-        // 2. Wrap game.configureUI so Foundry core theme changes update buttons
-        if (typeof game.configureUI === "function") {
+        // 2. Wrap Game.prototype.configureUI so Foundry core theme changes update buttons
+        if (typeof Game?.prototype?.configureUI === "function") {
             patchMethod(
-                "game.configureUI",
+                "Game.prototype.configureUI",
                 function(wrapped, ...args) {
                     const result = wrapped(...args);
                     try {

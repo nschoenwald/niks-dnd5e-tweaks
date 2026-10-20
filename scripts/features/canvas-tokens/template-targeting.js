@@ -188,7 +188,7 @@ function _wrapRegionLayerPlaceRegion() {
                 }, 5000);
             }
         }
-    }, "WRAPPER");
+    }, "MIXED");
 }
 
 /**
