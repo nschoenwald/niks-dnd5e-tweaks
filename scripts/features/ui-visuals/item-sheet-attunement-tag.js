@@ -5,6 +5,7 @@
  * @introduced v14.33.0
  */
 import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { patchMethod, unpatchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Item Sheet Attunement Tag
@@ -74,33 +75,44 @@ function _isTooltipTaggingActive() {
 }
 
 /**
+ * Handler for CONFIG.Item.documentClass.prototype.richTooltip.
+ */
+async function _onItemRichTooltip(wrapped, enrichmentOptions = {}) {
+    const result = await wrapped(enrichmentOptions);
+    if (!_isTooltipTaggingActive()) return result;
+    return _enhanceTooltipResult(this, result);
+}
+
+/**
+ * Handler for dnd5e.dataModels.abstract.ItemDataModel.prototype.richTooltip.
+ */
+async function _onItemDataModelRichTooltip(wrapped, enrichmentOptions = {}) {
+    const result = await wrapped(enrichmentOptions);
+    if (!_isTooltipTaggingActive()) return result;
+    const item = this.parent ?? this;
+    return _enhanceTooltipResult(item, result);
+}
+
+/**
  * Wrap item richTooltip methods.
  */
 function _wrapTooltips() {
     // 1. Wrap CONFIG.Item.documentClass.prototype.richTooltip
-    const ItemClass = CONFIG.Item?.documentClass;
-    if (ItemClass?.prototype?.richTooltip && !_origItemRichTooltip) {
-        _origItemRichTooltip = ItemClass.prototype.richTooltip;
-        ItemClass.prototype.richTooltip = async function (enrichmentOptions = {}) {
-            const result = await _origItemRichTooltip.call(this, enrichmentOptions);
-            if (!_isTooltipTaggingActive()) return result;
-            return _enhanceTooltipResult(this, result);
-        };
-        ItemClass.prototype.richTooltip._niksWrapped = true;
-    }
+    patchMethod(
+        "CONFIG.Item.documentClass.prototype.richTooltip",
+        _onItemRichTooltip,
+        "WRAPPER"
+    );
 
     // 2. Wrap ItemDataModel.prototype.richTooltip
     const sampleModel = CONFIG.Item?.dataModels?.weapon || Object.values(CONFIG.Item?.dataModels || {})[0];
     const BaseItemDataModel = sampleModel ? Object.getPrototypeOf(sampleModel.constructor)?.prototype : null;
-    if (BaseItemDataModel?.richTooltip && !_origItemDataModelRichTooltip) {
-        _origItemDataModelRichTooltip = BaseItemDataModel.richTooltip;
-        BaseItemDataModel.richTooltip = async function (enrichmentOptions = {}) {
-            const result = await _origItemDataModelRichTooltip.call(this, enrichmentOptions);
-            if (!_isTooltipTaggingActive()) return result;
-            const item = this.parent ?? this;
-            return _enhanceTooltipResult(item, result);
-        };
-        BaseItemDataModel.richTooltip._niksWrapped = true;
+    if (BaseItemDataModel?.richTooltip) {
+        patchMethod(
+            "dnd5e.dataModels.abstract.ItemDataModel.prototype.richTooltip",
+            _onItemDataModelRichTooltip,
+            "WRAPPER"
+        );
     }
 
     // 3. Fallback DOM observer for #tooltip
@@ -111,18 +123,8 @@ function _wrapTooltips() {
  * Unwrap item richTooltip methods and disconnect observer.
  */
 function _unwrapTooltips() {
-    const ItemClass = CONFIG.Item?.documentClass;
-    if (_origItemRichTooltip && ItemClass?.prototype) {
-        ItemClass.prototype.richTooltip = _origItemRichTooltip;
-        _origItemRichTooltip = null;
-    }
-
-    const sampleModel = CONFIG.Item?.dataModels?.weapon || Object.values(CONFIG.Item?.dataModels || {})[0];
-    const BaseItemDataModel = sampleModel ? Object.getPrototypeOf(sampleModel.constructor)?.prototype : null;
-    if (_origItemDataModelRichTooltip && BaseItemDataModel) {
-        BaseItemDataModel.richTooltip = _origItemDataModelRichTooltip;
-        _origItemDataModelRichTooltip = null;
-    }
+    unpatchMethod("CONFIG.Item.documentClass.prototype.richTooltip", _onItemRichTooltip);
+    unpatchMethod("dnd5e.dataModels.abstract.ItemDataModel.prototype.richTooltip", _onItemDataModelRichTooltip);
 
     if (_tooltipObserver) {
         _tooltipObserver.disconnect();

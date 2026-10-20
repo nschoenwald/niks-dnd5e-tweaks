@@ -9,6 +9,7 @@
  * @updated v14.46.4
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Auto-Collapse Damage Trays (GM & Players)
@@ -563,18 +564,18 @@ function _collapseTrayElement(message, html) {
  * Initialize the Auto-Collapse Damage Trays feature.
  */
 export function initAutoCollapseDamageTrays() {
-    const ChatMessage5e = CONFIG.ChatMessage?.documentClass;
-    if (ChatMessage5e?.prototype?._collapseTrays) {
-        const originalCollapseTrays = ChatMessage5e.prototype._collapseTrays;
-        ChatMessage5e.prototype._collapseTrays = function(html) {
-            originalCollapseTrays.call(this, html);
+    patchMethod(
+        "CONFIG.ChatMessage.documentClass.prototype._collapseTrays",
+        function(wrapped, html) {
+            wrapped(html);
             if (!game.user?.isGM && isPlayerHealingAimedAtNpc(this, html)) {
                 _handlePlayerHealingMistarget(this, html);
             } else if (shouldCollapseDamageTray(this, html)) {
                 _collapseTrayElement(this, html);
             }
-        };
-    }
+        },
+        "WRAPPER"
+    );
 
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
         if (!game.user?.isGM && isPlayerHealingAimedAtNpc(message, html)) {

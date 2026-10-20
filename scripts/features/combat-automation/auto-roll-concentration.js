@@ -5,6 +5,7 @@
  * @introduced v14.12.0
  */
 import { MODULE_ID, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Auto-Roll Concentration Saves on Damage
@@ -215,20 +216,13 @@ export function getConcentratingItems(actor) {
     return items;
 }
 
-let _challengeConcentrationPatched = false;
-
 /**
  * Patch Actor5e.prototype.challengeConcentration to:
  * 1. Suppress the system's concentration challenge prompt for actors with Boon of the Iron Mind.
  * 2. When a connected player owner is online, whisper the challenge prompt ONLY to connected player owners (not GM).
  */
 function _patchChallengeConcentration() {
-    if (_challengeConcentrationPatched) return;
-    const ActorClass = CONFIG.Actor?.documentClass;
-    if (!ActorClass?.prototype?.challengeConcentration) return;
-
-    const originalChallengeConcentration = ActorClass.prototype.challengeConcentration;
-    ActorClass.prototype.challengeConcentration = async function (options = {}, ...args) {
+    patchMethod("CONFIG.Actor.documentClass.prototype.challengeConcentration", async function patchedChallengeConcentration(wrapped, options = {}, ...args) {
         if (game.settings.get(MODULE_ID, "enableAutoRollConcentration")) {
             if (hasBoonOfTheIronMind(this)) {
                 debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping concentration challenge prompt.`);
@@ -261,7 +255,7 @@ function _patchChallengeConcentration() {
                 });
             }
         }
-        const msg = await originalChallengeConcentration.call(this, options, ...args);
+        const msg = await wrapped(options, ...args);
         if (msg && msg.canUserModify?.(game.user, "update")) {
             const concentratingItems = getConcentratingItems(this);
             msg.update({
@@ -271,30 +265,21 @@ function _patchChallengeConcentration() {
             }).catch(() => {});
         }
         return msg;
-    };
-    _challengeConcentrationPatched = true;
+    }, "MIXED");
 }
-
-let _rollConcentrationPatched = false;
 
 /**
  * Patch Actor5e.prototype.rollConcentration to prevent roll prompts or rolls
  * for actors that possess the Boon of the Iron Mind feat.
  */
 function _patchRollConcentration() {
-    if (_rollConcentrationPatched) return;
-    const ActorClass = CONFIG.Actor?.documentClass;
-    if (!ActorClass?.prototype?.rollConcentration) return;
-
-    const originalRollConcentration = ActorClass.prototype.rollConcentration;
-    ActorClass.prototype.rollConcentration = async function (...args) {
+    patchMethod("CONFIG.Actor.documentClass.prototype.rollConcentration", async function patchedRollConcentration(wrapped, ...args) {
         if (game.settings.get(MODULE_ID, "enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
             debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping rollConcentration.`);
             return null;
         }
-        return originalRollConcentration.apply(this, args);
-    };
-    _rollConcentrationPatched = true;
+        return wrapped(...args);
+    }, "MIXED");
 }
 
 /**

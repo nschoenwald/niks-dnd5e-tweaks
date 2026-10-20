@@ -7,6 +7,7 @@
  * @introduced v14.41.0
  */
 import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Map of active short rest aggregation sessions.
@@ -515,10 +516,9 @@ export function initAggregateShortRestRolls() {
     // Suppresses individual chat message creation, immediately applies HP & HD database updates,
     // and animates local 3D dice for the rolling player.
     // =========================================================================
-    const origRollHitDie = Actor5eClass.prototype.rollHitDie;
-    Actor5eClass.prototype.rollHitDie = async function(config = {}, dialog = {}, message = {}) {
+    patchMethod("CONFIG.Actor.documentClass.prototype.rollHitDie", async function patchedRollHitDie(wrapped, config = {}, dialog = {}, message = {}) {
         if (!isAggregateShortRestRollsActive()) {
-            return origRollHitDie.call(this, config, dialog, message);
+            return wrapped(config, dialog, message);
         }
 
         // Check if this actor has an active session or an open ShortRestDialog
@@ -531,7 +531,7 @@ export function initAggregateShortRestRolls() {
 
         // If not currently in a short rest session, execute standard roll workflow
         if (!session) {
-            return origRollHitDie.call(this, config, dialog, message);
+            return wrapped(config, dialog, message);
         }
 
         // Suppress individual chat card creation directly via messageConfig
@@ -539,7 +539,7 @@ export function initAggregateShortRestRolls() {
         messageConfig.create = false;
 
         log(`Aggregate Short Rest | Rolling hit die for ${this.name} with message creation suppressed.`);
-        const rolls = await origRollHitDie.call(this, config, dialog, messageConfig);
+        const rolls = await wrapped(config, dialog, messageConfig);
 
         if (rolls?.length) {
             for (const r of rolls) {
@@ -563,7 +563,7 @@ export function initAggregateShortRestRolls() {
         }
 
         return rolls;
-    };
+    }, "WRAPPER");
     log("Aggregate Short Rest | Successfully wrapped Actor5e.prototype.rollHitDie");
 
     // =========================================================================

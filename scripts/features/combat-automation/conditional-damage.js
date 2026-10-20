@@ -13,6 +13,7 @@
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Registry of static conditional damage bonus definitions.
@@ -1898,387 +1899,407 @@ let _isDialogPatched = false;
  */
 function _patchDamageRollConfigurationDialog() {
     if (_isDialogPatched) return;
-    const DialogClass = CONFIG.Dice?.DamageRoll?.DefaultConfigurationDialog;
-    if (!DialogClass) return;
+    const base = foundry.utils.getProperty(globalThis, "dnd5e.applications.dice.DamageRollConfigurationDialog")
+        ? "dnd5e.applications.dice.DamageRollConfigurationDialog"
+        : (CONFIG.Dice?.DamageRoll?.DefaultConfigurationDialog ? "CONFIG.Dice.DamageRoll.DefaultConfigurationDialog" : null);
+    if (!base) return;
+    _isDialogPatched = true;
 
     // 1. Ensure all eligible conditional bonus rolls are included upfront when the dialog is configured
-    const origConfigure = DialogClass.configure;
-    DialogClass.configure = async function(config = {}, dialog = {}, message = {}) {
-        const isDamage = config.hookNames?.includes("damage")
-            || (this.rollType && this.rollType === CONFIG.Dice?.DamageRoll)
-            || (this.name === "DamageRollConfigurationDialog");
-        if (isDamage && isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage") && config._nd5tConditionalBonuses?.length) {
-            _ensureAllConditionalRollsInConfig(config);
-        }
-        return origConfigure.call(this, config, dialog, message);
-    };
+    patchMethod(
+        `${base}.configure`,
+        async function(wrapped, config = {}, dialog = {}, message = {}) {
+            const isDamage = config.hookNames?.includes("damage")
+                || (this.rollType && this.rollType === CONFIG.Dice?.DamageRoll)
+                || (this.name === "DamageRollConfigurationDialog");
+            if (isDamage && isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage") && config._nd5tConditionalBonuses?.length) {
+                _ensureAllConditionalRollsInConfig(config);
+            }
+            return wrapped(config, dialog, message);
+        },
+        "WRAPPER"
+    );
 
     // 2. Filter dice in _prepareFormulasContext and label untyped damage as "Pure"
-    const origPrepareFormulasContext = DialogClass.prototype._prepareFormulasContext;
-    DialogClass.prototype._prepareFormulasContext = async function(context, options) {
-        context = await origPrepareFormulasContext.call(this, context, options);
+    patchMethod(
+        `${base}.prototype._prepareFormulasContext`,
+        async function(wrapped, context, options) {
+            context = await wrapped(context, options);
 
-        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
-            return context;
-        }
-
-        // Relabel untyped damage parts from "Formula" to "Pure" and assign the pure damage icon
-        const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
-        const pureIcon = "systems/dnd5e/icons/svg/damage/all.svg";
-        for (const entry of context.rolls ?? []) {
-            if (!entry.damageConfig && !entry.damageTypes) {
-                const rollType = (typeof entry.roll?.options?.type === "string") ? entry.roll.options.type.trim() : null;
-                const isUntyped = !rollType || rollType.toLowerCase() === "untyped" || rollType.toLowerCase() === "none" || rollType.toLowerCase() === "pure";
-                if (isUntyped) {
-                    entry.damageConfig = {
-                        label: pureLabel,
-                        icon: pureIcon
-                    };
-                } else {
-                    entry.damageConfig = {
-                        label: rollType.charAt(0).toUpperCase() + rollType.slice(1)
-                    };
-                }
+            if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
+                return context;
             }
-        }
 
-        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
-            return context;
-        }
-
-        const activeRolls = (this.rolls ?? []).filter(r => !r.options?._nd5tInactive);
-        let dice = [];
-        let shouldDisplay = true;
-        const denominations = this.options?.rendering?.dice?.denominations ?? new Set(["d4", "d6", "d8", "d10", "d12", "d20"]);
-
-        for (const roll of activeRolls) {
-            for (const term of roll.terms ?? []) {
-                const diceTerms = (term instanceof foundry.dice.terms.PoolTerm)
-                    ? (term.rolls?.[0]?.dice ?? term.dice ?? [])
-                    : (term instanceof foundry.dice.terms.DiceTerm ? [term] : []);
-
-                for (const dt of diceTerms) {
-                    if (!Number.isFinite(dt.number) || !Number.isFinite(dt.faces)) {
-                        shouldDisplay = false;
-                        break;
-                    }
-                    if (!denominations.has(dt.denomination)) {
-                        shouldDisplay = false;
-                        break;
-                    }
-                    for (let i = 0; i < dt.number; i++) {
-                        dice.push({
-                            icon: `systems/dnd5e/icons/svg/dice/${dt.denomination}.svg`,
-                            label: dt.denomination,
-                            denomination: dt.denomination
-                        });
+            // Relabel untyped damage parts from "Formula" to "Pure" and assign the pure damage icon
+            const pureLabel = game.i18n?.localize?.("ND5T.DamageType.Pure") || "Pure";
+            const pureIcon = "systems/dnd5e/icons/svg/damage/all.svg";
+            for (const entry of context.rolls ?? []) {
+                if (!entry.damageConfig && !entry.damageTypes) {
+                    const rollType = (typeof entry.roll?.options?.type === "string") ? entry.roll.options.type.trim() : null;
+                    const isUntyped = !rollType || rollType.toLowerCase() === "untyped" || rollType.toLowerCase() === "none" || rollType.toLowerCase() === "pure";
+                    if (isUntyped) {
+                        entry.damageConfig = {
+                            label: pureLabel,
+                            icon: pureIcon
+                        };
+                    } else {
+                        entry.damageConfig = {
+                            label: rollType.charAt(0).toUpperCase() + rollType.slice(1)
+                        };
                     }
                 }
             }
-            if (!shouldDisplay) break;
-        }
 
-        const max = this.options?.rendering?.dice?.max ?? 10;
-        if (dice.length > max) {
-            const byDenom = dice.reduce((obj, { icon, denomination }) => {
-                obj[denomination] ??= { icon, count: 0 };
-                obj[denomination].count++;
-                return obj;
-            }, {});
-            dice = Object.entries(byDenom).map(([d, { icon, count }]) => ({ icon, label: `${count}${d}` }));
-            if (dice.length > max) shouldDisplay = false;
-        } else if (!dice.length) shouldDisplay = false;
+            if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+                return context;
+            }
 
-        context.dice = shouldDisplay ? dice : [];
+            const activeRolls = (this.rolls ?? []).filter(r => !r.options?._nd5tInactive);
+            let dice = [];
+            let shouldDisplay = true;
+            const denominations = this.options?.rendering?.dice?.denominations ?? new Set(["d4", "d6", "d8", "d10", "d12", "d20"]);
 
-        return context;
-    };
+            for (const roll of activeRolls) {
+                for (const term of roll.terms ?? []) {
+                    const diceTerms = (term instanceof foundry.dice.terms.PoolTerm)
+                        ? (term.rolls?.[0]?.dice ?? term.dice ?? [])
+                        : (term instanceof foundry.dice.terms.DiceTerm ? [term] : []);
+
+                    for (const dt of diceTerms) {
+                        if (!Number.isFinite(dt.number) || !Number.isFinite(dt.faces)) {
+                            shouldDisplay = false;
+                            break;
+                        }
+                        if (!denominations.has(dt.denomination)) {
+                            shouldDisplay = false;
+                            break;
+                        }
+                        for (let i = 0; i < dt.number; i++) {
+                            dice.push({
+                                icon: `systems/dnd5e/icons/svg/dice/${dt.denomination}.svg`,
+                                label: dt.denomination,
+                                denomination: dt.denomination
+                            });
+                        }
+                    }
+                }
+                if (!shouldDisplay) break;
+            }
+
+            const max = this.options?.rendering?.dice?.max ?? 10;
+            if (dice.length > max) {
+                const byDenom = dice.reduce((obj, { icon, denomination }) => {
+                    obj[denomination] ??= { icon, count: 0 };
+                    obj[denomination].count++;
+                    return obj;
+                }, {});
+                dice = Object.entries(byDenom).map(([d, { icon, count }]) => ({ icon, label: `${count}${d}` }));
+                if (dice.length > max) shouldDisplay = false;
+            } else if (!dice.length) shouldDisplay = false;
+
+            context.dice = shouldDisplay ? dice : [];
+
+            return context;
+        },
+        "WRAPPER"
+    );
 
     // 3. Inject conditional checkboxes into _prepareConfigurationContext
-    const origPrepareConfigurationContext = DialogClass.prototype._prepareConfigurationContext;
-    DialogClass.prototype._prepareConfigurationContext = async function(context, options) {
-        context = await origPrepareConfigurationContext.call(this, context, options);
+    patchMethod(
+        `${base}.prototype._prepareConfigurationContext`,
+        async function(wrapped, context, options) {
+            context = await wrapped(context, options);
 
-        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
-            return context;
-        }
-
-        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
-            return context;
-        }
-
-        const bonuses = this.config?._nd5tConditionalBonuses;
-        if (!bonuses?.length) return context;
-
-        context.fields ??= [];
-
-        const bonusFields = bonuses.map(bonus => {
-            let label = bonus.defaultLabel;
-            if (bonus.labelKey && game.i18n?.has(bonus.labelKey)) {
-                label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "" });
+            if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) {
+                return context;
             }
 
-            // Normalize any internal newlines to spaces
-            label = label.replace(/[\r\n]+/g, " ").trim();
-
-            // Format label so title and parenthetical bonus are atomic non-breaking tokens,
-            // allowing the browser to render them on a single line if space permits,
-            // while ensuring that if wrapping is necessary, it wraps cleanly between title and bonus.
-            const match = label.match(/^(.*?)\s*(\([^)]+\))$/);
-            if (match) {
-                const titlePart = match[1].trim().replace(/\s+/g, "\u00A0");
-                const bonusPart = match[2].trim().replace(/\s+/g, "\u00A0");
-                label = `${titlePart} ${bonusPart}`;
+            if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) {
+                return context;
             }
 
-            const isCurrentlyInRolls = (bonus.id === "cleave" || bonus.id === "savageAttacker")
-                ? Boolean(bonus.active)
-                : (this.config.rolls ?? []).some(
-                    r => r.options?._nd5tConditionalId === bonus.id && !r.options?._nd5tInactive
-                );
+            const bonuses = this.config?._nd5tConditionalBonuses;
+            if (!bonuses?.length) return context;
 
-            return {
-                field: new foundry.data.fields.BooleanField({
-                    label,
-                    required: false,
-                    initial: bonus.defaultActive
-                }),
-                name: `nd5t.conditional.${bonus.id}`,
-                value: isCurrentlyInRolls,
-                options: {
-                    classes: "checkbox nd5t-conditional-group"
+            context.fields ??= [];
+
+            const bonusFields = bonuses.map(bonus => {
+                let label = bonus.defaultLabel;
+                if (bonus.labelKey && game.i18n?.has(bonus.labelKey)) {
+                    label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "" });
                 }
-            };
-        });
 
-        // Prepend bonus fields while maintaining their stable definition order
-        context.fields.unshift(...bonusFields);
+                // Normalize any internal newlines to spaces
+                label = label.replace(/[\r\n]+/g, " ").trim();
 
-        return context;
-    };
+                // Format label so title and parenthetical bonus are atomic non-breaking tokens,
+                // allowing the browser to render them on a single line if space permits,
+                // while ensuring that if wrapping is necessary, it wraps cleanly between title and bonus.
+                const match = label.match(/^(.*?)\s*(\([^)]+\))$/);
+                if (match) {
+                    const titlePart = match[1].trim().replace(/\s+/g, "\u00A0");
+                    const bonusPart = match[2].trim().replace(/\s+/g, "\u00A0");
+                    label = `${titlePart} ${bonusPart}`;
+                }
+
+                const isCurrentlyInRolls = (bonus.id === "cleave" || bonus.id === "savageAttacker")
+                    ? Boolean(bonus.active)
+                    : (this.config.rolls ?? []).some(
+                        r => r.options?._nd5tConditionalId === bonus.id && !r.options?._nd5tInactive
+                    );
+
+                return {
+                    field: new foundry.data.fields.BooleanField({
+                        label,
+                        required: false,
+                        initial: bonus.defaultActive
+                    }),
+                    name: `nd5t.conditional.${bonus.id}`,
+                    value: isCurrentlyInRolls,
+                    options: {
+                        classes: "checkbox nd5t-conditional-group"
+                    }
+                };
+            });
+
+            // Prepend bonus fields while maintaining their stable definition order
+            context.fields.unshift(...bonusFields);
+
+            return context;
+        },
+        "WRAPPER"
+    );
 
     // 4. Update formula row DOM classes and disabled states on render
-    const origOnRender = DialogClass.prototype._onRender;
-    DialogClass.prototype._onRender = function(context, options) {
-        origOnRender?.call(this, context, options);
+    patchMethod(
+        `${base}.prototype._onRender`,
+        async function(wrapped, context, options) {
+            await wrapped(context, options);
 
-        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
-        if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) return;
+            if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
+            if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) return;
 
-        _updateFormulaRowStates(this);
-    };
+            _updateFormulaRowStates(this);
+        },
+        "WRAPPER"
+    );
 
     // 5. Synchronize rolls in real time on form change (_onChangeForm) without layout shift
-    const origOnChangeForm = DialogClass.prototype._onChangeForm;
-    DialogClass.prototype._onChangeForm = function(formConfig, event) {
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
-            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
-            const bonuses = this.config?._nd5tConditionalBonuses;
-            if (bonuses?.length && this.form) {
-                const formData = new foundry.applications.ux.FormDataExtended(this.form);
-                const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
-                const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
-                const baseProperties = baseRoll?.options?.properties ?? [];
+    patchMethod(
+        `${base}.prototype._onChangeForm`,
+        function(wrapped, formConfig, event) {
+            if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+                && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
+                const bonuses = this.config?._nd5tConditionalBonuses;
+                if (bonuses?.length && this.form) {
+                    const formData = new foundry.applications.ux.FormDataExtended(this.form);
+                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
+                    const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
+                    const baseProperties = baseRoll?.options?.properties ?? [];
 
-                // Dynamically resolve weapon damage type selected in the form
-                const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
-                    || baseRoll?.options?.type;
-                const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
+                    // Dynamically resolve weapon damage type selected in the form
+                    const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
+                        || baseRoll?.options?.type;
+                    const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
 
-                // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
-                const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
-                const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
+                    // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
+                    const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
+                    const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
 
-                if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
-                    baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
-                    baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
+                    if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
+                        baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
+                        baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
 
-                    let currentParts = [...baseRoll._nd5tOriginalParts];
-                    if (isSavageActive) {
-                        currentParts = applySavageAttackerToParts(currentParts);
-                        baseRoll.options ??= {};
-                        baseRoll.options._nd5tSavageAttacker = true;
-                    } else if (baseRoll.options?._nd5tSavageAttacker) {
-                        delete baseRoll.options._nd5tSavageAttacker;
-                    }
-
-                    if (isCleaveActive) {
-                        const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
-                        if (abilityMod > 0) {
-                            currentParts = removeAbilityModifierFromParts(currentParts);
-                            if (baseRoll.data) baseRoll.data.mod = 0;
-                        }
-                    } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
-                        baseRoll.data.mod = baseRoll._nd5tOriginalMod;
-                    }
-
-                    baseRoll.parts = currentParts;
-                }
-
-                for (const bonus of bonuses) {
-                    const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
-                    bonus.active = isChecked;
-
-                    if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
-                        continue;
-                    }
-
-                    const roll = (this.config.rolls ?? []).find(
-                        r => r.options?._nd5tConditionalId === bonus.id
-                    );
-
-                    if (roll) {
-                        if (isChecked) {
-                            delete roll.options._nd5tInactive;
-                        } else {
-                            roll.options._nd5tInactive = true;
+                        let currentParts = [...baseRoll._nd5tOriginalParts];
+                        if (isSavageActive) {
+                            currentParts = applySavageAttackerToParts(currentParts);
+                            baseRoll.options ??= {};
+                            baseRoll.options._nd5tSavageAttacker = true;
+                        } else if (baseRoll.options?._nd5tSavageAttacker) {
+                            delete baseRoll.options._nd5tSavageAttacker;
                         }
 
-                        // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
-                        if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
-                            bonus.damageType = resolvedType;
-                            roll.options.type = resolvedType;
-                            if (resolvedType) {
-                                roll.options.types = [resolvedType];
+                        if (isCleaveActive) {
+                            const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
+                            if (abilityMod > 0) {
+                                currentParts = removeAbilityModifierFromParts(currentParts);
+                                if (baseRoll.data) baseRoll.data.mod = 0;
+                            }
+                        } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
+                            baseRoll.data.mod = baseRoll._nd5tOriginalMod;
+                        }
+
+                        baseRoll.parts = currentParts;
+                    }
+
+                    for (const bonus of bonuses) {
+                        const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
+                        bonus.active = isChecked;
+
+                        if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
+                            continue;
+                        }
+
+                        const roll = (this.config.rolls ?? []).find(
+                            r => r.options?._nd5tConditionalId === bonus.id
+                        );
+
+                        if (roll) {
+                            if (isChecked) {
+                                delete roll.options._nd5tInactive;
                             } else {
-                                delete roll.options.types;
+                                roll.options._nd5tInactive = true;
                             }
-                            if (roll.data?.roll) {
-                                roll.data.roll.damageType = resolvedType;
+
+                            // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
+                            if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                                bonus.damageType = resolvedType;
+                                roll.options.type = resolvedType;
+                                if (resolvedType) {
+                                    roll.options.types = [resolvedType];
+                                } else {
+                                    delete roll.options.types;
+                                }
+                                if (roll.data?.roll) {
+                                    roll.data.roll.damageType = resolvedType;
+                                }
+                                roll.options.properties = [...baseProperties];
                             }
-                            roll.options.properties = [...baseProperties];
                         }
                     }
+
+                    _updateFormulaRowStates(this);
                 }
-
-                _updateFormulaRowStates(this);
             }
-        }
 
-        return origOnChangeForm.call(this, formConfig, event);
-    };
+            return wrapped(formConfig, event);
+        },
+        "WRAPPER"
+    );
 
     // 6. Finalize rolls and persist last user choice (_finalizeRolls)
-    const origFinalizeRolls = DialogClass.prototype._finalizeRolls;
-    DialogClass.prototype._finalizeRolls = function(action) {
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
-            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
-            const bonuses = this.config?._nd5tConditionalBonuses;
-            if (bonuses?.length && this.form) {
-                const formData = new foundry.applications.ux.FormDataExtended(this.form);
-                const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
-                const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
-                const baseProperties = baseRoll?.options?.properties ?? [];
+    patchMethod(
+        `${base}.prototype._finalizeRolls`,
+        function(wrapped, action) {
+            if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+                && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
+                const bonuses = this.config?._nd5tConditionalBonuses;
+                if (bonuses?.length && this.form) {
+                    const formData = new foundry.applications.ux.FormDataExtended(this.form);
+                    const baseIndex = (this.config.rolls ?? []).findIndex(r => !r.options?._nd5tConditionalId);
+                    const baseRoll = baseIndex >= 0 ? this.config.rolls[baseIndex] : this.config.rolls?.[0];
+                    const baseProperties = baseRoll?.options?.properties ?? [];
 
-                const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
-                    || baseRoll?.options?.type;
-                const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
+                    const rawType = (baseIndex >= 0 ? formData.get(`roll.${baseIndex}.damageType`) : null)
+                        || baseRoll?.options?.type;
+                    const resolvedType = (typeof rawType === "string" && rawType.trim()) ? rawType.trim() : null;
 
-                // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
-                const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
-                const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
+                    // Resolve Cleave and Savage Attacker states upfront to prevent ordering race conditions
+                    const isCleaveActive = bonuses.some(b => b.id === "cleave") && _getBonusToggleValue(this.form, formData, "cleave");
+                    const isSavageActive = bonuses.some(b => b.id === "savageAttacker") && _getBonusToggleValue(this.form, formData, "savageAttacker");
 
-                if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
-                    baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
-                    baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
+                    if (baseRoll && (bonuses.some(b => b.id === "cleave") || bonuses.some(b => b.id === "savageAttacker"))) {
+                        baseRoll._nd5tOriginalParts ??= [...(baseRoll.parts ?? [])];
+                        baseRoll._nd5tOriginalMod ??= baseRoll.data?.mod;
 
-                    let currentParts = [...baseRoll._nd5tOriginalParts];
-                    if (isSavageActive) {
-                        currentParts = applySavageAttackerToParts(currentParts);
-                        baseRoll.options ??= {};
-                        baseRoll.options._nd5tSavageAttacker = true;
-                    } else if (baseRoll.options?._nd5tSavageAttacker) {
-                        delete baseRoll.options._nd5tSavageAttacker;
-                    }
-
-                    if (isCleaveActive) {
-                        const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
-                        if (abilityMod > 0) {
-                            currentParts = removeAbilityModifierFromParts(currentParts);
-                            if (baseRoll.data) baseRoll.data.mod = 0;
-                        }
-                    } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
-                        baseRoll.data.mod = baseRoll._nd5tOriginalMod;
-                    }
-
-                    baseRoll.parts = currentParts;
-                }
-
-                for (const bonus of bonuses) {
-                    const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
-                    bonus.active = isChecked;
-
-                    if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
-                        if (bonus.id === "savageAttacker" && isChecked && bonus.turnKey) {
-                            markBonusUsedThisTurn(bonus.actor, "savageAttacker", bonus.turnKey);
-                        }
-                        continue;
-                    }
-
-                    const roll = (this.config.rolls ?? []).find(
-                        r => r.options?._nd5tConditionalId === bonus.id
-                    );
-
-                    if (roll) {
-                        if (isChecked) {
-                            delete roll.options._nd5tInactive;
-                        } else {
-                            roll.options._nd5tInactive = true;
+                        let currentParts = [...baseRoll._nd5tOriginalParts];
+                        if (isSavageActive) {
+                            currentParts = applySavageAttackerToParts(currentParts);
+                            baseRoll.options ??= {};
+                            baseRoll.options._nd5tSavageAttacker = true;
+                        } else if (baseRoll.options?._nd5tSavageAttacker) {
+                            delete baseRoll.options._nd5tSavageAttacker;
                         }
 
-                        if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
-                            bonus.damageType = resolvedType;
-                            roll.options.type = resolvedType;
-                            if (resolvedType) {
-                                roll.options.types = [resolvedType];
+                        if (isCleaveActive) {
+                            const abilityMod = baseRoll._nd5tOriginalMod ?? baseRoll.data?.mod ?? 0;
+                            if (abilityMod > 0) {
+                                currentParts = removeAbilityModifierFromParts(currentParts);
+                                if (baseRoll.data) baseRoll.data.mod = 0;
+                            }
+                        } else if (baseRoll._nd5tOriginalMod !== undefined && baseRoll.data) {
+                            baseRoll.data.mod = baseRoll._nd5tOriginalMod;
+                        }
+
+                        baseRoll.parts = currentParts;
+                    }
+
+                    for (const bonus of bonuses) {
+                        const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
+                        bonus.active = isChecked;
+
+                        if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
+                            if (bonus.id === "savageAttacker" && isChecked && bonus.turnKey) {
+                                markBonusUsedThisTurn(bonus.actor, "savageAttacker", bonus.turnKey);
+                            }
+                            continue;
+                        }
+
+                        const roll = (this.config.rolls ?? []).find(
+                            r => r.options?._nd5tConditionalId === bonus.id
+                        );
+
+                        if (roll) {
+                            if (isChecked) {
+                                delete roll.options._nd5tInactive;
                             } else {
-                                delete roll.options.types;
+                                roll.options._nd5tInactive = true;
                             }
-                            if (roll.data?.roll) {
-                                roll.data.roll.damageType = resolvedType;
+
+                            if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                                bonus.damageType = resolvedType;
+                                roll.options.type = resolvedType;
+                                if (resolvedType) {
+                                    roll.options.types = [resolvedType];
+                                } else {
+                                    delete roll.options.types;
+                                }
+                                if (roll.data?.roll) {
+                                    roll.data.roll.damageType = resolvedType;
+                                }
+                                roll.options.properties = [...baseProperties];
                             }
-                            roll.options.properties = [...baseProperties];
+                        }
+
+                        // Record once-per-turn usage
+                        if (isChecked && bonus.turnKey) {
+                            markBonusUsedThisTurn(bonus.actor, bonus.id, bonus.turnKey);
+                        }
+
+                        // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses)
+                        const isTurnTracked = Boolean(bonus.turnKey);
+                        if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense") {
+                            if (bonus.id === "greatWeaponMaster" && !isChecked) {
+                                // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
+                                // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.
+                                setActorConditionalPreference(bonus.actor, bonus.id, true);
+                            } else {
+                                setActorConditionalPreference(bonus.actor, bonus.id, isChecked);
+                            }
                         }
                     }
 
-                    // Record once-per-turn usage
-                    if (isChecked && bonus.turnKey) {
-                        markBonusUsedThisTurn(bonus.actor, bonus.id, bonus.turnKey);
+                    // Mark cached attack roll as rolled
+                    const primaryActor = this.config.rolls?.[0]?.data?.actor
+                        ?? bonuses[0]?.actor;
+                    const actorKey = primaryActor?.uuid || primaryActor?.id;
+                    if (actorKey) {
+                        const cached = _lastAttackRollsByActor.get(actorKey);
+                        if (cached) cached.damageRolled = true;
                     }
-
-                    // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses)
-                    const isTurnTracked = Boolean(bonus.turnKey);
-                    if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense") {
-                        if (bonus.id === "greatWeaponMaster" && !isChecked) {
-                            // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
-                            // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.
-                            setActorConditionalPreference(bonus.actor, bonus.id, true);
-                        } else {
-                            setActorConditionalPreference(bonus.actor, bonus.id, isChecked);
-                        }
-                    }
-                }
-
-                // Mark cached attack roll as rolled
-                const primaryActor = this.config.rolls?.[0]?.data?.actor
-                    ?? bonuses[0]?.actor;
-                const actorKey = primaryActor?.uuid || primaryActor?.id;
-                if (actorKey) {
-                    const cached = _lastAttackRollsByActor.get(actorKey);
-                    if (cached) cached.damageRolled = true;
                 }
             }
-        }
 
-        const allRolls = origFinalizeRolls.call(this, action);
-        if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
-            && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
-            return (allRolls ?? []).filter(r => !r.options?._nd5tInactive);
-        }
-        return allRolls;
-    };
+            const allRolls = wrapped(action);
+            if (isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")
+                && (!this.constructor.rollType || this.constructor.rollType === CONFIG.Dice.DamageRoll)) {
+                return (allRolls ?? []).filter(r => !r.options?._nd5tInactive);
+            }
+            return allRolls;
+        },
+        "WRAPPER"
+    );
 
-    _isDialogPatched = true;
     log("Conditional Damage | Patched DamageRollConfigurationDialog for conditional toggles");
 }
 

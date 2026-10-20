@@ -5,6 +5,7 @@
  * @introduced v14.7.0
  */
 import { MODULE_ID, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
 
 /**
@@ -205,26 +206,18 @@ async function _undefeatCombatant(actor) {
     }
 }
 
-let _updateDownedPatched = false;
-
 /**
  * Patch Actor5e.prototype.updateDowned to suppress the dnd5e system's native
  * autoApplyDowned automation when this feature is enabled.
  */
 function _patchUpdateDowned() {
-    if (_updateDownedPatched) return;
-    const ActorClass = CONFIG.Actor?.documentClass;
-    if (!ActorClass?.prototype?.updateDowned) return;
-
-    const originalUpdateDowned = ActorClass.prototype.updateDowned;
-    ActorClass.prototype.updateDowned = async function (...args) {
+    patchMethod("CONFIG.Actor.documentClass.prototype.updateDowned", async function patchedUpdateDowned(wrapped, ...args) {
         if (game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) {
             debug(`Auto-Status | Suppressing native updateDowned for ${this.name} (overridden by niks-dnd5e-tweaks)`);
             return;
         }
-        return originalUpdateDowned.apply(this, args);
-    };
-    _updateDownedPatched = true;
+        return wrapped(...args);
+    }, "MIXED");
 }
 
 /**

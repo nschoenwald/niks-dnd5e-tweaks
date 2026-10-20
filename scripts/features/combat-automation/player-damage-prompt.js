@@ -5,6 +5,7 @@
  * @introduced v14.10.0
  */
 import { MODULE_ID, debug, log } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Player Damage Prompt
@@ -56,22 +57,9 @@ export function initPlayerDamagePrompt() {
  * 2. Players who have enabled `suppressDamagePrompt` don't see damage prompts at all.
  */
 function _patchChatMessageVisibility() {
-    const chatMessageClass = CONFIG.ChatMessage?.documentClass ?? ChatMessage;
-    if (!chatMessageClass?.prototype) return;
-
-    let descriptor = null;
-    let proto = chatMessageClass.prototype;
-    while (!descriptor && proto) {
-        descriptor = Object.getOwnPropertyDescriptor(proto, "visible");
-        if (!descriptor) proto = Object.getPrototypeOf(proto);
-    }
-
-    if (!descriptor?.get) return;
-
-    const originalGetter = descriptor.get;
-
-    Object.defineProperty(chatMessageClass.prototype, "visible", {
-        get() {
+    patchMethod(
+        "CONFIG.ChatMessage.documentClass.prototype.visible#get",
+        function(wrapped) {
             if (this.flags?.[MODULE_ID]?.damagePrompt) {
                 // If a non-GM player has suppressed damage prompts, hide completely
                 if (!game.user?.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
@@ -85,11 +73,10 @@ function _patchChatMessageVisibility() {
                 }
             }
 
-            return originalGetter.call(this);
+            return wrapped();
         },
-        configurable: true,
-        enumerable: descriptor.enumerable
-    });
+        "MIXED"
+    );
 }
 
 // ── Dice So Nice integration ─────────────────────────────────────────

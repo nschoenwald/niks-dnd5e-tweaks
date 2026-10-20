@@ -7,6 +7,7 @@
  * @introduced v14.43.0
  */
 import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Standard ability labels in 5e.
@@ -1778,71 +1779,77 @@ export async function getDetailedRollBreakdown(roll, options = {}) {
  * Wrap BasicRoll#getTooltip to render the detailed breakdown overlay when enabled.
  */
 function wrapBasicRollGetTooltip() {
-    if (!CONFIG.Dice?.BasicRoll) return;
-    if (CONFIG.Dice.BasicRoll.prototype._nd5tWrappedGetTooltip) return;
-
-    const originalGetTooltip = CONFIG.Dice.BasicRoll.prototype.getTooltip;
-
-    CONFIG.Dice.BasicRoll.prototype.getTooltip = async function() {
-        if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) {
-            return originalGetTooltip.call(this);
-        }
-
-        try {
-            const breakdownData = await getDetailedRollBreakdown(this);
-            if (breakdownData) {
-                return await foundry.applications.handlebars.renderTemplate(
-                    "modules/niks-dnd5e-tweaks/templates/chat/roll-breakdown-details.hbs",
-                    breakdownData
-                );
+    patchMethod(
+        "CONFIG.Dice.BasicRoll.prototype.getTooltip",
+        async function(wrapped, ...args) {
+            if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) {
+                return wrapped(...args);
             }
-        } catch (err) {
-            console.error("Nik's DnD5e Tweaks | Error rendering detailed roll breakdown:", err);
-        }
 
-        return originalGetTooltip.call(this);
-    };
-    CONFIG.Dice.BasicRoll.prototype._nd5tWrappedGetTooltip = true;
+            try {
+                const breakdownData = await getDetailedRollBreakdown(this);
+                if (breakdownData) {
+                    return await foundry.applications.handlebars.renderTemplate(
+                        "modules/niks-dnd5e-tweaks/templates/chat/roll-breakdown-details.hbs",
+                        breakdownData
+                    );
+                }
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Error rendering detailed roll breakdown:", err);
+            }
+
+            return wrapped(...args);
+        },
+        "MIXED"
+    );
 }
 
 /**
- * Monkey patch DamageApplicationElement#calculateDamage to guard against undefined actor references.
+ * Handler for DamageApplicationElement#calculateDamage to guard against undefined actor references.
+ */
+function _onCalculateDamage(wrapped, actor, options = {}) {
+    if (!actor?.calculateDamage) {
+        return {
+            active: {
+                modification: new Set(),
+                resistance: new Set(),
+                vulnerability: new Set(),
+                immunity: new Set(),
+                threshold: false
+            },
+            temp: 0,
+            tempMax: 0,
+            total: 0
+        };
+    }
+    return wrapped(actor, options);
+}
+
+let _damageApplicationPatched = false;
+
+/**
+ * Patch DamageApplicationElement#calculateDamage to guard against undefined actor references.
  * In DnD5e 6.x, if an unlinked token or missing actor is targeted, calculateDamage throws:
  * "TypeError: Cannot read properties of undefined (reading 'calculateDamage')"
  * causing chat render loops and console errors.
  */
 export function patchDamageApplicationCalculateDamage() {
-    const DamageApplication = customElements.get("damage-application");
-    if (!DamageApplication) {
-        if (customElements.whenDefined) {
-            customElements.whenDefined("damage-application").then(() => {
-                patchDamageApplicationCalculateDamage();
-            });
-        }
-        return;
-    }
-    if (DamageApplication.prototype._nd5tPatchedCalculateDamage) return;
-
-    const originalCalculateDamage = DamageApplication.prototype.calculateDamage;
-    DamageApplication.prototype.calculateDamage = function(actor, options = {}) {
-        if (!actor?.calculateDamage) {
-            return {
-                active: {
-                    modification: new Set(),
-                    resistance: new Set(),
-                    vulnerability: new Set(),
-                    immunity: new Set(),
-                    threshold: false
-                },
-                temp: 0,
-                tempMax: 0,
-                total: 0
-            };
-        }
-        return originalCalculateDamage.call(this, actor, options);
+    if (_damageApplicationPatched) return;
+    const target = "dnd5e.applications.components.DamageApplicationElement.prototype.calculateDamage";
+    const applyPatch = () => {
+        if (_damageApplicationPatched) return;
+        _damageApplicationPatched = true;
+        patchMethod(target, _onCalculateDamage, "MIXED");
+        log("Patched DamageApplicationElement#calculateDamage for actor safety");
     };
-    DamageApplication.prototype._nd5tPatchedCalculateDamage = true;
-    log("Patched DamageApplicationElement#calculateDamage for actor safety");
+
+    if (foundry.utils.getProperty(globalThis, target)) {
+        applyPatch();
+    } else if (customElements.whenDefined) {
+        customElements.whenDefined("damage-application").then(() => {
+            applyPatch();
+        });
+    }
 }
 
 /**
@@ -2011,10 +2018,10 @@ async function _ensurePopoverBreakdown(popoverEl, message = null) {
  * Initialize the Detailed Roll Breakdown Overlay feature.
  */
 export function initRollBreakdownDetails() {
-    patchDamageApplicationCalculateDamage();
-
     if (isInitialized) return;
     isInitialized = true;
+
+    patchDamageApplicationCalculateDamage();
 
     log("Initializing Detailed Roll Breakdown Overlay");
 

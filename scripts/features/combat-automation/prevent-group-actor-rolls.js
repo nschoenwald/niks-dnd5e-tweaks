@@ -8,6 +8,7 @@
  */
 
 import { MODULE_ID, log, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Checks whether a speaker object resolves to a group actor.
@@ -43,91 +44,81 @@ export function isSpeakerGroupActor(speaker) {
 }
 
 /**
- * Wraps ChatMessage.getSpeaker to prevent players from acquiring group actor speaker data.
+ * Handler for ChatMessage.getSpeaker to prevent players from acquiring group actor speaker data.
  */
-function wrapGetSpeaker() {
-    const targets = [
-        foundry?.documents?.ChatMessage,
-        getDocumentClass("ChatMessage")
-    ].filter(cls => cls && typeof cls.getSpeaker === "function");
+function _handleGetSpeaker(wrapped, options = {}) {
+    // Only intervene if setting is active, user is a player (not GM), and has an assigned character
+    if (!isFeatureActive("enablePreventGroupActorRolls") || game.user?.isGM || !game.user?.character) {
+        return wrapped(options);
+    }
 
-    const uniqueClasses = Array.from(new Set(targets));
+    const character = game.user.character;
 
-    for (const Cls of uniqueClasses) {
-        if (Cls.getSpeaker._nd5tPreventGroupWrapped) continue;
+    // 1. Explicit group actor passed
+    if (options.actor) {
+        const actorObj = typeof options.actor === "string" ? game.actors?.get(options.actor) : options.actor;
+        if (actorObj?.type === "group") {
+            return wrapped({
+                scene: options.scene ?? canvas.scene?.id,
+                actor: character
+            });
+        }
+    }
 
-        const originalGetSpeaker = Cls.getSpeaker;
+    // 2. Explicit group token passed
+    if (options.token) {
+        const tokenObj = typeof options.token === "string"
+            ? (canvas.tokens?.get(options.token)?.document ?? canvas.scene?.tokens.get(options.token))
+            : options.token;
+        const tokenActor = tokenObj?.actor ?? tokenObj?.document?.actor;
+        if (tokenActor?.type === "group") {
+            return wrapped({
+                scene: options.scene ?? canvas.scene?.id,
+                actor: character
+            });
+        }
+    }
 
-        Cls.getSpeaker = function(options = {}) {
-            // Only intervene if setting is active, user is a player (not GM), and has an assigned character
-            if (!isFeatureActive("enablePreventGroupActorRolls") || game.user?.isGM || !game.user?.character) {
-                return originalGetSpeaker.call(this, options);
-            }
-
-            const character = game.user.character;
-
-            // 1. Explicit group actor passed
-            if (options.actor) {
-                const actorObj = typeof options.actor === "string" ? game.actors?.get(options.actor) : options.actor;
-                if (actorObj?.type === "group") {
-                    return originalGetSpeaker.call(this, {
-                        scene: options.scene ?? canvas.scene?.id,
-                        actor: character
-                    });
-                }
-            }
-
-            // 2. Explicit group token passed
-            if (options.token) {
-                const tokenObj = typeof options.token === "string"
-                    ? (canvas.tokens?.get(options.token)?.document ?? canvas.scene?.tokens.get(options.token))
-                    : options.token;
-                const tokenActor = tokenObj?.actor ?? tokenObj?.document?.actor;
-                if (tokenActor?.type === "group") {
-                    return originalGetSpeaker.call(this, {
-                        scene: options.scene ?? canvas.scene?.id,
-                        actor: character
-                    });
-                }
-            }
-
-            // 3. When no actor or token was passed, check canvas controlled tokens
-            if (!options.actor && !options.token && canvas.ready) {
-                const controlled = canvas.tokens?.controlled ?? [];
-                if (controlled.length > 0) {
-                    // Prefer any controlled token that is NOT a group actor
-                    const nonGroupToken = controlled.find(t => t.actor?.type !== "group");
-                    if (nonGroupToken) {
-                        return originalGetSpeaker.call(this, {
-                            ...options,
-                            token: nonGroupToken.document
-                        });
-                    }
-
-                    // All controlled tokens are group actors (e.g. party token) — fall back to character
-                    return originalGetSpeaker.call(this, {
-                        scene: options.scene ?? canvas.scene?.id,
-                        actor: character
-                    });
-                }
-            }
-
-            // Call original getSpeaker
-            const speaker = originalGetSpeaker.call(this, options);
-
-            // Safety check: if speaker resolved to a group actor, redirect to player character
-            if (isSpeakerGroupActor(speaker)) {
-                return originalGetSpeaker.call(this, {
-                    scene: options.scene ?? canvas.scene?.id,
-                    actor: character
+    // 3. When no actor or token was passed, check canvas controlled tokens
+    if (!options.actor && !options.token && canvas.ready) {
+        const controlled = canvas.tokens?.controlled ?? [];
+        if (controlled.length > 0) {
+            // Prefer any controlled token that is NOT a group actor
+            const nonGroupToken = controlled.find(t => t.actor?.type !== "group");
+            if (nonGroupToken) {
+                return wrapped({
+                    ...options,
+                    token: nonGroupToken.document
                 });
             }
 
-            return speaker;
-        };
-
-        Cls.getSpeaker._nd5tPreventGroupWrapped = true;
+            // All controlled tokens are group actors (e.g. party token) — fall back to character
+            return wrapped({
+                scene: options.scene ?? canvas.scene?.id,
+                actor: character
+            });
+        }
     }
+
+    // Call original getSpeaker
+    const speaker = wrapped(options);
+
+    // Safety check: if speaker resolved to a group actor, redirect to player character
+    if (isSpeakerGroupActor(speaker)) {
+        return wrapped({
+            scene: options.scene ?? canvas.scene?.id,
+            actor: character
+        });
+    }
+
+    return speaker;
+}
+
+/**
+ * Wraps ChatMessage.getSpeaker to prevent players from acquiring group actor speaker data.
+ */
+function wrapGetSpeaker() {
+    patchMethod("ChatMessage.getSpeaker", _handleGetSpeaker, "MIXED");
 }
 
 /**

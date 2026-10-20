@@ -5,6 +5,7 @@
  * @introduced v14.5.0
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Enforces placing circle and square/rectangle measured templates on grid intersections (vertices)
@@ -50,49 +51,37 @@ function _isTemplateShape(shape) {
 }
 
 /**
- * Wrap _getSnappedPoint on a ShapeData class prototype so that template shapes snap
- * strictly to grid vertices (intersections) instead of centers or midpoints.
- * @param {Function} ShapeClass
+ * Shared snapping handler for template shapes.
  */
-function _wrapShapeSnappedPoint(ShapeClass) {
-    if (!ShapeClass?.prototype?._getSnappedPoint) return;
-    if (ShapeClass.prototype._getSnappedPoint._niksWrapped) return;
+function _handleShapeSnappedPoint(wrapped, point) {
+    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) {
+        return wrapped(point);
+    }
 
-    const original = ShapeClass.prototype._getSnappedPoint;
+    // Shift bypasses snap
+    if (_isShiftHeld()) {
+        return wrapped(point);
+    }
 
-    const wrapped = function(point) {
-        if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) {
-            return original.call(this, point);
-        }
+    // Only snap when placing spell / item templates
+    if (!_isTemplateShape(this)) {
+        return wrapped(point);
+    }
 
-        // Shift bypasses snap
-        if (_isShiftHeld()) {
-            return original.call(this, point);
-        }
+    // Emanation or token-attached shapes should not snap to vertices
+    if (this.parent?.attachment?.token || this.parent?.flags?.dnd5e?.dimensions?.adjustedSize) {
+        return wrapped(point);
+    }
 
-        // Only snap when placing spell / item templates
-        if (!_isTemplateShape(this)) {
-            return original.call(this, point);
-        }
+    const grid = this.grid ?? canvas.grid;
+    if (grid?.isGridless) {
+        return { x: Math.round(point.x), y: Math.round(point.y) };
+    }
 
-        // Emanation or token-attached shapes should not snap to vertices
-        if (this.parent?.attachment?.token || this.parent?.flags?.dnd5e?.dimensions?.adjustedSize) {
-            return original.call(this, point);
-        }
-
-        const grid = this.grid ?? canvas.grid;
-        if (grid?.isGridless) {
-            return { x: Math.round(point.x), y: Math.round(point.y) };
-        }
-
-        return grid.getSnappedPoint(point, {
-            mode: CONST.GRID_SNAPPING_MODES.VERTEX,
-            resolution: 1
-        });
-    };
-
-    wrapped._niksWrapped = true;
-    ShapeClass.prototype._getSnappedPoint = wrapped;
+    return grid.getSnappedPoint(point, {
+        mode: CONST.GRID_SNAPPING_MODES.VERTEX,
+        resolution: 1
+    });
 }
 
 /**
@@ -101,11 +90,8 @@ function _wrapShapeSnappedPoint(ShapeClass) {
  */
 export function initTemplateGridSnap() {
     // 1. V14 / DnD5e v6: Live preview snapping on Region shape models
-    const circleClass = foundry.data.CircleShapeData ?? foundry.data.BaseShapeData?.TYPES?.circle;
-    const rectClass = foundry.data.RectangleShapeData ?? foundry.data.BaseShapeData?.TYPES?.rectangle;
-
-    if (circleClass) _wrapShapeSnappedPoint(circleClass);
-    if (rectClass) _wrapShapeSnappedPoint(rectClass);
+    patchMethod("foundry.data.CircleShapeData.prototype._getSnappedPoint", _handleShapeSnappedPoint, "MIXED");
+    patchMethod("foundry.data.RectangleShapeData.prototype._getSnappedPoint", _handleShapeSnappedPoint, "MIXED");
 
     // 2. DnD5e v6: TemplatePlacement.fromActivity hook right before Region documents are created
     Hooks.on("dnd5e.createMeasuredTemplate", _onCreateMeasuredTemplate);

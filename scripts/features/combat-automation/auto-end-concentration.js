@@ -5,6 +5,7 @@
  * @introduced v14.11.0
  */
 import { MODULE_ID, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 import { hasBoonOfTheIronMind } from "./auto-roll-concentration.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
@@ -68,15 +69,14 @@ export function initAutoEndConcentration() {
  * auto-ended concentration) and our module creates its own notification.
  */
 function _patchPromptConcentrationEnd() {
-    const original = Actor.prototype.promptConcentrationEnd;
-    Actor.prototype.promptConcentrationEnd = async function(...args) {
+    patchMethod("CONFIG.Actor.documentClass.prototype.promptConcentrationEnd", async function patchedPromptConcentrationEnd(wrapped, ...args) {
         const enabled = game.settings.get(MODULE_ID, "enableAutoEndConcentration");
         if (enabled) {
             debug("Auto-End Concentration | Suppressed system promptConcentrationEnd (auto-end is active)");
             return null;
         }
-        return original.apply(this, args);
-    };
+        return wrapped(...args);
+    }, "MIXED");
 }
 
 /**

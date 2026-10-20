@@ -6,6 +6,7 @@
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
  */
 import { MODULE_ID, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 const DEFAULT_ICON = "icons/svg/combat.svg";
 const PLACEHOLDER_OFFSET = 0.0001;
@@ -74,178 +75,185 @@ export function hasRemainingLegendaryActions(combat) {
 }
 
 /**
- * Wrap nextTurn and previousTurn on the Combat class prototype to automatically skip
- * legendary action placeholder turns when no combatant in the encounter has uses left.
- * @param {Function} CombatClass
+ * Handle next turn progression on a Combat encounter, auto-skipping legendary action
+ * placeholder turns when no combatant in the encounter has uses remaining.
+ * @param {Function} wrapped Original or downstream nextTurn function
+ * @param {...any} args
+ * @returns {Promise<Combat>}
  */
-function _wrapCombatClass(CombatClass) {
-    if (!CombatClass?.prototype) return;
-
-    if (!Object.prototype.hasOwnProperty.call(CombatClass.prototype, "nextTurn") || !CombatClass.prototype.nextTurn?._niksWrapped) {
-        const originalNextTurn = CombatClass.prototype.nextTurn;
-        CombatClass.prototype.nextTurn = async function patchedNextTurn(...args) {
-            if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
-                || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
-                || this.round === 0
-                || !this.turns?.length) {
-                return originalNextTurn.apply(this, args);
-            }
-
-            // Determine normal next turn
-            const turn = this.turn ?? -1;
-            let normalNextTurn = null;
-            if (this.settings.skipDefeated) {
-                for (let i = turn + 1; i < this.turns.length; i++) {
-                    if (!this.turns[i].isDefeated) {
-                        normalNextTurn = i;
-                        break;
-                    }
-                }
-            } else {
-                normalNextTurn = turn + 1;
-            }
-
-            // If the next turn is outside round bounds, delegate to original (which advances round)
-            if (normalNextTurn === null || normalNextTurn >= this.turns.length) {
-                return originalNextTurn.apply(this, args);
-            }
-
-            // Performance check: Is normalNextTurn a placeholder?
-            // If it is NOT a placeholder, no need to inspect actors/resources! Zero overhead!
-            const candidateCombatant = this.turns[normalNextTurn];
-            if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
-                return originalNextTurn.apply(this, args);
-            }
-
-            // Normal next turn IS a placeholder. Now check if any actor has legendary action uses left:
-            if (hasRemainingLegendaryActions(this)) {
-                // Actions remaining: do not skip, advance to placeholder normally
-                return originalNextTurn.apply(this, args);
-            }
-
-            debug(`Legendary Action Placeholders | Auto-skipping placeholder at turn ${normalNextTurn} (no legendary action uses remaining).`);
-
-            // No actor has legendary action uses left: skip placeholder(s)!
-            let targetTurn = null;
-            for (let i = normalNextTurn + 1; i < this.turns.length; i++) {
-                const combatant = this.turns[i];
-                if (this.settings.skipDefeated && combatant.isDefeated) continue;
-                if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
-                targetTurn = i;
-                break;
-            }
-
-            // If no valid turn remains in the current round, advance to next round
-            if (targetTurn === null || targetTurn >= this.turns.length) {
-                return this.nextRound();
-            }
-
-            // Advance to the found non-placeholder turn
-            const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, targetTurn);
-            const updateData = { round: this.round, turn: targetTurn };
-            const updateOptions = { direction: 1, worldTime: { delta: advanceTime } };
-            Hooks.callAll("combatTurn", this, updateData, updateOptions);
-            await this.update(updateData, updateOptions);
-            return this;
-        };
-        CombatClass.prototype.nextTurn._niksWrapped = true;
+async function _handleNextTurn(wrapped, ...args) {
+    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
+        || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
+        || this.round === 0
+        || !this.turns?.length) {
+        return wrapped.apply(this, args);
     }
 
-    if (!Object.prototype.hasOwnProperty.call(CombatClass.prototype, "previousTurn") || !CombatClass.prototype.previousTurn?._niksWrapped) {
-        const originalPreviousTurn = CombatClass.prototype.previousTurn;
-        CombatClass.prototype.previousTurn = async function patchedPreviousTurn(...args) {
-            if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
-                || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
-                || this.round === 0
-                || !this.turns?.length) {
-                return originalPreviousTurn.apply(this, args);
-            }
-
-            if (this.turn === 0) {
-                if (this.round <= 1) return this.previousRound();
-                // Check if the end of previous round is a placeholder and whether it should be skipped
-                const candidateCombatant = this.turns[this.turns.length - 1];
-                if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
-                    return originalPreviousTurn.apply(this, args);
-                }
-                if (hasRemainingLegendaryActions(this)) {
-                    return originalPreviousTurn.apply(this, args);
-                }
-
-                debug(`Legendary Action Placeholders | Auto-skipping placeholder backward across round boundary to previous round.`);
-
-                // Skip backwards past trailing placeholder(s) at end of previous round
-                let targetTurn = null;
-                for (let i = this.turns.length - 2; i >= 0; i--) {
-                    const combatant = this.turns[i];
-                    if (this.settings.skipDefeated && combatant.isDefeated) continue;
-                    if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
-                    targetTurn = i;
-                    break;
-                }
-                if (targetTurn !== null) {
-                    const previousRound = this.round - 1;
-                    const advanceTime = this.getTimeDelta(this.round, this.turn, previousRound, targetTurn);
-                    const updateData = { round: previousRound, turn: targetTurn };
-                    const updateOptions = { direction: -1, worldTime: { delta: advanceTime } };
-                    Hooks.callAll("combatRound", this, updateData, updateOptions);
-                    await this.update(updateData, updateOptions);
-                    return this;
-                }
-                return originalPreviousTurn.apply(this, args);
-            }
-
-            const turn = this.turn ?? this.turns.length;
-            let normalPrevTurn = null;
-            if (this.settings.skipDefeated) {
-                for (let i = turn - 1; i >= 0; i--) {
-                    if (!this.turns[i].isDefeated) {
-                        normalPrevTurn = i;
-                        break;
-                    }
-                }
-            } else {
-                normalPrevTurn = turn - 1;
-            }
-
-            if (normalPrevTurn === null || normalPrevTurn < 0) {
-                return originalPreviousTurn.apply(this, args);
-            }
-
-            const candidateCombatant = this.turns[normalPrevTurn];
-            if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
-                return originalPreviousTurn.apply(this, args);
-            }
-
-            if (hasRemainingLegendaryActions(this)) {
-                return originalPreviousTurn.apply(this, args);
-            }
-
-            debug(`Legendary Action Placeholders | Auto-skipping placeholder backward at turn ${normalPrevTurn} (no legendary action uses remaining).`);
-
-            // Skip backwards past placeholder(s)
-            let targetTurn = null;
-            for (let i = normalPrevTurn - 1; i >= 0; i--) {
-                const combatant = this.turns[i];
-                if (this.settings.skipDefeated && combatant.isDefeated) continue;
-                if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
-                targetTurn = i;
+    // Determine normal next turn
+    const turn = this.turn ?? -1;
+    let normalNextTurn = null;
+    if (this.settings.skipDefeated) {
+        for (let i = turn + 1; i < this.turns.length; i++) {
+            if (!this.turns[i].isDefeated) {
+                normalNextTurn = i;
                 break;
             }
+        }
+    } else {
+        normalNextTurn = turn + 1;
+    }
 
-            if (targetTurn === null || targetTurn < 0) {
-                return this.previousRound();
-            }
+    // If the next turn is outside round bounds, delegate to original (which advances round)
+    if (normalNextTurn === null || normalNextTurn >= this.turns.length) {
+        return wrapped.apply(this, args);
+    }
 
-            const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, targetTurn);
-            const updateData = { round: this.round, turn: targetTurn };
+    // Performance check: Is normalNextTurn a placeholder?
+    // If it is NOT a placeholder, no need to inspect actors/resources! Zero overhead!
+    const candidateCombatant = this.turns[normalNextTurn];
+    if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
+        return wrapped.apply(this, args);
+    }
+
+    // Normal next turn IS a placeholder. Now check if any actor has legendary action uses left:
+    if (hasRemainingLegendaryActions(this)) {
+        // Actions remaining: do not skip, advance to placeholder normally
+        return wrapped.apply(this, args);
+    }
+
+    debug(`Legendary Action Placeholders | Auto-skipping placeholder at turn ${normalNextTurn} (no legendary action uses remaining).`);
+
+    // No actor has legendary action uses left: skip placeholder(s)!
+    let targetTurn = null;
+    for (let i = normalNextTurn + 1; i < this.turns.length; i++) {
+        const combatant = this.turns[i];
+        if (this.settings.skipDefeated && combatant.isDefeated) continue;
+        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        targetTurn = i;
+        break;
+    }
+
+    // If no valid turn remains in the current round, advance to next round
+    if (targetTurn === null || targetTurn >= this.turns.length) {
+        return this.nextRound();
+    }
+
+    // Advance to the found non-placeholder turn
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, targetTurn);
+    const updateData = { round: this.round, turn: targetTurn };
+    const updateOptions = { direction: 1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
+}
+
+/**
+ * Handle previous turn progression on a Combat encounter, auto-skipping legendary action
+ * placeholder turns backward when no combatant in the encounter has uses remaining.
+ * @param {Function} wrapped Original or downstream previousTurn function
+ * @param {...any} args
+ * @returns {Promise<Combat>}
+ */
+async function _handlePreviousTurn(wrapped, ...args) {
+    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
+        || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
+        || this.round === 0
+        || !this.turns?.length) {
+        return wrapped.apply(this, args);
+    }
+
+    if (this.turn === 0) {
+        if (this.round <= 1) return this.previousRound();
+        // Check if the end of previous round is a placeholder and whether it should be skipped
+        const candidateCombatant = this.turns[this.turns.length - 1];
+        if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
+            return wrapped.apply(this, args);
+        }
+        if (hasRemainingLegendaryActions(this)) {
+            return wrapped.apply(this, args);
+        }
+
+        debug(`Legendary Action Placeholders | Auto-skipping placeholder backward across round boundary to previous round.`);
+
+        // Skip backwards past trailing placeholder(s) at end of previous round
+        let targetTurn = null;
+        for (let i = this.turns.length - 2; i >= 0; i--) {
+            const combatant = this.turns[i];
+            if (this.settings.skipDefeated && combatant.isDefeated) continue;
+            if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+            targetTurn = i;
+            break;
+        }
+        if (targetTurn !== null) {
+            const previousRound = this.round - 1;
+            const advanceTime = this.getTimeDelta(this.round, this.turn, previousRound, targetTurn);
+            const updateData = { round: previousRound, turn: targetTurn };
             const updateOptions = { direction: -1, worldTime: { delta: advanceTime } };
-            Hooks.callAll("combatTurn", this, updateData, updateOptions);
+            Hooks.callAll("combatRound", this, updateData, updateOptions);
             await this.update(updateData, updateOptions);
             return this;
-        };
-        CombatClass.prototype.previousTurn._niksWrapped = true;
+        }
+        return wrapped.apply(this, args);
     }
+
+    const turn = this.turn ?? this.turns.length;
+    let normalPrevTurn = null;
+    if (this.settings.skipDefeated) {
+        for (let i = turn - 1; i >= 0; i--) {
+            if (!this.turns[i].isDefeated) {
+                normalPrevTurn = i;
+                break;
+            }
+        }
+    } else {
+        normalPrevTurn = turn - 1;
+    }
+
+    if (normalPrevTurn === null || normalPrevTurn < 0) {
+        return wrapped.apply(this, args);
+    }
+
+    const candidateCombatant = this.turns[normalPrevTurn];
+    if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
+        return wrapped.apply(this, args);
+    }
+
+    if (hasRemainingLegendaryActions(this)) {
+        return wrapped.apply(this, args);
+    }
+
+    debug(`Legendary Action Placeholders | Auto-skipping placeholder backward at turn ${normalPrevTurn} (no legendary action uses remaining).`);
+
+    // Skip backwards past placeholder(s)
+    let targetTurn = null;
+    for (let i = normalPrevTurn - 1; i >= 0; i--) {
+        const combatant = this.turns[i];
+        if (this.settings.skipDefeated && combatant.isDefeated) continue;
+        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        targetTurn = i;
+        break;
+    }
+
+    if (targetTurn === null || targetTurn < 0) {
+        return this.previousRound();
+    }
+
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, targetTurn);
+    const updateData = { round: this.round, turn: targetTurn };
+    const updateOptions = { direction: -1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
+}
+
+/**
+ * Wrap nextTurn and previousTurn on Combat document class.
+ * Uses libWrapper when available to avoid conflicts with modules like Monk's Combat Details,
+ * falling back to prototype wrapping if libWrapper is not present.
+ */
+function _wrapCombatMethods() {
+    patchMethod("Combat.prototype.nextTurn", _handleNextTurn, "MIXED");
+    patchMethod("Combat.prototype.previousTurn", _handlePreviousTurn, "MIXED");
 }
 
 /**
@@ -286,12 +294,7 @@ async function _resolveIcon(path) {
 
 export function initLegendaryActionPlaceholders() {
     // 1. Wrap nextTurn / previousTurn on Combat document class to automatically skip placeholders
-    const combatClasses = new Set();
-    if (typeof Combat !== "undefined") combatClasses.add(Combat);
-    if (CONFIG.Combat?.documentClass) combatClasses.add(CONFIG.Combat.documentClass);
-    for (const cls of combatClasses) {
-        _wrapCombatClass(cls);
-    }
+    _wrapCombatMethods();
 
     // 2. Secondary safety net for direct combat updates (e.g. from macros or external modules)
     Hooks.on("preUpdateCombat", (combat, changed, options, userId) => {

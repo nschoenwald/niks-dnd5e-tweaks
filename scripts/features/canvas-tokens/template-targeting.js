@@ -6,6 +6,7 @@
  * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * State tracking for the active template placement session
@@ -132,19 +133,14 @@ export function initTemplateTargeting() {
  * Wrap RegionLayer.prototype.placeRegion to intercept onChange and update targets in real time.
  */
 function _wrapRegionLayerPlaceRegion() {
-    if (typeof RegionLayer === "undefined" || !RegionLayer.prototype?.placeRegion) return;
-    if (RegionLayer.prototype.placeRegion._nd5tTargetingWrapped) return;
-
-    const originalPlaceRegion = RegionLayer.prototype.placeRegion;
-
-    const wrapped = async function(data, options = {}) {
+    patchMethod("RegionLayer.prototype.placeRegion", async function patchedTargetingPlaceRegion(wrapped, data, options = {}) {
         if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) {
-            return originalPlaceRegion.call(this, data, options);
+            return wrapped(data, options);
         }
 
         const isTemplate = _isTemplatePlacement(data, options, this);
         if (!isTemplate) {
-            return originalPlaceRegion.call(this, data, options);
+            return wrapped(data, options);
         }
 
         _isPlacingRegion = true;
@@ -165,7 +161,7 @@ function _wrapRegionLayerPlaceRegion() {
 
         let result;
         try {
-            result = await originalPlaceRegion.call(this, data, options);
+            result = await wrapped(data, options);
             return result;
         } finally {
             _isPlacingRegion = false;
@@ -192,10 +188,7 @@ function _wrapRegionLayerPlaceRegion() {
                 }, 5000);
             }
         }
-    };
-
-    wrapped._nd5tTargetingWrapped = true;
-    RegionLayer.prototype.placeRegion = wrapped;
+    }, "WRAPPER");
 }
 
 /**

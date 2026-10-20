@@ -5,6 +5,7 @@
  * @introduced v14.29.0
  */
 import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Check if the current user has permission to change the advantage mode on this message.
@@ -378,30 +379,36 @@ export function initRetroactiveAdvantage() {
 
         // 1. Wrap ChatLog5e.applyTheme so changes to dnd5e.chatLogTheme immediately update buttons
         if (typeof CONFIG.ui.chat?.applyTheme === "function") {
-            const origApplyTheme = CONFIG.ui.chat.applyTheme;
-            CONFIG.ui.chat.applyTheme = function(...args) {
-                const result = origApplyTheme.apply(this, args);
-                try {
-                    updateAllRetroAdvantageThemes();
-                } catch (err) {
-                    console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on applyTheme:", err);
-                }
-                return result;
-            };
+            patchMethod(
+                "CONFIG.ui.chat.applyTheme",
+                function(wrapped, ...args) {
+                    const result = wrapped(...args);
+                    try {
+                        updateAllRetroAdvantageThemes();
+                    } catch (err) {
+                        console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on applyTheme:", err);
+                    }
+                    return result;
+                },
+                "WRAPPER"
+            );
         }
 
         // 2. Wrap game.configureUI so Foundry core theme changes update buttons
         if (typeof game.configureUI === "function") {
-            const origConfigureUI = game.configureUI;
-            game.configureUI = function(...args) {
-                const result = origConfigureUI.apply(this, args);
-                try {
-                    updateAllRetroAdvantageThemes();
-                } catch (err) {
-                    console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on configureUI:", err);
-                }
-                return result;
-            };
+            patchMethod(
+                "game.configureUI",
+                function(wrapped, ...args) {
+                    const result = wrapped(...args);
+                    try {
+                        updateAllRetroAdvantageThemes();
+                    } catch (err) {
+                        console.error("niks-dnd5e-tweaks | Error updating retroactive advantage themes on configureUI:", err);
+                    }
+                    return result;
+                },
+                "WRAPPER"
+            );
         }
 
         // 3. Dynamically update existing retroactive advantage buttons whenever chat log or UI theme changes

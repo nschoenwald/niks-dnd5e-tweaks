@@ -5,6 +5,7 @@
  * @introduced v14.10.0
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Disable Underground Token Hiding
@@ -29,32 +30,14 @@ import { MODULE_ID, log, debug } from "../../main.js";
 export function initDisableUndergroundTokenHiding() {
     if (!game.settings.get(MODULE_ID, "disableUndergroundTokenHiding")) return;
 
-    // Determine the correct Token class — dnd5e may extend it as Token5e
-    const TokenClass = CONFIG.Token?.objectClass
-        ?? CONFIG.Canvas?.layers?.tokens?.objectClass
-        ?? foundry.canvas?.placeables?.Token;
-
-    if (!TokenClass) {
-        log("Warning: Could not find Token class to wrap _refreshElevation");
-        return;
-    }
-
-    const originalRefreshElevation = TokenClass.prototype._refreshElevation;
-    if (typeof originalRefreshElevation !== "function") {
-        log("Warning: Token._refreshElevation is not a function, skipping wrap");
-        return;
-    }
-
-    TokenClass.prototype._refreshElevation = function () {
-        // Call the original method first — it sets this.mesh.elevation etc.
-        originalRefreshElevation.call(this);
+    patchMethod("CONFIG.Token.objectClass.prototype._refreshElevation", function patchedRefreshElevation(wrapped) {
+        wrapped();
 
         // Guard: skip if the token placeable or its document is destroyed
         if (this.destroyed || this._destroyed || !this.document) return;
 
         // If the token's document elevation is negative, clamp the mesh
         // elevation to 0 so the token renders above the background layer.
-        // We check this.mesh or this.primaryGraphic.
         const elevation = this.document.elevation;
         if (elevation == null || elevation >= 0) return;
 
@@ -63,7 +46,7 @@ export function initDisableUndergroundTokenHiding() {
             debug(`Clamping token "${this.document.name}" mesh elevation from ${mesh.elevation} to 0`);
             mesh.elevation = 0;
         }
-    };
+    }, "WRAPPER");
 
     log("Disabled underground token hiding (wrapped Token._refreshElevation)");
 }

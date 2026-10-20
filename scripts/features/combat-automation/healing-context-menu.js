@@ -5,6 +5,7 @@
  * @introduced v14.7.0
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Healing Context Menu Patch
@@ -23,22 +24,13 @@ import { MODULE_ID, log, debug } from "../../main.js";
  */
 
 export function initHealingContextMenu() {
-    if (!game.settings.get(MODULE_ID, "enableHealingContextMenu")) return;
+    patchMethod(
+        "CONFIG.ChatMessage.documentClass.prototype.canApplyDamage#get",
+        function(wrapped) {
+            if (!game.settings.get(MODULE_ID, "enableHealingContextMenu")) {
+                return wrapped();
+            }
 
-    const ChatMessage5e = CONFIG.ChatMessage.documentClass;
-
-    // Store the original descriptor so we can preserve any other behavior
-    const originalDescriptor = Object.getOwnPropertyDescriptor(ChatMessage5e.prototype, "canApplyDamage");
-
-    if (!originalDescriptor || !originalDescriptor.get) {
-        log("Warning: Could not find canApplyDamage getter on ChatMessage5e — healing context menu patch skipped.");
-        return;
-    }
-
-    const originalGetter = originalDescriptor.get;
-
-    Object.defineProperty(ChatMessage5e.prototype, "canApplyDamage", {
-        get() {
             const type = this.type ?? this.flags?.dnd5e?.roll?.type;
             const isHealing = type === "healing" || this.system?.isHealing;
 
@@ -51,11 +43,10 @@ export function initHealingContextMenu() {
             }
 
             // For all other types, fall through to the original behavior
-            return originalGetter.call(this);
+            return wrapped();
         },
-        configurable: true,
-        enumerable: originalDescriptor.enumerable
-    });
+        "MIXED"
+    );
 
     log("Healing context menu patch applied — healing rolls now show Apply Damage/Healing/Temp HP options.");
 }

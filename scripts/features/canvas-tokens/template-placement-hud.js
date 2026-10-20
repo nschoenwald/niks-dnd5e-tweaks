@@ -6,6 +6,7 @@
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * State tracking for the active template HUD session
@@ -71,15 +72,10 @@ export function initTemplatePlacementHUD() {
  * Wrap RegionLayer.prototype.placeRegion to inject the HUD banner during template placement.
  */
 function _wrapRegionLayerPlaceRegion() {
-    if (typeof RegionLayer === "undefined" || !RegionLayer.prototype?.placeRegion) return;
-    if (RegionLayer.prototype.placeRegion._nd5tHudWrapped) return;
-
-    const originalPlaceRegion = RegionLayer.prototype.placeRegion;
-
-    const wrapped = async function(data, options = {}) {
+    patchMethod("RegionLayer.prototype.placeRegion", async function patchedHudPlaceRegion(wrapped, data, options = {}) {
         const isTemplate = _isTemplatePlacement(data, options, this);
         if (!isTemplate) {
-            return originalPlaceRegion.call(this, data, options);
+            return wrapped(data, options);
         }
 
         const currentActivity = (Date.now() - activeTemplateTimestamp < 15000) ? activeTemplateActivity : null;
@@ -97,7 +93,7 @@ function _wrapRegionLayerPlaceRegion() {
         }
 
         if (!isFeatureActive("enableTemplateControlsHUD", "clientEnableTemplateControlsHUD")) {
-            return originalPlaceRegion.call(this, data, options);
+            return wrapped(data, options);
         }
 
         // Intercept onChange to track live rotation, coordinates, and shape updates
@@ -140,7 +136,7 @@ function _wrapRegionLayerPlaceRegion() {
 
         let result;
         try {
-            result = await originalPlaceRegion.call(this, data, options);
+            result = await wrapped(data, options);
             return result;
         } finally {
             // If placement was cancelled or this was the last region in the batch, schedule close
@@ -150,10 +146,7 @@ function _wrapRegionLayerPlaceRegion() {
                 activeTemplateConfig = null;
             }
         }
-    };
-
-    wrapped._nd5tHudWrapped = true;
-    RegionLayer.prototype.placeRegion = wrapped;
+    }, "WRAPPER");
 }
 
 /**

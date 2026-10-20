@@ -1612,7 +1612,6 @@ Hooks.once("setup", () => {
     initCarolingianHarmony();
     initChatScrollFix();
     initChatCardStyling();
-    initRollBreakdownDetails();
     initRetroactiveAdvantage();
     initHidePrivateGMRolls();
     initAutoCollapseDamageTrays();

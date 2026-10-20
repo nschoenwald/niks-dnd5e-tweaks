@@ -6,6 +6,7 @@
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * State tracking for pending and active summon HUD sessions
@@ -153,19 +154,14 @@ function _getTokenCenter(token) {
  * Wrap TokenLayer.prototype.placeTokens to inject the HUD banner and range boundary ring.
  */
 function _wrapTokenLayerPlaceTokens() {
-    if (typeof TokenLayer === "undefined" || !TokenLayer.prototype?.placeTokens) return;
-    if (TokenLayer.prototype.placeTokens._nd5tSummonWrapped) return;
-
-    const originalPlaceTokens = TokenLayer.prototype.placeTokens;
-
-    const wrapped = async function(data, options = {}) {
+    patchMethod("TokenLayer.prototype.placeTokens", async function patchedSummonPlaceTokens(wrapped, data, options = {}) {
         if (!isFeatureActive("enableSummonControlsHUD", "clientEnableSummonControlsHUD")) {
-            return originalPlaceTokens.call(this, data, options);
+            return wrapped(data, options);
         }
 
         const isSummon = _isSummonPlacement(data, options);
         if (!isSummon) {
-            return originalPlaceTokens.call(this, data, options);
+            return wrapped(data, options);
         }
 
         const summonData = (pendingSummonData && (Date.now() - pendingSummonData.timestamp < 30000))
@@ -202,16 +198,13 @@ function _wrapTokenLayerPlaceTokens() {
 
         let result;
         try {
-            result = await originalPlaceTokens.call(this, data, options);
+            result = await wrapped(data, options);
             return result;
         } finally {
             _scheduleHudClose();
             pendingSummonData = null;
         }
-    };
-
-    wrapped._nd5tSummonWrapped = true;
-    TokenLayer.prototype.placeTokens = wrapped;
+    }, "WRAPPER");
 }
 
 /**

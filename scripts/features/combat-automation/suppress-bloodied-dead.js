@@ -5,6 +5,7 @@
  * @introduced v14.31.0
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Suppress Bloodied on Dead Tokens
@@ -160,54 +161,35 @@ export function initSuppressBloodiedDead() {
     const Actor5e = CONFIG.Actor?.documentClass;
 
     // 1. Patch ActiveEffect5e.prototype.isSuppressed with re-entrancy protection
-    if (ActiveEffect5e?.prototype) {
-        let descriptor = null;
-        let proto = ActiveEffect5e.prototype;
-        while (!descriptor && proto) {
-            descriptor = Object.getOwnPropertyDescriptor(proto, "isSuppressed");
-            if (!descriptor) proto = Object.getPrototypeOf(proto);
-        }
+    patchMethod("CONFIG.ActiveEffect.documentClass.prototype.isSuppressed#get", function patchedIsSuppressed(wrapped) {
+        if (this._suppressCheckActive) return false;
+        this._suppressCheckActive = true;
+        try {
+            if (wrapped()) return true;
+            if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return false;
 
-        if (descriptor?.get) {
-            const originalIsSuppressed = descriptor.get;
-            Object.defineProperty(ActiveEffect5e.prototype, "isSuppressed", {
-                get() {
-                    if (this._suppressCheckActive) return false;
-                    this._suppressCheckActive = true;
-                    try {
-                        if (originalIsSuppressed.call(this)) return true;
-                        if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return false;
-
-                        if (isBloodiedEffect(this)) {
-                            const actor = this.target ?? this.parent;
-                            if (actor instanceof Actor && (isActorDead(actor) || willActorBeDead(actor))) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    } finally {
-                        this._suppressCheckActive = false;
-                    }
-                },
-                configurable: true,
-                enumerable: descriptor.enumerable
-            });
-        }
-    }
-
-    // 2. Patch Actor5e.prototype.updateBloodied
-    if (Actor5e?.prototype?.updateBloodied) {
-        const originalUpdateBloodied = Actor5e.prototype.updateBloodied;
-        Actor5e.prototype.updateBloodied = function(options) {
-            if (game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) {
-                if (isActorDead(this) || willActorBeDead(this)) {
-                    removeBloodiedEffect(this);
-                    return;
+            if (isBloodiedEffect(this)) {
+                const actor = this.target ?? this.parent;
+                if (actor instanceof Actor && (isActorDead(actor) || willActorBeDead(actor))) {
+                    return true;
                 }
             }
-            return originalUpdateBloodied.call(this, options);
-        };
-    }
+            return false;
+        } finally {
+            this._suppressCheckActive = false;
+        }
+    }, "MIXED");
+
+    // 2. Patch Actor5e.prototype.updateBloodied
+    patchMethod("CONFIG.Actor.documentClass.prototype.updateBloodied", function patchedUpdateBloodied(wrapped, options) {
+        if (game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) {
+            if (isActorDead(this) || willActorBeDead(this)) {
+                removeBloodiedEffect(this);
+                return;
+            }
+        }
+        return wrapped(options);
+    }, "MIXED");
 
     // 3. Pre-create hook: block creating bloodied on dead or dying actors
     Hooks.on("preCreateActiveEffect", (effect, data, options, userId) => {

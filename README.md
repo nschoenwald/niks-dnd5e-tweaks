@@ -386,6 +386,8 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, conflicting au
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows. |
 
 ### Other Supported Modules
+* **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.
+* **Monk's Combat Details**: Seamless combat turn progression and target resolution compatibility.
 * **Tidy 5e Sheets**: Full support for Classic & Quadrone sheets (including Compendium choice dialogs).
 * **Carolingian UI**: Automatic color theme adoption, top nav clearance glide, and Combat Carousel styling.
 * **Dice So Nice (DSN)**: Synchronized 3D dice rolling for retroactive advantage and damage prompts.

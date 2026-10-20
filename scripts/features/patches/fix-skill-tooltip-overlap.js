@@ -5,6 +5,7 @@
  * @introduced v14.22.0
  */
 import { log } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Fix: Skill Tooltip Overlap — Character Sheet Skill/Tool Rows
@@ -27,43 +28,25 @@ import { log } from "../../main.js";
  */
 
 export function initFixSkillTooltipOverlap() {
+    patchMethod(
+        "dnd5e.applications.actor.BaseActorSheet.prototype._applyTooltips",
+        function patchedApplyTooltips(wrapped, element) {
+            // If this element is a skill or tool list-item and has a reference
+            // tooltip, ensure the tooltip renders to the LEFT so it does not
+            // overlap adjacent rows in the skill/tool list.
+            if (
+                element?.matches?.("li[data-key]")
+                && element.closest(".skills > ul, .tools > ul")
+                && element.dataset?.referenceTooltip
+                && !("tooltipDirection" in element.dataset)
+            ) {
+                element.dataset.tooltipDirection = "LEFT";
+            }
 
-    // Locate BaseActorSheet via the dnd5e applications namespace.
-    const BaseActorSheet = dnd5e?.applications?.actor?.BaseActorSheet;
-    if ( !BaseActorSheet ) {
-        log("Fix: Skill Tooltip Overlap | dnd5e.applications.actor.BaseActorSheet not found — patch not applied.");
-        return;
-    }
+            return wrapped(element);
+        },
+        "WRAPPER"
+    );
 
-    // Walk up the prototype chain to find the class that *owns* _applyTooltips.
-    let targetProto = BaseActorSheet.prototype;
-    while ( targetProto && targetProto !== Object.prototype ) {
-        if ( Object.prototype.hasOwnProperty.call(targetProto, "_applyTooltips") ) break;
-        targetProto = Object.getPrototypeOf(targetProto);
-    }
-
-    if ( !targetProto || targetProto === Object.prototype ) {
-        log("Fix: Skill Tooltip Overlap | _applyTooltips not found on prototype chain — patch not applied.");
-        return;
-    }
-
-    const original = targetProto._applyTooltips;
-
-    targetProto._applyTooltips = function patchedApplyTooltips(element) {
-        // If this element is a skill or tool list-item and has a reference
-        // tooltip, ensure the tooltip renders to the LEFT so it does not
-        // overlap adjacent rows in the skill/tool list.
-        if (
-            element.matches("li[data-key]")
-            && element.closest(".skills > ul, .tools > ul")
-            && element.dataset.referenceTooltip
-            && !("tooltipDirection" in element.dataset)
-        ) {
-            element.dataset.tooltipDirection = "LEFT";
-        }
-
-        return original.call(this, element);
-    };
-
-    log(`Fix: Skill Tooltip Overlap | Patched _applyTooltips on ${targetProto.constructor?.name ?? "BaseActorSheet"}.`);
+    log("Fix: Skill Tooltip Overlap | Patched _applyTooltips on BaseActorSheet.");
 }

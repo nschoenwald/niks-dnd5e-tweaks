@@ -5,6 +5,7 @@
  * @introduced v14.30.0
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Hide Private GM Rolls from Players
@@ -22,34 +23,17 @@ import { MODULE_ID, log, debug } from "../../main.js";
  */
 
 export function initHidePrivateGMRolls() {
-    const chatMessageClass = CONFIG.ChatMessage?.documentClass ?? ChatMessage;
-    if (!chatMessageClass?.prototype) return;
-
-    // Search prototype chain for the original visible property descriptor
-    let descriptor = null;
-    let proto = chatMessageClass.prototype;
-    while (!descriptor && proto) {
-        descriptor = Object.getOwnPropertyDescriptor(proto, "visible");
-        if (!descriptor) proto = Object.getPrototypeOf(proto);
-    }
-
-    if (!descriptor || !descriptor.get) {
-        log("Warning: Could not find visible descriptor on ChatMessage prototype chain — hide private GM rolls patch skipped.");
-        return;
-    }
-
-    const originalGetter = descriptor.get;
-
-    Object.defineProperty(chatMessageClass.prototype, "visible", {
-        get() {
+    patchMethod(
+        "CONFIG.ChatMessage.documentClass.prototype.visible#get",
+        function(wrapped) {
             // If the feature is disabled, use default Foundry behavior
             if (!game.settings.get(MODULE_ID, "enableHidePrivateGMRolls")) {
-                return originalGetter.call(this);
+                return wrapped();
             }
 
             // GMs should always see all messages according to core logic
             if (game.user?.isGM) {
-                return originalGetter.call(this);
+                return wrapped();
             }
 
             // Determine if the message author is a GM
@@ -58,7 +42,7 @@ export function initHidePrivateGMRolls() {
 
             // If the message was not authored by a GM, use default behavior
             if (!isAuthorGM) {
-                return originalGetter.call(this);
+                return wrapped();
             }
 
             // The author is a GM, and current user is a non-GM player.
@@ -80,14 +64,13 @@ export function initHidePrivateGMRolls() {
                 const isRecipient = hasWhisper && this.whisper.includes(game.user.id);
                 if (!isRecipient) return false;
 
-                return true;
+                return wrapped();
             }
 
-            return originalGetter.call(this);
+            return wrapped();
         },
-        configurable: true,
-        enumerable: descriptor.enumerable
-    });
+        "MIXED"
+    );
 
     // Defense-in-depth: if any other module manually rendered or injected an invisible message
     Hooks.on("renderChatMessageHTML", (message, html) => {

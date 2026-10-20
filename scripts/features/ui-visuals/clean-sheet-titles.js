@@ -5,6 +5,7 @@
  * @introduced v14.9.0
  */
 import { MODULE_ID, log, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Clean Sheet Titles
@@ -26,44 +27,19 @@ import { MODULE_ID, log, debug } from "../../main.js";
  * to all document sheet subclasses (Actor sheets, Item sheets, etc.).
  */
 
-/** Cache the original title descriptor so we can restore it if needed. */
-let originalTitleDescriptor = null;
-
 export function initCleanSheetTitles() {
-    if (!game.settings.get(MODULE_ID, "enableCleanSheetTitles")) return;
-
-    const DSV2 = foundry.applications.api.DocumentSheetV2;
-    if (!DSV2) {
-        log("Clean Sheet Titles: DocumentSheetV2 not found — skipping.");
-        return;
-    }
-
-    // Save the original descriptor from whichever class in the chain defines it
-    originalTitleDescriptor = _findTitleDescriptor(DSV2.prototype);
-
-    Object.defineProperty(DSV2.prototype, "title", {
-        get() {
-            return _buildTitle(this);
+    patchMethod(
+        "foundry.applications.api.DocumentSheetV2.prototype.title#get",
+        function(wrapped) {
+            if (!game.settings.get(MODULE_ID, "enableCleanSheetTitles")) {
+                return wrapped();
+            }
+            return _buildTitle(this, wrapped);
         },
-        configurable: true
-    });
+        "MIXED"
+    );
 
     log("Clean Sheet Titles enabled");
-}
-
-/**
- * Walk the prototype chain to find the existing "title" property descriptor.
- * @param {object} proto
- * @returns {PropertyDescriptor|null}
- */
-function _findTitleDescriptor(proto) {
-    let current = proto;
-    while (current) {
-        const desc = Object.getOwnPropertyDescriptor(current, "title");
-        if (desc) return desc;
-        current = Object.getPrototypeOf(current);
-    }
-    return null;
 }
 
 /**
@@ -72,13 +48,13 @@ function _findTitleDescriptor(proto) {
  * @param {DocumentSheetV2} sheet
  * @returns {string}
  */
-function _buildTitle(sheet) {
+function _buildTitle(sheet, wrapped = null) {
     try {
         const doc = sheet.document;
-        if (!doc) return _fallbackTitle(sheet);
+        if (!doc) return _fallbackTitle(sheet, wrapped);
 
         const name = doc.name;
-        if (!name) return _fallbackTitle(sheet);
+        if (!name) return _fallbackTitle(sheet, wrapped);
 
         const format = game.settings.get(MODULE_ID, "cleanSheetTitles_format");
 
@@ -96,7 +72,7 @@ function _buildTitle(sheet) {
         return name;
     } catch (err) {
         debug("Clean Sheet Titles: error building title, using fallback", err);
-        return _fallbackTitle(sheet);
+        return _fallbackTitle(sheet, wrapped);
     }
 }
 
@@ -132,14 +108,15 @@ function _getTypeLabel(doc) {
 }
 
 /**
- * Get the original title by calling the saved descriptor, or a sensible fallback.
+ * Get the original title by calling the wrapped getter, or a sensible fallback.
  * @param {DocumentSheetV2} sheet
+ * @param {Function} [wrapped]
  * @returns {string}
  */
-function _fallbackTitle(sheet) {
-    if (originalTitleDescriptor?.get) {
+function _fallbackTitle(sheet, wrapped = null) {
+    if (typeof wrapped === "function") {
         try {
-            return originalTitleDescriptor.get.call(sheet);
+            return wrapped.call(sheet);
         } catch { /* ignore */ }
     }
     return sheet.document?.name ?? "";

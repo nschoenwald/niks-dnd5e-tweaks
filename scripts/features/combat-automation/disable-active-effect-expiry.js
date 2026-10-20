@@ -5,6 +5,7 @@
  * @introduced v14.27.0
  */
 import { MODULE_ID, debug } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Disable Active Effect Expiry (DnD5e)
@@ -63,20 +64,19 @@ export function initDisableActiveEffectExpiry() {
  * and stops the effect from being categorized as inactive/expired on the sheet.
  */
 function _patchPrepareDuration() {
-    const effectClass = CONFIG.ActiveEffect?.documentClass;
-    if (!effectClass?.prototype) return;
-    const original = effectClass.prototype._prepareDuration;
-    if (typeof original !== "function") return;
-
-    effectClass.prototype._prepareDuration = function(duration, context) {
-        duration = original.call(this, duration, context);
-        if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
-            if (duration && typeof duration === "object") {
-                duration.expired = false;
+    patchMethod(
+        "CONFIG.ActiveEffect.documentClass.prototype._prepareDuration",
+        function(wrapped, duration, context) {
+            duration = wrapped(duration, context);
+            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+                if (duration && typeof duration === "object") {
+                    duration.expired = false;
+                }
             }
-        }
-        return duration;
-    };
+            return duration;
+        },
+        "WRAPPER"
+    );
 }
 
 /**
@@ -84,20 +84,19 @@ function _patchPrepareDuration() {
  * preventing dnd5e's out-of-combat `this.delete()` branch from ever executing.
  */
 function _patchOnUpdate() {
-    const effectClass = CONFIG.ActiveEffect?.documentClass;
-    if (!effectClass?.prototype) return;
-    const original = effectClass.prototype._onUpdate;
-    if (typeof original !== "function") return;
-
-    effectClass.prototype._onUpdate = function(data, options, userId) {
-        if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
-            if (data?.duration?.expired) {
-                data = foundry.utils.deepClone(data);
-                data.duration.expired = false;
+    patchMethod(
+        "CONFIG.ActiveEffect.documentClass.prototype._onUpdate",
+        function(wrapped, data, options, userId) {
+            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+                if (data?.duration?.expired) {
+                    data = foundry.utils.deepClone(data);
+                    data.duration.expired = false;
+                }
             }
-        }
-        return original.call(this, data, options, userId);
-    };
+            return wrapped(data, options, userId);
+        },
+        "WRAPPER"
+    );
 }
 
 /**
@@ -105,20 +104,19 @@ function _patchOnUpdate() {
  * active effects when a combatant exits combat or combat concludes.
  */
 function _patchCombatOnExit() {
-    const combatClass = CONFIG.Combat?.documentClass;
-    if (!combatClass?.prototype) return;
-    const original = combatClass.prototype._onExit;
-    if (typeof original !== "function") return;
-
-    combatClass.prototype._onExit = async function(combatant) {
-        if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
-            debug("Combat5e._onExit | Suppressed dnd5e active effect deletion on combat exit");
-            const superOnExit = Object.getPrototypeOf(combatClass.prototype)?._onExit;
-            if (superOnExit) return superOnExit.call(this, combatant);
-            return;
-        }
-        return original.call(this, combatant);
-    };
+    patchMethod(
+        "CONFIG.Combat.documentClass.prototype._onExit",
+        async function(wrapped, combatant) {
+            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+                debug("Combat5e._onExit | Suppressed dnd5e active effect deletion on combat exit");
+                const superOnExit = Object.getPrototypeOf(CONFIG.Combat.documentClass.prototype)?._onExit;
+                if (superOnExit) return superOnExit.call(this, combatant);
+                return;
+            }
+            return wrapped(combatant);
+        },
+        "MIXED"
+    );
 }
 
 /**
@@ -130,16 +128,16 @@ function _patchCombatOnExit() {
  *  - Foundry V14 ActiveEffectRegistry expiry evaluation.
  */
 function _patchIsExpiryEvent() {
-    const effectClass = CONFIG.ActiveEffect?.documentClass;
-    if (!effectClass?.prototype) return;
-    const original = effectClass.prototype.isExpiryEvent;
-
-    effectClass.prototype.isExpiryEvent = function(event, context = {}) {
-        if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
-            return false;
-        }
-        return original ? original.call(this, event, context) : false;
-    };
+    patchMethod(
+        "CONFIG.ActiveEffect.documentClass.prototype.isExpiryEvent",
+        function(wrapped, event, context = {}) {
+            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+                return false;
+            }
+            return wrapped(event, context);
+        },
+        "MIXED"
+    );
 }
 
 /**
@@ -147,29 +145,16 @@ function _patchIsExpiryEvent() {
  * `ActiveEffectRegistry` does not register the effect for expiration tracking.
  */
 function _patchIsExpiryTrackable() {
-    const effectClass = CONFIG.ActiveEffect?.documentClass;
-    if (!effectClass?.prototype) return;
-
-    let targetProto = effectClass.prototype;
-    let desc = Object.getOwnPropertyDescriptor(targetProto, "isExpiryTrackable");
-    if (!desc && typeof foundry !== "undefined" && foundry.documents?.BaseActiveEffect?.prototype) {
-        targetProto = foundry.documents.BaseActiveEffect.prototype;
-        desc = Object.getOwnPropertyDescriptor(targetProto, "isExpiryTrackable");
-    }
-
-    if (desc?.get) {
-        const originalGet = desc.get;
-        Object.defineProperty(effectClass.prototype, "isExpiryTrackable", {
-            get() {
-                if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
-                    return false;
-                }
-                return originalGet.call(this);
-            },
-            configurable: true,
-            enumerable: true
-        });
-    }
+    patchMethod(
+        "CONFIG.ActiveEffect.documentClass.prototype.isExpiryTrackable#get",
+        function(wrapped) {
+            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+                return false;
+            }
+            return wrapped();
+        },
+        "MIXED"
+    );
 }
 
 /**

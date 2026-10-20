@@ -5,6 +5,7 @@
  * @introduced v14.34.0
  */
 import { MODULE_ID, debug, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Initialize Context Menu Styling patch.
@@ -14,55 +15,57 @@ import { MODULE_ID, debug, isFeatureActive } from "../../main.js";
  * adapt styling to the menu's actual rendered background luminance.
  */
 export function initContextMenuStyling() {
-    const ContextMenuClass = foundry.applications.ux.ContextMenu;
-    if (!ContextMenuClass?.prototype) {
-        console.warn("Nik's DnD5e Tweaks | ContextMenu class not found — skipping context menu styling.");
-        return;
-    }
-
-    const originalOnRenderEntries = ContextMenuClass.prototype._onRenderEntries;
-    const originalSetFixedPosition = ContextMenuClass.prototype._setFixedPosition;
-    const originalOnRender = ContextMenuClass.prototype._onRender;
-
     // 1. Tag menu items as they are rendered into the menu DOM
-    ContextMenuClass.prototype._onRenderEntries = async function(menu, options = {}) {
-        await originalOnRenderEntries?.call(this, menu, options);
+    patchMethod(
+        "foundry.applications.ux.ContextMenu.prototype._onRenderEntries",
+        async function(wrapped, menu, options = {}) {
+            await wrapped(menu, options);
 
-        try {
-            if (!isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) return;
-            _applyContextMenuStyling(this, menu);
-        } catch (err) {
-            console.error("Nik's DnD5e Tweaks | Error applying context menu styling:", err);
-        }
-    };
+            try {
+                if (!isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) return;
+                _applyContextMenuStyling(this, menu);
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Error applying context menu styling:", err);
+            }
+        },
+        "WRAPPER"
+    );
 
     // 2. Once placed in the DOM via setFixedPosition, measure background luminance
-    ContextMenuClass.prototype._setFixedPosition = function(menu, target, options = {}) {
-        const result = originalSetFixedPosition.call(this, menu, target, options);
-        try {
-            if (isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) {
-                _updateMenuTheme(menu);
+    patchMethod(
+        "foundry.applications.ux.ContextMenu.prototype._setFixedPosition",
+        function(wrapped, menu, target, options = {}) {
+            const result = wrapped(menu, target, options);
+            try {
+                if (isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) {
+                    _updateMenuTheme(menu);
+                }
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Error updating context menu theme after positioning:", err);
             }
-        } catch (err) {
-            console.error("Nik's DnD5e Tweaks | Error updating context menu theme after positioning:", err);
-        }
-        return result;
-    };
+            return result;
+        },
+        "WRAPPER"
+    );
 
     // 3. Fallback verification after animation / full render if not yet measured
-    ContextMenuClass.prototype._onRender = async function(options = {}) {
-        await originalOnRender?.call(this, options);
-        try {
-            if (isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) {
-                const menuEl = this.element;
-                if (menuEl && !menuEl.dataset.nd5tThemeMeasured) {
-                    _updateMenuTheme(menuEl);
+    patchMethod(
+        "foundry.applications.ux.ContextMenu.prototype._onRender",
+        async function(wrapped, options = {}) {
+            await wrapped(options);
+            try {
+                if (isFeatureActive("enableContextMenuStyling", "clientEnableContextMenuStyling")) {
+                    const menuEl = this.element;
+                    if (menuEl && !menuEl.dataset.nd5tThemeMeasured) {
+                        _updateMenuTheme(menuEl);
+                    }
                 }
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Error verifying context menu theme in onRender:", err);
             }
-        } catch (err) {
-            console.error("Nik's DnD5e Tweaks | Error verifying context menu theme in onRender:", err);
-        }
-    };
+        },
+        "WRAPPER"
+    );
 
     debug("Context Menu Styling | Initialized");
 }
