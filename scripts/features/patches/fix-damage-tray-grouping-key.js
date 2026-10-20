@@ -64,6 +64,14 @@ export function initFixDamageTrayGroupingKey() {
             configurable: true
         });
     }
+    if (tokenObjectClass && !Object.getOwnPropertyDescriptor(tokenObjectClass.prototype, "uuid")) {
+        Object.defineProperty(tokenObjectClass.prototype, "uuid", {
+            get: function uuid() {
+                return this.document?.uuid;
+            },
+            configurable: true
+        });
+    }
 
     log("Fix: Damage Tray Grouping Key | Initialized upstream getGroupingKey fallback patch.");
 }

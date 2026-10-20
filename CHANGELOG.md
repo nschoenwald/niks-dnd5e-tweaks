@@ -5,21 +5,16 @@ All notable changes to this project will be documented in this file.
 ## [14.48.0] - 2026-10-20
 ### Added
 - **Legendary Action Placeholders: Turn Marker Highlight**:
-  - The native Foundry turn marker is now displayed under all creatures with remaining legendary actions during placeholder turns.
-  - Markers automatically disappear when a creature spends its last legendary action, dies, or is defeated, and cleanly return to the active combatant when the placeholder turn ends.
+  - Native combat turn markers now highlight creatures with remaining legendary actions during placeholder turns, updating dynamically as actions are spent or conditions change.
 
 ### Fixed
-- **Damage Application Trays: Target Grouping Key Crash**:
-  - Silently resolved an upstream D&D 5e system error (`TypeError: token.getGroupingKey is not a function`) that could trigger when a damage application tray renders for targets resolved via actor UUID or unplaced tokens.
-- **Player Damage Prompts & Tray Collapse: Chat Card Render Failure**:
-  - Fixed an issue where damage prompt cards failed to render on player clients due to an internal system error during chat message rendering.
-  - Hardened auto-collapse damage tray handlers and activity lookups so non-tray messages and prompt cards render reliably without interrupting the chat log.
-- **Player Damage Prompts: Whisper Recipients & Player Ownership**:
-  - Fixed an issue where players did not receive damage prompts for their assigned characters or unlinked tokens if explicit ownership was not set on the actor sheet.
-  - Improved target resolution for attack rolls and activities across all DnD5e targeting modes.
-- **Legendary Action Placeholders: Defeated & Hidden Creatures**:
-  - Turn markers now immediately disappear when a creature is marked defeated in the combat tracker.
-  - Hidden creatures no longer reveal turn markers to players.
+- **Damage Application Trays: Grouping & Render Stability**:
+  - Resolved an upstream D&D 5e error when grouping targets in damage trays and ensured unlinked placeable tokens group correctly.
+- **Player Damage Prompts: Delivery & Reliability**:
+  - Fixed prompts not whispering to players who own unlinked tokens or assigned characters without explicit actor sheet ownership.
+  - Hardened chat message rendering and tray collapse to ensure prompt cards always display reliably.
+- **Legendary Action Placeholders: Hidden & Multi-Scene Encounters**:
+  - Hidden creatures no longer reveal turn markers to players, and markers immediately update when defeating or reviving creatures across scenes.
 
 ## [14.47.0] - 2026-10-20
 ### Fixed

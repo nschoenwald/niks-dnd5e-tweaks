@@ -300,9 +300,10 @@ function _getLegendaryTokensWithRemainingActions(combat) {
  */
 function _isTokenEligibleForPlaceholderTurnMarker(token, combat) {
     if (!token || !combat?.combatants?.size) return false;
+    const sceneId = canvas.scene?.id ?? token.document?.parent?.id;
     for (const combatant of combat.combatants) {
         if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
-        if (combatant.sceneId && token.scene?.id && combatant.sceneId !== token.scene.id) continue;
+        if (combatant.sceneId && sceneId && combatant.sceneId !== sceneId) continue;
         if ((combatant.hidden || combatant.token?.hidden) && !game.user.isGM) continue;
         if (combatant.tokenId === token.id) {
             if (_getCombatantRemainingLegendaryActions(combatant) > 0) return true;
@@ -323,7 +324,7 @@ function _isTokenEligibleForPlaceholderTurnMarker(token, combat) {
  * @param {...any} args
  */
 function _handleUpdateTurnMarkers(wrapped, ...args) {
-    if (!canvas.ready || !this.isView) return wrapped.apply(this, args);
+    if (!canvas.ready || !canvas.tokens?.turnMarkers || !this.isView) return wrapped.apply(this, args);
     if (!isLegendaryPlaceholderTurn(this)) return wrapped.apply(this, args);
 
     const legendaryTokens = _getLegendaryTokensWithRemainingActions(this);
@@ -396,14 +397,18 @@ function _wrapCombatMethods() {
  * Handle ActiveEffect changes (creation, deletion, or enabled/disabled toggles) on combatants
  * to ensure status changes (e.g. "dead") immediately reflect on placeholder turn markers.
  * @param {ActiveEffect} effect
+ * @param {object} [changed=null]
  */
-function _handleActiveEffectChange(effect) {
+function _handleActiveEffectChange(effect, changed = null) {
     const rawTarget = effect.target ?? effect.parent;
     const actor = rawTarget instanceof Actor ? rawTarget : (rawTarget?.parent instanceof Actor ? rawTarget.parent : null);
     if (!(actor instanceof Actor)) return;
 
     const defeatedId = CONFIG.specialStatusEffects?.DEFEATED || "defeated";
-    const isDefeatedOrDead = effect.statuses?.has("dead") || effect.statuses?.has(defeatedId) || effect.statuses?.has("defeated");
+    const isDefeatedOrDead = effect.statuses?.has("dead")
+        || effect.statuses?.has(defeatedId)
+        || effect.statuses?.has("defeated")
+        || (changed && ("disabled" in changed || "statuses" in changed));
     if (!isDefeatedOrDead) return;
 
     for (const combat of game.combats ?? []) {
@@ -551,9 +556,14 @@ export function initLegendaryActionPlaceholders() {
         if ("actorId" in changed || changed.system?.resources?.legact?.max !== undefined) {
             _invalidateLegendaryCache(c.combat);
         }
-        if ((changed.defeated !== undefined || "actorId" in changed || "tokenId" in changed)
+        if ((changed.defeated !== undefined || "actorId" in changed || "tokenId" in changed || "hidden" in changed)
             && c.combat?.isView && isLegendaryPlaceholderTurn(c.combat)) {
             c.combat._updateTurnMarkers();
+        }
+    });
+    Hooks.on("updateToken", (tokenDoc, changed) => {
+        if ("hidden" in changed && game.combat?.isView && isLegendaryPlaceholderTurn(game.combat)) {
+            game.combat._updateTurnMarkers();
         }
     });
     Hooks.on("updateActor", (actor, changed) => {
@@ -587,11 +597,11 @@ export function initLegendaryActionPlaceholders() {
     });
 
     // Synchronize turn markers when ActiveEffects (e.g. dead status) are created, updated, or deleted
-    Hooks.on("createActiveEffect", _handleActiveEffectChange);
-    Hooks.on("deleteActiveEffect", _handleActiveEffectChange);
+    Hooks.on("createActiveEffect", (effect) => _handleActiveEffectChange(effect));
+    Hooks.on("deleteActiveEffect", (effect) => _handleActiveEffectChange(effect));
     Hooks.on("updateActiveEffect", (effect, changed) => {
         if ("disabled" in changed || "statuses" in changed) {
-            _handleActiveEffectChange(effect);
+            _handleActiveEffectChange(effect, changed);
         }
     });
 

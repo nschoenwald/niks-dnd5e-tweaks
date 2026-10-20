@@ -742,7 +742,7 @@ function _resolveTarget(uuidOrTarget) {
     if (typeof uuidOrTarget === "object") {
         let tokenDoc = null;
         let actor = null;
-        const tokenRef = uuidOrTarget.token || uuidOrTarget.tokenUuid || uuidOrTarget.document?.uuid;
+        const tokenRef = uuidOrTarget.tokenDoc || uuidOrTarget.token || uuidOrTarget.tokenUuid || uuidOrTarget.document?.uuid;
         const actorRef = uuidOrTarget.actor || uuidOrTarget.actorUuid;
 
         if (tokenRef) {
