@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.48.0] - 2026-10-20
+### Added
+- **Legendary Action Placeholders: Turn Marker Highlight**:
+  - The native Foundry turn marker is now displayed under all creatures with remaining legendary actions during placeholder turns.
+  - Markers automatically disappear when a creature spends its last legendary action, dies, or is defeated, and cleanly return to the active combatant when the placeholder turn ends.
+
+### Fixed
+- **Player Damage Prompts: Whisper Recipients & Player Ownership**:
+  - Fixed an issue where players did not receive damage prompts for their assigned characters or unlinked tokens if explicit ownership was not set on the actor sheet.
+  - Improved target resolution for attack rolls and activities across all DnD5e targeting modes.
+- **Legendary Action Placeholders: Defeated & Hidden Creatures**:
+  - Turn markers now immediately disappear when a creature is marked defeated in the combat tracker.
+  - Hidden creatures no longer reveal turn markers to players.
+
 ## [14.47.0] - 2026-10-20
 ### Fixed
 - **Detailed Roll Breakdown: Typed Bonus Damage**:

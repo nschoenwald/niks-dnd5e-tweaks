@@ -318,7 +318,7 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * *Sub-setting*: **Always Prompt Features** (comma-separated names like `Mage Armor`).
 
 ### Legendary Action Placeholders
-Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
+Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
 * *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
 
 ### Prompt for Death Saves

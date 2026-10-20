@@ -4,6 +4,7 @@
  *
  * @introduced v14.3.1
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
+ * @updated v14.48.0 (Native core combat turn marker displayed on legendary creatures during placeholder turns)
  */
 import { MODULE_ID, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -54,21 +55,7 @@ export function hasRemainingLegendaryActions(combat) {
 
     for (let i = 0; i < cache.ids.length; i++) {
         const c = combat.combatants.get(cache.ids[i]);
-        if (!c || c.isDefeated) continue;
-        const actor = c.actor;
-        if (!actor) continue;
-
-        // Skip dead creatures
-        if (actor.statuses?.has("dead") || (actor.system?.attributes?.hp?.value ?? 1) <= 0) continue;
-
-        const legact = actor.system?.resources?.legact;
-        if (!legact) continue;
-
-        const remaining = typeof legact.value === "number"
-            ? legact.value
-            : (Number(legact.max) || 0) - (Number(legact.spent) || 0);
-
-        if (remaining > 0) return true;
+        if (_getCombatantRemainingLegendaryActions(c) > 0) return true;
     }
 
     return false;
@@ -247,13 +234,185 @@ async function _handlePreviousTurn(wrapped, ...args) {
 }
 
 /**
- * Wrap nextTurn and previousTurn on Combat document class.
+ * Check if the given combat encounter is currently on a legendary action placeholder turn.
+ * @param {Combat} [combat]
+ * @returns {boolean}
+ */
+export function isLegendaryPlaceholderTurn(combat) {
+    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return false;
+    if (!combat || (combat.round ?? 0) === 0 || !combat.turns?.length) return false;
+    const currentCombatant = combat.combatant;
+    return Boolean(currentCombatant?.getFlag(MODULE_ID, "isLegendaryPlaceholder"));
+}
+
+/**
+ * Determine remaining legendary action uses for a given combatant.
+ * Returns 0 if the combatant is defeated, dead, has 0 HP, or has no uses remaining.
+ * @param {Combatant} combatant
+ * @returns {number}
+ */
+function _getCombatantRemainingLegendaryActions(combatant) {
+    if (!combatant || combatant.isDefeated) return 0;
+    const actor = combatant.actor;
+    if (!actor) return 0;
+    if (actor.statuses?.has("dead") || (actor.system?.attributes?.hp?.value ?? 1) <= 0) return 0;
+
+    const legact = actor.system?.resources?.legact;
+    if (!legact) return 0;
+
+    const max = Number(legact.max) || 0;
+    if (max <= 0) return 0;
+
+    const remaining = typeof legact.value === "number"
+        ? legact.value
+        : max - (Number(legact.spent) || 0);
+
+    return Math.max(0, remaining);
+}
+
+/**
+ * Helper to collect all scene Tokens corresponding to combatants with remaining legendary actions.
+ * @param {Combat} combat
+ * @returns {Set<Token>}
+ */
+function _getLegendaryTokensWithRemainingActions(combat) {
+    const tokens = new Set();
+    if (!combat?.combatants?.size) return tokens;
+
+    for (const combatant of combat.combatants) {
+        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        if (combatant.sceneId && canvas.scene?.id && combatant.sceneId !== canvas.scene.id) continue;
+        if ((combatant.hidden || combatant.token?.hidden) && !game.user.isGM) continue;
+        if (_getCombatantRemainingLegendaryActions(combatant) > 0) {
+            const token = canvas.tokens?.get(combatant.tokenId) ?? combatant.token?._object;
+            if (token) tokens.add(token);
+        }
+    }
+
+    return tokens;
+}
+
+/**
+ * Check if a token is eligible to display the turn marker during a legendary action placeholder turn.
+ * @param {Token} token
+ * @param {Combat} [combat]
+ * @returns {boolean}
+ */
+function _isTokenEligibleForPlaceholderTurnMarker(token, combat) {
+    if (!token || !combat?.combatants?.size) return false;
+    for (const combatant of combat.combatants) {
+        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        if (combatant.sceneId && token.scene?.id && combatant.sceneId !== token.scene.id) continue;
+        if ((combatant.hidden || combatant.token?.hidden) && !game.user.isGM) continue;
+        if (combatant.tokenId === token.id) {
+            if (_getCombatantRemainingLegendaryActions(combatant) > 0) return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Handle Combat#_updateTurnMarkers: when a placeholder turn is active, ensure all eligible
+ * creatures with remaining legendary actions are flagged to display turn markers, and any
+ * tokens that no longer qualify have their turn markers refreshed (removed).
+ *
+ * Does NOT call core wrapped during placeholder turns to avoid core flagging all tokens in
+ * canvas.tokens.turnMarkers, which would destroy and rebuild existing active meshes on every update.
+ *
+ * @param {Function} wrapped Original or downstream _updateTurnMarkers function
+ * @param {...any} args
+ */
+function _handleUpdateTurnMarkers(wrapped, ...args) {
+    if (!canvas.ready || !this.isView) return wrapped.apply(this, args);
+    if (!isLegendaryPlaceholderTurn(this)) return wrapped.apply(this, args);
+
+    const legendaryTokens = _getLegendaryTokensWithRemainingActions(this);
+
+    // Flag tokens currently in turnMarkers that are no longer eligible (e.g. previous turn's token, or 0 uses left)
+    for (const token of canvas.tokens.turnMarkers) {
+        if (!legendaryTokens.has(token)) {
+            token.renderFlags.set({ refreshTurnMarker: true });
+        }
+    }
+
+    // Flag eligible tokens that do not currently have an active turn marker
+    for (const token of legendaryTokens) {
+        if (!canvas.tokens.turnMarkers.has(token)) {
+            token.renderFlags.set({ refreshTurnMarker: true });
+        }
+    }
+}
+
+/**
+ * Handle Token#_refreshTurnMarker: if currently on a legendary action placeholder turn and
+ * this token is an alive creature with remaining legendary actions, temporarily set the
+ * placeholder combatant's tokenId to this token so core's turn marker activation logic
+ * executes completely natively (including sprite meshes, shaders, and disposition tinting).
+ *
+ * @param {Function} wrapped Original or downstream _refreshTurnMarker function
+ * @param {...any} args
+ */
+function _handleRefreshTurnMarker(wrapped, ...args) {
+    const combat = game.combat;
+    if (isLegendaryPlaceholderTurn(combat) && _isTokenEligibleForPlaceholderTurnMarker(this, combat)) {
+        const combatant = combat.combatant;
+        if (combatant) {
+            const originalDescriptor = Object.getOwnPropertyDescriptor(combatant, "tokenId");
+            Object.defineProperty(combatant, "tokenId", {
+                value: this.id,
+                configurable: true,
+                writable: true
+            });
+            try {
+                return wrapped.apply(this, args);
+            } finally {
+                if (originalDescriptor) {
+                    Object.defineProperty(combatant, "tokenId", originalDescriptor);
+                } else {
+                    delete combatant.tokenId;
+                }
+            }
+        }
+    }
+    return wrapped.apply(this, args);
+}
+
+/**
+ * Wrap nextTurn and previousTurn on Combat document class, as well as turn marker methods
+ * on Combat and Token to display the core combat turn marker on all creatures with remaining
+ * legendary actions when a placeholder turn is active.
+ *
  * Uses libWrapper when available to avoid conflicts with modules like Monk's Combat Details,
  * falling back to prototype wrapping if libWrapper is not present.
  */
 function _wrapCombatMethods() {
     patchMethod("Combat.prototype.nextTurn", _handleNextTurn, "MIXED");
     patchMethod("Combat.prototype.previousTurn", _handlePreviousTurn, "MIXED");
+    patchMethod("Combat.prototype._updateTurnMarkers", _handleUpdateTurnMarkers, "MIXED");
+    patchMethod("CONFIG.Token.objectClass.prototype._refreshTurnMarker", _handleRefreshTurnMarker, "WRAPPER");
+}
+
+/**
+ * Handle ActiveEffect changes (creation, deletion, or enabled/disabled toggles) on combatants
+ * to ensure status changes (e.g. "dead") immediately reflect on placeholder turn markers.
+ * @param {ActiveEffect} effect
+ */
+function _handleActiveEffectChange(effect) {
+    const rawTarget = effect.target ?? effect.parent;
+    const actor = rawTarget instanceof Actor ? rawTarget : (rawTarget?.parent instanceof Actor ? rawTarget.parent : null);
+    if (!(actor instanceof Actor)) return;
+
+    const defeatedId = CONFIG.specialStatusEffects?.DEFEATED || "defeated";
+    const isDefeatedOrDead = effect.statuses?.has("dead") || effect.statuses?.has(defeatedId) || effect.statuses?.has("defeated");
+    if (!isDefeatedOrDead) return;
+
+    for (const combat of game.combats ?? []) {
+        if (combat.isView && isLegendaryPlaceholderTurn(combat)) {
+            if (combat.combatants?.some(c => c.actorId === actor.id || c.actor === actor || c.actor?.id === actor.id)) {
+                combat._updateTurnMarkers();
+            }
+        }
+    }
 }
 
 /**
@@ -379,21 +538,67 @@ export function initLegendaryActionPlaceholders() {
         }
     });
 
-    // Invalidate cache when combatants are added, removed, or relevant actor/combatant data changes
-    Hooks.on("createCombatant", c => _invalidateLegendaryCache(c.combat));
-    Hooks.on("deleteCombatant", c => _invalidateLegendaryCache(c.combat));
+    // Invalidate cache and update turn markers when combatants are added, removed, or updated
+    Hooks.on("createCombatant", c => {
+        _invalidateLegendaryCache(c.combat);
+        if (c.combat?.isView && isLegendaryPlaceholderTurn(c.combat)) c.combat._updateTurnMarkers();
+    });
+    Hooks.on("deleteCombatant", c => {
+        _invalidateLegendaryCache(c.combat);
+        if (c.combat?.isView && isLegendaryPlaceholderTurn(c.combat)) c.combat._updateTurnMarkers();
+    });
     Hooks.on("updateCombatant", (c, changed) => {
         if ("actorId" in changed || changed.system?.resources?.legact?.max !== undefined) {
             _invalidateLegendaryCache(c.combat);
         }
+        if ((changed.defeated !== undefined || "actorId" in changed || "tokenId" in changed)
+            && c.combat?.isView && isLegendaryPlaceholderTurn(c.combat)) {
+            c.combat._updateTurnMarkers();
+        }
     });
     Hooks.on("updateActor", (actor, changed) => {
-        if (changed.system?.resources?.legact?.max !== undefined) {
+        const legactMaxChanged = ("system.resources.legact.max" in changed)
+            || (changed.system?.resources?.legact?.max !== undefined);
+        const legactChanged = ("system.resources.legact" in changed)
+            || ("system.resources.legact.spent" in changed)
+            || ("system.resources.legact.value" in changed)
+            || (changed.system?.resources?.legact !== undefined);
+        const hpChanged = ("system.attributes.hp" in changed)
+            || ("system.attributes.hp.value" in changed)
+            || (changed.system?.attributes?.hp !== undefined);
+
+        if (legactMaxChanged) {
             for (const combat of game.combats ?? []) {
-                if (combat.combatants?.some(c => c.actorId === actor.id)) {
+                if (combat.combatants?.some(c => c.actorId === actor.id || c.actor === actor)) {
                     _invalidateLegendaryCache(combat);
                 }
             }
+        }
+
+        if (legactChanged || hpChanged) {
+            for (const combat of game.combats ?? []) {
+                if (combat.isView && isLegendaryPlaceholderTurn(combat)) {
+                    if (combat.combatants?.some(c => c.actorId === actor.id || c.actor === actor)) {
+                        combat._updateTurnMarkers();
+                    }
+                }
+            }
+        }
+    });
+
+    // Synchronize turn markers when ActiveEffects (e.g. dead status) are created, updated, or deleted
+    Hooks.on("createActiveEffect", _handleActiveEffectChange);
+    Hooks.on("deleteActiveEffect", _handleActiveEffectChange);
+    Hooks.on("updateActiveEffect", (effect, changed) => {
+        if ("disabled" in changed || "statuses" in changed) {
+            _handleActiveEffectChange(effect);
+        }
+    });
+
+    // Ensure turn markers are drawn on active legendary creatures when viewing the canvas
+    Hooks.on("canvasReady", () => {
+        if (game.combat && isLegendaryPlaceholderTurn(game.combat)) {
+            game.combat._updateTurnMarkers();
         }
     });
 

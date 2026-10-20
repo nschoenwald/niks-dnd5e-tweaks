@@ -62,14 +62,15 @@ function _patchChatMessageVisibility() {
         function(wrapped) {
             if (this.flags?.[MODULE_ID]?.damagePrompt) {
                 // If a non-GM player has suppressed damage prompts, hide completely
-                if (!game.user?.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
+                if (!game.user?.isGM && Boolean(game.settings.get(MODULE_ID, "suppressDamagePrompt"))) {
                     return false;
                 }
 
                 // If whisper recipients are defined, enforce that the user must be in the whisper list.
                 // This prevents the author GM from seeing "Player Only" prompts via Foundry's `this.isAuthor` fallback.
-                if (Array.isArray(this.whisper) && this.whisper.length > 0) {
-                    return this.whisper.includes(game.user?.id);
+                const whisperRecipients = Array.isArray(this.whisper) ? this.whisper : (this.whisper ? Array.from(this.whisper) : []);
+                if (whisperRecipients.length > 0 && !whisperRecipients.includes(game.user?.id)) {
+                    return false;
                 }
             }
 
@@ -411,13 +412,13 @@ async function _onCreateChatMessage_Attack(message) {
             }
 
             // Determine target ownership and which prompt mode applies
-            const playerOwned = _isPlayerOwned(actor);
+            const playerOwned = _isPlayerOwned(actor, tokenDoc);
             let whisperTargets;
 
             if (playerOwned && (playerPromptEnabled || grazePromptEnabled)) {
                 // Player-owned target → whisper to the owning player(s)
                 // (+ maybe GM per visibility setting).
-                whisperTargets = _getWhisperTargets(actor);
+                whisperTargets = _getWhisperTargets(actor, tokenDoc);
             } else if (!playerOwned && (gmPromptEnabled || grazePromptEnabled)) {
                 // NPC target → whisper to GM only.
                 whisperTargets = game.users.filter(u => u.isGM).map(u => u.id);
@@ -720,35 +721,73 @@ function _buildDamageDescriptions(rolls) {
 function _resolveTarget(uuidOrTarget) {
     if (!uuidOrTarget) return { tokenDoc: null, actor: null };
 
-    // Support TargetDescriptor object from DnD5e 6.0.0+ TargetsField
+    // Support direct TokenDocument or Actor document
+    if (uuidOrTarget.documentName === "Token") {
+        return { tokenDoc: uuidOrTarget, actor: uuidOrTarget.actor ?? null };
+    }
+    if (uuidOrTarget.documentName === "Actor") {
+        const fallbackTokenDoc = (typeof uuidOrTarget.getActiveTokens === "function")
+            ? (uuidOrTarget.getActiveTokens(true, true)?.[0]?.document ?? null)
+            : null;
+        return { tokenDoc: fallbackTokenDoc, actor: uuidOrTarget };
+    }
+
+    // Support canvas Token placeable directly (e.g. from game.user.targets or canvas.tokens)
+    if (uuidOrTarget.document?.documentName === "Token") {
+        const tokenDoc = uuidOrTarget.document;
+        return { tokenDoc, actor: uuidOrTarget.actor ?? tokenDoc.actor ?? null };
+    }
+
+    // Support TargetDescriptor object from DnD5e 6.0.0+ TargetsField or compound objects
     if (typeof uuidOrTarget === "object") {
-        if (uuidOrTarget.token || uuidOrTarget.actor) {
-            let tokenDoc = null;
-            let actor = null;
-            if (uuidOrTarget.token) {
+        let tokenDoc = null;
+        let actor = null;
+        const tokenRef = uuidOrTarget.token || uuidOrTarget.tokenUuid || uuidOrTarget.document?.uuid;
+        const actorRef = uuidOrTarget.actor || uuidOrTarget.actorUuid;
+
+        if (tokenRef) {
+            if (tokenRef.documentName === "Token") {
+                tokenDoc = tokenRef;
+                actor = tokenDoc.actor ?? null;
+            } else if (tokenRef.document?.documentName === "Token") {
+                tokenDoc = tokenRef.document;
+                actor = tokenRef.actor ?? tokenDoc.actor ?? null;
+            } else if (typeof tokenRef === "string") {
                 try {
-                    const doc = fromUuidSync(uuidOrTarget.token);
+                    const doc = fromUuidSync(tokenRef);
                     tokenDoc = doc?.documentName === "Token" ? doc : (doc?.document ?? null);
                     actor = tokenDoc?.actor ?? null;
                 } catch { /* continue */ }
             }
-            if (!actor && uuidOrTarget.actor) {
+        }
+        if (!actor && actorRef) {
+            if (actorRef.documentName === "Actor" || actorRef instanceof Actor) {
+                actor = actorRef;
+            } else if (actorRef.actor?.documentName === "Actor") {
+                actor = actorRef.actor;
+            } else if (typeof actorRef === "string") {
                 try {
-                    const doc = fromUuidSync(uuidOrTarget.actor);
-                    actor = doc?.actor ?? doc;
+                    const doc = fromUuidSync(actorRef);
+                    actor = doc?.documentName === "Actor" ? doc : (doc?.actor ?? doc);
                 } catch { /* continue */ }
             }
-            if (actor) {
-                if (!tokenDoc && typeof actor.getActiveTokens === "function") {
-                    const activeTokens = actor.getActiveTokens(true, true);
-                    tokenDoc = activeTokens?.[0]?.document ?? null;
-                }
-                return { tokenDoc, actor };
+        }
+        if (actor) {
+            if (!tokenDoc && typeof actor.getActiveTokens === "function") {
+                const activeTokens = actor.getActiveTokens(true, true);
+                tokenDoc = activeTokens?.[0]?.document ?? null;
             }
+            return { tokenDoc, actor };
         }
     }
 
-    const uuid = typeof uuidOrTarget === "string" ? uuidOrTarget : (uuidOrTarget.uuid || uuidOrTarget.tokenUuid || uuidOrTarget.actorUuid);
+    const uuid = typeof uuidOrTarget === "string"
+        ? uuidOrTarget
+        : (typeof uuidOrTarget.uuid === "string" ? uuidOrTarget.uuid
+            : (typeof uuidOrTarget.tokenUuid === "string" ? uuidOrTarget.tokenUuid
+            : (typeof uuidOrTarget.actorUuid === "string" ? uuidOrTarget.actorUuid
+            : (typeof uuidOrTarget.token === "string" ? uuidOrTarget.token
+            : (typeof uuidOrTarget.actor === "string" ? uuidOrTarget.actor : null)))));
     if (!uuid) return { tokenDoc: null, actor: null };
 
     let resolved = null;
@@ -802,28 +841,75 @@ function _getTokenName(tokenDoc, target, actor) {
 // ── Per-target processing ────────────────────────────────────────────
 
 /**
- * Determine whether an actor is player-owned (at least one non-GM user
- * with OWNER permission). Uses actor.testUserPermission to properly handle
- * unlinked / synthetic token actors inheriting ownership.
- * @param {Actor} actor
+ * Test whether a given User is an owner of the target actor/token.
+ * Robustly checks:
+ * 1. Actor document ownership (`testUserPermission(user, "OWNER")`)
+ * 2. Assigned character (`user.character`) matching actor or baseActor
+ * 3. Base actor ownership on unlinked / synthetic token actors
+ * 4. TokenDocument ownership (`tokenDoc.testUserPermission(user, "OWNER")`)
+ * @param {Actor|null} actor
+ * @param {TokenDocument|null} [tokenDoc=null]
+ * @param {User} user
  * @returns {boolean}
  */
-function _isPlayerOwned(actor) {
-    if (!actor) return false;
-    return game.users.some(u => !u.isGM && actor.testUserPermission(u, "OWNER"));
+function _isUserOwner(actor, tokenDoc, user) {
+    if (!user || user.isGM) return false;
+
+    const effectiveActor = actor ?? tokenDoc?.actor ?? null;
+
+    // Check direct actor permissions & assigned character
+    if (effectiveActor) {
+        if (effectiveActor.testUserPermission?.(user, "OWNER")) return true;
+        if (user.character && (user.character.id === effectiveActor.id || user.character.uuid === effectiveActor.uuid)) return true;
+
+        // Base actor check (synthetic actor on unlinked token)
+        const baseActor = effectiveActor.token?.baseActor
+            ?? (effectiveActor.isToken && effectiveActor.token?.actorId ? game.actors?.get(effectiveActor.token.actorId) : null)
+            ?? (effectiveActor.parent?.baseActor);
+        if (baseActor) {
+            if (baseActor.testUserPermission?.(user, "OWNER")) return true;
+            if (user.character && (user.character.id === baseActor.id || user.character.uuid === baseActor.uuid)) return true;
+        }
+    }
+
+    // Check token document permissions & assigned character on token's actor
+    if (tokenDoc) {
+        if (tokenDoc.testUserPermission?.(user, "OWNER")) return true;
+        const tokenBaseActor = tokenDoc.baseActor ?? (tokenDoc.actorId ? game.actors?.get(tokenDoc.actorId) : null);
+        if (tokenBaseActor) {
+            if (tokenBaseActor.testUserPermission?.(user, "OWNER")) return true;
+            if (user.character && (user.character.id === tokenBaseActor.id || user.character.uuid === tokenBaseActor.uuid)) return true;
+        }
+    }
+
+    return false;
 }
 
 /**
- * Collect the user IDs that should receive the whisper.  Respects the
+ * Determine whether an actor or token is player-owned.
+ * Checks both explicit OWNER permission and assigned player character (user.character),
+ * with support for unlinked/synthetic token actors.
+ * @param {Actor|null} actor
+ * @param {TokenDocument|null} [tokenDoc=null]
+ * @returns {boolean}
+ */
+function _isPlayerOwned(actor, tokenDoc = null) {
+    if (!actor && !tokenDoc) return false;
+    return game.users.some(u => _isUserOwner(actor, tokenDoc, u));
+}
+
+/**
+ * Collect the user IDs that should receive the whisper. Respects the
  * `damagePromptVisibility` setting to include or exclude GMs.
- * Uses actor.testUserPermission to properly handle unlinked / synthetic
- * token actors inheriting ownership.
- * @param {Actor} actor
+ * Checks both explicit OWNER permission and assigned player character (user.character),
+ * with support for unlinked/synthetic token actors.
+ * @param {Actor|null} actor
+ * @param {TokenDocument|null} [tokenDoc=null]
  * @returns {string[]}
  */
-function _getWhisperTargets(actor) {
-    if (!actor) return [];
-    const owners = game.users.filter(u => !u.isGM && actor.testUserPermission(u, "OWNER")).map(u => u.id);
+function _getWhisperTargets(actor, tokenDoc = null) {
+    if (!actor && !tokenDoc) return [];
+    const owners = game.users.filter(u => _isUserOwner(actor, tokenDoc, u)).map(u => u.id);
 
     const includeGM = game.settings.get(MODULE_ID, "damagePromptVisibility") === "gmAndPlayer";
     if (includeGM) {
@@ -869,14 +955,14 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         "| Temp HP:", actor.system.attributes.hp.temp || 0);
 
     // Determine target ownership and which prompt mode applies
-    const playerOwned = _isPlayerOwned(actor);
+    const playerOwned = _isPlayerOwned(actor, tokenDoc);
     let whisperTargets;
 
     if (playerOwned && playerPromptEnabled) {
         // Player-owned target → whisper to the owning player(s)
         // (+ maybe GM per visibility setting).  Covers both GM-hits-player
         // and player-hits-player-owned-token (PvP / familiars).
-        whisperTargets = _getWhisperTargets(actor);
+        whisperTargets = _getWhisperTargets(actor, tokenDoc);
         debug(`Player Damage Prompt |    Player-owned target, using player prompt mode`);
     } else if (!playerOwned && gmPromptEnabled) {
         // NPC target hit → whisper to GM only
@@ -2013,7 +2099,12 @@ export function onSocketMessage(data) {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;
         const authorId = msg.author?.id ?? msg.user?.id;
-        if (game.user.id !== authorId && !game.user.isGM) return;
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (!activeGM.isSelf) return;
+        } else if (game.user.id !== authorId && !game.user.isGM) {
+            return;
+        }
 
         debug("Player Damage Prompt | Socket received: damagePromptApplied for message", data.messageId);
         _markMessageApplied(data.messageId, data.deltas);
@@ -2024,7 +2115,12 @@ export function onSocketMessage(data) {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;
         const authorId = msg.author?.id ?? msg.user?.id;
-        if (game.user.id !== authorId && !game.user.isGM) return;
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (!activeGM.isSelf) return;
+        } else if (game.user.id !== authorId && !game.user.isGM) {
+            return;
+        }
 
         debug("Player Damage Prompt | Socket received: damagePromptUnapplied for message", data.messageId);
         _unmarkMessageApplied(data.messageId);
