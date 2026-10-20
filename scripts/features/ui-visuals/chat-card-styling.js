@@ -76,8 +76,13 @@ function _getHealingSubtype(message) {
     }
 
     // 2. Fallback to associated activity
-    const activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
-        ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+    let activity = null;
+    try {
+        activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+    } catch {
+        activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null;
+    }
     const healingTypes = activity?.healing?.types;
     if (healingTypes) {
         const hasType = (t) => healingTypes instanceof Set
@@ -238,8 +243,13 @@ function _tagMessageElement(message, root) {
     // Tag saving throw action buttons with ability shorthand (e.g. "con" -> "CON Save")
     const saveButtons = root.querySelectorAll('button:is([data-action="rollSave"], [data-forward-action="rollSave"])');
     if (saveButtons.length > 0) {
-        const activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        let activity = null;
+        try {
+            activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
+                ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+        } catch {
+            activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null;
+        }
         for (const btn of saveButtons) {
             let saveAbility = btn.dataset.ability;
             // 1. Inspect message.system.buttons

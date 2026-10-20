@@ -63,7 +63,11 @@ export function isHealingOrTempHpRoll(message, html) {
     if (!message) return false;
     if (message.type === "healing" || message.system?.isHealing === true) return true;
     if (message.flags?.dnd5e?.roll?.type === "healing") return true;
-    if (message.getAssociatedActivity?.()?.type === "heal") return true;
+    try {
+        if (message.getAssociatedActivity?.()?.type === "heal") return true;
+    } catch {
+        // Safe fallback in case getAssociatedActivity fails on foreign or malformed messages
+    }
 
     const healingTypes = new Set(
         CONFIG.DND5E?.healingTypes ? Object.keys(CONFIG.DND5E.healingTypes) : ["healing", "temphp", "maximum"]
@@ -132,6 +136,12 @@ export function isPlayerHealingAimedAtNpc(message, html) {
         return message._nd5tIsHealingMistarget;
     }
 
+    if (!hasDamageApplicationTray(message, el)) {
+        message._nd5tIsHealingMistarget = false;
+        if (el) message._nd5tHadHtml = true;
+        return false;
+    }
+
     if (!isHealingOrTempHpRoll(message, el)) {
         message._nd5tIsHealingMistarget = false;
         if (el) message._nd5tHadHtml = true;
@@ -139,9 +149,14 @@ export function isPlayerHealingAimedAtNpc(message, html) {
     }
 
     // Determine the caster / source actor
-    const sourceActor = message.getAssociatedActor?.()
-        ?? (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null)
-        ?? message.speakerActor;
+    let sourceActor = null;
+    try {
+        sourceActor = message.getAssociatedActor?.()
+            ?? (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null)
+            ?? message.speakerActor;
+    } catch {
+        sourceActor = (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null) ?? message.speakerActor;
+    }
 
     // Must originate from a player character, player-owned actor, or non-GM author
     const isPlayerCaster = Boolean(
@@ -318,12 +333,22 @@ export function shouldCollapseDamageTray(message, html) {
         }
 
         // Determine the source actor and token
-        const sourceActor = message.getAssociatedActor?.()
-            ?? (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null)
-            ?? message.speakerActor;
+        let sourceActor = null;
+        try {
+            sourceActor = message.getAssociatedActor?.()
+                ?? (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null)
+                ?? message.speakerActor;
+        } catch {
+            sourceActor = (message.speaker?.actor ? game.actors.get(message.speaker.actor) : null) ?? message.speakerActor;
+        }
 
-        const sourceToken = message.getAssociatedToken?.()
-            ?? (message.speaker?.token ? canvas.tokens?.get(message.speaker.token) : null);
+        let sourceToken = null;
+        try {
+            sourceToken = message.getAssociatedToken?.()
+                ?? (message.speaker?.token ? canvas.tokens?.get(message.speaker.token) : null);
+        } catch {
+            sourceToken = (message.speaker?.token ? canvas.tokens?.get(message.speaker.token) : null);
+        }
 
         if (!sourceActor) {
             if (message) {
@@ -422,26 +447,36 @@ function _resolveDamageTargets(message, html) {
 
     // 2. Associated attack roll targets
     if (!actors.size && typeof message.getAssociatedRolls === "function") {
-        const attackRolls = message.getAssociatedRolls("attack");
-        const lastAttack = attackRolls?.pop?.();
-        const attackTargets = lastAttack?.system?.targets;
-        if (Array.isArray(attackTargets) && attackTargets.length > 0) {
-            for (const target of attackTargets) {
-                const actor = _resolveTargetDescriptor(target);
-                if (actor) actors.add(actor);
+        try {
+            const attackRolls = message.getAssociatedRolls("attack");
+            const lastAttack = attackRolls?.pop?.();
+            const attackTargets = lastAttack?.system?.targets;
+            if (Array.isArray(attackTargets) && attackTargets.length > 0) {
+                for (const target of attackTargets) {
+                    const actor = _resolveTargetDescriptor(target);
+                    if (actor) actors.add(actor);
+                }
             }
+        } catch {
+            // Defensive: ignore failures in associated rolls
         }
     }
 
     // 3. Targets from originating message (e.g. usage card that triggered the damage/heal roll)
     if (!actors.size && typeof message.getOriginatingMessage === "function") {
-        const origin = message.getOriginatingMessage();
-        const originTargets = origin?.system?.targets;
-        if (Array.isArray(originTargets) && originTargets.length > 0) {
-            for (const target of originTargets) {
-                const actor = _resolveTargetDescriptor(target);
-                if (actor) actors.add(actor);
+        try {
+            const origin = message.getOriginatingMessage();
+            if (origin && typeof origin === "object") {
+                const originTargets = origin?.system?.targets;
+                if (Array.isArray(originTargets) && originTargets.length > 0) {
+                    for (const target of originTargets) {
+                        const actor = _resolveTargetDescriptor(target);
+                        if (actor) actors.add(actor);
+                    }
+                }
             }
+        } catch {
+            // Defensive: ignore failures in originating message lookup
         }
     }
 
@@ -568,6 +603,7 @@ export function initAutoCollapseDamageTrays() {
         "CONFIG.ChatMessage.documentClass.prototype._collapseTrays",
         function(wrapped, html) {
             wrapped(html);
+            if (!hasDamageApplicationTray(this, html)) return;
             if (!game.user?.isGM && isPlayerHealingAimedAtNpc(this, html)) {
                 _handlePlayerHealingMistarget(this, html);
             } else if (shouldCollapseDamageTray(this, html)) {
@@ -578,6 +614,7 @@ export function initAutoCollapseDamageTrays() {
     );
 
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
+        if (!hasDamageApplicationTray(message, html)) return;
         if (!game.user?.isGM && isPlayerHealingAimedAtNpc(message, html)) {
             _handlePlayerHealingMistarget(message, html);
         } else if (shouldCollapseDamageTray(message, html)) {
@@ -586,6 +623,7 @@ export function initAutoCollapseDamageTrays() {
     });
 
     Hooks.on("renderChatMessageHTML", (message, html) => {
+        if (!hasDamageApplicationTray(message, html)) return;
         if (!game.user?.isGM && isPlayerHealingAimedAtNpc(message, html)) {
             _handlePlayerHealingMistarget(message, html);
         } else if (shouldCollapseDamageTray(message, html)) {

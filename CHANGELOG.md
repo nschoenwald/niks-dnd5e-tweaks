@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
   - Markers automatically disappear when a creature spends its last legendary action, dies, or is defeated, and cleanly return to the active combatant when the placeholder turn ends.
 
 ### Fixed
+- **Damage Application Trays: Target Grouping Key Crash**:
+  - Silently resolved an upstream D&D 5e system error (`TypeError: token.getGroupingKey is not a function`) that could trigger when a damage application tray renders for targets resolved via actor UUID or unplaced tokens.
+- **Player Damage Prompts & Tray Collapse: Chat Card Render Failure**:
+  - Fixed an issue where damage prompt cards failed to render on player clients due to an internal system error during chat message rendering.
+  - Hardened auto-collapse damage tray handlers and activity lookups so non-tray messages and prompt cards render reliably without interrupting the chat log.
 - **Player Damage Prompts: Whisper Recipients & Player Ownership**:
   - Fixed an issue where players did not receive damage prompts for their assigned characters or unlinked tokens if explicit ownership was not set on the actor sheet.
   - Improved target resolution for attack rolls and activities across all DnD5e targeting modes.

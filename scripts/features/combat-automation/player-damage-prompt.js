@@ -1507,7 +1507,6 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     if (originatingMessage?.id) {
         flags[MODULE_ID].originatingMessageId = originatingMessage.id;
         flags.dnd5e = { originatingMessage: originatingMessage.id };
-        messageData.system = { origin: originatingMessage.id };
     }
 
     await ChatMessage.create(messageData);
