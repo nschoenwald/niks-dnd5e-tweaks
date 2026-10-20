@@ -409,7 +409,7 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 ```
 
 ### Requirements
-* **Foundry VTT**: Version 14
+* **Foundry VTT**: Version 14 (maximum 14)
 * **DnD5e System**: Version 6.0.0 or higher
 
 ---

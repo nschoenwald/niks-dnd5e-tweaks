@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   - Resolved conflict warnings and notifications when used alongside other modules that wrap Foundry VTT or D&D 5e methods (such as Monk's Combat Details).
   - Upgraded internal method patching to cooperatively integrate with `libWrapper` across combat automation, rolls, template placement, and UI enhancements.
 
+### Changed
+- **Manifest Compatibility**:
+  - Added maximum compatibility version limit (`14`) for Foundry VTT.
+
 ## [14.46.7] - 2026-10-19
 ### Fixed
 - **Detailed Roll Breakdown: AC5e Bonus Damage & Cross-Roll Attribution**:

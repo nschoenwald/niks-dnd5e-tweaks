@@ -8,7 +8,8 @@
   "version": "14.47.0",
   "compatibility": {
     "minimum": "14",
-    "verified": "14"
+    "verified": "14",
+    "maximum": "14"
   },
   "socket": true,
   "relationships": {
