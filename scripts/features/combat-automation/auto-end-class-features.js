@@ -181,7 +181,7 @@ function _getBarbarianLevel(actor) {
 
 /**
  * Check whether the actor has conditions that break configured class features,
- * and if so, end all active matching feature effects.
+ * and if so, end all active matching feature effects by disabling them.
  * @param {Actor} actor
  * @param {string} effectName       The name of the condition effect that triggered the check
  */
@@ -194,9 +194,9 @@ async function _checkAndEndClassFeatures(actor, effectName) {
 
         debug(`Auto-End Class Features | ${actor.name} gained a status that ends ${feature.id}. Ending ${matchingEffects.length} effect(s).`);
 
-        const effectIdsToDelete = matchingEffects.map(e => e.id);
+        // Disable rather than delete so the effect stays on the actor and can be re-enabled on next use
         try {
-            await actor.deleteEmbeddedDocuments("ActiveEffect", effectIdsToDelete);
+            await actor.updateEmbeddedDocuments("ActiveEffect", matchingEffects.map(e => ({ _id: e.id, disabled: true })));
         } catch (e) {
             console.error(`Nik's DnD5e Tweaks | Failed to end ${feature.id} for ${actor.name}:`, e);
             continue;

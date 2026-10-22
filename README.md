@@ -266,7 +266,7 @@ Deals damage to a concentrating creature from an attacker with the Mage Slayer f
 
 ### Auto-End Concentration & Class Features
 * **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
-* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage).
+* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
 
 ### Prompt / Auto-Roll Attack Damage
 * **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.

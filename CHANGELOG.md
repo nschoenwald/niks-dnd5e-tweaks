@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.48.2] - 2026-10-22
+### Changed
+- **Auto-End Class Features: Effects Disabled Instead of Deleted**:
+  - When Rage, Wrath of the Sea, or Starry Form ends due to an incapacitating condition, its active effect is now disabled rather than deleted, so it stays on the actor and can be re-enabled.
+
 ## [14.48.1] - 2026-10-22
 ### Fixed
 - **Token Resource Bars: First HP Change Not Shown**:
