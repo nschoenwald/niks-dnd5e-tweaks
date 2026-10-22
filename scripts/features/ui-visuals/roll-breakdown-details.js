@@ -450,10 +450,12 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0, hookOptions = 
             modified = true;
         }
 
-        const scaleRegex = new RegExp(`${lookbehind}@scale\\.([\\w.-]+)${lookahead}`, "g");
+        // (?![\w.-]) stops the key from backtracking to a partial match, e.g. tagging "rage" inside
+        // "(@scale.barbarian.rage-damage)d6" and producing "(@scale.barbarian.rage[Rage]-damage)d6".
+        const scaleRegex = new RegExp(`${lookbehind}@scale\\.([\\w.-]+)(?![\\w.-])${lookahead}`, "g");
         if (scaleRegex.test(clean)) {
             let scaleHandled = false;
-            clean = clean.replace(new RegExp(`${lookbehind}@scale\\.([\\w.-]+)${lookahead}`, "g"), (match, scaleKey) => {
+            clean = clean.replace(new RegExp(`${lookbehind}@scale\\.([\\w.-]+)(?![\\w.-])${lookahead}`, "g"), (match, scaleKey) => {
                 const scaleVal = foundry.utils.getProperty(data, `scale.${scaleKey}`) ?? "";
                 if (String(scaleVal).includes("[")) return match;
 

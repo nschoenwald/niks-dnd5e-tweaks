@@ -357,6 +357,7 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 * **Skill Tooltip Overlap**: Fixes character sheet skill and tool list reference tooltips appearing directly on top of neighboring rows, ensuring clickable links remain unobstructed.
 * **Pact Magic Formula Scaling**: Dynamically corrects damage and healing formulas for Pact Magic spells to reflect the caster's pact slot level in sheet inventory rows and activity tables.
 * **Damage Application Tray Grouping**: Prevents an upstream D&D 5e system TypeError (`token.getGroupingKey is not a function`) when rendering damage application trays for targets resolved via actor UUID or unplaced tokens.
+* **Token Resource Bar Refresh**: Fixes an upstream Foundry VTT V14 core issue where the first HP change of an unlinked token in a session (e.g. via the Token HUD) did not visually update its resource bar. Only applies to Foundry 14.369 and lower (fixed upstream in 14.370).
 
 ---
 

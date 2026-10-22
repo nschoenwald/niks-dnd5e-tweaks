@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.48.1] - 2026-10-22
+### Fixed
+- **Token Resource Bars: First HP Change Not Shown**:
+  - Fixed token HP bars not updating visually after the first HP change of an unlinked token in a session (e.g. when editing HP through the Token HUD), an upstream Foundry VTT V14 core issue.
+- **Roll Breakdown Details: Scale Values as Dice Count**:
+  - Fixed rolls erroring when a hyphenated scale value was used as a dice count (e.g. `(@scale.barbarian.rage-damage)d6`), caused by the flavor tag being inserted mid-key.
+
 ## [14.48.0] - 2026-10-20
 ### Added
 - **Legendary Action Placeholders: Turn Marker Highlight**:
