@@ -1,6 +1,6 @@
 /**
  * Feature: Weapon Mastery Automation (Step 1: Slow & Sap)
- * Description: Automates weapon masteries on attack hits when the attacker has the required mastery.
+ * Description: Automates weapon masteries when the attacker rolls weapon damage with the required mastery.
  *              Strictly applies to player character actors (not NPCs).
  *              - Sap: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn.
  *                     Expires after the creature makes an attack or at the start of the attacker's next turn.
@@ -60,20 +60,6 @@ async function _safeDeleteEffect(effect, actor) {
 function normalizeIcon(path, fallback) {
     if (!path || typeof path !== "string") return fallback;
     return path.startsWith("/") ? path.slice(1) : path;
-}
-
-/**
- * Extract the D20Roll from an attack roll message.
- * @param {ChatMessage} message
- * @returns {D20Roll|Roll|null}
- */
-function _getAttackD20Roll(message) {
-    if (!message.rolls?.length) return null;
-    for (const roll of message.rolls) {
-        const d0 = roll.dice?.[0];
-        if (d0?.faces === 20) return roll;
-    }
-    return message.rolls[0] || null;
 }
 
 /**
@@ -246,7 +232,57 @@ export async function removeSapFromActor(actor) {
 }
 
 /**
+ * Resolve the originating (usage card) message of a roll message, if any.
+ * @param {ChatMessage} message
+ * @returns {ChatMessage|null}
+ */
+function _getOriginatingMessage(message) {
+    let originatingMessage = null;
+    try {
+        originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null);
+    } catch {}
+    originatingMessage ??= (message.system?.origin ? (message.system.origin instanceof ChatMessage ? message.system.origin : game.messages.get(message.system.origin)) : null)
+        ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+    return (originatingMessage && originatingMessage !== message) ? originatingMessage : null;
+}
+
+/**
+ * Resolve the mastery used for a damage roll.
+ * Prefers the mastery chosen on the most recent attack roll from the same usage card, then the
+ * last mastery dnd5e remembered for the activity, then the weapon's own mastery if the actor qualifies.
+ * @param {ChatMessage} message           The damage roll message.
+ * @param {ChatMessage|null} originatingMessage
+ * @param {Activity|null} activity
+ * @param {Actor5e} attackerActor
+ * @param {Item5e} weapon
+ * @returns {string|null}
+ */
+function _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon) {
+    if (originatingMessage) {
+        const attackMessage = game.messages.contents.findLast(m => {
+            if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") return false;
+            const origin = m.system?.origin;
+            const originId = origin instanceof ChatMessage ? origin.id : (origin ?? m.getFlag("dnd5e", "originatingMessage"));
+            return originId === originatingMessage.id;
+        });
+        if (attackMessage) {
+            return attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
+        }
+    }
+
+    const activityId = activity?.id ?? message.system?.activity?.id;
+    const lastMastery = activityId ? weapon.getFlag("dnd5e", `last.${activityId}.mastery`) : null;
+    if (lastMastery) return lastMastery;
+
+    const weaponMastery = weapon.system?.mastery;
+    if (weaponMastery && _actorHasMastery(attackerActor, weapon, weaponMastery)) return weaponMastery;
+    return null;
+}
+
+/**
  * Handle newly created chat messages to evaluate weapon mastery triggers.
+ * - Attack rolls: remove Sap from the attacking creature.
+ * - Damage rolls: apply Sap or Slow to the damage roll's targets.
  * @param {ChatMessage} message
  * @param {object} options
  * @param {string} userId
@@ -258,9 +294,8 @@ async function _onCreateChatMessage(message, options, userId) {
         const isAuthor = message.author?.id ? message.author.id === game.user.id : (message.author === game.user || message.isAuthor);
         if (!isAuthor && userId !== game.user.id) return;
 
-        // Check if message is an attack roll
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
-        if (rollType !== "attack") return;
+        if (rollType !== "attack" && rollType !== "damage") return;
 
         // Resolve attacker actor
         let attackerActor = null;
@@ -284,8 +319,9 @@ async function _onCreateChatMessage(message, options, userId) {
         }
 
         // If the attacking creature itself is sapped, remove Sap on ANY attack roll made
-        if (attackerActor) {
-            await removeSapFromActor(attackerActor);
+        if (rollType === "attack") {
+            if (attackerActor) await removeSapFromActor(attackerActor);
+            return;
         }
 
         // Strictly restrict Weapon Mastery application to player character actors
@@ -314,84 +350,27 @@ async function _onCreateChatMessage(message, options, userId) {
         weapon ??= (message.system?.item?.uuid ? fromUuidSync(message.system.item.uuid, { strict: false }) : null);
         if (!weapon || weapon.type !== "weapon") return;
 
-        // Resolve active mastery (prefer message/roll choice, fallback to weapon property if actor qualifies)
-        let activeMastery = message.system?.mastery || message.rolls?.[0]?.options?.mastery;
-        if (!activeMastery) {
-            const weaponMastery = weapon.system?.mastery;
-            if (weaponMastery && (weaponMastery === "sap" || weaponMastery === "slow")) {
-                if (_actorHasMastery(attackerActor, weapon, weaponMastery)) {
-                    activeMastery = weaponMastery;
-                }
-            }
-        }
-
+        const originatingMessage = _getOriginatingMessage(message);
+        const activeMastery = _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon);
         if (activeMastery !== "sap" && activeMastery !== "slow") return;
 
-        // Resolve targets and evaluate hit using existing system mechanism
-        const attackTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
-        let originatingMessage = null;
-        try {
-            originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null);
-        } catch {}
-        originatingMessage ??= (message.system?.origin ? (message.system.origin instanceof ChatMessage ? message.system.origin : game.messages.get(message.system.origin)) : null)
-            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-
-        const originTargets = (originatingMessage && originatingMessage !== message)
+        // Damage roll targets, falling back to the usage card's targets
+        const damageTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
+        const originTargets = originatingMessage
             ? (originatingMessage.system?.targets ?? originatingMessage.getFlag("dnd5e", "targets"))
             : null;
-        const targets = (attackTargets?.length ? attackTargets : null)
+        const targets = (damageTargets?.length ? damageTargets : null)
             || (originTargets?.length ? originTargets : null)
             || [];
 
         if (!targets.length) {
-            debug("Weapon Mastery | No targets found on attack, skipping");
+            debug("Weapon Mastery | No targets found on damage roll, skipping");
             return;
         }
 
-        const attackRoll = _getAttackD20Roll(message);
-        if (!attackRoll) return;
+        debug(`Weapon Mastery | Damage rolled against ${targets.length} target(s) with ${activeMastery.toUpperCase()} mastery`);
 
-        const d0 = attackRoll.dice?.[0];
-        const isCritical = Boolean(attackRoll.isCritical || attackRoll.options?.isCritical);
-        const isFumble = Boolean(attackRoll.isFumble || attackRoll.options?.isFumble || (d0?.faces === 20 && d0?.total === 1 && !isCritical));
-        const attackTotal = attackRoll.total ?? 0;
-        if (isFumble) {
-            debug("Weapon Mastery | Attack was a fumble (natural 1), skipping");
-            return;
-        }
-
-        let hitTargets = [];
-        if (message.system?.evaluatedTargets?.length) {
-            hitTargets = message.system.evaluatedTargets.filter(target => !target.isMiss);
-        } else {
-            hitTargets = targets.filter(target => {
-                if (isCritical) return true;
-                let ac = target.ac;
-                if (ac === undefined || ac === null) {
-                    let targetActor = null;
-                    if (target.token) {
-                        const tokenDoc = fromUuidSync(target.token, { strict: false });
-                        targetActor = tokenDoc?.actor;
-                    }
-                    if (!targetActor && target.actor) {
-                        const doc = fromUuidSync(target.actor, { strict: false });
-                        targetActor = doc?.actor ?? doc;
-                    }
-                    ac = targetActor?.system?.attributes?.ac?.value;
-                }
-                if (ac === undefined || ac === null) ac = Infinity;
-                return attackTotal >= ac;
-            });
-        }
-
-        if (!hitTargets.length) {
-            debug("Weapon Mastery | Attack did not hit any targets, skipping");
-            return;
-        }
-
-        debug(`Weapon Mastery | Attack hit ${hitTargets.length} target(s) with ${activeMastery.toUpperCase()} mastery`);
-
-        for (const target of hitTargets) {
+        for (const target of targets) {
             let targetActor = null;
             if (target.token) {
                 const tokenDoc = fromUuidSync(target.token, { strict: false });
@@ -409,7 +388,7 @@ async function _onCreateChatMessage(message, options, userId) {
             await applyMasteryEffect(activeMastery, targetActor, attackerActor, weapon);
         }
     } catch (err) {
-        console.error("Weapon Mastery | Error processing attack message:", err);
+        console.error("Weapon Mastery | Error processing roll message:", err);
     }
 }
 

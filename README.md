@@ -281,7 +281,8 @@ Deals damage to a concentrating creature from an attacker with the Mage Slayer f
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). Automatically bypassed when midi-qol is active.
 
 ### Weapon Mastery Automation
-Automatically creates and manages Active Effects when attacks hit with mastery weapons used by player characters:
+Automatically creates and manages Active Effects when player characters roll damage with mastery weapons:
+* **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
 * **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
 * **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
 * **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.

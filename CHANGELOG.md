@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.48.3] - 2026-10-23
+### Changed
+- **Weapon Mastery Automation: Sap & Slow Applied on Damage Roll**:
+  - Sap and Slow are now applied to your targets when you roll weapon damage, instead of when the attack roll hits.
+
 ## [14.48.2] - 2026-10-22
 ### Changed
 - **Auto-End Class Features: Effects Disabled Instead of Deleted**:
