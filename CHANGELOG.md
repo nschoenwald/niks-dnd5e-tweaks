@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [14.49.1] - 2026-10-23
 ### Added
 - **Self Effect Application: Auto-Apply Effects**:
-  - New setting: a comma-separated list of effect names (e.g. `Rage, Bladesong`). When one of these effects would normally get a self-effect message, it is applied to your token straight away instead.
+  - New setting: a comma-separated list of effect names. By default it covers self-only features and spells from the Player's Handbook, such as Rage, Bladesong, Innate Sorcery, Patient Defense, Divine Favor and *Shield*'s Imperceptible Barrier. When one of these effects would normally need the self-effect message's Apply button, it is applied to your token straight away. The message is still posted, showing the effect as applied with an **Undo** button.
   - The **Apply Effects** tray on the activity's chat card is collapsed when this happens.
-  - Effects not on the list still get the usual message with Apply / Undo buttons.
+  - Effects not on the list still get the usual Apply button in the same message.
+
+### Changed
+- **Settings Dashboard: Tidy Name Lists**:
+  - Free-text name lists (**Always Prompt Features** and **Auto-Apply Effects**) are sorted alphabetically when you save settings or import a settings backup. Extra spaces, empty entries and duplicates are removed.
 
 ## [14.49.0] - 2026-10-23
 ### Changed

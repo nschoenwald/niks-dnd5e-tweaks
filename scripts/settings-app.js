@@ -1,6 +1,28 @@
 import { MODULE_ID, log } from "./main.js";
 
 /**
+ * Normalize a comma-separated free-text list: trims entries, drops empty entries and
+ * case-insensitive duplicates, and sorts alphabetically (case-insensitive).
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function normalizeListValue(value) {
+    if (typeof value !== "string") return value;
+    const seen = new Set();
+    const entries = [];
+    for (const raw of value.split(",")) {
+        const entry = raw.trim();
+        const key = entry.toLocaleLowerCase();
+        if (!entry || seen.has(key)) continue;
+        seen.add(key);
+        entries.push(entry);
+    }
+    entries.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    return entries.join(", ");
+}
+
+/**
  * Modern ApplicationV2 Settings Dashboard for Nik's D&D 5e Tweaks.
  * Provides categorized tabs, real-time search filtering, JSON import/export,
  * and permission-aware configuration for GMs and authorized players.
@@ -1051,6 +1073,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "selfEffectAlwaysPromptFeatures",
                                 name: "Always Prompt Features",
+                                list: true,
                                 hint: "Comma-separated list of item/feature names to always prompt with self-effect buttons (e.g. Mage Armor).",
                                 type: "String",
                                 default: "Mage Armor",
@@ -1060,9 +1083,10 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "selfEffectAutoApplyEffects",
                                 name: "Auto-Apply Effects",
-                                hint: "Comma-separated list of effect names that skip the self-effect message and are applied directly to the source token (e.g. Rage, Bladesong).",
+                                list: true,
+                                hint: "Comma-separated list of effect names that are applied directly to the source token (e.g. Bladesong, Rage). The self-effect message still shows them as applied, with an Undo button.",
                                 type: "String",
-                                default: "",
+                                default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
                                 scope: "world",
                                 parentKey: "enableSelfEffectApplication"
                             }
@@ -1618,6 +1642,8 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         formVal = Boolean(formVal);
                     } else if (s.type === "Number") {
                         formVal = Number(formVal);
+                    } else if (s.list) {
+                        formVal = normalizeListValue(formVal);
                     }
 
                     const currentVal = game.settings.get(MODULE_ID, s.key);
@@ -1761,10 +1787,16 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             let requiresReload = false;
             let appliedCount = 0;
 
-            for (const [key, value] of Object.entries(data.settings)) {
+            const listKeys = new Set(NiksTweaksSettingsApp.SETTINGS_SCHEMA
+                .flatMap(tab => tab.sections.flatMap(sec => sec.settings))
+                .filter(s => s.list)
+                .map(s => s.key));
+
+            for (const [key, rawValue] of Object.entries(data.settings)) {
                 // Verify setting exists in registry
                 const settingConfig = game.settings.settings.get(`${MODULE_ID}.${key}`);
                 if (settingConfig) {
+                    const value = listKeys.has(key) ? normalizeListValue(rawValue) : rawValue;
                     const current = game.settings.get(MODULE_ID, key);
                     if (current !== value) {
                         await game.settings.set(MODULE_ID, key, value);

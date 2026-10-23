@@ -320,7 +320,8 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
 * Seamless compatibility with **Automated Conditions 5e (AC5e)** dynamic condition flags.
 * *Sub-setting*: **Always Prompt Features** (comma-separated names like `Mage Armor`).
-* *Sub-setting*: **Auto-Apply Effects** (comma-separated effect names like `Rage`): matching effects skip the chat card and are applied directly to the source token, and the effect tray of the activity's chat card is collapsed.
+* *Sub-setting*: **Auto-Apply Effects** (comma-separated effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Patient Defense (Focus Point)`, `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
+* Free-text name lists are tidied up when saved: entries are trimmed, duplicates and empty entries removed, and the list is sorted alphabetically.
 
 ### Legendary Action Placeholders
 Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.

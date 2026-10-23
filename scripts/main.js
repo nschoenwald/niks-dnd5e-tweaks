@@ -1397,11 +1397,11 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "selfEffectAutoApplyEffects", {
         name: "↳ Auto-Apply Effects",
-        hint: "A comma-separated list of Active Effect names (case-insensitive). Matching self effects skip the self-effect application message and are applied directly to the source token. The effect tray of the activity's chat card is collapsed.",
+        hint: "A comma-separated list of Active Effect names (case-insensitive). Matching self effects are applied directly to the source token. The self-effect message is still posted with the effect marked as applied and an Undo button, and the effect tray of the activity's chat card is collapsed.",
         scope: "world",
         config: false,
         type: String,
-        default: "",
+        default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
         restricted: true
     });
 

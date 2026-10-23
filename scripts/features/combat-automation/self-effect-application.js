@@ -461,28 +461,21 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         }
         const concentrationUuid = concentrationEffect?.uuid || null;
 
-        // Effects listed in the auto-apply setting skip the prompt card and are applied directly.
+        // Effects listed in the auto-apply setting are applied straight away. The card is still
+        // posted, with those effects already in their applied state so they can be undone.
         const autoApplyNames = _getAutoApplyEffectNames();
-        const autoApplyEffects = [];
-        const promptEffects = [];
-        for (const effect of unappliedEffects) {
-            const isAutoApply = autoApplyNames.size > 0 && autoApplyNames.has(_cleanName(effect.name ?? effect.label));
-            (isAutoApply ? autoApplyEffects : promptEffects).push(effect);
-        }
+        const autoApplyEffects = autoApplyNames.size
+            ? unappliedEffects.filter(effect => autoApplyNames.has(_cleanName(effect.name ?? effect.label)))
+            : [];
+        const effectsApplied = autoApplyEffects.length
+            ? await _autoApplyEffects(actor, activity, autoApplyEffects, { concentrationUuid, message: results?.message })
+            : {};
 
-        if (autoApplyEffects.length) {
-            await _autoApplyEffects(actor, activity, autoApplyEffects, {
-                concentrationUuid,
-                message: results?.message
-            });
-        }
-
-        if (promptEffects.length) {
-            await _sendSelfEffectPrompt(actor, activity, promptEffects, {
-                concentrationUuid,
-                message: results?.message
-            });
-        }
+        await _sendSelfEffectPrompt(actor, activity, unappliedEffects, {
+            concentrationUuid,
+            message: results?.message,
+            effectsApplied
+        });
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPostUseActivity for Self Effect Application:`, err);
     }
@@ -559,8 +552,8 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
 // ── Direct application ───────────────────────────────────────────────
 
 /**
- * Apply effects straight to the source actor without posting a prompt card, then flag the
- * activity's usage message so its effect application tray renders collapsed on all clients.
+ * Apply effects straight to the source actor, then flag the activity's usage message so its
+ * effect application tray renders collapsed on all clients.
  *
  * @param {Actor5e} actor
  * @param {Activity} activity
@@ -568,14 +561,17 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
  * @param {object} [options]
  * @param {string|null} [options.concentrationUuid]
  * @param {ChatMessage|null} [options.message]  The activity usage message.
+ * @returns {Promise<Record<string, string>>} createdEffectId → source effect UUID for each applied effect,
+ *                                            in the shape of the prompt card's `effectsApplied` flag.
  */
 async function _autoApplyEffects(actor, activity, effects, { concentrationUuid = null, message = null } = {}) {
-    let appliedCount = 0;
+    const effectsApplied = {};
     for (const effect of effects) {
         const effectName = effect.name ?? effect.label ?? game.i18n.localize("ND5T.SelfEffectApplication.UnknownEffect");
         try {
+            const effectUuid = effect.uuid ?? effect.id ?? "";
             const createdId = await _createEffectOnActor(actor, {
-                effectUuid: effect.uuid ?? effect.id ?? "",
+                effectUuid,
                 effectName,
                 effectData: _serializeEffectData(effect),
                 activityUuid: activity.uuid,
@@ -585,7 +581,7 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
                 concentrationUuid,
                 fallbackMessage: message
             });
-            appliedCount++;
+            effectsApplied[createdId ?? "unknown"] = effectUuid;
             debug(`Self Effect Application | ✓ Auto-applied effect "${effectName}" to "${actor.name}" (id: ${createdId})`);
         } catch (err) {
             console.error(`Nik's DnD5e Tweaks | Self Effect Application: Failed to auto-apply effect "${effectName}" to "${actor.name}":`, err);
@@ -593,7 +589,7 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
         }
     }
 
-    if (!appliedCount || !message) return;
+    if (!Object.keys(effectsApplied).length || !message) return effectsApplied;
 
     // Collapse the tray immediately on this client, then persist so other clients collapse it on render.
     const element = _getChatMessageElement(message.id);
@@ -605,6 +601,7 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
             debug(`Self Effect Application | Could not flag usage message ${message.id} as auto-applied: ${err?.message ?? err}`);
         }
     }
+    return effectsApplied;
 }
 
 /**
@@ -651,8 +648,9 @@ function _getWhisperTargets(actor) {
  * @param {object} [options]
  * @param {string|null} [options.concentrationUuid]
  * @param {ChatMessage|null} [options.message]
+ * @param {Record<string, string>} [options.effectsApplied]  Effects already applied (auto-apply), keyed by created effect ID.
  */
-async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUuid = null, message = null } = {}) {
+async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUuid = null, message = null, effectsApplied = {} } = {}) {
     const item = activity.item;
     const whisperUsers = _getWhisperTargets(actor);
 
@@ -686,7 +684,11 @@ async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUu
 
     const itemName = item?.name ?? activity.name ?? "";
     const isPlural = effects.length > 1;
-    const descriptionKey = isPlural ? "ND5T.SelfEffectApplication.DescriptionPlural" : "ND5T.SelfEffectApplication.DescriptionSingle";
+    const appliedUuids = new Set(Object.values(effectsApplied));
+    const allApplied = effects.every(effect => appliedUuids.has(effect.uuid ?? effect.id ?? ""));
+    const descriptionKey = allApplied
+        ? (isPlural ? "ND5T.SelfEffectApplication.AutoAppliedPlural" : "ND5T.SelfEffectApplication.AutoAppliedSingle")
+        : (isPlural ? "ND5T.SelfEffectApplication.DescriptionPlural" : "ND5T.SelfEffectApplication.DescriptionSingle");
     const description = game.i18n.format(descriptionKey, { itemName, actorName: actor.name });
 
     const content = `
@@ -714,7 +716,7 @@ async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUu
                 concentrationUuid: concentrationUuid,
                 spellLevel: message?.system?.level ?? activity.item?.system?.level ?? null,
                 effects: effectFlagData,       // effectUuid → effect plain object (for apply)
-                effectsApplied: {}             // createdEffectId → effectUuid (for undo)
+                effectsApplied                 // createdEffectId → effectUuid (for undo)
             }
         }
     });
