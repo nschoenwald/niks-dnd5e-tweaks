@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.48.4] - 2026-10-23
+### Changed
+- **Auto-Target Tokens in Spell Templates: Healing Targets Allies Only**:
+  - Templates placed for healing now only target the caster's allies. Player characters target other PCs and friendly tokens, and hostile NPCs only target other hostile tokens.
+- **Auto-Target Tokens in Spell Templates: Choose Targets Hits Opponents Only**:
+  - Damaging spells and features with **Choose Targets** enabled now only target the caster's opponents. Player characters and friendly NPCs target hostile tokens, and hostile NPCs target PCs and friendly tokens.
+- **Snap Templates to Grid Intersections: Rings & Hex Grids**:
+  - Ring templates now snap to grid intersections just like circles.
+  - On hex grids, circle and ring templates now snap to the center of a hex instead of a hex corner, and square templates are no longer forced onto hex corners.
+
+### Fixed
+- **Roll Breakdown Details: Wrong Feature Labels on Healing**:
+  - Fixed healing spell modifiers (e.g. your Wisdom modifier on *Cure Wounds*) being labeled with an unrelated damage feature such as *Potent Spellcasting*. Bonus rules are now only credited on rolls they actually apply to.
+
 ## [14.48.3] - 2026-10-23
 ### Changed
 - **Weapon Mastery Automation: Sap & Slow Applied on Damage Roll**:

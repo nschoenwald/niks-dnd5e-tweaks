@@ -679,6 +679,43 @@ export function isStandardDamageOrAttributeTag(tag) {
 }
 
 /**
+ * Determines whether a dnd5e rule change (e.g. type "dnd5e.bonus" with key "damage") could have contributed
+ * to a damage or healing roll. dnd5e only collects "damage" rules for damage activities and "healing" rules for
+ * heal activities, and filters them by their per-change and per-effect conditions.
+ * Non-rule changes always return true so the caller's existing matching applies.
+ *
+ * @param {ActiveEffect5e} effect
+ * @param {object} change
+ * @param {object} [options]
+ * @param {string} [options.damageType] - Damage or healing type of the roll, if known.
+ * @param {object} [options.rollData]   - Roll data used for the roll; conditions are only checked if it has item data.
+ * @returns {boolean}
+ */
+export function ruleChangeAppliesToDamageRoll(effect, change, { damageType = "", rollData = null } = {}) {
+    const type = String(change?.type ?? "");
+    if (!type.startsWith("dnd5e.")) return true;
+    if (type !== "dnd5e.bonus") return false;
+
+    const key = String(change.key ?? "").trim().toLowerCase();
+    const cleanType = String(damageType ?? "").trim().toLowerCase();
+    if (cleanType) {
+        const expectedKey = CONFIG.DND5E?.healingTypes?.[cleanType] ? "healing" : "damage";
+        if (key !== expectedKey) return false;
+    } else if (key !== "damage" && key !== "healing") return false;
+
+    // Roll data is not persisted with chat message rolls, so conditions can only be evaluated while it is present
+    if (!rollData?.item) return true;
+    try {
+        const conditionData = effect?.getRuleConditionData?.(rollData) ?? rollData;
+        if (effect?.system?.conditions?.check?.(conditionData) === false) return false;
+        if (change.conditions?.check?.(conditionData) === false) return false;
+    } catch {
+        // Ignore condition evaluation errors and fall back to value matching
+    }
+    return true;
+}
+
+/**
  * Finds an ActiveEffect on an actor whose name or AC5e customName matches a given label.
  *
  * @param {Actor5e|null} actor
@@ -865,6 +902,10 @@ function detectActiveEffectSource(actor, bonusValue, processConfig, rollConfig =
             if (isSave && (key.includes("damage") || key.includes("attack") || key.includes("check") || key.includes("skill") || key.includes("tool") || key.includes("init"))) continue;
             if (isAttack && (key.includes("damage") || key.includes("save") || key.includes("check") || key.includes("skill") || key.includes("tool") || key.includes("init"))) continue;
             if (isDamage && (key.includes("attack") || key.includes("save") || key.includes("check") || key.includes("skill") || key.includes("tool") || key.includes("init"))) continue;
+            if (isDamage && !ruleChangeAppliesToDamageRoll(effect, change, {
+                damageType: rollConfig?.options?.type ?? rollConfig?.data?.roll?.damage?.type ?? "",
+                rollData: rollConfig?.data
+            })) continue;
 
             const isAc5eChange = key.startsWith("flags.automated-conditions-5e.")
                 || key.startsWith("flags.ac5e.")
@@ -970,6 +1011,9 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
         || options.rollConfig?.options?.ac5e?.syntheticBonusRoll
     );
 
+    // Roll data that includes item data, used to evaluate dnd5e rule conditions
+    const conditionRollData = [options.rollData, options.roll?.data, options.rollConfig?.data].find(d => d?.item) ?? null;
+
     const DAMAGE_KEY_REGEX = /(?:bonuses\.(?:[a-z]{4}|all)\.damage|rolls\.damage\.[a-z]{4}\.bonus)/i;
 
     const targetNum = Number(targetVal);
@@ -1048,8 +1092,11 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
                 continue;
             }
 
-            // 2. Standard 5e damage bonus keys
-            if (!DAMAGE_KEY_REGEX.test(key) && !keyLower.includes("damage")) continue;
+            // 2. dnd5e rule changes must target this roll's category and pass their conditions
+            if (!ruleChangeAppliesToDamageRoll(effect, change, { damageType: targetDamageType, rollData: conditionRollData })) continue;
+
+            // 3. Standard 5e damage bonus keys (and dnd5e "damage"/"healing" rule keys)
+            if (!DAMAGE_KEY_REGEX.test(key) && !keyLower.includes("damage") && keyLower !== "healing") continue;
 
             const strippedVal = rawVal.replace(/^[+-]\s*/, "").trim().toLowerCase();
 

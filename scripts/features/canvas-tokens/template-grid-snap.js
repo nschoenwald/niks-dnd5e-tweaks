@@ -1,16 +1,17 @@
 /**
  * Feature: Snap Templates to Grid Intersections
- * Description: Forces circle and square spell templates to snap to grid intersections rather than cell centers during preview and placement.
+ * Description: Forces circle, ring and square spell templates to snap to grid intersections rather than cell centers during preview and placement.
  *
  * @introduced v14.5.0
+ * @updated v14.48.4 (Ring templates snap like circles; hex grids snap round templates to hex centers)
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
- * Enforces placing circle and square/rectangle measured templates on grid intersections (vertices)
- * instead of grid cell centers. Cones, rays, and emanations (radius templates placed on tokens)
- * are not affected.
+ * Enforces placing circle, ring and square/rectangle measured templates on grid intersections (vertices)
+ * instead of grid cell centers. On hex grids, circles and rings snap to hex centers and rectangles keep
+ * the core default. Cones, rays, and emanations (radius templates placed on tokens) are not affected.
  *
  * Hold Shift while placing to temporarily override the snap and place freely.
  *
@@ -18,7 +19,7 @@ import { patchMethod } from "../../utils/patch-helper.js";
  *
  * In Foundry V14 / DnD5e v6:
  * - Spell and item templates are placed via TemplatePlacement and canvas.regions.placeRegions().
- * - Live preview snapping wraps _getSnappedPoint on CircleShapeData and RectangleShapeData.
+ * - Live preview snapping wraps _getSnappedPoint on CircleShapeData, RingShapeData and RectangleShapeData.
  * - Final placement is handled via the dnd5e.createMeasuredTemplate and preCreateRegion hooks.
  */
 
@@ -50,6 +51,56 @@ function _isTemplateShape(shape) {
     return false;
 }
 
+/** Round shape types whose origin is their center. */
+const ROUND_SHAPE_TYPES = new Set(["circle", "ellipse", "ring"]);
+
+/** Rectangle shape types whose origin is their top-left corner (anchor 0, 0). */
+const RECTANGLE_SHAPE_TYPES = new Set(["rectangle", "rect"]);
+
+/**
+ * Get the snapping mode for a template shape on the given grid.
+ * - Square grids: round shapes and rectangles snap to grid intersections.
+ * - Hex grids: round shapes snap to hex centers; rectangles keep the core default.
+ * @param {string} shapeType
+ * @param {BaseGrid} grid
+ * @returns {number|null}  A GRID_SNAPPING_MODES value, or null to leave the core behaviour unchanged.
+ */
+function _getTemplateSnapMode(shapeType, grid) {
+    const M = CONST.GRID_SNAPPING_MODES;
+    const isRound = ROUND_SHAPE_TYPES.has(shapeType);
+    if (!isRound && !RECTANGLE_SHAPE_TYPES.has(shapeType)) return null;
+    if (grid?.isHexagonal) return isRound ? M.CENTER : null;
+    return M.VERTEX;
+}
+
+/**
+ * Snap the origin of every supported shape in the given shape data array in place.
+ * Used for final placement; gridless scenes are left untouched.
+ * @param {object[]} shapes
+ * @param {string} source  Label for debug logging.
+ * @returns {boolean}      Whether any shape was modified.
+ */
+function _snapShapeOrigins(shapes, source) {
+    const grid = canvas.grid;
+    if (!grid || grid.isGridless) return false;
+
+    let modified = false;
+    for (const shape of shapes) {
+        if (!shape || shape.token) continue;
+        const mode = _getTemplateSnapMode(shape.type, grid);
+        if (mode === null) continue;
+
+        const snapped = grid.getSnappedPoint({ x: shape.x, y: shape.y }, { mode, resolution: 1 });
+        if (shape.x !== snapped.x || shape.y !== snapped.y) {
+            shape.x = snapped.x;
+            shape.y = snapped.y;
+            modified = true;
+            debug(`${source}: Snapped ${shape.type} shape to (${snapped.x}, ${snapped.y})`);
+        }
+    }
+    return modified;
+}
+
 /**
  * Shared snapping handler for template shapes.
  */
@@ -79,10 +130,9 @@ function _handleShapeSnappedPoint(wrapped, point) {
         return { x: Math.round(point.x), y: Math.round(point.y) };
     }
 
-    return grid.getSnappedPoint(point, {
-        mode: CONST.GRID_SNAPPING_MODES.VERTEX,
-        resolution: 1
-    });
+    const mode = _getTemplateSnapMode(this.type, grid);
+    if (mode === null) return wrapped(point);
+    return grid.getSnappedPoint(point, { mode, resolution: 1 });
 }
 
 /**
@@ -93,6 +143,7 @@ export function initTemplateGridSnap() {
     // 1. V14 / DnD5e v6: Live preview snapping on Region shape models
     patchMethod("foundry.data.CircleShapeData.prototype._getSnappedPoint", _handleShapeSnappedPoint, "MIXED");
     patchMethod("foundry.data.RectangleShapeData.prototype._getSnappedPoint", _handleShapeSnappedPoint, "MIXED");
+    patchMethod("foundry.data.RingShapeData.prototype._getSnappedPoint", _handleShapeSnappedPoint, "MIXED");
 
     // 2. DnD5e v6: TemplatePlacement.fromActivity hook right before Region documents are created
     Hooks.on("dnd5e.createMeasuredTemplate", _onCreateMeasuredTemplate);
@@ -109,7 +160,7 @@ export function initTemplateGridSnap() {
 
 /**
  * Hook dnd5e.createMeasuredTemplate (fired by TemplatePlacement.fromActivity in DnD5e v6).
- * Snaps circle and rectangle shapes in regionData to grid intersections before documents are created.
+ * Snaps circle, ring and rectangle shapes in regionData (see _getTemplateSnapMode) before documents are created.
  *
  * @param {Activity} activity      The Activity for which the template is being placed.
  * @param {object[]} templateData  Data objects for the regions about to be created.
@@ -129,20 +180,7 @@ function _onCreateMeasuredTemplate(activity, templateData) {
         // Skip token emanations
         if (region.attachment?.token || region.flags?.dnd5e?.dimensions?.adjustedSize) continue;
 
-        for (const shape of region.shapes) {
-            if (shape.token) continue;
-            const shapeType = shape.type;
-            if (shapeType !== "circle" && shapeType !== "ellipse" && shapeType !== "rectangle" && shapeType !== "rect") continue;
-
-            const snapped = canvas.grid.getSnappedPoint(
-                { x: shape.x, y: shape.y },
-                { mode: CONST.GRID_SNAPPING_MODES.VERTEX, resolution: 1 }
-            );
-
-            shape.x = snapped.x;
-            shape.y = snapped.y;
-            debug(`dnd5e.createMeasuredTemplate: Snapped ${shapeType} shape to vertex (${snapped.x}, ${snapped.y})`);
-        }
+        _snapShapeOrigins(region.shapes, "dnd5e.createMeasuredTemplate");
     }
 }
 
@@ -151,7 +189,7 @@ function _onCreateMeasuredTemplate(activity, templateData) {
 /* -------------------------------------------- */
 
 /**
- * Snap dnd5e activity-created circle and rectangle region shapes to grid intersections.
+ * Snap dnd5e activity-created circle, ring and rectangle region shapes (see _getTemplateSnapMode).
  * In V14, dnd5e spell templates are created as Region documents instead of MeasuredTemplates.
  *
  * Holding Shift at the moment of placement bypasses the snap.
@@ -185,26 +223,7 @@ function _onPreCreateRegion(document, data, options, userId) {
     const shapes = document.toObject().shapes;
     if (!shapes?.length) return;
 
-    let modified = false;
-    for (const shape of shapes) {
-        const shapeType = shape.type;
-        if (shapeType !== "circle" && shapeType !== "ellipse" && shapeType !== "rectangle" && shapeType !== "rect") continue;
-        if (shape.token) continue;
-
-        const snapped = canvas.grid.getSnappedPoint(
-            { x: shape.x, y: shape.y },
-            { mode: CONST.GRID_SNAPPING_MODES.VERTEX, resolution: 1 }
-        );
-
-        if (shape.x !== snapped.x || shape.y !== snapped.y) {
-            shape.x = snapped.x;
-            shape.y = snapped.y;
-            modified = true;
-            debug(`preCreateRegion: Snapped ${shapeType} shape to vertex (${snapped.x}, ${snapped.y})`);
-        }
-    }
-
-    if (modified) {
+    if (_snapShapeOrigins(shapes, "preCreateRegion")) {
         document.updateSource({ shapes });
     }
 }

@@ -4,6 +4,7 @@
  *
  * @introduced v14.19.0
  * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
+ * @updated v14.48.4 (Heal activities target allies only, "Choose Targets" damage activities target opponents only)
  */
 import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -459,6 +460,73 @@ function _getOriginatingTokenIds(regionDocs) {
 }
 
 /**
+ * Resolve the activity responsible for the given template regions.
+ * Prefers the activity captured for the active placement, then falls back to the region's dnd5e activity flag.
+ * @param {RegionDocument[]} regionDocs
+ * @returns {Activity|null}
+ */
+function _getPlacementActivity(regionDocs) {
+    if (activePlacementActivity) return activePlacementActivity;
+    for (const doc of regionDocs) {
+        const activityUuid = doc?.flags?.dnd5e?.activity;
+        if (!activityUuid) continue;
+        try {
+            const activity = fromUuidSync(activityUuid, { strict: false });
+            if (activity) return activity;
+        } catch (err) {}
+    }
+    return null;
+}
+
+/**
+ * Get the disposition used to decide whether a token is an ally.
+ * Player characters and player-owned actors always count as friendly, regardless of token disposition.
+ * @param {TokenDocument|PrototypeToken|null} tokenDoc
+ * @param {Actor5e|null} [actor]
+ * @returns {number|null}
+ */
+function _getAllyDisposition(tokenDoc, actor = tokenDoc?.actor) {
+    if (actor?.type === "character" || actor?.hasPlayerOwner) return CONST.TOKEN_DISPOSITIONS.FRIENDLY;
+    return tokenDoc?.disposition ?? null;
+}
+
+/**
+ * Get the disposition that template targets must have, based on the activity and its caster.
+ * - Heal activities only target allies: hostile casters heal hostile tokens; PCs and friendly NPCs heal PCs
+ *   and friendly tokens.
+ * - Damaging activities whose item or activity has "Choose Targets" enabled only target opponents: friendly
+ *   casters target hostile tokens and vice versa. Neutral or secret casters have no opponents, so no filtering.
+ * @param {RegionDocument[]} regionDocs
+ * @returns {number|null}  The disposition targets must have, or null if no filtering applies.
+ */
+function _getTemplateTargetDisposition(regionDocs) {
+    const activity = _getPlacementActivity(regionDocs);
+    if (!activity) return null;
+
+    const isHeal = activity.type === "heal";
+    const choosesTargets = !!(activity.target?.affects?.choice || activity.item?.system?.target?.affects?.choice);
+    const dealsDamage = !!activity.damage?.parts?.length;
+    if (!isHeal && !(choosesTargets && dealsDamage)) return null;
+
+    const actor = activity.actor ?? activity.item?.actor;
+    if (!actor) return null;
+
+    let sourceToken = null;
+    try {
+        sourceToken = activity.getUsageToken?.() ?? null;
+    } catch (err) {}
+    sourceToken ??= actor.getActiveTokens?.(false, true)?.[0] ?? actor.prototypeToken;
+
+    const casterDisposition = _getAllyDisposition(sourceToken, actor);
+    if (isHeal) return casterDisposition;
+
+    const { FRIENDLY, HOSTILE } = CONST.TOKEN_DISPOSITIONS;
+    if (casterDisposition === FRIENDLY) return HOSTILE;
+    if (casterDisposition === HOSTILE) return FRIENDLY;
+    return null;
+}
+
+/**
  * Calculate which tokens fall inside any of the specified Region documents.
  * Uses native TokenDocument#testInsideRegion() API.
  * Respects token visibility so non-GMs cannot auto-target hidden tokens.
@@ -474,6 +542,7 @@ function _getTargetsForRegions(regionDocs) {
 
     const shouldExcludeOrigin = _shouldExcludeOrigin(docs);
     const originIds = shouldExcludeOrigin ? _getOriginatingTokenIds(docs) : null;
+    const requiredDisposition = _getTemplateTargetDisposition(docs);
 
     const targetIds = [];
     for (const token of canvas.tokens.placeables) {
@@ -484,6 +553,9 @@ function _getTargetsForRegions(regionDocs) {
 
         // For cone, ray/line, and emanation templates, always exclude the originating token
         if (originIds?.has(token.id)) continue;
+
+        // Heal activities only target allies, "Choose Targets" damage activities only target opponents
+        if ((requiredDisposition !== null) && (_getAllyDisposition(token.document) !== requiredDisposition)) continue;
 
         let inside = false;
         for (const doc of docs) {
