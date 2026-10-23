@@ -437,8 +437,13 @@ async function _onPostUseActivity(activity, usageConfig, results) {
             return !_isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity);
         });
 
+        const autoApplyNames = _getAutoApplyEffectNames();
+        const isAutoApplyEffect = effect => autoApplyNames.has(_cleanName(effect.name ?? effect.label));
+
         if (!unappliedEffects.length) {
             debug(`Self Effect Application | All self effects for "${activity.item?.name || activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
+            // Auto-apply effects that are already running still don't need the usage card's effect tray.
+            if (applicableEffects.some(isAutoApplyEffect)) await _markUsageMessageAutoApplied(results?.message);
             return;
         }
 
@@ -463,10 +468,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
 
         // Effects listed in the auto-apply setting are applied straight away. The card is still
         // posted, with those effects already in their applied state so they can be undone.
-        const autoApplyNames = _getAutoApplyEffectNames();
-        const autoApplyEffects = autoApplyNames.size
-            ? unappliedEffects.filter(effect => autoApplyNames.has(_cleanName(effect.name ?? effect.label)))
-            : [];
+        const autoApplyEffects = unappliedEffects.filter(isAutoApplyEffect);
         const effectsApplied = autoApplyEffects.length
             ? await _autoApplyEffects(actor, activity, autoApplyEffects, { concentrationUuid, message: results?.message })
             : {};
@@ -589,19 +591,26 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
         }
     }
 
-    if (!Object.keys(effectsApplied).length || !message) return effectsApplied;
+    if (Object.keys(effectsApplied).length) await _markUsageMessageAutoApplied(message);
+    return effectsApplied;
+}
 
-    // Collapse the tray immediately on this client, then persist so other clients collapse it on render.
+/**
+ * Collapse the usage message's effect application tray on this client, then flag the message
+ * so every client renders it collapsed.
+ *
+ * @param {ChatMessage|null} message  The activity usage message.
+ */
+async function _markUsageMessageAutoApplied(message) {
+    if (!message?.id) return;
     const element = _getChatMessageElement(message.id);
     if (element) _collapseEffectTray(message, element);
-    if (message.isOwner) {
-        try {
-            await message.setFlag(MODULE_ID, "selfEffectAutoApplied", true);
-        } catch (err) {
-            debug(`Self Effect Application | Could not flag usage message ${message.id} as auto-applied: ${err?.message ?? err}`);
-        }
+    if (!message.isOwner || message.getFlag?.(MODULE_ID, "selfEffectAutoApplied")) return;
+    try {
+        await message.setFlag(MODULE_ID, "selfEffectAutoApplied", true);
+    } catch (err) {
+        debug(`Self Effect Application | Could not flag usage message ${message.id} as auto-applied: ${err?.message ?? err}`);
     }
-    return effectsApplied;
 }
 
 /**
