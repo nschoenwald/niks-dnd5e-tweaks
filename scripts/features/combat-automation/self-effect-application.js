@@ -606,16 +606,24 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
 
 /**
  * Collapse the effect application tray(s) of a usage message whose self effects were auto-applied.
- * Leaves the tray alone when the current user has explicitly opened it.
+ *
+ * Only the first collapse on each client is forced. `message._trayStates` cannot tell an
+ * auto-opened tray from one the user opened: `ChatLog5e#updateMessage` records the tray's current
+ * `open` state right before re-rendering, so the re-render caused by our own flag write records it
+ * as open. After the first collapse, dnd5e's tray state tracking keeps whatever the user chooses.
  *
  * @param {ChatMessage} message
  * @param {HTMLElement} element  Rendered message element.
  */
 function _collapseEffectTray(message, element) {
-    if (message._trayStates?.get("EFFECT-APPLICATION") === true) return;
-    for (const tray of element.querySelectorAll("effect-application")) {
-        tray.removeAttribute("open");
-    }
+    if (message._nd5tEffectTrayCollapsed) return;
+    const trays = element.querySelectorAll("effect-application");
+    if (!trays.length) return;
+    message._nd5tEffectTrayCollapsed = true;
+    // Seed dnd5e's tray state so other renders of this message (popouts, notifications) start collapsed.
+    message._trayStates ??= new Map();
+    message._trayStates.set("EFFECT-APPLICATION", false);
+    for (const tray of trays) tray.removeAttribute("open");
 }
 
 // ── Chat card creation ───────────────────────────────────────────────
