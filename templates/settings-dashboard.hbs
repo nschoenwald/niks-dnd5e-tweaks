@@ -106,6 +106,13 @@
                                         <i class="fa-solid fa-file-import"></i>
                                     </button>
                                 </div>
+                                {{else if this.list}}
+                                <div class="nd5t-list-group">
+                                    <input type="hidden" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                    <button type="button" class="nd5t-btn secondary nd5t-list-edit-btn" data-action="editList" data-key="{{this.key}}" title="Open the list editor" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
+                                        <i class="fa-solid fa-list"></i> Edit List <span class="nd5t-list-count-badge"><span class="nd5t-list-count">{{this.listCount}}</span></span>
+                                    </button>
+                                </div>
                                 {{else}}
                                 <input type="text" id="nd5t-setting-{{this.key}}" name="{{this.key}}" value="{{this.value}}" class="nd5t-text-input" {{#unless @root.canModify}}{{#unless this.isClient}}{{#unless this.isUser}}disabled{{/unless}}{{/unless}}{{/unless}}>
                                 {{/if}}

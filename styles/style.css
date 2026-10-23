@@ -1229,6 +1229,172 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     cursor: not-allowed;
 }
 
+/* ── List Settings: Dashboard Button & Pop-out Editor ────────────────── */
+
+.nd5t-list-edit-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.nd5t-list-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.nd5t-list-edit-btn.nd5t-list-modified {
+    border-color: #ff6400;
+}
+
+.nd5t-list-edit-btn.nd5t-list-modified .nd5t-list-count-badge {
+    background: #ff6400;
+}
+
+.nd5t-list-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    background: #181a1e;
+    color: #f8fafc;
+}
+
+.nd5t-list-editor-hint {
+    margin: 0;
+    padding: 10px 16px 0;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.nd5t-list-editor-add {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px 6px;
+}
+
+.nd5t-list-editor-add .nd5t-search-box {
+    max-width: none;
+}
+
+.nd5t-list-editor-add-btn {
+    flex-shrink: 0;
+}
+
+.nd5t-list-editor-status {
+    padding: 0 16px 6px;
+    color: #94a3b8;
+    font-size: 11.5px;
+}
+
+.nd5t-list-editor-entries {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 16px 10px;
+    list-style: none;
+}
+
+.nd5t-list-editor-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 6px 5px 10px;
+    margin: 0 0 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nd5t-list-editor-entry:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.nd5t-list-editor-entry.highlight {
+    border-color: #ff6400;
+    background: rgba(255, 100, 0, 0.12);
+}
+
+.nd5t-list-editor-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #f1f5f9;
+}
+
+.nd5t-list-editor-remove {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.nd5t-list-editor-remove:hover,
+.nd5t-list-editor-remove:focus-visible {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    outline: none;
+}
+
+.nd5t-list-editor-entries:empty {
+    display: none;
+}
+
+.nd5t-list-editor-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 16px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.nd5t-list-editor-empty[hidden] {
+    display: none;
+}
+
+.nd5t-list-editor-empty i {
+    font-size: 28px;
+    color: #64748b;
+}
+
+.nd5t-list-editor-empty p {
+    margin: 0;
+    font-size: 13px;
+}
+
 /* ── NPC Hit Point Scaler Buttons ────────────────────────────────────── */
 
 .hit-points .nd5t-hp-scaler-btn {
@@ -4276,6 +4442,19 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-switch input:checked + .nd5t-slide
 
 body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-switch input:focus + .nd5t-slider {
     box-shadow: 0 0 5px var(--color-shadow-highlight, rgba(68, 147, 173, 0.5)) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-list-edit-btn.nd5t-list-modified,
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-list-editor-entry.highlight {
+    border-color: var(--color-highlights, #4493ad) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-list-edit-btn.nd5t-list-modified .nd5t-list-count-badge {
+    background: var(--color-highlights, #4493ad) !important;
+}
+
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-list-editor-entry.highlight {
+    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
 }
 
 body.crlngn-ui.nd5t-crlngn-theme-active.cui-font-ui .nd5t-settings-app {

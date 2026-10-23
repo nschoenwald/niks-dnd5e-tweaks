@@ -1,26 +1,5 @@
 import { MODULE_ID, log } from "./main.js";
-
-/**
- * Normalize a comma-separated free-text list: trims entries, drops empty entries and
- * case-insensitive duplicates, and sorts alphabetically (case-insensitive).
- *
- * @param {string} value
- * @returns {string}
- */
-function normalizeListValue(value) {
-    if (typeof value !== "string") return value;
-    const seen = new Set();
-    const entries = [];
-    for (const raw of value.split(",")) {
-        const entry = raw.trim();
-        const key = entry.toLocaleLowerCase();
-        if (!entry || seen.has(key)) continue;
-        seen.add(key);
-        entries.push(entry);
-    }
-    entries.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-    return entries.join(", ");
-}
+import { NiksListEditorApp, normalizeListValue, parseListValue } from "./settings-list-editor.js";
 
 /**
  * Modern ApplicationV2 Settings Dashboard for Nik's D&D 5e Tweaks.
@@ -52,6 +31,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             resetDefaults: NiksTweaksSettingsApp.#onResetDefaults,
             exportSettings: NiksTweaksSettingsApp.#onExportSettings,
             importSettings: NiksTweaksSettingsApp.#onImportSettings,
+            editList: NiksTweaksSettingsApp.#onEditList,
             close: function(event, target) { return this.close(); }
         }
     };
@@ -68,6 +48,12 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
      * Active tab tracking (client-side state during the session)
      */
     #activeTab = null;
+
+    /**
+     * Open list editor windows, keyed by setting key. Closed together with the dashboard.
+     * @type {Map<string, NiksListEditorApp>}
+     */
+    #listEditors = new Map();
 
     /**
      * Settings definition schema categorized for the dashboard
@@ -1074,7 +1060,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "selfEffectAlwaysPromptFeatures",
                                 name: "Always Prompt Features",
                                 list: true,
-                                hint: "Comma-separated list of item/feature names to always prompt with self-effect buttons (e.g. Mage Armor).",
+                                hint: "Item or feature names that always get the self-effect message, even when not self-targeted (e.g. Mage Armor).",
                                 type: "String",
                                 default: "Mage Armor",
                                 scope: "world",
@@ -1084,7 +1070,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "selfEffectAutoApplyEffects",
                                 name: "Auto-Apply Effects",
                                 list: true,
-                                hint: "Comma-separated list of effect names that are applied directly to the source token (e.g. Bladesong, Rage). The self-effect message still shows them as applied, with an Undo button.",
+                                hint: "Effect names that are applied directly to the source token (e.g. Bladesong, Rage). The self-effect message still shows them as applied, with an Undo button.",
                                 type: "String",
                                 default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
                                 scope: "world",
@@ -1364,6 +1350,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             return {
                                 ...s,
                                 value,
+                                listCount: s.list ? parseListValue(value).length : 0,
                                 choices,
                                 isChild: Boolean(s.parentKey),
                                 isClient: s.scope === "client",
@@ -1492,6 +1479,54 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         if (fileImportInput) {
             fileImportInput.addEventListener("change", (e) => this.#onFileSelected(e));
         }
+    }
+
+    /** @override */
+    _onClose(options) {
+        super._onClose(options);
+        for (const editor of this.#listEditors.values()) editor.close();
+        this.#listEditors.clear();
+    }
+
+    /**
+     * Open the pop-out list editor for a list setting. Apply writes the value into the
+     * dashboard's hidden input; it is stored when the dashboard is saved.
+     * @this {NiksTweaksSettingsApp}
+     * @param {PointerEvent} event
+     * @param {HTMLElement} target
+     */
+    static #onEditList(event, target) {
+        const key = target.dataset.key;
+        const setting = NiksTweaksSettingsApp.SETTINGS_SCHEMA
+            .flatMap(tab => tab.sections.flatMap(sec => sec.settings))
+            .find(s => s.key === key);
+        const input = this.element.querySelector(`input[name="${key}"]`);
+        if (!setting || !input) return;
+
+        const open = this.#listEditors.get(key);
+        if (open?.rendered) {
+            open.bringToFront();
+            return;
+        }
+
+        const editor = new NiksListEditorApp({
+            settingKey: key,
+            settingName: setting.name,
+            hint: setting.hint,
+            value: input.value,
+            defaultValue: setting.default,
+            onApply: (value) => {
+                input.value = value;
+                const count = parseListValue(value).length;
+                const label = target.querySelector(".nd5t-list-count");
+                if (label) label.textContent = count;
+                target.classList.add("nd5t-list-modified");
+                target.title = "Edited. Use Save Changes to store this list.";
+            }
+        });
+        editor.addEventListener("close", () => this.#listEditors.delete(key), { once: true });
+        this.#listEditors.set(key, editor);
+        editor.render({ force: true });
     }
 
     /**

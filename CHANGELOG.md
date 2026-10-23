@@ -10,8 +10,9 @@ All notable changes to this project will be documented in this file.
   - Effects not on the list still get the usual Apply button in the same message.
 
 ### Changed
-- **Settings Dashboard: Tidy Name Lists**:
-  - Free-text name lists (**Always Prompt Features** and **Auto-Apply Effects**) are sorted alphabetically when you save settings or import a settings backup. Extra spaces, empty entries and duplicates are removed.
+- **Settings Dashboard: List Editor**:
+  - Name lists (**Always Prompt Features** and **Auto-Apply Effects**) now have an **Edit List** button instead of a long text field. It opens a small window where you can search the list, add entries (press Enter, or paste several separated by commas), remove them one by one, or reset to the defaults. Press **Apply**, then **Save Changes** in the dashboard.
+  - Lists are always sorted alphabetically, and duplicates or empty entries are removed. This also applies to imported settings backups.
 
 ## [14.49.0] - 2026-10-23
 ### Changed

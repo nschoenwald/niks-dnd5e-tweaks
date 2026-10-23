@@ -1,0 +1,44 @@
+<div class="nd5t-list-editor-wrapper">
+    {{#if hint}}
+    <p class="nd5t-list-editor-hint">{{hint}}</p>
+    {{/if}}
+
+    {{!-- Combined add / filter input --}}
+    <div class="nd5t-list-editor-add">
+        <div class="nd5t-search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" class="nd5t-search-input nd5t-list-editor-input" placeholder="Search or add an entry…" autocomplete="off" spellcheck="false" aria-label="Search or add an entry">
+        </div>
+        <button type="button" class="nd5t-btn secondary nd5t-list-editor-add-btn" data-action="addEntry" title="Add entry (Enter). Separate several entries with commas.">
+            <i class="fa-solid fa-plus"></i> Add
+        </button>
+    </div>
+
+    <div class="nd5t-list-editor-status">
+        <span class="nd5t-list-editor-count"></span>
+    </div>
+
+    {{!-- Entries are rendered by NiksListEditorApp#renderEntries --}}
+    <ul class="nd5t-list-editor-entries" role="list"></ul>
+
+    <div class="nd5t-list-editor-empty" hidden>
+        <i class="fa-solid fa-list"></i>
+        <p></p>
+    </div>
+
+    <footer class="nd5t-dashboard-footer">
+        <div class="nd5t-footer-left">
+            <button type="button" class="nd5t-btn secondary" data-action="resetEntries" title="Replace the list with its default entries">
+                <i class="fa-solid fa-rotate-left"></i> Reset to Default
+            </button>
+        </div>
+        <div class="nd5t-footer-right">
+            <button type="button" class="nd5t-btn cancel" data-action="close" title="Discard changes to this list">
+                <i class="fa-solid fa-xmark"></i> Cancel
+            </button>
+            <button type="button" class="nd5t-btn primary" data-action="applyEntries" title="Apply to the dashboard. Use Save Changes there to store it.">
+                <i class="fa-solid fa-check"></i> Apply
+            </button>
+        </div>
+    </footer>
+</div>
