@@ -1056,6 +1056,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: "Mage Armor",
                                 scope: "world",
                                 parentKey: "enableSelfEffectApplication"
+                            },
+                            {
+                                key: "selfEffectAutoApplyEffects",
+                                name: "Auto-Apply Effects",
+                                hint: "Comma-separated list of effect names that skip the self-effect message and are applied directly to the source token (e.g. Rage, Bladesong).",
+                                type: "String",
+                                default: "",
+                                scope: "world",
+                                parentKey: "enableSelfEffectApplication"
                             }
                         ]
                     },

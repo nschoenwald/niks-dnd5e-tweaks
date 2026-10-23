@@ -1395,6 +1395,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "selfEffectAutoApplyEffects", {
+        name: "↳ Auto-Apply Effects",
+        hint: "A comma-separated list of Active Effect names (case-insensitive). Matching self effects skip the self-effect application message and are applied directly to the source token. The effect tray of the activity's chat card is collapsed.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "",
+        restricted: true
+    });
+
     // ── Phase 3: Concentration & Ongoing Effects ────────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoRollConcentration", {

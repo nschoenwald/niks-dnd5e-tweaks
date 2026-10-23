@@ -3,6 +3,7 @@
  * Description: Whispers an interactive chat card with a one-click Apply button when an actor activates abilities that grant Active Effects to Self.
  *
  * @introduced v14.13.0
+ * @updated v14.49.1 (Auto-Apply Effects list applies matching effects directly and collapses the usage card's effect tray)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
 
@@ -30,6 +31,14 @@ export function initSelfEffectApplication() {
 
     Hooks.on("renderChatMessageHTML", (message, html) => {
         _bindSelfEffectButtons(message, html);
+    });
+
+    // Usage messages whose self effects were auto-applied render with the effect tray collapsed.
+    // dnd5e.renderChatMessage fires after ChatMessage5e#_collapseTrays has set the tray state.
+    Hooks.on("dnd5e.renderChatMessage", (message, html) => {
+        if (!message.getFlag?.(MODULE_ID, "selfEffectAutoApplied")) return;
+        const root = html instanceof HTMLElement ? html : html?.[0];
+        if (root) _collapseEffectTray(message, root);
     });
 
     // Sync button state across clients when the flag is updated.
@@ -349,6 +358,33 @@ function _isAlwaysPromptFeature(activity) {
     });
 }
 
+/**
+ * Clean names of Active Effects configured to be applied directly, without a prompt card.
+ *
+ * @returns {Set<string>}
+ */
+function _getAutoApplyEffectNames() {
+    const rawList = getSetting("selfEffectAutoApplyEffects");
+    if (!rawList || typeof rawList !== "string") return new Set();
+    return new Set(rawList.split(",").map(s => _cleanName(s)).filter(Boolean));
+}
+
+/**
+ * Serialize an effect into plain data that can be stored in flags or used for creation.
+ *
+ * @param {ActiveEffect5e|object} effect
+ * @returns {object}
+ */
+function _serializeEffectData(effect) {
+    const rawData = effect.toObject ? effect.toObject() : foundry.utils.deepClone(effect);
+    if (rawData.statuses) {
+        rawData.statuses = Array.from(rawData.statuses);
+    } else if (effect.statuses) {
+        rawData.statuses = Array.from(effect.statuses);
+    }
+    return rawData;
+}
+
 async function _onPostUseActivity(activity, usageConfig, results) {
     try {
         if (!isFeatureActive("enableSelfEffectApplication", "clientEnableSelfEffectApplication")) return;
@@ -425,10 +461,28 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         }
         const concentrationUuid = concentrationEffect?.uuid || null;
 
-        await _sendSelfEffectPrompt(actor, activity, unappliedEffects, {
-            concentrationUuid,
-            message: results?.message
-        });
+        // Effects listed in the auto-apply setting skip the prompt card and are applied directly.
+        const autoApplyNames = _getAutoApplyEffectNames();
+        const autoApplyEffects = [];
+        const promptEffects = [];
+        for (const effect of unappliedEffects) {
+            const isAutoApply = autoApplyNames.size > 0 && autoApplyNames.has(_cleanName(effect.name ?? effect.label));
+            (isAutoApply ? autoApplyEffects : promptEffects).push(effect);
+        }
+
+        if (autoApplyEffects.length) {
+            await _autoApplyEffects(actor, activity, autoApplyEffects, {
+                concentrationUuid,
+                message: results?.message
+            });
+        }
+
+        if (promptEffects.length) {
+            await _sendSelfEffectPrompt(actor, activity, promptEffects, {
+                concentrationUuid,
+                message: results?.message
+            });
+        }
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPostUseActivity for Self Effect Application:`, err);
     }
@@ -502,6 +556,71 @@ function _isEffectActiveOnActor(actor, effect, effectUuid, effectName, activity)
 
 
 
+// ── Direct application ───────────────────────────────────────────────
+
+/**
+ * Apply effects straight to the source actor without posting a prompt card, then flag the
+ * activity's usage message so its effect application tray renders collapsed on all clients.
+ *
+ * @param {Actor5e} actor
+ * @param {Activity} activity
+ * @param {ActiveEffect5e[]} effects
+ * @param {object} [options]
+ * @param {string|null} [options.concentrationUuid]
+ * @param {ChatMessage|null} [options.message]  The activity usage message.
+ */
+async function _autoApplyEffects(actor, activity, effects, { concentrationUuid = null, message = null } = {}) {
+    let appliedCount = 0;
+    for (const effect of effects) {
+        const effectName = effect.name ?? effect.label ?? game.i18n.localize("ND5T.SelfEffectApplication.UnknownEffect");
+        try {
+            const createdId = await _createEffectOnActor(actor, {
+                effectUuid: effect.uuid ?? effect.id ?? "",
+                effectName,
+                effectData: _serializeEffectData(effect),
+                activityUuid: activity.uuid,
+                itemUuid: activity.item?.uuid,
+                usageMessageUuid: message?.uuid,
+                spellLevel: message?.system?.level ?? activity.item?.system?.level ?? null,
+                concentrationUuid,
+                fallbackMessage: message
+            });
+            appliedCount++;
+            debug(`Self Effect Application | ✓ Auto-applied effect "${effectName}" to "${actor.name}" (id: ${createdId})`);
+        } catch (err) {
+            console.error(`Nik's DnD5e Tweaks | Self Effect Application: Failed to auto-apply effect "${effectName}" to "${actor.name}":`, err);
+            ui.notifications.error(game.i18n.localize("ND5T.SelfEffectApplication.ApplyError"));
+        }
+    }
+
+    if (!appliedCount || !message) return;
+
+    // Collapse the tray immediately on this client, then persist so other clients collapse it on render.
+    const element = _getChatMessageElement(message.id);
+    if (element) _collapseEffectTray(message, element);
+    if (message.isOwner) {
+        try {
+            await message.setFlag(MODULE_ID, "selfEffectAutoApplied", true);
+        } catch (err) {
+            debug(`Self Effect Application | Could not flag usage message ${message.id} as auto-applied: ${err?.message ?? err}`);
+        }
+    }
+}
+
+/**
+ * Collapse the effect application tray(s) of a usage message whose self effects were auto-applied.
+ * Leaves the tray alone when the current user has explicitly opened it.
+ *
+ * @param {ChatMessage} message
+ * @param {HTMLElement} element  Rendered message element.
+ */
+function _collapseEffectTray(message, element) {
+    if (message._trayStates?.get("EFFECT-APPLICATION") === true) return;
+    for (const tray of element.querySelectorAll("effect-application")) {
+        tray.removeAttribute("open");
+    }
+}
+
 // ── Chat card creation ───────────────────────────────────────────────
 
 /**
@@ -539,18 +658,10 @@ async function _sendSelfEffectPrompt(actor, activity, effects, { concentrationUu
 
     // Serialize effect data into flags as an array (safe from DOMPurify AND Foundry dot-expansion).
     // Keys in objects are expanded by Foundry's setFlag/create if they contain dots (like UUIDs).
-    const effectFlagData = effects.map(effect => {
-        const rawData = effect.toObject ? effect.toObject() : foundry.utils.deepClone(effect);
-        if (rawData.statuses) {
-            rawData.statuses = Array.from(rawData.statuses);
-        } else if (effect.statuses) {
-            rawData.statuses = Array.from(effect.statuses);
-        }
-        return {
-            uuid: effect.uuid ?? effect.id ?? "",
-            data: rawData
-        };
-    });
+    const effectFlagData = effects.map(effect => ({
+        uuid: effect.uuid ?? effect.id ?? "",
+        data: _serializeEffectData(effect)
+    }));
 
     // Build one button row per effect.
     const effectButtons = effects.map(effect => {
@@ -675,6 +786,197 @@ async function _handleApplyClick(event, message, button, prompt) {
 }
 
 /**
+ * Create (or re-enable) a self effect on an actor from a source effect.
+ * Shared by the prompt card's Apply button and the direct auto-apply path.
+ *
+ * @param {Actor5e} actor
+ * @param {object} options
+ * @param {string} options.effectUuid               UUID of the source effect (may be empty).
+ * @param {string} options.effectName               Display name of the effect.
+ * @param {object} options.effectData               Plain object data of the effect.
+ * @param {string} [options.activityUuid]           UUID of the activity that was used.
+ * @param {string} [options.itemUuid]               UUID of the item that was used.
+ * @param {string} [options.usageMessageUuid]       UUID of the activity usage chat message.
+ * @param {number|null} [options.spellLevel]        Spell level the activity was used at.
+ * @param {string|null} [options.concentrationUuid] UUID of the related concentration effect.
+ * @param {ChatMessage|null} [options.fallbackMessage] Message used when the usage message cannot be resolved.
+ * @returns {Promise<string|null>} ID of the created or re-enabled effect on the actor.
+ */
+async function _createEffectOnActor(actor, {
+    effectUuid, effectName, effectData, activityUuid = null, itemUuid = null,
+    usageMessageUuid = null, spellLevel = null, concentrationUuid = null, fallbackMessage = null
+}) {
+    let createdId = null;
+
+    // Try to fetch source effect document (e.g. from item or actor)
+    const sourceEffect = effectUuid ? await fromUuid(effectUuid) : null;
+    itemUuid = itemUuid || (effectUuid ? effectUuid.split(".ActiveEffect")[0] : null);
+
+    // Resolve activity and item first
+    const activity = activityUuid ? await fromUuid(activityUuid) : null;
+    const item = itemUuid ? await fromUuid(itemUuid) : (activity?.item ?? sourceEffect?.parent);
+    const requiresConcentration = activity?.requiresConcentration ?? item?.requiresConcentration ?? false;
+
+    // Resolve concentration effect if present and required
+    concentrationUuid = concentrationUuid || null;
+    if (concentrationUuid) {
+        const conc = await fromUuid(concentrationUuid);
+        if (!conc || conc.disabled) concentrationUuid = null;
+    }
+    if (!concentrationUuid && requiresConcentration && actor.concentration?.effects?.size > 0) {
+        const itemId = item?.id ?? itemUuid?.split(".")?.pop();
+        const conc = Array.from(actor.concentration.effects).find(e => {
+            const itemFlag = e.getFlag?.("dnd5e", "item");
+            return itemFlag?.id === itemId || itemFlag?.uuid === itemUuid || e.origin === itemUuid;
+        });
+        if (conc && !conc.disabled) concentrationUuid = conc.uuid;
+    }
+
+    const sourceKey = (sourceEffect?.inCompendium || effectData._stats?.compendiumSource) ? "compendiumSource" : "duplicateSource";
+    const cleanTargetName = _cleanName(effectName || effectData.name || effectData.label);
+    const effectStatuses = effectData.statuses ? Array.from(effectData.statuses) : [];
+    const usageMessage = (usageMessageUuid ? await fromUuid(usageMessageUuid) : null) ?? fallbackMessage;
+
+    // Get dynamic changes from activity if available (e.g. scaling or duration overrides)
+    const activityChanges = activity?.getAppliedEffectChanges?.(
+        sourceEffect ?? { duration: effectData.duration ?? {}, ...effectData },
+        { chatMessage: usageMessage, target: actor }
+    ) ?? {};
+
+    const changes = foundry.utils.mergeObject(activityChanges, {
+        flags: {
+            dnd5e: {
+                dependentOn: concentrationUuid || undefined,
+                spellLevel: spellLevel || undefined
+            },
+            [MODULE_ID]: {
+                sourceEffectUuid: effectUuid
+            }
+        },
+        system: {
+            origin: {
+                [activity ? "activity" : "item"]: activity?.uuid ?? itemUuid ?? sourceEffect?.parent?.uuid,
+                effect: concentrationUuid || undefined,
+                message: usageMessageUuid || undefined,
+                profile: activity ? activity.effects?.find(e => (e.uuid === effectUuid) || (e._id === sourceEffect?.id))?._id : undefined
+            }
+        }
+    });
+
+    if (sourceEffect && sourceEffect.transfer) {
+        debug(`Self Effect Application | Enabling transferred source effect "${sourceEffect.name}" (${sourceEffect.id}) on ${actor.name}`);
+        await sourceEffect.update({ disabled: false });
+        createdId = sourceEffect.id;
+
+        // Clean up any stale duplicate non-transfer effects created on actor by earlier module versions
+        // CRITICAL: NEVER delete or match a concentration effect!
+        const duplicateEffect = actor.effects.find(e =>
+            e !== sourceEffect &&
+            e.parent === actor &&
+            !e.transfer &&
+            !_isConcentrationEffect(e) &&
+            (e.origin === effectUuid || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid || (e._stats?.[sourceKey] === effectUuid))
+        );
+        if (duplicateEffect) {
+            debug(`Self Effect Application | Cleaning up stale duplicate effect "${duplicateEffect.name}" (${duplicateEffect.id}) on ${actor.name}`);
+            await duplicateEffect.delete();
+        }
+    } else {
+        // Find existing non-transfer effect on actor:
+        // Match by source effect UUID, duplicateSource, module flag, or exact origin/name if disabled.
+        // CRITICAL: NEVER match a concentration effect!
+        const existingEffect = actor.effects.find(e => {
+            if (e.transfer) return false;
+            if (_isConcentrationEffect(e)) return false;
+
+            // Match by DnD5e's duplicateSource / compendiumSource
+            if (effectUuid && (e._stats?.[sourceKey] === effectUuid || e._stats?.duplicateSource === effectUuid || e._stats?.compendiumSource === effectUuid)) return true;
+
+            // Match by module flag
+            if (effectUuid && e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid) return true;
+
+            // Match by exact origin UUID (ActiveEffect UUID, not item UUID)
+            if (effectUuid && e.origin === effectUuid) return true;
+
+            // Match by exact clean name ONLY IF disabled (re-enabling previously disabled effect)
+            if (e.disabled && cleanTargetName) {
+                const eName = _cleanName(e.name || e.label);
+                if (eName === cleanTargetName) return true;
+            }
+
+            return false;
+        });
+
+        if (existingEffect) {
+            debug(`Self Effect Application | Re-enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
+            const baseDuration = foundry.utils.deepClone(effectData.duration ?? {});
+            delete baseDuration.startTime;
+            delete baseDuration.startRound;
+            delete baseDuration.startTurn;
+            baseDuration.expired = false;
+
+            const updateData = foundry.utils.mergeObject({
+                _id: existingEffect.id,
+                disabled: false,
+                duration: baseDuration,
+                start: ActiveEffect.implementation.getEffectStart?.() ?? { startTime: game.time.worldTime }
+            }, changes);
+
+            if (effectStatuses.length > 0) updateData.statuses = effectStatuses;
+            if (effectData.img) updateData.img = effectData.img;
+            if (effectData.name) updateData.name = effectData.name;
+
+            // Properly handle changes in both DnD5e 6.x (system.changes) and legacy (changes)
+            const baseChanges = sourceEffect?.system?.changes ?? effectData.system?.changes;
+            if (baseChanges) {
+                let systemChanges = foundry.utils.deepClone(baseChanges);
+                if (typeof ActiveEffect.implementation.forApplication === "function") {
+                    systemChanges = await ActiveEffect.implementation.forApplication(systemChanges, activity ?? item ?? actor, actor);
+                }
+                updateData.system = updateData.system ?? {};
+                updateData.system.changes = systemChanges;
+            } else if (effectData.changes) {
+                updateData.changes = foundry.utils.deepClone(effectData.changes);
+            }
+
+            await existingEffect.update(updateData);
+            createdId = existingEffect.id;
+        } else {
+            const baseData = sourceEffect?.toObject ? sourceEffect.toObject() : foundry.utils.deepClone(effectData);
+            delete baseData._id;
+
+            const data = foundry.utils.mergeObject(baseData, {
+                disabled: false,
+                transfer: false,
+                origin: effectUuid || itemUuid || undefined,
+                _stats: {
+                    [sourceKey]: effectUuid,
+                    [sourceEffect?.inCompendium ? "duplicateSource" : "compendiumSource"]: null
+                }
+            });
+
+            if (effectStatuses.length > 0) data.statuses = effectStatuses;
+
+            foundry.utils.mergeObject(data, changes);
+
+            // For DnD5e 6.x, evaluate changes via ActiveEffect.implementation.forApplication
+            if (data.system?.changes && typeof ActiveEffect.implementation.forApplication === "function") {
+                data.system.changes = await ActiveEffect.implementation.forApplication(
+                    data.system.changes,
+                    activity ?? item ?? actor,
+                    actor
+                );
+            }
+
+            const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
+            createdId = created?.id;
+        }
+    }
+
+    return createdId;
+}
+
+/**
  * Actually create the active effect on the actor.
  */
 async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, effectName, effectData) {
@@ -689,176 +991,18 @@ async function _applyEffectData(message, button, prompt, actorUuid, effectUuid, 
     debug(`Self Effect Application | Applying effect "${effectName}" to "${actor.name}"`);
 
     try {
-        let createdId = null;
-
-        // Try to fetch source effect document (e.g. from item or actor)
-        const sourceEffect = effectUuid ? await fromUuid(effectUuid) : null;
         const flagsData = message.flags?.[MODULE_ID] ?? {};
-        const activityUuid = flagsData.activityUuid;
-        const itemUuid = flagsData.itemUuid || (effectUuid ? effectUuid.split(".ActiveEffect")[0] : null);
-        const usageMessageUuid = flagsData.usageMessageUuid;
-        const spellLevel = flagsData.spellLevel;
-
-        // Resolve activity and item first
-        const activity = activityUuid ? await fromUuid(activityUuid) : null;
-        const item = itemUuid ? await fromUuid(itemUuid) : (activity?.item ?? sourceEffect?.parent);
-        const requiresConcentration = activity?.requiresConcentration ?? item?.requiresConcentration ?? false;
-
-        // Resolve concentration effect if present and required
-        let concentrationUuid = flagsData.concentrationUuid || null;
-        if (concentrationUuid) {
-            const conc = await fromUuid(concentrationUuid);
-            if (!conc || conc.disabled) concentrationUuid = null;
-        }
-        if (!concentrationUuid && requiresConcentration && actor.concentration?.effects?.size > 0) {
-            const itemId = item?.id ?? itemUuid?.split(".")?.pop();
-            const conc = Array.from(actor.concentration.effects).find(e => {
-                const itemFlag = e.getFlag?.("dnd5e", "item");
-                return itemFlag?.id === itemId || itemFlag?.uuid === itemUuid || e.origin === itemUuid;
-            });
-            if (conc && !conc.disabled) concentrationUuid = conc.uuid;
-        }
-
-        const sourceKey = (sourceEffect?.inCompendium || effectData._stats?.compendiumSource) ? "compendiumSource" : "duplicateSource";
-        const cleanTargetName = _cleanName(effectName || effectData.name || effectData.label);
-        const effectStatuses = effectData.statuses ? Array.from(effectData.statuses) : [];
-        const usageMessage = usageMessageUuid ? await fromUuid(usageMessageUuid) : message;
-
-        // Get dynamic changes from activity if available (e.g. scaling or duration overrides)
-        const activityChanges = activity?.getAppliedEffectChanges?.(
-            sourceEffect ?? { duration: effectData.duration ?? {}, ...effectData },
-            { chatMessage: usageMessage, target: actor }
-        ) ?? {};
-
-        const changes = foundry.utils.mergeObject(activityChanges, {
-            flags: {
-                dnd5e: {
-                    dependentOn: concentrationUuid || undefined,
-                    spellLevel: spellLevel || undefined
-                },
-                [MODULE_ID]: {
-                    sourceEffectUuid: effectUuid
-                }
-            },
-            system: {
-                origin: {
-                    [activity ? "activity" : "item"]: activity?.uuid ?? itemUuid ?? sourceEffect?.parent?.uuid,
-                    effect: concentrationUuid || undefined,
-                    message: usageMessageUuid || undefined,
-                    profile: activity ? activity.effects?.find(e => (e.uuid === effectUuid) || (e._id === sourceEffect?.id))?._id : undefined
-                }
-            }
+        const createdId = await _createEffectOnActor(actor, {
+            effectUuid,
+            effectName,
+            effectData,
+            activityUuid: flagsData.activityUuid,
+            itemUuid: flagsData.itemUuid,
+            usageMessageUuid: flagsData.usageMessageUuid,
+            spellLevel: flagsData.spellLevel,
+            concentrationUuid: flagsData.concentrationUuid,
+            fallbackMessage: message
         });
-
-        if (sourceEffect && sourceEffect.transfer) {
-            debug(`Self Effect Application | Enabling transferred source effect "${sourceEffect.name}" (${sourceEffect.id}) on ${actor.name}`);
-            await sourceEffect.update({ disabled: false });
-            createdId = sourceEffect.id;
-
-            // Clean up any stale duplicate non-transfer effects created on actor by earlier module versions
-            // CRITICAL: NEVER delete or match a concentration effect!
-            const duplicateEffect = actor.effects.find(e =>
-                e !== sourceEffect &&
-                e.parent === actor &&
-                !e.transfer &&
-                !_isConcentrationEffect(e) &&
-                (e.origin === effectUuid || e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid || (e._stats?.[sourceKey] === effectUuid))
-            );
-            if (duplicateEffect) {
-                debug(`Self Effect Application | Cleaning up stale duplicate effect "${duplicateEffect.name}" (${duplicateEffect.id}) on ${actor.name}`);
-                await duplicateEffect.delete();
-            }
-        } else {
-            // Find existing non-transfer effect on actor:
-            // Match by source effect UUID, duplicateSource, module flag, or exact origin/name if disabled.
-            // CRITICAL: NEVER match a concentration effect!
-            const existingEffect = actor.effects.find(e => {
-                if (e.transfer) return false;
-                if (_isConcentrationEffect(e)) return false;
-
-                // Match by DnD5e's duplicateSource / compendiumSource
-                if (effectUuid && (e._stats?.[sourceKey] === effectUuid || e._stats?.duplicateSource === effectUuid || e._stats?.compendiumSource === effectUuid)) return true;
-
-                // Match by module flag
-                if (effectUuid && e.getFlag?.(MODULE_ID, "sourceEffectUuid") === effectUuid) return true;
-
-                // Match by exact origin UUID (ActiveEffect UUID, not item UUID)
-                if (effectUuid && e.origin === effectUuid) return true;
-
-                // Match by exact clean name ONLY IF disabled (re-enabling previously disabled effect)
-                if (e.disabled && cleanTargetName) {
-                    const eName = _cleanName(e.name || e.label);
-                    if (eName === cleanTargetName) return true;
-                }
-
-                return false;
-            });
-
-            if (existingEffect) {
-                debug(`Self Effect Application | Re-enabling existing effect "${existingEffect.name}" (${existingEffect.id}) on ${actor.name}`);
-                const baseDuration = foundry.utils.deepClone(effectData.duration ?? {});
-                delete baseDuration.startTime;
-                delete baseDuration.startRound;
-                delete baseDuration.startTurn;
-                baseDuration.expired = false;
-
-                const updateData = foundry.utils.mergeObject({
-                    _id: existingEffect.id,
-                    disabled: false,
-                    duration: baseDuration,
-                    start: ActiveEffect.implementation.getEffectStart?.() ?? { startTime: game.time.worldTime }
-                }, changes);
-
-                if (effectStatuses.length > 0) updateData.statuses = effectStatuses;
-                if (effectData.img) updateData.img = effectData.img;
-                if (effectData.name) updateData.name = effectData.name;
-
-                // Properly handle changes in both DnD5e 6.x (system.changes) and legacy (changes)
-                const baseChanges = sourceEffect?.system?.changes ?? effectData.system?.changes;
-                if (baseChanges) {
-                    let systemChanges = foundry.utils.deepClone(baseChanges);
-                    if (typeof ActiveEffect.implementation.forApplication === "function") {
-                        systemChanges = await ActiveEffect.implementation.forApplication(systemChanges, activity ?? item ?? actor, actor);
-                    }
-                    updateData.system = updateData.system ?? {};
-                    updateData.system.changes = systemChanges;
-                } else if (effectData.changes) {
-                    updateData.changes = foundry.utils.deepClone(effectData.changes);
-                }
-
-                await existingEffect.update(updateData);
-                createdId = existingEffect.id;
-            } else {
-                const baseData = sourceEffect?.toObject ? sourceEffect.toObject() : foundry.utils.deepClone(effectData);
-                delete baseData._id;
-
-                const data = foundry.utils.mergeObject(baseData, {
-                    disabled: false,
-                    transfer: false,
-                    origin: effectUuid || itemUuid || undefined,
-                    _stats: {
-                        [sourceKey]: effectUuid,
-                        [sourceEffect?.inCompendium ? "duplicateSource" : "compendiumSource"]: null
-                    }
-                });
-
-                if (effectStatuses.length > 0) data.statuses = effectStatuses;
-
-                foundry.utils.mergeObject(data, changes);
-
-                // For DnD5e 6.x, evaluate changes via ActiveEffect.implementation.forApplication
-                if (data.system?.changes && typeof ActiveEffect.implementation.forApplication === "function") {
-                    data.system.changes = await ActiveEffect.implementation.forApplication(
-                        data.system.changes,
-                        activity ?? item ?? actor,
-                        actor
-                    );
-                }
-
-                const [created] = await ActiveEffect.createDocuments([data], { parent: actor });
-                createdId = created?.id;
-            }
-        }
 
         debug(`Self Effect Application | ✓ Effect "${effectName}" applied to "${actor.name}" (id: ${createdId})`);
 

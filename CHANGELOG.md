@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.49.1] - 2026-10-23
+### Added
+- **Self Effect Application: Auto-Apply Effects**:
+  - New setting: a comma-separated list of effect names (e.g. `Rage, Bladesong`). When one of these effects would normally get a self-effect message, it is applied to your token straight away instead.
+  - The **Apply Effects** tray on the activity's chat card is collapsed when this happens.
+  - Effects not on the list still get the usual message with Apply / Undo buttons.
+
 ## [14.49.0] - 2026-10-23
 ### Changed
 - **Performance Improvements**:
