@@ -8,7 +8,7 @@
  * @introduced v14.31.0
  * @updated v14.46.4
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -302,7 +302,7 @@ export function shouldCollapseDamageTray(message, html) {
     }
 
     // Must have DnD5e's allowPlayerDamageTray enabled
-    const allowPlayerDamage = Boolean(game.settings.get("dnd5e", "allowPlayerDamageTray"));
+    const allowPlayerDamage = Boolean(getSetting("allowPlayerDamageTray", "dnd5e"));
     if (!allowPlayerDamage) {
         if (message) {
             message._nd5tShouldCollapseTray = false;
@@ -324,7 +324,7 @@ export function shouldCollapseDamageTray(message, html) {
 
     // Case 1: GM view
     if (game.user?.isGM) {
-        if (!game.settings.get(MODULE_ID, "enableAutoCollapseHostileDamageTrays")) {
+        if (!getSetting("enableAutoCollapseHostileDamageTrays")) {
             if (message) {
                 message._nd5tShouldCollapseTray = false;
                 if (el) message._nd5tHadHtml = true;
@@ -382,7 +382,7 @@ export function shouldCollapseDamageTray(message, html) {
         }
     } else {
         // Case 2: Player view
-        if (!game.settings.get(MODULE_ID, "enableAutoCollapsePlayerDamageTrays")) {
+        if (!getSetting("enableAutoCollapsePlayerDamageTrays")) {
             if (message) {
                 message._nd5tShouldCollapseTray = false;
                 if (el) message._nd5tHadHtml = true;
@@ -418,12 +418,6 @@ export function shouldCollapseDamageTray(message, html) {
     }
     return shouldCollapse;
 }
-
-/**
- * Backward-compatible alias for shouldCollapseDamageTray.
- * @type {typeof shouldCollapseDamageTray}
- */
-export const shouldCollapseHostileDamageTray = shouldCollapseDamageTray;
 
 /**
  * Resolve target actors associated with a damage message or its rendered markup.

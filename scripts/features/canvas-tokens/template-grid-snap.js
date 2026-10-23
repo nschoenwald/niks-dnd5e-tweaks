@@ -5,7 +5,7 @@
  * @introduced v14.5.0
  * @updated v14.48.4 (Ring templates snap like circles; hex grids snap round templates to hex centers)
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

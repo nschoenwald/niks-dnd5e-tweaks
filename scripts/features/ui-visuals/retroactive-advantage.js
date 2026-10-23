@@ -3,8 +3,9 @@
  * Description: Appends interactive controls to d20 roll chat cards allowing users to toggle rolls between Normal, Advantage, and Disadvantage retroactively without re-rolling existing dice.
  *
  * @introduced v14.29.0
+ * @updated v14.49.0 (Theme observer watches theme containers instead of the whole chat subtree)
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -215,7 +216,7 @@ export async function onSocketMessage(data) {
  */
 export function isChatDark(targetEl) {
     const dndTheme = game.settings.settings.has("dnd5e.chatLogTheme")
-        ? game.settings.get("dnd5e", "chatLogTheme")
+        ? getSetting("chatLogTheme", "dnd5e")
         : "";
     if (dndTheme === "dark") return true;
     if (dndTheme === "light") return false;
@@ -301,7 +302,7 @@ function insertButtons(message, html) {
     if (!diceRollEl) return;
 
     const currentMode = roll.options?.advantageMode ?? 0;
-    const hoverOnly = game.settings.get(MODULE_ID, "retroactiveAdvantageHoverOnly");
+    const hoverOnly = getSetting("retroactiveAdvantageHoverOnly");
     const isDark = isChatDark(diceRollEl);
     const themeClass = isDark ? "nd5t-theme-dark" : "nd5t-theme-light";
 
@@ -411,29 +412,35 @@ export function initRetroactiveAdvantage() {
             );
         }
 
-        // 3. Dynamically update existing retroactive advantage buttons whenever chat log or UI theme changes
+        // 3. Dynamically update existing retroactive advantage buttons whenever chat log or UI theme changes.
+        // Theme classes only live on body, #interface, #chat and the .chat-log / .chat-popout containers
+        // (see ChatLog5e.applyTheme), so those elements are observed individually. Observing the whole
+        // #chat subtree would fire on every class change of every rendered chat card.
         const observer = new MutationObserver(() => {
+            if (!isFeatureActive("enableRetroactiveAdvantage", "clientEnableRetroactiveAdvantage")) return;
             updateAllRetroAdvantageThemes();
         });
+        const observeThemeClass = (el) => {
+            if (el) observer.observe(el, { attributes: true, attributeFilter: ["class"] });
+        };
 
-        // Observe class changes on body, interface, and chat tab (including .chat-log inside #chat)
-        if (document.body) {
-            observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
-        }
-        const iface = document.getElementById("interface");
-        if (iface) {
-            observer.observe(iface, { attributes: true, attributeFilter: ["class"] });
-        }
-        const chatEl = document.getElementById("chat");
-        if (chatEl) {
-            observer.observe(chatEl, { attributes: true, subtree: true, attributeFilter: ["class"] });
-        }
+        observeThemeClass(document.body);
+        observeThemeClass(document.getElementById("interface"));
+        observeThemeClass(document.getElementById("chat"));
+        document.querySelectorAll(".chat-log").forEach(observeThemeClass);
+
+        // Re-attach if the chat log container is re-rendered
+        Hooks.on("renderChatLog", (app, html) => {
+            const el = html instanceof HTMLElement ? html : html?.[0];
+            el?.querySelectorAll?.(".chat-log").forEach(observeThemeClass);
+        });
 
         // Support popped-out chat logs
         Hooks.on("renderChatPopout", (app, html) => {
             const el = html instanceof HTMLElement ? html : html?.[0];
             if (el) {
-                observer.observe(el, { attributes: true, subtree: true, attributeFilter: ["class"] });
+                observeThemeClass(el);
+                el.querySelectorAll(".chat-log").forEach(observeThemeClass);
                 updateAllRetroAdvantageThemes();
             }
         });

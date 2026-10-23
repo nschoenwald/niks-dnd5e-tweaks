@@ -3,8 +3,9 @@
  * Description: Corrects character sheet formula column and activity rows for Pact Magic spells to reflect slot scaling.
  *
  * @introduced v14.46.0
+ * @updated v14.49.0 (Spellcasting and sheet wrappers skip work when the fix is disabled)
  */
-import { MODULE_ID, isFeatureActive, log } from "../../main.js";
+import { isFeatureActive, log } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -98,6 +99,9 @@ function patchActorPrepareSpellcasting() {
     patchMethod("CONFIG.Actor.documentClass.prototype._prepareSpellcasting", function patchedPrepareSpellcasting(wrapped, ...args) {
         const result = wrapped(...args);
 
+        // Runs on every actor data preparation; skip re-labelling spells when the fix is off.
+        if ( !isFeatureActive("enablePactSpellFormulaScaling", "clientEnablePactSpellFormulaScaling") ) return result;
+
         for ( const spell of this.itemTypes.spell ?? [] ) {
             updateSpellPactScaling(spell);
         }
@@ -112,7 +116,9 @@ function patchActorPrepareSpellcasting() {
  */
 function patchBaseActorSheetPrepareItemSpell() {
     patchMethod("dnd5e.applications.actor.BaseActorSheet.prototype._prepareItemSpell", async function patchedPrepareItemSpell(wrapped, item, ctx) {
-        updateSpellPactScaling(item);
+        if ( isFeatureActive("enablePactSpellFormulaScaling", "clientEnablePactSpellFormulaScaling") ) {
+            updateSpellPactScaling(item);
+        }
         return wrapped(item, ctx);
     }, "WRAPPER");
 }

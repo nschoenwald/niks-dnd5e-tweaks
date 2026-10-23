@@ -4,7 +4,7 @@
  *
  * @introduced v14.13.3
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
     "incapacitated",
@@ -135,7 +135,7 @@ function _onUpdateActiveEffect(effect, changes, options, userId) {
 function _processEffect(effect, userId) {
     if (game.user.id !== userId) return;
 
-    const featureEnabled = game.settings.get(MODULE_ID, "enableAutoEndRage");
+    const featureEnabled = getSetting("enableAutoEndRage");
     if (!featureEnabled) return;
 
     const actor = effect.parent;

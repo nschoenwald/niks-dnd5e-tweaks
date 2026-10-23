@@ -4,7 +4,7 @@
  *
  * @introduced v14.16.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 
 /**
  * Auto-Add Tokens to Combat & Roll Initiative
@@ -26,7 +26,7 @@ export function initAutoAddTokensToCombat() {
  */
 function _onCreateToken(tokenDocument, options, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoAddTokensToCombat")) return;
+        if (!getSetting("enableAutoAddTokensToCombat")) return;
 
         // Primary GM check to ensure single client execution
         const activeGM = game.users.primaryGM ?? game.users.activeGM;

@@ -6,7 +6,7 @@
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
  * @updated v14.48.0 (Native core combat turn marker displayed on legendary creatures during placeholder turns)
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 const DEFAULT_ICON = "icons/svg/combat.svg";
@@ -69,8 +69,8 @@ export function hasRemainingLegendaryActions(combat) {
  * @returns {Promise<Combat>}
  */
 async function _handleNextTurn(wrapped, ...args) {
-    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
-        || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
+    if (!getSetting("enableLegendaryActionPlaceholders")
+        || !getSetting("autoSkipEmptyLegendaryPlaceholders")
         || this.round === 0
         || !this.turns?.length) {
         return wrapped.apply(this, args);
@@ -142,8 +142,8 @@ async function _handleNextTurn(wrapped, ...args) {
  * @returns {Promise<Combat>}
  */
 async function _handlePreviousTurn(wrapped, ...args) {
-    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")
-        || !game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")
+    if (!getSetting("enableLegendaryActionPlaceholders")
+        || !getSetting("autoSkipEmptyLegendaryPlaceholders")
         || this.round === 0
         || !this.turns?.length) {
         return wrapped.apply(this, args);
@@ -239,7 +239,7 @@ async function _handlePreviousTurn(wrapped, ...args) {
  * @returns {boolean}
  */
 export function isLegendaryPlaceholderTurn(combat) {
-    if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return false;
+    if (!getSetting("enableLegendaryActionPlaceholders")) return false;
     if (!combat || (combat.round ?? 0) === 0 || !combat.turns?.length) return false;
     const currentCombatant = combat.combatant;
     return Boolean(currentCombatant?.getFlag(MODULE_ID, "isLegendaryPlaceholder"));
@@ -463,8 +463,8 @@ export function initLegendaryActionPlaceholders() {
     // 2. Secondary safety net for direct combat updates (e.g. from macros or external modules)
     Hooks.on("preUpdateCombat", (combat, changed, options, userId) => {
         try {
-            if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return;
-            if (!game.settings.get(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders")) return;
+            if (!getSetting("enableLegendaryActionPlaceholders")) return;
+            if (!getSetting("autoSkipEmptyLegendaryPlaceholders")) return;
             if (typeof changed.turn !== "number") return;
             if ((changed.round ?? combat.round) === 0) return;
 
@@ -627,7 +627,7 @@ export function initLegendaryActionPlaceholders() {
             if (!activeGM?.isSelf) return;
 
             // Check if the setting is enabled
-            if (!game.settings.get(MODULE_ID, "enableLegendaryActionPlaceholders")) return;
+            if (!getSetting("enableLegendaryActionPlaceholders")) return;
 
             // Check if there is at least one combatant with legendary actions
             const hasLegendary = combat.combatants.some(c => c.actor?.system?.resources?.legact?.max > 0);
@@ -697,14 +697,14 @@ export function initLegendaryActionPlaceholders() {
                 pcEffectiveInitiatives.set(pc.id, baseInit);
             }
 
-            const configuredIcon = game.settings.get(MODULE_ID, "legendaryActionPlaceholderIcon");
+            const configuredIcon = getSetting("legendaryActionPlaceholderIcon");
             const img = await _resolveIcon(configuredIcon);
 
             const newCombatants = playerCombatants.map(pc => {
                 const effectiveInit = pcEffectiveInitiatives.get(pc.id) ?? pc.initiative ?? 0;
                 return {
                     name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
-                    hidden: !game.settings.get(MODULE_ID, "showLegendaryActionPlaceholders"),
+                    hidden: !getSetting("showLegendaryActionPlaceholders"),
                     img,
                     initiative: Number((effectiveInit - PLACEHOLDER_OFFSET).toFixed(5)),
                     flags: {

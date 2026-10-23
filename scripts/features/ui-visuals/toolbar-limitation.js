@@ -3,10 +3,14 @@
  * Description: Limits the maximum visible button count in scene controls toolbars and makes them scrollable when exceeding the configured button threshold.
  *
  * @introduced v14.15.0
+ * @updated v14.49.0 (Capped layout retries and debounced resize handling)
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 let observer = null;
+
+/** Maximum number of animation frames to wait for a toolbar to be laid out before giving up. */
+const MAX_LAYOUT_RETRIES = 10;
 
 /**
  * Checks whether an element is or is inside a macro toolbar / hotbar.
@@ -90,7 +94,7 @@ function getToolbarContainers() {
  * Recalculates and applies toolbar button limitation to all scene control toolbars.
  */
 export function applyToolbarLimitation() {
-    if (!game.settings?.get(MODULE_ID, "enableToolbarLimitation")) {
+    if (!getSetting("enableToolbarLimitation")) {
         resetToolbars();
         return;
     }
@@ -103,7 +107,7 @@ export function applyToolbarLimitation() {
         }
     }
 
-    const limit = game.settings.get(MODULE_ID, "toolbarButtonLimit") || 20;
+    const limit = getSetting("toolbarButtonLimit") || 20;
     const toolbars = getToolbarContainers();
 
     for (const toolbar of toolbars) {
@@ -133,7 +137,9 @@ export function applyToolbarLimitation() {
  * Updates a single toolbar container to cap its height to `limit` buttons (with a partial 50% peek on the last item)
  * and enables scrolling with directional arrow indicators.
  */
-function updateSingleToolbar(toolbar, buttons, limit) {
+function updateSingleToolbar(toolbar, buttons, limit, retries = 0) {
+    // A re-render may have replaced this toolbar while a deferred retry was pending
+    if (!toolbar?.isConnected) return;
     if (isMacroToolbar(toolbar) || !buttons || buttons.length <= limit) {
         resetSingleToolbar(toolbar);
         return;
@@ -147,9 +153,13 @@ function updateSingleToolbar(toolbar, buttons, limit) {
     const prevRect = prevBtn.getBoundingClientRect();
     const peekRect = peekBtn.getBoundingClientRect();
 
-    // Defer calculation if elements are not yet positioned in DOM layout
+    // Defer calculation if elements are not yet positioned in DOM layout.
+    // Retries are capped so a hidden toolbar does not keep a per-frame loop alive;
+    // the MutationObserver / render hooks re-apply the limitation once it is shown.
     if (firstRect.height === 0 || peekRect.height === 0) {
-        requestAnimationFrame(() => updateSingleToolbar(toolbar, buttons, limit));
+        if (retries < MAX_LAYOUT_RETRIES) {
+            requestAnimationFrame(() => updateSingleToolbar(toolbar, buttons, limit, retries + 1));
+        }
         return;
     }
 
@@ -335,10 +345,12 @@ export function initToolbarLimitation() {
         applyToolbarLimitation();
     });
 
-    // Recalculate layout on window resize
-    window.addEventListener("resize", () => {
-        if (game.settings?.get(MODULE_ID, "enableToolbarLimitation")) {
+    // Recalculate layout on window resize, debounced so dragging the window edge
+    // does not force a layout measurement on every resize event
+    const onResize = foundry.utils.debounce(() => {
+        if (getSetting("enableToolbarLimitation")) {
             applyToolbarLimitation();
         }
-    });
+    }, 150);
+    window.addEventListener("resize", onResize, { passive: true });
 }

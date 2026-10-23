@@ -4,7 +4,7 @@
  *
  * @introduced v14.10.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 
 /**
  * Combat Experience Tracker
@@ -73,7 +73,7 @@ async function _setFlag(combat, data) {
 async function _onCombatStart(combat) {
     try {
         if (!game.users.activeGM?.isSelf) return;
-        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+        if (!getSetting("enableCombatExpTracker")) return;
 
         const npcs = {};
         const pcs = {};
@@ -109,7 +109,7 @@ async function _onCombatStart(combat) {
 async function _onCreateCombatant(combatant) {
     try {
         if (!game.users.activeGM?.isSelf) return;
-        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+        if (!getSetting("enableCombatExpTracker")) return;
 
         const combat = combatant.combat;
         if (!combat) return;
@@ -148,7 +148,7 @@ async function _onCreateCombatant(combatant) {
 async function _onDeleteCombat(combat) {
     try {
         if (!game.users.activeGM?.isSelf) return;
-        if (!game.settings.get(MODULE_ID, "enableCombatExpTracker")) return;
+        if (!getSetting("enableCombatExpTracker")) return;
 
         const flag = _getFlag(combat);
         if (!flag) return; // No tracker was running on this combat

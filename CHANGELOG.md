@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.49.0] - 2026-10-23
+### Changed
+- **Performance Improvements**:
+  - The module now remembers its settings instead of looking them up again every time. This noticeably reduces the module's overhead when the world loads and whenever actors or their effects update, especially in worlds with many modules or effects.
+  - Bloodied suppression, Disable Active Effect Expiry and Fix Pact Magic Formula Scaling do much less work on effects and spells they don't affect.
+  - **Roll Breakdown Details**: Scrolling back through old chat messages no longer builds every breakdown up front. Older breakdowns are built when you hover or open them.
+  - **Retroactive Advantage**: Buttons only update when the chat theme actually changes, not on every chat card change.
+  - **Chat Card Styling**: Resizing the sidebar re-positions advantage/disadvantage roll results more efficiently.
+- **Code Cleanup**:
+  - Removed unused code, styles and translation strings left over from earlier versions. Nothing changes in how the module looks or behaves.
+
+### Fixed
+- **Toolbar Limitation**: Fixed a hidden or re-rendered scene controls toolbar continuously re-checking its layout in the background. Resizing the window also no longer recalculates toolbars on every frame.
+
 ## [14.48.4] - 2026-10-23
 ### Changed
 - **Auto-Target Tokens in Spell Templates: Healing Targets Allies Only**:

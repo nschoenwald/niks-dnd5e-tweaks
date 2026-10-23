@@ -4,7 +4,7 @@
  *
  * @introduced v14.23.0
  */
-import { MODULE_ID, debug, log } from "../../main.js";
+import { getSetting, debug, log } from "../../main.js";
 
 /**
  * Auto-Unpause on Login
@@ -26,7 +26,7 @@ export function initAutoUnpauseOnLogin() {
 async function _handleAutoUnpause() {
     if (!game.user.isGM) return;
 
-    const mode = game.settings.get(MODULE_ID, "autoUnpauseOnLogin");
+    const mode = getSetting("autoUnpauseOnLogin");
     if (mode === "never" || !mode) return;
     if (!game.paused) return;
 

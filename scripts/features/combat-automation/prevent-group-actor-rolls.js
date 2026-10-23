@@ -7,7 +7,7 @@
  * @introduced v14.40.0
  */
 
-import { MODULE_ID, log, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

@@ -4,7 +4,7 @@
  *
  * @introduced v14.14.1
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../main.js";
 
 /**
  * Item, Spell & Feature Add: Choice Dialog & Compendium Filter

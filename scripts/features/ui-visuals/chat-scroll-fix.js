@@ -4,7 +4,7 @@
  *
  * @introduced v14.26.0
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../main.js";
 
 /**
  * Reliable Chat Log Auto-Scroll
@@ -157,16 +157,16 @@ function _watchChatLog(app, element) {
  * Initialize Reliable Chat Log Auto-Scroll.
  */
 export function initChatScrollFix() {
-    if (!game.settings.get(MODULE_ID, "enableChatScrollFix")) return;
+    if (!getSetting("enableChatScrollFix")) return;
 
     Hooks.on("renderChatLog", (app, element) => {
-        if (!game.settings.get(MODULE_ID, "enableChatScrollFix")) return;
+        if (!getSetting("enableChatScrollFix")) return;
         const el = element instanceof HTMLElement ? element : (element?.[0] ?? app.element);
         _watchChatLog(app, el);
     });
 
     Hooks.on("renderChatPopout", (app, element) => {
-        if (!game.settings.get(MODULE_ID, "enableChatScrollFix")) return;
+        if (!getSetting("enableChatScrollFix")) return;
         const el = element instanceof HTMLElement ? element : (element?.[0] ?? app.element);
         _watchChatLog(app, el);
     });
@@ -178,7 +178,7 @@ export function initChatScrollFix() {
 
     // When the current user sends a message, snap to bottom
     Hooks.on("createChatMessage", (message) => {
-        if (!game.settings.get(MODULE_ID, "enableChatScrollFix")) return;
+        if (!getSetting("enableChatScrollFix")) return;
         if (message.author?.id === game.user?.id) {
             for (const watcher of _activeWatchers.values()) {
                 watcher.scrollToBottom(true);
@@ -188,7 +188,7 @@ export function initChatScrollFix() {
 
     // When switching to the chat sidebar tab, ensure it is pinned to bottom if it was at bottom
     Hooks.on("changeSidebarTab", (tab) => {
-        if (!game.settings.get(MODULE_ID, "enableChatScrollFix")) return;
+        if (!getSetting("enableChatScrollFix")) return;
         const tabName = tab?.tabName;
         if (tabName === "chat") {
             const watcher = _activeWatchers.get(ui.chat);

@@ -4,7 +4,7 @@
  *
  * @introduced v14.32.0
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../main.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
 
 /**
@@ -323,21 +323,6 @@ function littleEndianToRGBTint(val) {
 }
 
 /**
- * Lightens a PIXI hex color (0xRRGGBB) by blending it toward white by `factor` (0=original, 1=white).
- * Used to tint ring sprites so the character's ring color is visible while metallic highlights
- * are preserved — darker ring colors need lightening so PIXI multiply-tint doesn't make them black.
- */
-function lightenColorForTint(hexColor, factor = 0.35) {
-    const r = (hexColor >> 16) & 0xFF;
-    const g = (hexColor >> 8) & 0xFF;
-    const b = hexColor & 0xFF;
-    const nr = Math.round(r + (255 - r) * factor);
-    const ng = Math.round(g + (255 - g) * factor);
-    const nb = Math.round(b + (255 - b) * factor);
-    return (nr << 16) | (ng << 8) | nb;
-}
-
-/**
  * Safely resolves the PIXI.Texture for a dynamic token ring frame or background asset.
  * Queries PIXI Assets cache, Pixi TextureCache, Foundry TextureLoader spritesheet cache,
  * and baseTexture frame slicing as reliable fallbacks.
@@ -420,7 +405,6 @@ function createGhostToken(sourceToken) {
 
         const cx = w / 2;
         const cy = h / 2;
-        const radius = Math.min(w, h) / 2;
 
         let bkgSprite = null;
         let ringSprite = null;
@@ -457,12 +441,10 @@ function createGhostToken(sourceToken) {
 
             // Determine ring frame and background disc names
             let ringName = sourceToken.ring?.ringName;
-            let bkgName = sourceToken.ring?.bkgName;
             if (!ringName) {
                 const size = Math.min(sourceToken.document?.width ?? 1, sourceToken.document?.height ?? 1);
                 const ringData = CONFIG.Token?.ring?.ringClass?.getRingDataBySize?.(size);
                 ringName = ringData?.ringName;
-                bkgName = ringData?.bkgName;
             }
             if (!ringName) {
                 const size = Math.min(sourceToken.document?.width ?? 1, sourceToken.document?.height ?? 1);
@@ -470,7 +452,6 @@ function createGhostToken(sourceToken) {
                 else if (size <= 1) ringName = "token-ring-med";
                 else if (size <= 2) ringName = "token-ring-large-huge";
                 else ringName = "token-ring-gargantuan";
-                bkgName = `${ringName}-bkg`;
             }
 
             // Color band dimensions from token ring configuration
@@ -604,7 +585,7 @@ function createGhostToken(sourceToken) {
         const indicator = new PIXI.Graphics();
         container.addChild(indicator);
 
-        return { container, sprite, indicator, bkgGraphics, bkgSprite, ringGraphics, ringSprite, colorBandGraphics, ringColor, bkgColor };
+        return { container, sprite, indicator, bkgGraphics, bkgSprite, ringGraphics, ringSprite, colorBandGraphics };
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Failed to create ghost token preview: ${err?.message || err}`);
         ui.notifications?.error(`Preview creation error: ${err.message}`);
@@ -702,7 +683,7 @@ function updateGhostAndHud(mousePos) {
  */
 function updateGhostVisuals(ghost, { isValid, inRange, isBlocked, sourceToken }) {
     if (!ghost) return;
-    const { sprite, indicator, bkgGraphics, ringGraphics, ringSprite, colorBandGraphics, ringColor, bkgColor } = ghost;
+    const { sprite, indicator, bkgGraphics, ringGraphics, ringSprite, colorBandGraphics } = ghost;
     if (!indicator) return;
 
     indicator.clear();

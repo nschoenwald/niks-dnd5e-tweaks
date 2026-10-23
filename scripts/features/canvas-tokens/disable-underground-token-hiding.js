@@ -4,7 +4,7 @@
  *
  * @introduced v14.10.0
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -28,7 +28,7 @@ import { patchMethod } from "../../utils/patch-helper.js";
  * Called during the module's "init" hook. Requires a reload to take effect.
  */
 export function initDisableUndergroundTokenHiding() {
-    if (!game.settings.get(MODULE_ID, "disableUndergroundTokenHiding")) return;
+    if (!getSetting("disableUndergroundTokenHiding")) return;
 
     patchMethod("CONFIG.Token.objectClass.prototype._refreshElevation", function patchedRefreshElevation(wrapped) {
         wrapped();

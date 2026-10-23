@@ -124,10 +124,6 @@ body.nd5t-sidebar-name-wrap .directory .directory-item .document-name a {
     font-size: 13px;
 }
 
-.nd5t-damage-prompt .nd5t-structured-header .nd5t-hit-type {
-    font-weight: bold;
-}
-
 .nd5t-damage-prompt .nd5t-structured-header .nd5t-hit-detail {
     opacity: 0.8;
     font-size: 0.9em;
@@ -4411,105 +4407,6 @@ body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .mes
     content: "Template" !important;
 }
 
-/* ── 5. Retroactive Advantage & Self-Effects ──────────────────────────────── */
-
-body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-retro-adv-bar button:not(:disabled):hover {
-    border-color: var(--color-highlights, #4493ad) !important;
-    box-shadow: 0 0 6px var(--color-shadow-highlight, rgba(68, 147, 173, 0.4)) !important;
-}
-
-body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-retro-adv-bar button.nd5t-retro-active {
-    border-color: var(--color-highlights, #4493ad) !important;
-    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
-}
-
-body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-concentration-badge {
-    border-color: var(--color-highlights-50, rgba(68, 147, 173, 0.5)) !important;
-    background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
-}
-
-body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-apply:hover {
-    background: var(--color-warm-2, #4493ad) !important;
-    border-color: var(--color-warm-3, #3c7892) !important;
-    color: var(--color-light-1, #ffffff) !important;
-}
-
-/* ── 6. Aggregate Short Rest Hit Dice Rolls (v14.41.0) ─────────────────────── */
-
-/* Aggregated Chat Card Header */
-.nd5t-aggregate-hitdice-card .nd5t-aggregate-hd-header {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.15));
-    margin-bottom: 8px;
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-title-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    font-size: var(--font-size-13, 13px);
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-badge-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-spent-badge,
-.nd5t-aggregate-hd-header .nd5t-hd-hp-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: var(--font-size-11, 11px);
-    font-weight: 600;
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-spent-badge {
-    background: rgba(200, 100, 50, 0.15);
-    border: 1px solid rgba(200, 100, 50, 0.3);
-    color: var(--color-text-dark-primary, inherit);
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-hp-badge {
-    background: rgba(40, 150, 60, 0.15);
-    border: 1px solid rgba(40, 150, 60, 0.3);
-    color: var(--dnd5e-color-success, #2a8a40);
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-meta-row {
-    font-size: var(--font-size-10, 10px);
-    font-style: italic;
-    opacity: 0.85;
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-chips-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 2px;
-}
-
-.nd5t-aggregate-hd-header .nd5t-hd-chip {
-    font-size: var(--font-size-11, 11px);
-    padding: 1px 6px;
-    background: rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-    border-radius: 3px;
-}
-
-.nd5t-aggregate-hitdice-card .nd5t-hd-rolls-breakdown {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
 /* ==========================================================================
    Detailed Roll Breakdown Overlay (v14.43.0)
    ========================================================================== */
@@ -4700,19 +4597,10 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
     flex-direction: column;
 }
 
-.nd5t-roll-breakdown .nd5t-modifier .nd5t-mod-value,
-.nd5t-roll-breakdown .nd5t-modifier .nd5t-mod-formula {
-    font-family: var(--font-primary, "Signika", sans-serif);
-    font-size: var(--font-size-13, 13px);
-    font-weight: 700;
-}
-
-.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
 .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal {
     color: var(--color-text-primary, #191813);
 }
 
-.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
 .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal {
     color: var(--dnd5e-color-failure, #8b0000);
 }
@@ -4835,10 +4723,7 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-thunder { background-color: #63a4d8; }
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-healing { background-color: #48d689; }
 .nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-temphp { background-color: #38bdf8; }
-.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-all,
-.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-any,
-.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-untyped,
-.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-pure { background-color: #e2e8f0; }
+.nd5t-roll-breakdown .nd5t-damage-icon.nd5t-dmg-untyped { background-color: #e2e8f0; }
 
 .nd5t-roll-breakdown .nd5t-section-subtotal {
     font-family: var(--font-primary, "Signika", sans-serif);
@@ -4897,7 +4782,6 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
 }
 
 .nd5t-roll-breakdown,
-.nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-mod-value,
 .nd5t-roll-breakdown .nd5t-modifier.positive .nd5t-subtotal,
 .nd5t-roll-breakdown .nd5t-type-badge,
 .nd5t-roll-breakdown .nd5t-section-subtotal { color: var(--nd5t-bd-text); }
@@ -4919,7 +4803,6 @@ body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-self-effect-card button.nd5t-btn-a
 .nd5t-roll-breakdown .nd5t-die-roll.min,
 .nd5t-roll-breakdown .nd5t-die-roll.failure,
 .nd5t-roll-breakdown .nd5t-base-die.fumble .nd5t-value,
-.nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-mod-value,
 .nd5t-roll-breakdown .nd5t-modifier.negative .nd5t-subtotal { color: var(--nd5t-bd-failure); }
 
 

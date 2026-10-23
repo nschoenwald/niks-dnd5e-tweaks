@@ -8,7 +8,6 @@
   "ND5T.AutoRollConcentration.EndingConcentration": "Ending Concentration...",
   "ND5T.AutoRollConcentration.ConcentratingOn": "Concentrating on:",
 
-  "ND5T.AutoRollInitiative.PromptTitle": "Initiative Roll Required",
   "ND5T.AutoRollInitiative.PromptMessage": "{name} was added to combat. Please roll initiative.",
   "ND5T.AutoRollInitiative.RollInitiative": "Roll Initiative",
   "ND5T.AutoRollInitiative.InitiativeRolled": "Initiative Rolled",
@@ -44,9 +43,6 @@
   "ND5T.DamagePrompt.Undo": "Undo",
   "ND5T.DamagePrompt.UndoHint": "Undo this damage application",
 
-  "ND5T.DamagePrompt.Structured.Header": "Incoming Damage",
-  "ND5T.DamagePrompt.Structured.HeaderHealing": "Incoming Healing",
-  "ND5T.DamagePrompt.Structured.HeaderTempHP": "Incoming Temp HP",
   "ND5T.DamagePrompt.Structured.ColType": "Type",
   "ND5T.DamagePrompt.Structured.ColRaw": "Raw",
   "ND5T.DamagePrompt.Structured.ColModifier": "Modifier",
@@ -56,9 +52,6 @@
   "ND5T.DamagePrompt.Structured.Immune": "Immune",
   "ND5T.DamagePrompt.Structured.Resist": "Resist ½",
   "ND5T.DamagePrompt.Structured.Vulnerable": "Vuln ×2",
-  "ND5T.DamagePrompt.Structured.HitDescription": "",
-  "ND5T.DamagePrompt.Structured.CritDescription": "",
-  "ND5T.DamagePrompt.Structured.GrazeDescription": "",
   "ND5T.DamagePrompt.Structured.SaveDescription": "Saving Throw Required",
 
   "ND5T.CombatExpTracker.SpeakerAlias": "Combat XP Tracker",
@@ -82,7 +75,6 @@
   "ND5T.SelfEffectApplication.Applied": "Effect Applied",
   "ND5T.SelfEffectApplication.Undo": "Undo",
   "ND5T.SelfEffectApplication.UndoHint": "Undo the application of {effectName}",
-  "ND5T.SelfEffectApplication.Undoing": "Undoing...",
   "ND5T.SelfEffectApplication.UnknownEffect": "Unknown Effect",
   "ND5T.SelfEffectApplication.ActorNotFound": "Could not find the actor to apply the effect to.",
   "ND5T.SelfEffectApplication.ApplyError": "Failed to apply effect. See the console for details.",
@@ -103,32 +95,12 @@
   "ND5T.ItemSheetAttunementTag.ClickToAttune": "Click to attune",
   "ND5T.ItemSheetAttunementTag.ClickToUnattune": "Click to unattune",
 
-  "ND5T.CarolingianTheme.Name": "Carolingian UI Theme Harmony",
-  "ND5T.CarolingianTheme.Hint": "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
-
   "ND5T.ClearTargets.ButtonTitleGM": "Clear All Targets (All Players)",
   "ND5T.ClearTargets.ButtonTitlePlayer": "Clear My Targets",
 
-  "ND5T.WeaponMasteries.Name": "Weapon Mastery Automation",
-  "ND5T.WeaponMasteries.Hint": "Automatically applies weapon masteries to targets when hit by attacks. Step 1 automates Slow and Sap active effects.",
-  "ND5T.WeaponMasteries.ClientName": "Weapon Mastery Automation (Personal)",
-  "ND5T.WeaponMasteries.ClientHint": "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
-  "ND5T.WeaponMasteries.SapIconName": "Sap Effect Icon",
-  "ND5T.WeaponMasteries.SapIconHint": "Icon used for the Sap weapon mastery active effect.",
-  "ND5T.WeaponMasteries.SlowIconName": "Slow Effect Icon",
-  "ND5T.WeaponMasteries.SlowIconHint": "Icon used for the Slow weapon mastery active effect.",
-
-  "ND5T.RollBreakdownDetails.Name": "Detailed Roll Breakdown Overlay",
-  "ND5T.RollBreakdownDetails.Hint": "Replaces unlabeled roll breakdown numbers in chat popovers with a comprehensive breakdown showing base dice, attribute bonuses, proficiency, magic bonuses, and active effects.",
-  "ND5T.RollBreakdownDetails.ClientName": "Detailed Roll Breakdown Overlay (Personal)",
-  "ND5T.RollBreakdownDetails.ClientHint": "Enables detailed roll breakdown popovers on your client (if enabled by the GM).",
   "ND5T.RollBreakdownDetails.Total": "Total",
   "ND5T.DamageType.Pure": "Pure",
 
-  "ND5T.ConditionalDamage.Name": "Conditional Damage Bonuses",
-  "ND5T.ConditionalDamage.Hint": "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
-  "ND5T.ConditionalDamage.ClientName": "Conditional Damage Bonuses (Personal)",
-  "ND5T.ConditionalDamage.ClientHint": "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
   "ND5T.ConditionalDamage.Hex.Label": "Hex (+1d6 Necrotic)",
   "ND5T.ConditionalDamage.HuntersMark.Label": "Hunter's Mark (+1d6 Force)",
   "ND5T.ConditionalDamage.SneakAttack.Label": "Sneak Attack (+{formula})",

@@ -6,7 +6,7 @@
  * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
  * @updated v14.48.4 (Heal activities target allies only, "Choose Targets" damage activities target opponents only)
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

@@ -11,7 +11,7 @@
  *
  * @introduced v14.42.0
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
@@ -125,8 +125,8 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
         return;
     }
 
-    const sapIconSetting = game.settings.get(MODULE_ID, "masterySapIcon") || DEFAULT_SAP_ICON;
-    const slowIconSetting = game.settings.get(MODULE_ID, "masterySlowIcon") || DEFAULT_SLOW_ICON;
+    const sapIconSetting = getSetting("masterySapIcon") || DEFAULT_SAP_ICON;
+    const slowIconSetting = getSetting("masterySlowIcon") || DEFAULT_SLOW_ICON;
 
     const icon = mastery === "sap"
         ? normalizeIcon(sapIconSetting, DEFAULT_SAP_ICON)
@@ -420,7 +420,7 @@ async function _onRollAttack(rolls, data) {
 async function _onUpdateCombat(combat, changed, options, userId) {
     const primaryGM = game.users.primaryGM ?? game.users.activeGM;
     if (!primaryGM?.isSelf) return;
-    if (!game.settings.get(MODULE_ID, "enableWeaponMasteries")) return;
+    if (!getSetting("enableWeaponMasteries")) return;
     if (changed.turn === undefined && changed.round === undefined) return;
 
     try {
@@ -475,7 +475,7 @@ async function _onUpdateCombat(combat, changed, options, userId) {
 async function _onDeleteCombat(combat) {
     const primaryGM = game.users.primaryGM ?? game.users.activeGM;
     if (!primaryGM?.isSelf) return;
-    if (!game.settings.get(MODULE_ID, "enableWeaponMasteries")) return;
+    if (!getSetting("enableWeaponMasteries")) return;
 
     try {
         for (const combatant of combat.combatants ?? []) {

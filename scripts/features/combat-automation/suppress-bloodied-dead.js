@@ -3,8 +3,9 @@
  * Description: Suppresses and removes the Bloodied condition from tokens that possess the Dead condition, preventing conflicting status overlays.
  *
  * @introduced v14.31.0
+ * @updated v14.49.0 (isSuppressed checks for bloodied effects before reading settings)
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -34,12 +35,10 @@ import { patchMethod } from "../../utils/patch-helper.js";
  */
 export function isBloodiedEffect(effect) {
     if (!effect) return false;
-    const bloodiedId = CONFIG.ActiveEffect?.documentClass?.ID?.BLOODIED ?? "dnd5ebloodied";
-    return effect.id === bloodiedId
-        || effect.id === "dnd5ebloodied"
-        || effect.id === "dnd5ebloodied000"
-        || effect.statuses?.has("bloodied")
-        || effect.getFlag?.("dnd5e", "statusId") === "bloodied";
+    const id = effect.id;
+    if (id === "dnd5ebloodied" || id === "dnd5ebloodied000") return true;
+    if (id && id === CONFIG.ActiveEffect?.documentClass?.ID?.BLOODIED) return true;
+    return Boolean(effect.statuses?.has("bloodied") || effect.flags?.dnd5e?.statusId === "bloodied");
 }
 
 /**
@@ -83,11 +82,11 @@ export function willActorBeDead(actor) {
     if (!hp || (hp.value ?? 0) > 0) return false;
 
     // HP is 0 (or less). Check if the actor will be marked dead.
-    if (game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) {
+    if (getSetting("enableAutoStatusZeroHP")) {
         const isPlayer = actor.type === "character" || actor.hasPlayerOwner;
         const isImportant = _isImportantNPC(actor);
         const statusKey = isPlayer ? "autoStatusZeroHP_playerStatus" : "autoStatusZeroHP_npcStatus";
-        let configuredStatus = game.settings.get(MODULE_ID, statusKey);
+        let configuredStatus = getSetting(statusKey);
         if (isImportant && configuredStatus === "dead") {
             configuredStatus = "unconscious";
         }
@@ -157,24 +156,20 @@ export async function removeBloodiedEffect(actor) {
  * Initialize the Suppress Bloodied on Dead Tokens feature.
  */
 export function initSuppressBloodiedDead() {
-    const ActiveEffect5e = CONFIG.ActiveEffect?.documentClass;
-    const Actor5e = CONFIG.Actor?.documentClass;
-
-    // 1. Patch ActiveEffect5e.prototype.isSuppressed with re-entrancy protection
+    // 1. Patch ActiveEffect5e.prototype.isSuppressed with re-entrancy protection.
+    // This getter runs for every effect whenever `effect.active` is read, so the cheap
+    // bloodied check comes first and the re-entrancy flag is only touched for bloodied effects.
     patchMethod("CONFIG.ActiveEffect.documentClass.prototype.isSuppressed#get", function patchedIsSuppressed(wrapped) {
+        if (wrapped()) return true;
+        if (!isBloodiedEffect(this)) return false;
+        if (!getSetting("enableSuppressBloodiedWhileDead")) return false;
+
+        // isActorDead() reads `active` on sibling effects (including this one), which re-enters this getter.
         if (this._suppressCheckActive) return false;
         this._suppressCheckActive = true;
         try {
-            if (wrapped()) return true;
-            if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return false;
-
-            if (isBloodiedEffect(this)) {
-                const actor = this.target ?? this.parent;
-                if (actor instanceof Actor && (isActorDead(actor) || willActorBeDead(actor))) {
-                    return true;
-                }
-            }
-            return false;
+            const actor = this.target ?? this.parent;
+            return actor instanceof Actor && (isActorDead(actor) || willActorBeDead(actor));
         } finally {
             this._suppressCheckActive = false;
         }
@@ -182,7 +177,7 @@ export function initSuppressBloodiedDead() {
 
     // 2. Patch Actor5e.prototype.updateBloodied
     patchMethod("CONFIG.Actor.documentClass.prototype.updateBloodied", function patchedUpdateBloodied(wrapped, options) {
-        if (game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) {
+        if (getSetting("enableSuppressBloodiedWhileDead")) {
             if (isActorDead(this) || willActorBeDead(this)) {
                 removeBloodiedEffect(this);
                 return;
@@ -193,7 +188,7 @@ export function initSuppressBloodiedDead() {
 
     // 3. Pre-create hook: block creating bloodied on dead or dying actors
     Hooks.on("preCreateActiveEffect", (effect, data, options, userId) => {
-        if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return;
+        if (!getSetting("enableSuppressBloodiedWhileDead")) return;
         if (!isBloodiedEffect(effect)) return;
         const actor = effect.parent;
         if (actor instanceof Actor && (isActorDead(actor) || willActorBeDead(actor))) {
@@ -204,7 +199,7 @@ export function initSuppressBloodiedDead() {
 
     // 4. Hook createActiveEffect: when "dead" is created, delete bloodied
     Hooks.on("createActiveEffect", (effect, options, userId) => {
-        if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return;
+        if (!getSetting("enableSuppressBloodiedWhileDead")) return;
         if (!game.user.isActiveGM) return;
         if (!effect.statuses?.has("dead")) return;
 
@@ -216,7 +211,7 @@ export function initSuppressBloodiedDead() {
 
     // 5. Hook deleteActiveEffect: when "dead" is deleted, re-evaluate bloodied
     Hooks.on("deleteActiveEffect", (effect, options, userId) => {
-        if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return;
+        if (!getSetting("enableSuppressBloodiedWhileDead")) return;
         if (!game.user.isActiveGM) return;
         if (!effect.statuses?.has("dead")) return;
 
@@ -231,7 +226,7 @@ export function initSuppressBloodiedDead() {
 
     // 6. Hook updateActor: if actor has dead status, clean up any lingering bloodied
     Hooks.on("updateActor", (actor, changes, options, userId) => {
-        if (!game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) return;
+        if (!getSetting("enableSuppressBloodiedWhileDead")) return;
         if (!game.user.isActiveGM) return;
 
         if (isActorDead(actor)) {

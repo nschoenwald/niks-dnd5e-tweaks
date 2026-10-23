@@ -4,7 +4,7 @@
  *
  * @introduced v14.27.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -49,7 +49,7 @@ export function initDisableActiveEffectExpiry() {
     _patchIsExpiryTrackable();
 
     Hooks.once("ready", () => {
-        const enabled = game.settings.get(MODULE_ID, "disableActiveEffectExpiry");
+        const enabled = getSetting("disableActiveEffectExpiry");
         if (enabled) {
             updateV14ExpiryAction(true);
         }
@@ -68,7 +68,7 @@ function _patchPrepareDuration() {
         "CONFIG.ActiveEffect.documentClass.prototype._prepareDuration",
         function(wrapped, duration, context) {
             duration = wrapped(duration, context);
-            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+            if (getSetting("disableActiveEffectExpiry")) {
                 if (duration && typeof duration === "object") {
                     duration.expired = false;
                 }
@@ -87,7 +87,7 @@ function _patchOnUpdate() {
     patchMethod(
         "CONFIG.ActiveEffect.documentClass.prototype._onUpdate",
         function(wrapped, data, options, userId) {
-            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+            if (getSetting("disableActiveEffectExpiry")) {
                 if (data?.duration?.expired) {
                     data = foundry.utils.deepClone(data);
                     data.duration.expired = false;
@@ -107,7 +107,7 @@ function _patchCombatOnExit() {
     patchMethod(
         "CONFIG.Combat.documentClass.prototype._onExit",
         async function(wrapped, combatant) {
-            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+            if (getSetting("disableActiveEffectExpiry")) {
                 debug("Combat5e._onExit | Suppressed dnd5e active effect deletion on combat exit");
                 const superOnExit = Object.getPrototypeOf(CONFIG.Combat.documentClass.prototype)?._onExit;
                 if (superOnExit) return superOnExit.call(this, combatant);
@@ -131,7 +131,7 @@ function _patchIsExpiryEvent() {
     patchMethod(
         "CONFIG.ActiveEffect.documentClass.prototype.isExpiryEvent",
         function(wrapped, event, context = {}) {
-            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+            if (getSetting("disableActiveEffectExpiry")) {
                 return false;
             }
             return wrapped(event, context);
@@ -148,7 +148,7 @@ function _patchIsExpiryTrackable() {
     patchMethod(
         "CONFIG.ActiveEffect.documentClass.prototype.isExpiryTrackable#get",
         function(wrapped) {
-            if (game.settings?.get(MODULE_ID, "disableActiveEffectExpiry")) {
+            if (getSetting("disableActiveEffectExpiry")) {
                 return false;
             }
             return wrapped();

@@ -4,7 +4,7 @@
  *
  * @introduced v14.36.0
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { debug, log, isFeatureActive } from "../../main.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 

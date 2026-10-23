@@ -4,7 +4,7 @@
  *
  * @introduced v14.10.0
  */
-import { MODULE_ID, debug, log } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -62,7 +62,7 @@ function _patchChatMessageVisibility() {
         function(wrapped) {
             if (this.flags?.[MODULE_ID]?.damagePrompt) {
                 // If a non-GM player has suppressed damage prompts, hide completely
-                if (!game.user?.isGM && Boolean(game.settings.get(MODULE_ID, "suppressDamagePrompt"))) {
+                if (!game.user?.isGM && Boolean(getSetting("suppressDamagePrompt"))) {
                     return false;
                 }
 
@@ -98,7 +98,7 @@ function _patchChatMessageVisibility() {
  */
 function _waitForDiceSoNice(messageId) {
     // Check if the setting is enabled
-    if (!game.settings.get(MODULE_ID, "waitForDiceSoNice")) return Promise.resolve();
+    if (!getSetting("waitForDiceSoNice")) return Promise.resolve();
 
     // Check if Dice So Nice is active
     if (!game.modules.get("dice-so-nice")?.active) return Promise.resolve();
@@ -154,8 +154,8 @@ async function _onCreateChatMessage(message) {
         }
 
         // Check if at least one damage prompt mode is enabled
-        const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
-        const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
+        const playerPromptEnabled = getSetting("enablePlayerDamagePrompt");
+        const gmPromptEnabled = playerPromptEnabled && getSetting("enableGmDamagePrompt");
         if (!playerPromptEnabled && !gmPromptEnabled) return;
 
         // Skip if midi-qol is active and configured to auto-apply damage
@@ -179,7 +179,7 @@ async function _onCreateChatMessage(message) {
         const activityType = message.system?.activity?.type ?? activity?.type ?? message.getFlag("dnd5e", "activity.type");
         if (rollType !== "damage" && rollType !== "healing") return;
 
-        const nonAttackPromptEnabled = game.settings.get(MODULE_ID, "enableNonAttackDamagePrompt");
+        const nonAttackPromptEnabled = getSetting("enableNonAttackDamagePrompt");
         if (activityType && activityType !== "attack" && !nonAttackPromptEnabled) return;
 
         // Only trigger on public rolls — skip private (GM), blind, and self rolls
@@ -309,9 +309,9 @@ async function _onCreateChatMessage_Attack(message) {
         }
 
         // Check if at least one damage prompt mode is enabled
-        const playerPromptEnabled = game.settings.get(MODULE_ID, "enablePlayerDamagePrompt");
-        const gmPromptEnabled = playerPromptEnabled && game.settings.get(MODULE_ID, "enableGmDamagePrompt");
-        const grazePromptEnabled = game.settings.get(MODULE_ID, "enableGrazeDamagePrompt");
+        const playerPromptEnabled = getSetting("enablePlayerDamagePrompt");
+        const gmPromptEnabled = playerPromptEnabled && getSetting("enableGmDamagePrompt");
+        const grazePromptEnabled = getSetting("enableGrazeDamagePrompt");
         if (!playerPromptEnabled && !gmPromptEnabled && !grazePromptEnabled) return;
 
         // Only process attack rolls from attack activities
@@ -347,7 +347,6 @@ async function _onCreateChatMessage_Attack(message) {
         const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
             ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
             ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
 
         // Prefer targets from the originating (usage) message, fall back to the attack message
         const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
@@ -911,7 +910,7 @@ function _getWhisperTargets(actor, tokenDoc = null) {
     if (!actor && !tokenDoc) return [];
     const owners = game.users.filter(u => _isUserOwner(actor, tokenDoc, u)).map(u => u.id);
 
-    const includeGM = game.settings.get(MODULE_ID, "damagePromptVisibility") === "gmAndPlayer";
+    const includeGM = getSetting("damagePromptVisibility") === "gmAndPlayer";
     if (includeGM) {
         const gms = game.users.filter(u => u.isGM).map(u => u.id);
         owners.push(...gms);
@@ -1474,10 +1473,10 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     const buttonsHtml = _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode);
 
     // Choose layout based on setting
-    const layout = game.settings.get(MODULE_ID, "damagePromptLayout");
+    const layout = getSetting("damagePromptLayout");
     let bodyHtml;
     if (layout === "structured") {
-        bodyHtml = _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, details, effectiveDamage, traitText);
+        bodyHtml = _buildStructuredLayout(isCritical, grazeMode, activityType, sourceItem, details, effectiveDamage);
     } else {
         bodyHtml = _buildClassicLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, damageByType, traitText);
     }
@@ -1638,8 +1637,8 @@ function _buildClassicLayout(tokenName, attackTotal, isCritical, grazeMode, acti
  * Shows a per-type damage breakdown table with raw, modifier, and effective columns.
  * @returns {string} HTML string for the card content body.
  */
-function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, activityType, sourceItem, isPureHealing, details, effectiveDamage, traitText) {
-    // Header line: "TokenName — Hit Type"
+function _buildStructuredLayout(isCritical, grazeMode, activityType, sourceItem, details, effectiveDamage) {
+    // Header line: hit type badge and detail
     let hitType = "";
     let hitDetail = "";
     let hitTypeClass = "";
@@ -1659,16 +1658,6 @@ function _buildStructuredLayout(tokenName, attackTotal, isCritical, grazeMode, a
         if (sourceItem && sourceItem.parent) {
             hitDetail = `${sourceItem.parent.name} — ${sourceItem.name}`;
         }
-    }
-
-    // Determine the section header
-    let sectionHeader;
-    if (isPureHealing) {
-        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.HeaderHealing");
-    } else if (Object.keys(details).length > 0 && details.every(d => d.type === "temphp")) {
-        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.HeaderTempHP");
-    } else {
-        sectionHeader = game.i18n.localize("ND5T.DamagePrompt.Structured.Header");
     }
 
     // Build header HTML
@@ -1948,7 +1937,7 @@ function _bindApplyDamageButton(message, element) {
     prompt.dataset.bound = "true";
 
     // Allow individual players to suppress damage prompts (defense-in-depth)
-    if (!game.user.isGM && game.settings.get(MODULE_ID, "suppressDamagePrompt")) {
+    if (!game.user.isGM && getSetting("suppressDamagePrompt")) {
         if (el) {
             el.style.display = "none";
             el.remove?.();
@@ -2123,7 +2112,6 @@ export function onSocketMessage(data) {
 
         debug("Player Damage Prompt | Socket received: damagePromptUnapplied for message", data.messageId);
         _unmarkMessageApplied(data.messageId);
-        return;
     }
 }
 

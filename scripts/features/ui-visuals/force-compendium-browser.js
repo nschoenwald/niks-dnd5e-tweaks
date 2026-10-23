@@ -4,14 +4,14 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 export function initForceCompendiumBrowser() {
     // Optimization: Don't attach a hook at all if the current user is a GM.
     if (game.user.isGM) return;
 
     const interceptCompendiumClick = (sidebar) => {
-        if (!game.settings.get(MODULE_ID, "enableForceCompendiumBrowser")) return;
+        if (!getSetting("enableForceCompendiumBrowser")) return;
         const compendiumButton = sidebar.querySelector('#sidebar-tabs [data-tab="compendium"]');
 
         if (compendiumButton) {
@@ -19,7 +19,7 @@ export function initForceCompendiumBrowser() {
             compendiumButton.dataset.nd5tForced = "true";
 
             compendiumButton.addEventListener("click", (event) => {
-                if (event.shiftKey && game.settings.get(MODULE_ID, "allowShiftClickCompendiumSidebar")) {
+                if (event.shiftKey && getSetting("allowShiftClickCompendiumSidebar")) {
                     debug("Shift-click detected: bypassing forced compendium browser.");
                     return; // Allow the default behavior (opening the standard tab)
                 }

@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 
 const STATE = {
   enabled: false,
@@ -27,7 +27,7 @@ export function enableAutoClearMovementHistory() {
 }
 
 class AutoClearController {
-  static get enabledSetting() { return game.settings.get(MODULE_ID, "enableAutoClearMovementHistory"); }
+  static get enabledSetting() { return getSetting("enableAutoClearMovementHistory"); }
 
   static updateFromSettings() {
     if (!game.settings.settings.has(MODULE_ID + ".enableAutoClearMovementHistory")) return;

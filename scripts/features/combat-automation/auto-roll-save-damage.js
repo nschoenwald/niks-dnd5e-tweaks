@@ -4,7 +4,7 @@
  *
  * @introduced v14.7.0
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
 
 /**
@@ -27,8 +27,6 @@ import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
  * damage) and running both would produce duplicate damage rolls.
  */
 
-let _hookId = null;
-
 /**
  * Hook handler for dnd5e.postUseActivity.
  * @param {Activity} activity       The activity that was just used.
@@ -42,7 +40,7 @@ function _onPostUseActivity(activity, usageConfig, results) {
     if (activity.type !== "save") return;
     if (!activity.damage?.parts?.length) return;
 
-    const autoRollStatic = game.settings.get(MODULE_ID, "autoRollStaticDamage");
+    const autoRollStatic = getSetting("autoRollStaticDamage");
     const hasDice = activityHasDamageDice(activity);
     const shouldConfigure = !autoRollStatic || hasDice;
 
@@ -86,7 +84,7 @@ export function initAutoRollSaveDamage() {
         log("Auto-Roll Save Damage | midi-qol detected — feature disabled to avoid duplicate damage rolls.");
         return;
     }
-    _hookId = Hooks.on("dnd5e.postUseActivity", _onPostUseActivity);
+    Hooks.on("dnd5e.postUseActivity", _onPostUseActivity);
     debug("Auto-Roll Save Damage | Initialized");
 }
 

@@ -4,7 +4,7 @@
  *
  * @introduced v14.12.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 
 /**
  * Mage Slayer — Concentration Breaker
@@ -178,7 +178,7 @@ function _getAttackerActor(options) {
  */
 function _processDamageForMageSlayer(defenderActor, amount, options) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
+        if (!getSetting("enableMageSlayerConcentration")) return;
 
         // Skip if this damage event was already processed (e.g. by preApplyDamage)
         if (options?._nd5tMageSlayerProcessed) return;
@@ -246,7 +246,7 @@ function _onApplyDamage(defenderActor, amount, options) {
  */
 function _onPreRollConcentration(config, _dialog, _message) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableMageSlayerConcentration")) return;
+        if (!getSetting("enableMageSlayerConcentration")) return;
 
         const actor = config.subject ?? config.actor;
         if (!actor) return;

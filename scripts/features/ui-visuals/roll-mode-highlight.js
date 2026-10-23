@@ -4,7 +4,7 @@
  *
  * @introduced v14.25.0
  */
-import { MODULE_ID, debug, isFeatureActive } from "../../main.js";
+import { getSetting, debug, isFeatureActive } from "../../main.js";
 
 /**
  * Roll Mode Highlight
@@ -75,11 +75,11 @@ function _onRenderDialog(app, element) {
         const enabled = isFeatureActive("enableRollModeHighlight", "clientEnableRollModeHighlight");
         if (!enabled) return;
 
-        const style = game.settings.get(MODULE_ID, "rollModeHighlightStyle");
+        const style = getSetting("rollModeHighlightStyle");
         if (style === "none") return;
 
-        const highlightNormal = game.settings.get(MODULE_ID, "rollModeHighlightNormal");
-        const customColor     = game.settings.get(MODULE_ID, "rollModeHighlightColor");
+        const highlightNormal = getSetting("rollModeHighlightNormal");
+        const customColor     = getSetting("rollModeHighlightColor");
         const calculatedAction = _getCalculatedAction(app);
 
         debug(`Roll Mode Highlight | Calculated action: ${calculatedAction}, style: ${style}, highlightNormal: ${highlightNormal}, color: ${customColor}`);

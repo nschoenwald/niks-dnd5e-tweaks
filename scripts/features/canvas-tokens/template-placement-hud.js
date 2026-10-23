@@ -4,7 +4,7 @@
  *
  * @introduced v14.35.0
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { debug, log, isFeatureActive } from "../../main.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
@@ -13,7 +13,6 @@ import { patchMethod } from "../../utils/patch-helper.js";
  */
 let activeHudSession = null;
 let activeTemplateActivity = null;
-let activeTemplateConfig = null;
 let activeTemplateTimestamp = 0;
 let pendingCloseTimeout = null;
 let _emanationHoverRaf = null;
@@ -41,7 +40,6 @@ export function initTemplatePlacementHUD() {
     // 1. DnD5e hook fired right before template placement begins
     Hooks.on("dnd5e.preCreateMeasuredTemplate", (activity, config) => {
         activeTemplateActivity = activity;
-        activeTemplateConfig = config;
         activeTemplateTimestamp = Date.now();
         debug(`Captured pending template placement activity: "${activity?.item?.name || activity?.name}"`);
 
@@ -143,7 +141,6 @@ function _wrapRegionLayerPlaceRegion() {
             if (!result || regionCount <= 1 || regionIndex >= regionCount - 1) {
                 _scheduleHudClose();
                 activeTemplateActivity = null;
-                activeTemplateConfig = null;
             }
         }
     }, "MIXED");
@@ -477,7 +474,6 @@ function _autoAttachSelfEmanation(activity, data, options) {
         const regionCount = options._regionCount ?? 1;
         if (regionCount <= 1 || regionIndex >= regionCount - 1) {
             activeTemplateActivity = null;
-            activeTemplateConfig = null;
         }
 
         return document;

@@ -4,7 +4,7 @@
  *
  * @introduced v14.11.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { hasBoonOfTheIronMind } from "./auto-roll-concentration.js";
 
@@ -70,7 +70,7 @@ export function initAutoEndConcentration() {
  */
 function _patchPromptConcentrationEnd() {
     patchMethod("CONFIG.Actor.documentClass.prototype.promptConcentrationEnd", async function patchedPromptConcentrationEnd(wrapped, ...args) {
-        const enabled = game.settings.get(MODULE_ID, "enableAutoEndConcentration");
+        const enabled = getSetting("enableAutoEndConcentration");
         if (enabled) {
             debug("Auto-End Concentration | Suppressed system promptConcentrationEnd (auto-end is active)");
             return null;
@@ -123,7 +123,7 @@ function _onUpdateActiveEffect(effect, changes, options, userId) {
 function _processEffect(effect, userId) {
     if (game.user.id !== userId) return;
 
-    const concEnabled = game.settings.get(MODULE_ID, "enableAutoEndConcentration");
+    const concEnabled = getSetting("enableAutoEndConcentration");
     if (!concEnabled) return;
 
     debug(`Auto-End Concentration | Effect changed: ${effect.name}`);

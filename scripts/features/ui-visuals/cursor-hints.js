@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 export class CursorHints {
     constructor() {
@@ -107,7 +107,7 @@ let onKeyDownBound = null;
 let onKeyUpBound = null;
 
 export function enableCursorHints() {
-    if (!cursorHints && game.settings.get(MODULE_ID, "enableCursorHints")) {
+    if (!cursorHints && getSetting("enableCursorHints")) {
         cursorHints = new CursorHints();
         _addKeyListeners();
     }
@@ -135,7 +135,7 @@ function _removeKeyListeners() {
 }
 
 function _handleKeyDown(event) {
-    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
+    if (!cursorHints || !getSetting("enableCursorHints")) return;
     // Don't trigger if user is typing in a text box
     if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.isContentEditable) return;
 
@@ -145,7 +145,7 @@ function _handleKeyDown(event) {
 }
 
 function _handleKeyUp(event) {
-    if (!cursorHints || !game.settings.get(MODULE_ID, "enableCursorHints")) return;
+    if (!cursorHints || !getSetting("enableCursorHints")) return;
     
     if (_matchesAction(DND5E_ACTIONS.SKIP, event)) cursorHints.setModifierState("hintSkip", false);
     if (_matchesAction(DND5E_ACTIONS.ADVANTAGE, event)) cursorHints.setModifierState("hintAdvantage", false);

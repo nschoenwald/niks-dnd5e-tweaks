@@ -5,8 +5,9 @@
  *              +2 PB, +1d4 Bless, -2 Exhaustion 1). Supports both d20 checks/saves/attacks and damage rolls.
  *
  * @introduced v14.43.0
+ * @updated v14.49.0 (Reuses actor roll data, lazy breakdowns for older messages, gated document listeners)
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -828,7 +829,7 @@ function detectActiveEffectSource(actor, bonusValue, processConfig, rollConfig =
     const effects = actor.appliedEffects ?? Array.from(actor.effects.values());
     const bonusStr = String(bonusValue ?? "").toLowerCase().trim();
     if (!bonusStr) return null;
-    const rollData = actor.getRollData ? actor.getRollData() : {};
+    const rollData = _getCachedRollData(actor);
 
     const hookNames = (Array.isArray(processConfig?.hookNames) ? processConfig.hookNames : []).map(h => String(h).toLowerCase());
     const rollType = String(rollConfig?.options?.type ?? rollConfig?.data?.roll?.type ?? processConfig?.options?.type ?? "").toLowerCase();
@@ -969,6 +970,33 @@ function detectActiveEffectSource(actor, bonusValue, processConfig, rollConfig =
 }
 
 /**
+ * Per-task cache of actor roll data. `Actor5e#getRollData` builds a fresh object graph on every call,
+ * and breakdown generation looks up effect sources once per dice row and modifier. Roll data is only
+ * read here, so a single copy per actor is shared until the current synchronous task completes.
+ * @type {WeakMap<Actor, object>|null}
+ */
+let _rollDataCache = null;
+
+/**
+ * Get roll data for an actor, reusing the copy built earlier in the same task.
+ * @param {Actor5e} actor
+ * @returns {object}
+ */
+function _getCachedRollData(actor) {
+    if (!actor?.getRollData) return {};
+    if (!_rollDataCache) {
+        _rollDataCache = new WeakMap();
+        queueMicrotask(() => { _rollDataCache = null; });
+    }
+    let data = _rollDataCache.get(actor);
+    if (!data) {
+        data = actor.getRollData();
+        _rollDataCache.set(actor, data);
+    }
+    return data;
+}
+
+/**
  * Find the name of an active effect providing a specific damage bonus on an actor.
  *
  * @param {Actor5e|null} actor
@@ -990,7 +1018,7 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
     const effects = actor.appliedEffects ?? (actor.effects ? Array.from(actor.effects.values()) : []);
     if (!effects.length) return null;
 
-    const rollData = options.rollData ?? (actor.getRollData ? actor.getRollData() : {});
+    const rollData = options.rollData ?? _getCachedRollData(actor);
     const claimedEffectIds = options.claimedEffectIds;
 
     const targetDamageType = String(
@@ -2254,6 +2282,13 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
 let isInitialized = false;
 
 /**
+ * Server time when the world became ready; messages created after this are eagerly pre-cached on render.
+ * Uses server time because ChatMessage timestamps are server-assigned.
+ * @type {number}
+ */
+let _sessionStart = Infinity;
+
+/**
  * Trigger lazy rendering for a popover element if not yet populated.
  * @param {HTMLElement} popoverEl
  * @param {ChatMessage} [message=null]
@@ -2302,10 +2337,13 @@ export function initRollBreakdownDetails() {
     // Tier 2 & 3: Enhanced breakdown rendering for BasicRoll (d20 rolls, checks, saves)
     wrapBasicRollGetTooltip();
 
-    // Pre-cache breakdown for newly rendered chat messages (Foundry V14 hook)
+    // Pre-cache breakdown for chat messages created during this session (Foundry V14 hook).
+    // Older messages rendered while scrolling back through the log are left to the lazy
+    // hover / toggle handlers below, so loading history does not build every breakdown up front.
     Hooks.on("renderChatMessageHTML", (message, html) => {
         if (!game.ready) return;
         if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+        if (!(message?.timestamp >= _sessionStart)) return;
         const popovers = html?.querySelectorAll?.(".roll-breakdown[popover]") ?? [];
         for (const popover of popovers) {
             _ensurePopoverBreakdown(popover, message);
@@ -2314,6 +2352,7 @@ export function initRollBreakdownDetails() {
 
     // Pre-cache recent historical messages once the world and messages collection are fully ready
     Hooks.once("ready", () => {
+        _sessionStart = (game.time?.serverTime ?? Date.now()) - 5000;
         if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
         const popovers = Array.from(document.querySelectorAll("#chat-log .roll-breakdown[popover]")).slice(-30);
         for (const popover of popovers) {
@@ -2336,10 +2375,12 @@ export function initRollBreakdownDetails() {
     if (typeof document !== "undefined") {
         document.addEventListener("beforetoggle", (event) => {
             if (event.newState !== "open") return;
+            if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
             _ensurePopoverBreakdown(event.target);
         }, { capture: true });
 
         document.addEventListener("pointerdown", (event) => {
+            if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
             const btn = event.target?.closest?.('.icon-row button.dice-roll, .icon-row button[popovertarget], .icon-row [popovertarget]');
             if (!btn) return;
             const targetId = btn.getAttribute?.("popovertarget");
@@ -2352,6 +2393,7 @@ export function initRollBreakdownDetails() {
 
         // Pre-cache on hover so opening the popover is instantaneous and flicker-free
         document.addEventListener("pointerover", (event) => {
+            if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
             const row = event.target?.closest?.(".icon-row, .chat-message");
             if (!row) return;
             const popovers = row.querySelectorAll?.(".roll-breakdown[popover]") ?? [];

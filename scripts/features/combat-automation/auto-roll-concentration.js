@@ -4,7 +4,7 @@
  *
  * @introduced v14.12.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -223,7 +223,7 @@ export function getConcentratingItems(actor) {
  */
 function _patchChallengeConcentration() {
     patchMethod("CONFIG.Actor.documentClass.prototype.challengeConcentration", async function patchedChallengeConcentration(wrapped, options = {}, ...args) {
-        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration")) {
+        if (getSetting("enableAutoRollConcentration")) {
             if (hasBoonOfTheIronMind(this)) {
                 debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping concentration challenge prompt.`);
                 return null;
@@ -274,7 +274,7 @@ function _patchChallengeConcentration() {
  */
 function _patchRollConcentration() {
     patchMethod("CONFIG.Actor.documentClass.prototype.rollConcentration", async function patchedRollConcentration(wrapped, ...args) {
-        if (game.settings.get(MODULE_ID, "enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
+        if (getSetting("enableAutoRollConcentration") && hasBoonOfTheIronMind(this)) {
             debug(`Auto-Roll Concentration | ${this.name} has Boon of the Iron Mind — skipping rollConcentration.`);
             return null;
         }
@@ -294,7 +294,7 @@ function _patchRollConcentration() {
  */
 function _onPreUpdateActor(actor, change, options, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+        if (!getSetting("enableAutoRollConcentration")) return;
         if (!hasBoonOfTheIronMind(actor)) return;
 
         foundry.utils.setProperty(options, "dnd5e.concentrationCheck", false);
@@ -314,7 +314,7 @@ function _onPreUpdateActor(actor, change, options, userId) {
  */
 function _onPreRollConcentration(config, dialog, message) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+        if (!getSetting("enableAutoRollConcentration")) return;
 
         const actor = config.subject ?? config.actor ?? (message?.speaker?.actor ? game.actors.get(message.speaker.actor) : null);
         if (!actor || !hasBoonOfTheIronMind(actor)) return;
@@ -335,7 +335,7 @@ function _onPreRollConcentration(config, dialog, message) {
  */
 async function _onDamageActor(actor, changes, update, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoRollConcentration")) return;
+        if (!getSetting("enableAutoRollConcentration")) return;
 
         // Bug 3 fix: respect the dnd5e system-level "disable concentration tracking" setting.
         // If the GM has disabled concentration tracking globally, we should not auto-roll either.
@@ -393,11 +393,11 @@ async function _onDamageActor(actor, changes, update, userId) {
 
         debug(`Auto-Roll Concentration | ${actor.name} took ${damage} damage while concentrating. Rolling concentration save (DC ${dc}).`);
 
-        const fastForwardSetting = game.settings.get(MODULE_ID, "autoRollConcentrationFastForward");
+        const fastForwardSetting = getSetting("autoRollConcentrationFastForward");
         const fastForward = fastForwardSetting === "all"
             || (fastForwardSetting === "npcsOnly" && actor.type === "npc")
             || (fastForwardSetting === "playersOnly" && actor.type === "character");
-        const autoEndOnFailure = game.settings.get(MODULE_ID, "autoEndConcentrationOnFailure");
+        const autoEndOnFailure = getSetting("autoEndConcentrationOnFailure");
 
         await new Promise(resolve => setTimeout(resolve, 200));
 

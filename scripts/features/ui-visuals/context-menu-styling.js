@@ -4,7 +4,7 @@
  *
  * @introduced v14.34.0
  */
-import { MODULE_ID, debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

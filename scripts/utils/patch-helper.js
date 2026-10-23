@@ -6,6 +6,7 @@
  * registered by different features of this module onto the same target without libWrapper errors.
  *
  * @introduced v14.47.0
+ * @updated v14.49.0 (Single-handler fast path for patched methods and getters)
  */
 import { MODULE_ID, debug } from "../main.js";
 
@@ -31,6 +32,12 @@ const _originalMethods = new Map();
  * @returns {any}
  */
 function _executeChain(wrappers, origFn, context, args) {
+    // Fast path: most targets carry a single handler, so skip the recursive dispatcher.
+    // Several patched targets are hot getters (e.g. ActiveEffect#isSuppressed) that run
+    // for every effect during data preparation.
+    if (wrappers.length === 1) {
+        return wrappers[0].call(context, (...nextArgs) => origFn.apply(context, nextArgs.length ? nextArgs : args), ...args);
+    }
     function dispatch(i, currentArgs) {
         if (i < wrappers.length) {
             const currentWrapper = wrappers[i];
@@ -170,7 +177,9 @@ export function patchMethod(target, fn, type = "MIXED", options = {}) {
 
         const originalGet = descriptor.get;
         const wrappedGet = function () {
-            return _executeChain(chain, (...innerArgs) => originalGet.apply(this, innerArgs), this, []);
+            // Getters take no arguments, so the single-handler case avoids the generic chain entirely.
+            if (chain.length === 1) return chain[0].call(this, () => originalGet.call(this));
+            return _executeChain(chain, () => originalGet.call(this), this, []);
         };
         wrappedGet._niksWrapped = true;
         wrappedGet._niksOriginal = originalGet;

@@ -4,7 +4,7 @@
  *
  * @introduced v14.7.0
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
 
@@ -105,7 +105,7 @@ async function _applyZeroHPStatus(actor, statusId) {
         }
     }
 
-    if (statusId === "dead" && game.settings.get(MODULE_ID, "enableSuppressBloodiedWhileDead")) {
+    if (statusId === "dead" && getSetting("enableSuppressBloodiedWhileDead")) {
         await removeBloodiedEffect(actor);
     }
 }
@@ -212,7 +212,7 @@ async function _undefeatCombatant(actor) {
  */
 function _patchUpdateDowned() {
     patchMethod("CONFIG.Actor.documentClass.prototype.updateDowned", async function patchedUpdateDowned(wrapped, ...args) {
-        if (game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) {
+        if (getSetting("enableAutoStatusZeroHP")) {
             debug(`Auto-Status | Suppressing native updateDowned for ${this.name} (overridden by niks-dnd5e-tweaks)`);
             return;
         }
@@ -230,7 +230,7 @@ function _patchUpdateDowned() {
  */
 function _onPreUpdateActor(actor, change, options, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
+        if (!getSetting("enableAutoStatusZeroHP")) return;
 
         // React when HP or death save failures change.
         const hpChanged = foundry.utils.getProperty(change, "system.attributes.hp.value") !== undefined;
@@ -260,7 +260,7 @@ function _onPreUpdateActor(actor, change, options, userId) {
  */
 function _onUpdateActor(actor, change, options, userId) {
     try {
-        if (!game.settings.get(MODULE_ID, "enableAutoStatusZeroHP")) return;
+        if (!getSetting("enableAutoStatusZeroHP")) return;
 
         // Only the active primary GM client should process this to avoid duplicate updates.
         const activeGM = game.users.primaryGM ?? game.users.activeGM;
@@ -335,7 +335,7 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
         const statusKey = type === "player"
             ? "autoStatusZeroHP_playerStatus"
             : "autoStatusZeroHP_npcStatus";
-        let statusId = game.settings.get(MODULE_ID, statusKey);
+        let statusId = getSetting(statusKey);
 
         // NPCs marked as "important" can roll death saving throws; they should not
         // be marked as dead at 0 HP, but only as unconscious (until 3 death saves have failed).
@@ -355,7 +355,7 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
             const combatKey = type === "player"
                 ? "autoStatusZeroHP_playerCombat"
                 : "autoStatusZeroHP_npcCombat";
-            const combatAction = game.settings.get(MODULE_ID, combatKey);
+            const combatAction = getSetting(combatKey);
             await _handleCombatActionZeroHP(actor, combatAction);
         } else {
             debug(`Auto-Status | ${actor.name} is an important NPC — skipping combat tracker actions`);

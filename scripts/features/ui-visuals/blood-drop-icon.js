@@ -4,7 +4,7 @@
  *
  * @introduced v14.1.0
  */
-import { MODULE_ID, log } from "../../main.js";
+import { MODULE_ID, getSetting } from "../../main.js";
 
 /**
  * Blood Drop Bloodied Icon
@@ -29,7 +29,7 @@ import { MODULE_ID, log } from "../../main.js";
  * @see https://github.com/foundryvtt/dnd5e/blob/master/module/config.mjs
  */
 export function initBloodDropIcon() {
-    if (!game.settings.get(MODULE_ID, "enableBloodDropIcon")) return;
+    if (!getSetting("enableBloodDropIcon")) return;
 
     // Override the bloodied status icon — must use .img (not .icon)
     CONFIG.DND5E.bloodied.img = `modules/${MODULE_ID}/assets/bloodDrop.svg`;

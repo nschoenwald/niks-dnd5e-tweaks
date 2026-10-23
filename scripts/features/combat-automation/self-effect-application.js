@@ -4,7 +4,7 @@
  *
  * @introduced v14.13.0
  */
-import { MODULE_ID, debug, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
 
 /**
  * Self Effect Application
@@ -328,7 +328,7 @@ function _isBlacklisted(activity, results) {
  * @returns {boolean}
  */
 function _isAlwaysPromptFeature(activity) {
-    const rawList = game.settings.get(MODULE_ID, "selfEffectAlwaysPromptFeatures");
+    const rawList = getSetting("selfEffectAlwaysPromptFeatures");
     if (!rawList || typeof rawList !== "string") return false;
 
     const list = rawList

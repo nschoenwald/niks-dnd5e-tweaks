@@ -4,7 +4,7 @@
  *
  * @introduced v14.9.0
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -31,7 +31,7 @@ export function initCleanSheetTitles() {
     patchMethod(
         "foundry.applications.api.DocumentSheetV2.prototype.title#get",
         function(wrapped) {
-            if (!game.settings.get(MODULE_ID, "enableCleanSheetTitles")) {
+            if (!getSetting("enableCleanSheetTitles")) {
                 return wrapped();
             }
             return _buildTitle(this, wrapped);
@@ -56,7 +56,7 @@ function _buildTitle(sheet, wrapped = null) {
         const name = doc.name;
         if (!name) return _fallbackTitle(sheet, wrapped);
 
-        const format = game.settings.get(MODULE_ID, "cleanSheetTitles_format");
+        const format = getSetting("cleanSheetTitles_format");
 
         if (format === "name") return name;
 

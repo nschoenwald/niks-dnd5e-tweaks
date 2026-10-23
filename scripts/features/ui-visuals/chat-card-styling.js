@@ -3,8 +3,9 @@
  * Description: Enhances DnD5e chat cards with color-coded borders, distinct theme styling for light and dark modes, enlarged action buttons with text labels, roll badges, and multi-dice breakdown indicators.
  *
  * @introduced v14.28.0
+ * @updated v14.49.0 (Batched roll result layout measurement)
  */
-import { MODULE_ID, log, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../main.js";
 
 /**
  * Roll types that this feature applies card-specific styling to.
@@ -442,12 +443,18 @@ function _getRollResultResizeObserver(win = window) {
     const WinResizeObserver = win.ResizeObserver ?? ResizeObserver;
     if (!_rollResultResizeObservers.has(win)) {
         const observer = new WinResizeObserver((entries) => {
+            const buttons = [];
             for (const entry of entries) {
                 const btn = entry.target;
-                if (btn instanceof win.HTMLElement) {
-                    _adjustButtonRollResult(btn);
+                if (!(btn instanceof win.HTMLElement)) continue;
+                // Drop buttons whose chat card has been removed from the DOM
+                if (!btn.isConnected) {
+                    observer.unobserve(btn);
+                    continue;
                 }
+                buttons.push(btn);
             }
+            _adjustButtonsRollResults(buttons);
         });
         _rollResultResizeObservers.set(win, observer);
     }
@@ -455,7 +462,7 @@ function _getRollResultResizeObserver(win = window) {
 }
 
 /**
- * Adjust the horizontal position of the roll result inside a dice-roll button.
+ * Adjust the horizontal position of the roll result inside dice-roll buttons.
  *
  * Normally, .result is centered horizontally in button.dice-roll.
  * However, when multiple d20 dice are shown (advantage, disadvantage, Elven
@@ -468,75 +475,78 @@ function _getRollResultResizeObserver(win = window) {
  * If there is sufficient clearance, no shift is applied and the result remains
  * perfectly centered.
  *
- * @param {HTMLButtonElement} btn
+ * Resets all transforms first, then measures every button, then writes the new transforms,
+ * so a whole batch costs a single forced layout instead of one per button (relevant when a
+ * sidebar resize notifies many observed buttons).
+ *
+ * @param {Iterable<HTMLButtonElement>} buttons
  */
-function _adjustButtonRollResult(btn) {
-    if (!btn || !btn.isConnected) return;
-
-    const resultEl = btn.querySelector(".result");
-    if (!resultEl) return;
-
-    const diceEl = btn.querySelector(".nd5t-d20-multi, .d20die");
-    if (!diceEl) {
-        resultEl.style.removeProperty("transform");
-        return;
+function _adjustButtonsRollResults(buttons) {
+    // Write phase 1: reset transforms so we measure the natural unshifted layout
+    const jobs = [];
+    for (const btn of buttons) {
+        if (!btn || !btn.isConnected) continue;
+        const resultEl = btn.querySelector(".result");
+        if (!resultEl) continue;
+        const diceEl = btn.querySelector(".nd5t-d20-multi, .d20die");
+        if (!diceEl) {
+            resultEl.style.removeProperty("transform");
+            continue;
+        }
+        resultEl.style.transform = "";
+        jobs.push({ btn, resultEl, diceEl, iconsEl: btn.querySelector(".icons") });
     }
+    if (!jobs.length) return;
 
-    // Reset transform first so we measure the natural unshifted layout
-    resultEl.style.transform = "";
+    // Read phase: measure everything against one layout
+    const shifts = jobs.map(_computeRollResultShift);
 
+    // Write phase 2: apply shifts
+    for (let i = 0; i < jobs.length; i++) {
+        const shift = shifts[i];
+        jobs[i].resultEl.style.transform = shift ? `translateX(${shift}px)` : "";
+    }
+}
+
+/**
+ * Measure how far a roll result must move to clear the d20 icons.
+ * Performs layout reads only.
+ *
+ * @param {{btn: HTMLElement, resultEl: HTMLElement, diceEl: HTMLElement, iconsEl: HTMLElement|null}} job
+ * @returns {number} Signed horizontal shift in px (negative = left), or 0 for none.
+ */
+function _computeRollResultShift({ btn, resultEl, diceEl, iconsEl }) {
     const btnRect = btn.getBoundingClientRect();
     const resultRect = resultEl.getBoundingClientRect();
     const diceRect = diceEl.getBoundingClientRect();
 
     // If unrendered / hidden (0 size), nothing to measure
-    if (btnRect.width === 0 || resultRect.width === 0 || diceRect.width === 0) return;
+    if (btnRect.width === 0 || resultRect.width === 0 || diceRect.width === 0) return 0;
 
     const isRTL = getComputedStyle(btn).direction === "rtl";
     const minGap = 6; // px minimum breathing room between roll result and dice
-
-    const iconsEl = btn.querySelector(".icons");
     const iconsRect = (iconsEl && iconsEl.offsetWidth > 0) ? iconsEl.getBoundingClientRect() : null;
 
     if (!isRTL) {
         // LTR: icons on left, dice on right.
         // Overlap occurs if result's right boundary + minGap extends past dice's left boundary.
         const overlap = (resultRect.right + minGap) - diceRect.left;
-
-        if (overlap > 0) {
-            // Overlap detected: push to the left, bounded by the left icons/edge.
-            const leftBound = iconsRect ? (iconsRect.right + minGap) : (btnRect.left + 8 + minGap);
-            const maxLeftShift = Math.max(0, resultRect.left - leftBound);
-            const shift = Math.min(Math.ceil(overlap), Math.floor(maxLeftShift));
-
-            if (shift > 0) {
-                resultEl.style.transform = `translateX(-${shift}px)`;
-            } else {
-                resultEl.style.transform = "";
-            }
-        } else {
-            // Sufficient space: keep natural centered position
-            resultEl.style.transform = "";
-        }
-    } else {
-        // RTL: dice on left, icons on right.
-        // Overlap occurs if dice's right boundary + minGap extends past result's left boundary.
-        const overlap = (diceRect.right + minGap) - resultRect.left;
-
-        if (overlap > 0) {
-            const rightBound = iconsRect ? (iconsRect.left - minGap) : (btnRect.right - 8 - minGap);
-            const maxRightShift = Math.max(0, rightBound - resultRect.right);
-            const shift = Math.min(Math.ceil(overlap), Math.floor(maxRightShift));
-
-            if (shift > 0) {
-                resultEl.style.transform = `translateX(${shift}px)`;
-            } else {
-                resultEl.style.transform = "";
-            }
-        } else {
-            resultEl.style.transform = "";
-        }
+        if (overlap <= 0) return 0;
+        // Overlap detected: push to the left, bounded by the left icons/edge.
+        const leftBound = iconsRect ? (iconsRect.right + minGap) : (btnRect.left + 8 + minGap);
+        const maxLeftShift = Math.max(0, resultRect.left - leftBound);
+        const shift = Math.min(Math.ceil(overlap), Math.floor(maxLeftShift));
+        return shift > 0 ? -shift : 0;
     }
+
+    // RTL: dice on left, icons on right.
+    // Overlap occurs if dice's right boundary + minGap extends past result's left boundary.
+    const overlap = (diceRect.right + minGap) - resultRect.left;
+    if (overlap <= 0) return 0;
+    const rightBound = iconsRect ? (iconsRect.left - minGap) : (btnRect.right - 8 - minGap);
+    const maxRightShift = Math.max(0, rightBound - resultRect.right);
+    const shift = Math.min(Math.ceil(overlap), Math.floor(maxRightShift));
+    return shift > 0 ? shift : 0;
 }
 
 /**
@@ -565,16 +575,15 @@ function _adjustRollResultPositions(root) {
     const win = root.ownerDocument?.defaultView ?? window;
     const observer = _getRollResultResizeObserver(win);
 
+    const ready = [];
+    const deferred = [];
     for (const btn of multiButtons) {
         observer?.observe(btn);
-        if (btn.isConnected && btn.offsetWidth > 0) {
-            _adjustButtonRollResult(btn);
-        } else {
-            requestAnimationFrame(() => {
-                if (btn.isConnected) _adjustButtonRollResult(btn);
-            });
-        }
+        if (btn.isConnected && btn.offsetWidth > 0) ready.push(btn);
+        else deferred.push(btn);
     }
+    _adjustButtonsRollResults(ready);
+    if (deferred.length) requestAnimationFrame(() => _adjustButtonsRollResults(deferred));
 }
 
 /**
@@ -610,8 +619,8 @@ export function updateChatCardSaveAbilityShorthand() {
         }
     }
     // Re-adjust roll result button layouts to fit new label widths
-    for (const msgEl of document.querySelectorAll(".chat-log .message, .chat-popout .message")) {
-        _adjustRollResultPositions(msgEl);
+    for (const root of document.querySelectorAll(".chat-log, .chat-popout")) {
+        _adjustRollResultPositions(root);
     }
 }
 

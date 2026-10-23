@@ -4,7 +4,7 @@
  *
  * @introduced v14.19.0
  */
-import { MODULE_ID, debug, log } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 /**
  * Auto-Prompt & Auto-Roll Attack Damage on Hit
@@ -38,8 +38,8 @@ function _getActorRole(actor) {
  * @returns {boolean}
  */
 function _shouldAutoRoll(role) {
-    if (role === "players" && !game.settings.get(MODULE_ID, "clientEnableAutoRollAttackDamage")) return false;
-    const setting = game.settings.get(MODULE_ID, "autoRollAttackDamage");
+    if (role === "players" && !getSetting("clientEnableAutoRollAttackDamage")) return false;
+    const setting = getSetting("autoRollAttackDamage");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;
     if (setting === "players" && role === "players") return true;
@@ -52,8 +52,8 @@ function _shouldAutoRoll(role) {
  * @returns {boolean}
  */
 function _shouldPrompt(role) {
-    if (role === "players" && !game.settings.get(MODULE_ID, "clientEnableAttackDamagePrompt")) return false;
-    const setting = game.settings.get(MODULE_ID, "promptForAttackDamage");
+    if (role === "players" && !getSetting("clientEnableAttackDamagePrompt")) return false;
+    const setting = getSetting("promptForAttackDamage");
     if (setting === "all") return true;
     if (setting === "npcs" && role === "npcs") return true;
     if (setting === "players" && role === "players") return true;
@@ -401,7 +401,7 @@ async function _onCreateChatMessage(message, options, userId) {
         const { ability, ammunitionItem: ammunition, mode: attackMode } = message.system ?? {};
 
         // Determine whether to configure (show dialog) or auto-roll immediately
-        const autoRollStatic = game.settings.get(MODULE_ID, "autoRollStaticDamage");
+        const autoRollStatic = getSetting("autoRollStaticDamage");
         const hasDice = activityHasDamageDice(resolvedActivity, { ability, ammunition, attackMode, isCritical });
         const shouldConfigure = !autoRoll && (!autoRollStatic || hasDice);
 
@@ -460,7 +460,7 @@ async function _onCreateChatMessage(message, options, userId) {
  */
 function _onPreRollDamage(config, dialog, message) {
     if (dialog.configure === false) return;
-    if (!game.settings.get(MODULE_ID, "autoRollStaticDamage")) return;
+    if (!getSetting("autoRollStaticDamage")) return;
 
     if (isRollConfigPurelyStatic(config)) {
         debug("Auto-Roll Static Damage | Suppressing damage/healing dialog for deterministic roll", {

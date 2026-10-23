@@ -4,7 +4,7 @@
  *
  * @introduced v14.17.0
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { log, debug, isFeatureActive } from "../../main.js";
 
 /**
  * Sheet Pop-out Button

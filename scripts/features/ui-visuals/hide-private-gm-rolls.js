@@ -4,7 +4,7 @@
  *
  * @introduced v14.30.0
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -27,7 +27,7 @@ export function initHidePrivateGMRolls() {
         "CONFIG.ChatMessage.documentClass.prototype.visible#get",
         function(wrapped) {
             // If the feature is disabled, use default Foundry behavior
-            if (!game.settings.get(MODULE_ID, "enableHidePrivateGMRolls")) {
+            if (!getSetting("enableHidePrivateGMRolls")) {
                 return wrapped();
             }
 
@@ -74,7 +74,7 @@ export function initHidePrivateGMRolls() {
 
     // Defense-in-depth: if any other module manually rendered or injected an invisible message
     Hooks.on("renderChatMessageHTML", (message, html) => {
-        if (!game.settings.get(MODULE_ID, "enableHidePrivateGMRolls")) return;
+        if (!getSetting("enableHidePrivateGMRolls")) return;
         if (game.user?.isGM) return;
         if (!message.visible) {
             const el = html instanceof HTMLElement ? html : html?.[0];

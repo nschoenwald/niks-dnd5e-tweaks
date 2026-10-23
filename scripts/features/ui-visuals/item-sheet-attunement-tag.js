@@ -4,7 +4,7 @@
  *
  * @introduced v14.33.0
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { getSetting, log, isFeatureActive } from "../../main.js";
 import { patchMethod, unpatchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -26,8 +26,6 @@ import { patchMethod, unpatchMethod } from "../../utils/patch-helper.js";
 const INVENTORY_ITEM_TYPES = new Set(["weapon", "equipment", "consumable", "tool", "container", "loot"]);
 
 let _hookId = null;
-let _origItemRichTooltip = null;
-let _origItemDataModelRichTooltip = null;
 let _tooltipObserver = null;
 let _cachedMatchLabels = null;
 
@@ -348,9 +346,9 @@ function _isConcealed(item) {
  */
 function _getPlacement() {
     try {
-        const clientVal = game.settings.get(MODULE_ID, "clientItemSheetAttunementTag_placement");
+        const clientVal = getSetting("clientItemSheetAttunementTag_placement");
         if (clientVal && clientVal !== "default") return clientVal;
-        return game.settings.get(MODULE_ID, "itemSheetAttunementTag_placement") || "both";
+        return getSetting("itemSheetAttunementTag_placement") || "both";
     } catch {
         return "both";
     }

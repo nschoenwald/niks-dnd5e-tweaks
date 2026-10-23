@@ -592,7 +592,7 @@ export function getBrutalStrikeFormula(actor) {
 
     let scaleObj = barbarianScale["brutal-strike"] ?? barbarianScale["brutalStrike"] ?? barbarianScale["brutal_strike"];
     if (!scaleObj && actor.system?.scale) {
-        for (const [classKey, classScale] of Object.entries(actor.system.scale)) {
+        for (const classScale of Object.values(actor.system.scale)) {
             if (classScale && typeof classScale === "object") {
                 for (const [key, val] of Object.entries(classScale)) {
                     if (key.toLowerCase().includes("brutal")) {
@@ -1001,29 +1001,6 @@ export function clearCombatTurnUsage(combatId) {
 export function getCombatTurnKey(combat, actor = null, token = null) {
     if (!combat?.active || !combat.started) return null;
     return `${combat.id}-r${combat.round ?? 0}-t${combat.turn ?? 0}`;
-}
-
-/**
- * Determine whether Savage Attacker has already been used by the actor on the specified combat turn.
- * Maintained for backward compatibility, delegates to `hasUsedBonusThisTurn`.
- *
- * @param {Actor5e|null} actor
- * @param {string|null} turnKey
- * @returns {boolean}
- */
-export function hasUsedSavageAttackerThisTurn(actor, turnKey) {
-    return hasUsedBonusThisTurn(actor, "savageAttacker", turnKey);
-}
-
-/**
- * Mark Savage Attacker as having been expended on the current combat turn for an actor.
- * Maintained for backward compatibility, delegates to `markBonusUsedThisTurn`.
- *
- * @param {Actor5e|null} actor
- * @param {string|null} turnKey
- */
-export function markSavageAttackerUsed(actor, turnKey) {
-    markBonusUsedThisTurn(actor, "savageAttacker", turnKey);
 }
 
 /**

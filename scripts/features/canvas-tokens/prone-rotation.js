@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../main.js";
 
 export class ProneRotation {
     constructor() {
@@ -32,7 +32,7 @@ export class ProneRotation {
      */
     async _onCreateToken(tokenDoc, options, userId) {
         try {
-            if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
+            if (!getSetting("enableProneRotation")) return;
             const actor = tokenDoc.actor;
             if (!actor) return;
             const hasRotation = actor.effects?.some(e => this._isRotationEffect(e) && e.active);
@@ -51,7 +51,7 @@ export class ProneRotation {
      */
     async syncScene() {
         try {
-            if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
+            if (!getSetting("enableProneRotation")) return;
             if (!canvas?.ready || !canvas.scene) return;
             if (!(game.users.activeGM?.isSelf ?? game.user.isGM)) return;
 
@@ -82,7 +82,7 @@ export class ProneRotation {
 
     async _onCreateActiveEffect(effect, options, userId) {
         try {
-            if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
+            if (!getSetting("enableProneRotation")) return;
             // In dnd5e 6.0, conditions are never toggled via `disabled`. Instead, condition effects
             // can be suppressed (active=false, disabled=false) when the actor has condition immunity.
             // Checking `effect.active` correctly skips both disabled and suppressed effects.
@@ -97,7 +97,7 @@ export class ProneRotation {
 
     async _onUpdateActiveEffect(effect, changes, options, userId) {
         try {
-            if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
+            if (!getSetting("enableProneRotation")) return;
 
             // Re-evaluate when statuses/condition type changed (including a change AWAY from a
             // rotation status, so the token stands back up) or when the effect was enabled/disabled.
@@ -122,7 +122,7 @@ export class ProneRotation {
 
     async _onDeleteActiveEffect(effect, options, userId) {
         try {
-            if (!game.settings.get(MODULE_ID, "enableProneRotation")) return;
+            if (!getSetting("enableProneRotation")) return;
             if (!this._isRotationEffect(effect)) return;
             // Only un-rotate if the effect was actually active. Suppressed condition effects
             // (e.g. immune actor has a condition applied externally) should not control rotation,
@@ -321,7 +321,7 @@ export class ProneRotation {
 let proneRotation = null;
 
 export function enableProneRotation() {
-    if (!proneRotation && game.settings.get(MODULE_ID, "enableProneRotation")) {
+    if (!proneRotation && getSetting("enableProneRotation")) {
         proneRotation = new ProneRotation();
     }
 }

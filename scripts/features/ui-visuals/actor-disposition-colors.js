@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, debug } from "../../main.js";
+import { getSetting, debug } from "../../main.js";
 
 /**
  * Build a color map from Foundry's disposition colors.
@@ -33,7 +33,7 @@ function applyDispositionDot(item, color) {
 }
 
 function colorActorDispositionRender(app, html, options) {
-  if (!game.settings.get(MODULE_ID, "enableActorDispositionColors")) return;
+  if (!getSetting("enableActorDispositionColors")) return;
   const colors = getDispositionColors();
 
   const directoryHTML = html[0] || html;
@@ -49,7 +49,7 @@ function colorActorDispositionRender(app, html, options) {
 }
 
 function colorActorDisposition(actor, updates, options, userId) {
-  if (!game.settings.get(MODULE_ID, "enableActorDispositionColors")) return;
+  if (!getSetting("enableActorDispositionColors")) return;
   const colors = getDispositionColors();
 
   if (actor && actor.prototypeToken.disposition.toString() in colors) {

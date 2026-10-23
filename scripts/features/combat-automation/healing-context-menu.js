@@ -4,7 +4,7 @@
  *
  * @introduced v14.7.0
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -27,7 +27,7 @@ export function initHealingContextMenu() {
     patchMethod(
         "CONFIG.ChatMessage.documentClass.prototype.canApplyDamage#get",
         function(wrapped) {
-            if (!game.settings.get(MODULE_ID, "enableHealingContextMenu")) {
+            if (!getSetting("enableHealingContextMenu")) {
                 return wrapped();
             }
 

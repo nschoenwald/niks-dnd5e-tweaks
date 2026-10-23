@@ -4,7 +4,7 @@
  *
  * @introduced v14.21.1
  */
-import { MODULE_ID, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../main.js";
 
 /**
  * NPC Hit Point Scaler
@@ -27,7 +27,7 @@ let _hookIdAppV2 = null;
 let _hookIdHpConfig = null;
 
 export function initNpcHpScaler() {
-    if (!game.settings.get(MODULE_ID, "enableNpcHpScaling")) return;
+    if (!getSetting("enableNpcHpScaling")) return;
 
     if (_hookIdHpConfig === null) {
         _hookIdHpConfig = Hooks.on("renderHitPointsConfig", (app, element) => {
@@ -85,7 +85,7 @@ function _isHitPointsConfig(app) {
  * @param {HTMLElement|jQuery} element
  */
 function _injectScalingButtons(app, element) {
-    if (!game.settings.get(MODULE_ID, "enableNpcHpScaling")) return;
+    if (!getSetting("enableNpcHpScaling")) return;
 
     const html = element instanceof HTMLElement ? element : (element?.[0] ?? app.element);
     if (!html) return;
