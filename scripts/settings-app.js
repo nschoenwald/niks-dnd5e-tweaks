@@ -1124,6 +1124,28 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "enableMagicResistance",
+                                name: "Magic Resistance Automation",
+                                hint: "Creatures with Magic Resistance, Spell Resistance, Gnome Cunning (2014) or an equipped Mantle of Spell Resistance roll saves against spells and magical effects with Advantage. Disabled while midi-qol is active.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "magicResistanceScope",
+                                name: "What Counts as Magical",
+                                hint: "Spells always count. Magic items: items with the Magical property, potions, scrolls, wands and rods. Magical features: features with the Magical property.",
+                                type: "Select",
+                                default: "all",
+                                choices: [
+                                    { value: "spells", label: "Spells Only" },
+                                    { value: "items", label: "Spells & Magic Items" },
+                                    { value: "all", label: "Spells, Magic Items & Magical Features" }
+                                ],
+                                scope: "world",
+                                parentKey: "enableMagicResistance"
+                            },
+                            {
                                 key: "enableAutoEndConcentration",
                                 name: "Auto-End Concentration on Incapacitation",
                                 hint: "Automatically terminates concentration when incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",

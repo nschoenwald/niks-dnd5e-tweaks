@@ -44,6 +44,7 @@ import { initHealingContextMenu } from "./features/combat-automation/healing-con
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
+import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
 import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/combat-automation/disable-active-effect-expiry.js";
@@ -1453,6 +1454,31 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableMagicResistance", {
+        name: "Magic Resistance Automation",
+        hint: "Creatures with Magic Resistance (or Spell Resistance, Gnome Cunning, or an equipped Mantle of Spell Resistance) automatically roll saving throws against spells and magical effects with Advantage. Concentration saves are not affected. Disabled while midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "magicResistanceScope", {
+        name: "↳ What Counts as Magical",
+        hint: "Which save sources trigger Magic Resistance. Spells always count. Magic items are items with the Magical property, plus potions, scrolls, wands and rods. Features count when they have the Magical property.",
+        scope: "world",
+        config: false,
+        type: String,
+        choices: {
+            spells: "Spells Only",
+            items: "Spells & Magic Items",
+            all: "Spells, Magic Items & Magical Features"
+        },
+        default: "all",
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -1674,6 +1700,7 @@ Hooks.once("setup", () => {
     initDisableActiveEffectExpiry();
     initAutoRollConcentration();
     initMageSlayerConcentration();
+    initMagicResistance();
     initSelfEffectApplication();
     initSheetPlusCompendium();
     initNpcHpScaler();

@@ -75,6 +75,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
+| **[Magic Resistance Automation](#magic-resistance-automation)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-End Concentration](#auto-end-concentration)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-class-features)** | Combat & Automation | ✅ Enabled | No |
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Combat & Automation | ✅ Enabled | Yes |
@@ -267,6 +268,14 @@ Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating
 ### Mage Slayer: Concentration Disadvantage
 Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens.
 
+### Magic Resistance Automation
+Creatures with **Magic Resistance** automatically roll saving throws against spells and magical effects with Advantage. Works when the save is rolled from a spell's or feature's chat card (including inline save links in chat). The roll dialog opens with Advantage pre-selected, and Disadvantage still cancels it out as usual.
+* **Recognized Features**: Magic Resistance (monsters, Yuan-ti, Satyr), Spell Resistance (School of Abjuration, spells only), Gnome Cunning (2014, Intelligence, Wisdom and Charisma saves only) and an equipped, attuned Mantle of Spell Resistance (spells only). Homebrew features named "Magic Resistance" or "Spell Resistance" are recognized too.
+* **Homebrew Flag**: Give any actor Magic Resistance with an Active Effect or flag `flags.niks-dnd5e-tweaks.magicResistance` = `true` (spells and magical effects) or `spell` (spells only).
+* **Magical Monster Abilities**: Tick the **Magical** property on a monster feature (for example a Banshee's Wail) to make Magic Resistance apply against it. Breath weapons, claws and other mundane abilities are not affected.
+* **Not Affected**: Concentration saves, death saves, and saves rolled from the character sheet without a source. Use the Retroactive Advantage buttons for edge cases.
+* *Sub-settings*: **What Counts as Magical** (Spells Only, Spells & Magic Items, Spells, Magic Items & Magical Features).
+
 ### Auto-End Concentration & Class Features
 * **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
 * **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
@@ -392,6 +401,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, conflicting au
 | **Self Effect Application** | **Automatically bypassed** if midi-qol auto-applies item effects. |
 | **Player Damage Prompt** | **Automatically bypassed** if midi-qol auto-applies damage. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows. |
+| **Magic Resistance Automation** | **Automatically disabled** (midi-qol handles Magic Resistance). |
 
 ### Other Supported Modules
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.

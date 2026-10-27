@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.50.0] - 2026-10-26
+### Added
+- **Magic Resistance Automation**:
+  - Creatures with Magic Resistance now automatically make saving throws against spells and magical effects with Advantage. The roll dialog opens with Advantage already selected, and Disadvantage still cancels it out.
+  - Also covers Gnome Cunning (2014, Intelligence, Wisdom and Charisma saves only), Spell Resistance (School of Abjuration) and an equipped, attuned Mantle of Spell Resistance. As written, Spell Resistance and the Mantle only work against spells, not other magical effects.
+  - Magic items, potions, scrolls, wands and rods count as magical. Monster features count when they have the **Magical** property ticked. You can change this with the new **What Counts as Magical** setting.
+  - Concentration saves are not affected. The feature turns itself off while midi-qol is active.
+
 ## [14.49.1] - 2026-10-23
 ### Added
 - **Self Effect Application: Auto-Apply Effects**:
