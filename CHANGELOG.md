@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.52.0] - 2026-10-27
+### Fixed
+- **Animated HP Bars**: Token HP bars now animate smoothly when a creature takes damage or is healed, like Foundry V14's other token bars. Before, the D&D 5e HP bar jumped straight to its new value. Temporary HP, temporary max HP and the bar colour animate too.
+
 ## [14.51.0] - 2026-10-27
 ### Changed
 - **midi-qol Compatibility**:

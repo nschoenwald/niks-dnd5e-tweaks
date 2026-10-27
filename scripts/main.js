@@ -65,6 +65,7 @@ import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip
 import { initFixPactSpellScaling, refreshAllPactSpellScaling } from "./features/patches/fix-pact-spell-scaling.js";
 import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray-grouping-key.js";
 import { initFixTokenBarRefresh } from "./features/patches/fix-token-bar-refresh.js";
+import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
 
 // Settings Dashboard
 import { NiksTweaksSettingsApp } from "./settings-app.js";
@@ -1715,6 +1716,7 @@ Hooks.once("setup", () => {
     initFixSkillTooltipOverlap();
     initFixDamageTrayGroupingKey();
     initFixTokenBarRefresh();
+    initFixTokenHPBarAnimation();
 
     // Utilities
     initAutoUnpauseOnLogin();
