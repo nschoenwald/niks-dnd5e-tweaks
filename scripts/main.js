@@ -59,6 +59,7 @@ import { initConditionalDamage } from "./features/combat-automation/conditional-
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
+import { initActorItemDragBehavior } from "./features/utilities/actor-item-drag-behavior.js";
 
 // Patches
 import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip-overlap.js";
@@ -1634,6 +1635,21 @@ Hooks.once("init", () => {
     // Utilities
     // ==========================================
 
+    game.settings.register(MODULE_ID, "actorItemDragBehavior", {
+        name: "Dragging Items Between Actors",
+        hint: "What happens when you drag an inventory item from one actor's sheet to another, e.g. from a character to a group. \"Always Move\" removes it from the original actor. \"Move, but Copy from NPCs\" leaves NPCs' gear in place so you can loot without changing their stat blocks. \"Always Copy\" keeps the D&D 5e default. Hold Shift to force a move or Ctrl to force a copy. Items are copied whenever you aren't allowed to remove them from the original actor. Spells, features and classes are always copied.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "move",
+        choices: {
+            move: "Always Move",
+            moveExceptNPC: "Move, but Copy from NPCs",
+            copy: "Always Copy (D&D 5e Default)"
+        },
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "autoUnpauseOnLogin", {
         name: "Auto-Unpause When Logging In",
         hint: "When you (the GM) log into a world that is paused, automatically unpause. \"Always\" unpauses regardless of connected players. \"When no players are connected\" only unpauses if no non-GM players are already in the session. \"Never\" disables this feature. Per-GM-user setting — each GM account configures this independently.",
@@ -1720,6 +1736,7 @@ Hooks.once("setup", () => {
 
     // Utilities
     initAutoUnpauseOnLogin();
+    initActorItemDragBehavior();
 
     // UI helpers
     initRollModeHighlight();

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.53.0] - 2026-10-27
+### Added
+- **Dragging Items Between Actors**: Dragging an inventory item from one actor to another, such as from a character to the party group, now moves it instead of copying it. A new setting lets you choose **Always Move** (default), **Move, but Copy from NPCs** or **Always Copy** (the D&D 5e default). Shift still forces a move and Ctrl a copy. When you aren't allowed to remove the item from the original actor, it is copied instead. Spells, features and classes are always copied.
+- **Move Part of a Stack**: Moving a stack of more than one item to another actor now asks how many to move, so you can hand over 5 of your 20 arrows in one drag. The rest stays where it was. Containers always move whole.
+
 ## [14.52.0] - 2026-10-27
 ### Fixed
 - **Animated HP Bars**: Token HP bars now animate smoothly when a creature takes damage or is healed, like Foundry V14's other token bars. Before, the D&D 5e HP bar jumped straight to its new value. Temporary HP, temporary max HP and the bar colour animate too.

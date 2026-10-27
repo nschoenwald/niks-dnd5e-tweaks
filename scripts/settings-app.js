@@ -472,6 +472,19 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 parentKey: "enableCleanSheetTitles"
                             },
                             {
+                                key: "actorItemDragBehavior",
+                                name: "Dragging Items Between Actors",
+                                hint: "What happens when you drag an inventory item from one actor's sheet to another, e.g. from a character to a group. \"Always Move\" removes it from the original actor. \"Move, but Copy from NPCs\" leaves NPCs' gear in place so you can loot without changing their stat blocks. \"Always Copy\" keeps the D&D 5e default. Hold Shift to force a move or Ctrl to force a copy. Items are copied whenever you aren't allowed to remove them from the original actor. Spells, features and classes are always copied.",
+                                type: "Select",
+                                default: "move",
+                                choices: [
+                                    { value: "move", label: "Always Move" },
+                                    { value: "moveExceptNPC", label: "Move, but Copy from NPCs" },
+                                    { value: "copy", label: "Always Copy (D&D 5e Default)" }
+                                ],
+                                scope: "world"
+                            },
+                            {
                                 key: "enableSheetPopoutButton",
                                 name: "Sheet Pop-out Button",
                                 hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets to detach into a separate window without the 3-dot menu.",

@@ -40,6 +40,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Sheet Pop-out Button](#sheet-pop-out-button)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Dragging Items Between Actors](#dragging-items-between-actors)** | UI & Visuals | ✅ Always Move | No |
 | **[Pact Magic Formula Scaling Fix](#pact-magic-formula-scaling-fix)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Clean Sheet Window Titles](#clean-sheet-window-titles)** | UI & Visuals | ✅ Enabled | No |
 | **[Context Menu Styling](#context-menu-styling)** | UI & Visuals | ✅ Enabled | Yes |
@@ -155,6 +156,16 @@ Persistently highlights the recommended roll mode button (Advantage or Disadvant
 
 ### Sheet Pop-out Button
 Adds a dedicated **↗ pop-out button** to Actor and Item sheet window headers to detach them into separate browser windows with one click. Automatically hides when already detached.
+
+### Dragging Items Between Actors
+Dragging an inventory item from one actor's sheet to another (for example from a player character to the party group, or onto a group member) now **moves** it instead of leaving a copy behind. Choose between:
+* **Always Move** (default)
+* **Move, but Copy from NPCs**: loot from NPCs without removing it from their stat blocks.
+* **Always Copy**: the D&D 5e default.
+
+When you move a stack of more than one item (e.g. 20 arrows), a dialog asks how many to move. The rest stays with the original actor.
+
+Hold <kbd>Shift</kbd> to force a move or <kbd>Ctrl</kbd> to force a copy (D&D 5e's *Force Move/Copy when Dragging* keybindings). Items are copied whenever a move isn't allowed: when you can't remove items from the original actor, when the item comes from the sidebar or a compendium, or for spells, features and classes.
 
 ### Pact Magic Formula Scaling Fix
 Fixes an upstream DnD5e 6.x issue where Pact Magic spells on character and NPC sheets display unscaled base damage/healing formulas (e.g. 2d10 instead of 4d10 for a 1st-level *Hellish Rebuke* on a 5th-level Warlock) in the Formula column and activity rows. Formulas now dynamically scale to the caster's derived pact slot level.
