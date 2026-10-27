@@ -7,6 +7,7 @@
  */
 import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { isMidiMessage } from "../../utils/module-compat.js";
 
 /**
  * Check if the current user has permission to change the advantage mode on this message.
@@ -291,6 +292,10 @@ function insertButtons(message, html) {
 
     // Unconditionally remove any existing menus in root to prevent duplicates
     root.querySelectorAll(".nd5t-retro-advantage").forEach(el => el.remove());
+
+    // midi-qol evaluates hits and saves from its workflow when the roll is made; changing the
+    // roll on the card afterwards would leave midi's results out of step with the dice.
+    if (isMidiMessage(message)) return;
 
     // Find the first D20 roll
     const rollIndex = message.rolls?.findIndex(r => r instanceof CONFIG.Dice.D20Roll) ?? -1;

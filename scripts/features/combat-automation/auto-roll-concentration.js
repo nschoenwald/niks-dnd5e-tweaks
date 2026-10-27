@@ -6,6 +6,7 @@
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { midiHandlesConcentration, midiEndsConcentrationOnFailure } from "../../utils/module-compat.js";
 
 /**
  * Auto-Roll Concentration Saves on Damage
@@ -220,6 +221,7 @@ export function getConcentratingItems(actor) {
  * Patch Actor5e.prototype.challengeConcentration to:
  * 1. Suppress the system's concentration challenge prompt for actors with Boon of the Iron Mind.
  * 2. When a connected player owner is online, whisper the challenge prompt ONLY to connected player owners (not GM).
+ *    Skipped when midi-qol handles concentration checks, so midi's own request card / item roll still runs.
  */
 function _patchChallengeConcentration() {
     patchMethod("CONFIG.Actor.documentClass.prototype.challengeConcentration", async function patchedChallengeConcentration(wrapped, options = {}, ...args) {
@@ -229,7 +231,9 @@ function _patchChallengeConcentration() {
                 return null;
             }
 
-            const connectedOwners = game.users.filter(u => !u.isGM && u.active && this.testUserPermission(u, "OWNER"));
+            const connectedOwners = midiHandlesConcentration()
+                ? []
+                : game.users.filter(u => !u.isGM && u.active && this.testUserPermission(u, "OWNER"));
             if (connectedOwners.length > 0) {
                 const isConcentrating = this.concentration?.effects?.size > 0 || this.statuses?.has("concentrating");
                 if (!isConcentrating) return null;
@@ -347,14 +351,12 @@ async function _onDamageActor(actor, changes, update, userId) {
             return;
         }
 
-        // Automatically skip if midi-qol is active and configured to handle concentration checks
-        if (game.modules.get("midi-qol")?.active) {
-            const midiDoConc = globalThis.MidiQOL?.configSettings?.()?.doConcentrationCheck
-                ?? game.settings.get("midi-qol", "ConfigSettings")?.doConcentrationCheck;
-            if (midiDoConc && midiDoConc !== "none") {
-                debug("Auto-Roll Concentration | midi-qol detected and handles concentration checks — feature bypassed to avoid duplicate rolls.");
-                return;
-            }
+        // Skip if midi-qol rolls concentration saves itself ("Chat Message + Auto Roll" or
+        // "Roll Concentration Item"). Its "Chat Message Only" mode is dnd5e's default prompt,
+        // which this feature complements just as it does without midi-qol.
+        if (midiHandlesConcentration()) {
+            debug("Auto-Roll Concentration | midi-qol detected and handles concentration checks — feature bypassed to avoid duplicate rolls.");
+            return;
         }
 
         // Only process if total net HP change is negative (damage)
@@ -422,7 +424,8 @@ async function _onDamageActor(actor, changes, update, userId) {
 
         if (!rolls?.length) return;
 
-        if (autoEndOnFailure) {
+        // midi-qol's "Remove concentration on failed save" already ends it for this roll
+        if (autoEndOnFailure && !midiEndsConcentrationOnFailure()) {
             const roll = rolls[0];
             const isSuccess = roll.isSuccess ?? (roll.total >= dc);
 

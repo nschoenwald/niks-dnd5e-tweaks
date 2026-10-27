@@ -5,6 +5,7 @@
  * @introduced v14.25.0
  */
 import { getSetting, debug, isFeatureActive } from "../../main.js";
+import { isAc5eActive } from "../../utils/module-compat.js";
 
 /**
  * Roll Mode Highlight
@@ -25,6 +26,10 @@ import { getSetting, debug, isFeatureActive } from "../../main.js";
  * The user-configured color is applied as an inline CSS custom property
  * (--nd5t-rmh-color) on the marked button, overriding the per-mode defaults
  * defined in the stylesheet.
+ *
+ * Automated Conditions 5e: AC5e works out its own recommended button (which can differ from the
+ * roll's raw advantage mode) and marks it with `.ac5e-button` in a render hook that runs after
+ * ours. While AC5e is active the highlight waits for that hook and follows AC5e's choice.
  *
  * ADV_MODE values (CONFIG.Dice.D20Roll.ADV_MODE):
  *   NORMAL:       0
@@ -71,16 +76,39 @@ function _getCalculatedAction(app) {
  * @param {HTMLElement} element
  */
 function _onRenderDialog(app, element) {
-    try {
-        const enabled = isFeatureActive("enableRollModeHighlight", "clientEnableRollModeHighlight");
-        if (!enabled) return;
+    const enabled = isFeatureActive("enableRollModeHighlight", "clientEnableRollModeHighlight");
+    if (!enabled) return;
 
+    // Let Automated Conditions 5e's render hook mark its recommended button first
+    if (isAc5eActive()) queueMicrotask(() => _applyHighlight(app, element));
+    else _applyHighlight(app, element);
+}
+
+/**
+ * Get the button Automated Conditions 5e recommends in this dialog, if it marked one.
+ * @param {HTMLElement} element
+ * @returns {"advantage"|"normal"|"disadvantage"|null}
+ */
+function _getAc5eAction(element) {
+    if (!isAc5eActive()) return null;
+    const action = element.querySelector(".dialog-buttons button.ac5e-button[data-action]")?.dataset.action;
+    return ["advantage", "normal", "disadvantage"].includes(action) ? action : null;
+}
+
+/**
+ * Mark the calculated button in a rendered D20 roll configuration dialog.
+ *
+ * @param {D20RollConfigurationDialog} app
+ * @param {HTMLElement} element
+ */
+function _applyHighlight(app, element) {
+    try {
         const style = getSetting("rollModeHighlightStyle");
         if (style === "none") return;
 
         const highlightNormal = getSetting("rollModeHighlightNormal");
         const customColor     = getSetting("rollModeHighlightColor");
-        const calculatedAction = _getCalculatedAction(app);
+        const calculatedAction = _getAc5eAction(element) ?? _getCalculatedAction(app);
 
         debug(`Roll Mode Highlight | Calculated action: ${calculatedAction}, style: ${style}, highlightNormal: ${highlightNormal}, color: ${customColor}`);
 

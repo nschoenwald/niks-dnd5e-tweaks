@@ -555,7 +555,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableRollModeHighlight", {
         name: "Roll Mode Highlight",
-        hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button in the roll dialog so it remains visible even after interacting with other fields.",
+        hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button in the roll dialog so it remains visible even after interacting with other fields. Follows Automated Conditions 5e's recommendation when that module is active.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -641,7 +641,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableRetroactiveAdvantage", {
         name: "Retroactive Advantage/Disadvantage",
-        hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets.",
+        hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets. Not offered on midi-qol workflow cards.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -969,7 +969,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections",
-        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected.",
+        hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to temporarily override and place freely. Cones and rays are not affected. Disabled while midi-qol is active (use midi-qol's Template Grid Snapping instead).",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1188,7 +1188,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "promptForAttackDamage", {
         name: "Prompt for Attack Damage",
-        hint: "Opens the damage roll configuration dialog automatically when an attack roll hits the target's AC. The attacker's actor type (player character or NPC) determines whether the setting applies.",
+        hint: "Opens the damage roll configuration dialog automatically when an attack roll hits the target's AC. The attacker's actor type (player character or NPC) determines whether the setting applies. Disabled while midi-qol is active (use midi-qol's Auto Roll Damage instead).",
         scope: "world",
         config: false,
         type: String,
@@ -1214,7 +1214,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "autoRollAttackDamage", {
         name: "Auto-Roll Attack Damage",
-        hint: "Automatically rolls damage without showing a configuration dialog when an attack roll hits the target's AC. Takes precedence over 'Prompt for Attack Damage' for the same actor type. The attacker's actor type (player character or NPC) determines whether the setting applies. Automatically bypassed when midi-qol is configured to auto-apply damage.",
+        hint: "Automatically rolls damage without showing a configuration dialog when an attack roll hits the target's AC. Takes precedence over 'Prompt for Attack Damage' for the same actor type. The attacker's actor type (player character or NPC) determines whether the setting applies. Disabled while midi-qol is active (use midi-qol's Auto Roll Damage instead).",
         scope: "world",
         config: false,
         type: String,
@@ -1240,7 +1240,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableWeaponMasteries", {
         name: "Weapon Mastery Automation",
-        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Step 1 automates Slow (reducing speed by 10 ft until the start of the attacker's next turn) and Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn).",
+        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Step 1 automates Slow (reducing speed by 10 ft until the start of the attacker's next turn) and Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn). Works with midi-qol workflows. Disabled while Automated Masteries 5e is active.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1357,7 +1357,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableGrazeDamagePrompt", {
         name: "↳ Graze Damage Prompts (Always On)",
-        hint: "When enabled, Graze weapon mastery damage prompts are sent even if the Player Damage Prompt feature is disabled. This lets you use Graze prompts without enabling all other player damage prompts.",
+        hint: "When enabled, Graze weapon mastery damage prompts are sent even if the Player Damage Prompt feature is disabled. This lets you use Graze prompts without enabling all other player damage prompts. Graze prompts are skipped while Automated Masteries 5e is active, since it rolls Graze damage itself.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1410,7 +1410,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoRollConcentration", {
         name: "Auto-Roll Concentration Saves",
-        hint: "Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage.",
+        hint: "Automatically rolls a Constitution saving throw for concentration when a concentrating token takes damage. Skipped while midi-qol rolls concentration saves itself.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1456,7 +1456,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableMagicResistance", {
         name: "Magic Resistance Automation",
-        hint: "Creatures with Magic Resistance (or Spell Resistance, Gnome Cunning, or an equipped Mantle of Spell Resistance) automatically roll saving throws against spells and magical effects with Advantage. Concentration saves are not affected. Disabled while midi-qol is active.",
+        hint: "Creatures with Magic Resistance (or Spell Resistance, Gnome Cunning, or an equipped Mantle of Spell Resistance) automatically roll saving throws against spells and magical effects with Advantage. Concentration saves are not affected. Also works with midi-qol save requests.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1514,7 +1514,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
         name: "Auto-Apply Status at 0 HP",
-        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions. When enabled, this feature overrides DnD5e's native Downed Status Automation (autoApplyDowned).",
+        hint: "Automatically applies a configurable status condition overlay to tokens when they reach 0 HP, and removes it when they are healed. Includes additional sub-settings for combat tracker actions. When enabled, this feature overrides DnD5e's native Downed Status Automation (autoApplyDowned). If midi-qol's Add Dead/Unconscious is on, midi-qol picks the 0 HP status and its own defeated marking is used.",
         scope: "world",
         config: false,
         type: Boolean,

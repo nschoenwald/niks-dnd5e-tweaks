@@ -14,6 +14,7 @@
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { isWm5eActive } from "../../utils/module-compat.js";
 
 /**
  * Registry of static conditional damage bonus definitions.
@@ -1484,7 +1485,8 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     }
 
     // --- 4. Cleave Weapon Mastery (2024 Modern Rules: remove ability modifier unless negative) ---
-    if (isEligibleCleaveWeapon(item, actor)) {
+    // Automated Masteries 5e rolls the Cleave attack itself in off-hand mode, which already drops the modifier.
+    if (!isWm5eActive() && isEligibleCleaveWeapon(item, actor)) {
         const baseRoll = config?.rolls?.[0];
         const abilityKey = baseRoll?.data?.roll?.ability ?? activity?.ability ?? item?.system?.ability ?? "str";
         const modValue = Number(baseRoll?.data?.mod ?? actor.system?.abilities?.[abilityKey]?.mod ?? 0);

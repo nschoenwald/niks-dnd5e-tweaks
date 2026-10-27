@@ -7,6 +7,7 @@
 import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
+import { midiAppliesZeroHPStatus, midiMarksDefeated } from "../../utils/module-compat.js";
 
 /**
  * Auto Status at 0 HP
@@ -19,6 +20,12 @@ import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
  * Additionally can mark the combatant as defeated or remove it from the
  * combat tracker entirely when a token reaches 0 HP, and un-defeat it
  * when it regains HP.
+ *
+ * midi-qol: when midi's "Add Dead/Unconscious" is on, midi applies the 0 HP status
+ * (and, per its own settings, the defeated mark) itself. This feature then leaves
+ * those parts to midi so the two don't fight over which status a token gets; the
+ * Dead escalation after three failed death saves, clean-up on healing and removing
+ * a token from combat are still handled here.
  */
 
 /**
@@ -173,6 +180,10 @@ function _getCombatants(actor) {
  */
 async function _handleCombatActionZeroHP(actor, action) {
     if (action === "none" || isImportantNPC(actor)) return;
+    if (action === "defeated" && midiMarksDefeated(actor)) {
+        debug(`Auto-Status | midi-qol marks ${actor.name} as defeated — skipping`);
+        return;
+    }
     const combatants = _getCombatants(actor);
     if (!combatants.length) return;
 
@@ -347,7 +358,13 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
         if (failedDeathSaves && statusId !== "none") {
             statusId = "dead";
         }
-        await _applyZeroHPStatus(actor, statusId);
+        // midi-qol only reacts to HP changes, so escalating to Dead after three failed
+        // death saves is still done here.
+        if (midiAppliesZeroHPStatus() && !failedDeathSaves) {
+            debug(`Auto-Status | midi-qol applies 0 HP statuses — leaving ${actor.name}'s status to midi-qol`);
+        } else {
+            await _applyZeroHPStatus(actor, statusId);
+        }
 
         // ── Combat action ──
         // NPCs marked as "important" should never be removed from combat automatically or marked as defeated.

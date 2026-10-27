@@ -9,9 +9,19 @@
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
  *              - Clean lifecycle: Lingering effects are automatically cleaned up when combat is terminated.
  *
+ * midi-qol: midi rolls attacks and damage inside its workflow card without creating separate
+ * attack / damage roll messages, so masteries are applied from midi's DamageRollComplete hook
+ * to the workflow's hit targets instead.
+ *
+ * Automated Masteries 5e (wm5e): wm5e automates every mastery itself, Sap and Slow included, under
+ * its own effect names. This feature stands down while wm5e is active so creatures aren't sapped or
+ * slowed twice.
+ *
  * @introduced v14.42.0
+ * @updated v14.51.0 (midi-qol workflow support)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
+import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
@@ -297,6 +307,9 @@ async function _onCreateChatMessage(message, options, userId) {
         const rollType = message.type ?? message.getFlag("dnd5e", "roll.type");
         if (rollType !== "attack" && rollType !== "damage") return;
 
+        // Rolls from a midi-qol workflow are handled by _onMidiDamageRollComplete
+        if (isMidiMessage(message)) return;
+
         // Resolve attacker actor
         let attackerActor = null;
         try {
@@ -389,6 +402,60 @@ async function _onCreateChatMessage(message, options, userId) {
         }
     } catch (err) {
         console.error("Weapon Mastery | Error processing roll message:", err);
+    }
+}
+
+/**
+ * Resolve the actor behind a midi-qol workflow target (a Token, TokenDocument or uuid).
+ * @param {Token|TokenDocument|string} target
+ * @returns {Actor5e|null}
+ */
+function _resolveMidiTargetActor(target) {
+    if (!target) return null;
+    if (typeof target === "string") {
+        const doc = fromUuidSync(target, { strict: false });
+        return doc?.actor ?? (doc instanceof Actor ? doc : null);
+    }
+    return target.actor ?? target.document?.actor ?? null;
+}
+
+/**
+ * Hook midi-qol.DamageRollComplete: apply Sap or Slow to the targets a midi-qol workflow hit.
+ * Fires on the client running the workflow (the attacker's), like the chat message handler.
+ * @param {object} workflow  The midi-qol Workflow.
+ */
+async function _onMidiDamageRollComplete(workflow) {
+    try {
+        if (!isFeatureActive("enableWeaponMasteries", "clientEnableWeaponMasteries")) return;
+
+        const activity = workflow?.activity;
+        if (activity?.type !== "attack") return;
+
+        const attackerActor = workflow.actor ?? activity.actor;
+        if (!attackerActor || attackerActor.type !== "character") return;
+
+        const weapon = workflow.item ?? activity.item;
+        if (!weapon || weapon.type !== "weapon") return;
+
+        const hitTargets = [...(workflow.hitTargets ?? [])];
+        if (!hitTargets.length) return;
+
+        const lastMastery = activity.id ? weapon.getFlag("dnd5e", `last.${activity.id}.mastery`) : null;
+        let activeMastery = workflow.attackRoll?.options?.mastery || lastMastery || null;
+        if (!activeMastery && weapon.system?.mastery && _actorHasMastery(attackerActor, weapon, weapon.system.mastery)) {
+            activeMastery = weapon.system.mastery;
+        }
+        if (activeMastery !== "sap" && activeMastery !== "slow") return;
+
+        debug(`Weapon Mastery | midi-qol workflow hit ${hitTargets.length} target(s) with ${activeMastery.toUpperCase()} mastery`);
+
+        for (const target of hitTargets) {
+            const targetActor = _resolveMidiTargetActor(target);
+            if (!targetActor || !(targetActor instanceof Actor)) continue;
+            await applyMasteryEffect(activeMastery, targetActor, attackerActor, weapon);
+        }
+    } catch (err) {
+        console.error("Weapon Mastery | Error processing midi-qol workflow:", err);
     }
 }
 
@@ -561,10 +628,15 @@ export async function weaponMasterySocketMessage(data) {
  * Called once during init/setup from main.js.
  */
 export function initWeaponMasteries() {
+    if (isWm5eActive()) {
+        log("Weapon Mastery automation | Automated Masteries 5e (wm5e) is active — feature disabled");
+        return;
+    }
     Hooks.on("createChatMessage", _onCreateChatMessage);
     Hooks.on("dnd5e.rollAttack", _onRollAttack);
     Hooks.on("updateCombat", _onUpdateCombat);
     Hooks.on("deleteCombat", _onDeleteCombat);
+    if (isMidiActive()) Hooks.on("midi-qol.DamageRollComplete", _onMidiDamageRollComplete);
 
     log("Weapon Mastery automation initialized (Slow & Sap)");
 }

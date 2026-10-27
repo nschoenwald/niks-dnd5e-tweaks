@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.51.0] - 2026-10-27
+### Changed
+- **midi-qol Compatibility**:
+  - **Weapon Mastery Automation**: Sap and Slow now work with midi-qol. Before, they never triggered while midi-qol was active.
+  - **Magic Resistance Automation**: No longer turns off with midi-qol. Saves requested by midi-qol now get Advantage too, including from Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise.
+  - **Auto-Roll Concentration Saves**: Only steps aside when midi-qol actually rolls concentration saves itself (*Chat Message + Auto Roll* or *Roll Concentration Item*). With *Chat Message Only*, saves are auto-rolled again. midi-qol's own concentration request is no longer replaced by this module's player prompt, and concentration is no longer ended twice on a failed save.
+  - **Auto-Apply Status at 0 HP**: When midi-qol's *Add Dead/Unconscious* is on, midi-qol decides the 0 HP status and the defeated mark, so the two modules no longer swap a token between Dead and Unconscious. Dead after three failed death saves, clean-up on healing and removing tokens from combat still work.
+  - **Snap Templates to Grid Intersections**: Turns off while midi-qol is active. It could move a template after midi-qol had already chosen its targets. Use midi-qol's *Template Grid Snapping* instead.
+  - **Prompt / Auto-Roll Attack Damage**: Turns off while midi-qol is active, whatever its damage settings. Use midi-qol's *Auto Roll Damage* instead.
+  - **Player Damage Prompt**: No longer prompts for damage rolled inside a midi-qol workflow.
+  - **Retroactive Advantage**: No longer offered on midi-qol cards, because midi-qol wouldn't update its hit and save results.
+- **Automated Conditions 5e Compatibility**:
+  - **Roll Mode Highlight** now highlights the button Automated Conditions 5e recommends, so both modules agree.
+- **Automated Masteries 5e Compatibility**:
+  - **Weapon Mastery Automation** turns off while Automated Masteries 5e is active, so creatures aren't sapped or slowed twice.
+  - The **Graze** damage prompt is skipped, since Automated Masteries 5e rolls Graze damage itself.
+  - The **Cleave** toggle no longer appears in damage dialogs, since Automated Masteries 5e already rolls the Cleave attack without your ability modifier.
+
 ## [14.50.0] - 2026-10-26
 ### Added
 - **Magic Resistance Automation**:

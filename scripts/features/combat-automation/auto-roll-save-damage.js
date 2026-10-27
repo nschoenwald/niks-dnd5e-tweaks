@@ -6,6 +6,7 @@
  */
 import { getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
+import { isMidiActive } from "../../utils/module-compat.js";
 
 /**
  * Auto-Roll Save Damage
@@ -80,7 +81,7 @@ function _onPostUseActivity(activity, usageConfig, results) {
  * manages its own damage roll workflow for all activity types.
  */
 export function initAutoRollSaveDamage() {
-    if (game.modules.get("midi-qol")?.active) {
+    if (isMidiActive()) {
         log("Auto-Roll Save Damage | midi-qol detected — feature disabled to avoid duplicate damage rolls.");
         return;
     }

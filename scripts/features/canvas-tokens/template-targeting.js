@@ -8,6 +8,7 @@
  */
 import { debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { isMidiActive } from "../../utils/module-compat.js";
 
 /**
  * State tracking for the active template placement session
@@ -32,7 +33,7 @@ let lastChatActionMessageId = null;
 export function initTemplateTargeting() {
     // Completely disabled when midi-qol is active — it has its own template
     // auto-targeting feature and running both would cause conflicts.
-    if (game.modules.get("midi-qol")?.active) {
+    if (isMidiActive()) {
         log("Template Targeting | midi-qol is active, feature disabled");
         return;
     }

@@ -6,6 +6,7 @@
  * @introduced v14.50.0
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { getMidiSourceItem } from "../../utils/module-compat.js";
 
 /**
  * Magic Resistance
@@ -20,6 +21,12 @@ import { MODULE_ID, getSetting, debug } from "../../main.js";
  *  (`message.data.system.item` / `activity` / `origin`, see SaveActivity#rollSave). If the source is
  *  a spell or magical effect and the defender has a matching resistance feature, advantage is injected
  *  into the roll config. The system's own advantage/disadvantage resolver handles cancellation.
+ *
+ *  midi-qol: saves requested by a midi workflow still pass through this hook; their source is read
+ *  from the workflow in `config.midiOptions`. midi only recognises a feat named exactly
+ *  "Magic Resistance" and its own magicResistance flags, so this also covers Spell Resistance,
+ *  Gnome Cunning and the Mantle of Spell Resistance there. Where both apply, advantage simply
+ *  doesn't stack.
  */
 
 /**
@@ -107,7 +114,8 @@ function _getResistanceProfiles(actor) {
 // ── Source detection ──────────────────────────────────────────────────
 
 /**
- * Resolve the item and activity that caused the save from the roll's message configuration.
+ * Resolve the item and activity that caused the save: the midi-qol workflow that requested it,
+ * else the roll's message configuration.
  * Falls back to the chat card containing the clicked button (inline [[/save]] enrichers).
  *
  * @param {object} config   Roll process configuration.
@@ -116,6 +124,8 @@ function _getResistanceProfiles(actor) {
  */
 function _resolveSource(config, message) {
     const system = message?.data?.system ?? {};
+    const midiItem = getMidiSourceItem(config);
+    if (midiItem) return { item: midiItem, itemType: midiItem.type ?? null };
     const safeFromUuid = uuid => {
         if (!uuid) return null;
         try {
@@ -183,7 +193,6 @@ function _isCategoryEnabled(category) {
 function _onPreRollSavingThrow(config, _dialog, message) {
     try {
         if (!getSetting("enableMagicResistance")) return;
-        if (game.modules.get("midi-qol")?.active) return;
 
         // Concentration saves are made against damage, not against the spell
         if (config.isConcentration || config.hookNames?.includes("concentration")) return;

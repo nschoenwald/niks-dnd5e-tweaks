@@ -545,7 +545,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableRollModeHighlight",
                                 name: "Roll Mode Highlight",
-                                hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button so it remains visible after interacting with other fields in the dialog.",
+                                hint: "When the system calculates a recommended advantage mode for a d20 roll (e.g. Advantage for War Caster, Disadvantage from a condition), persistently highlights the matching button so it remains visible after interacting with other fields in the dialog. Follows Automated Conditions 5e's recommendation when active.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -594,7 +594,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableRetroactiveAdvantage",
                                 name: "Retroactive Advantage/Disadvantage",
-                                hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets.",
+                                hint: "Allows changing a d20 roll between Normal, Advantage, and Disadvantage after it has been rolled, preserving original die results and automatically updating attack targets. Not offered on midi-qol workflow cards.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -716,7 +716,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableTemplateGridSnap",
                                 name: "Snap Templates to Grid Intersections",
-                                hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to override.",
+                                hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to override. Disabled while midi-qol is active.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -891,7 +891,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "promptForAttackDamage",
                                 name: "Prompt for Attack Damage",
-                                hint: "Opens the damage roll dialog automatically when an attack roll hits the target's AC.",
+                                hint: "Opens the damage roll dialog automatically when an attack roll hits the target's AC. Disabled while midi-qol is active.",
                                 type: "Select",
                                 default: "all",
                                 choices: [
@@ -914,7 +914,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "autoRollAttackDamage",
                                 name: "Auto-Roll Attack Damage",
-                                hint: "Automatically rolls damage without dialog when an attack roll hits target AC. Takes precedence over Prompt.",
+                                hint: "Automatically rolls damage without dialog when an attack roll hits target AC. Takes precedence over Prompt. Disabled while midi-qol is active.",
                                 type: "Select",
                                 default: "none",
                                 choices: [
@@ -936,7 +936,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableWeaponMasteries",
                                 name: "Weapon Mastery Automation",
-                                hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Step 1 automates Slow (reducing speed by 10 ft) and Sap (disadvantage on the creature's next attack roll).",
+                                hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Step 1 automates Slow (reducing speed by 10 ft) and Sap (disadvantage on the creature's next attack roll). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -1033,7 +1033,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableGrazeDamagePrompt",
                                 name: "Graze Damage Prompts (Always On)",
-                                hint: "When enabled, Graze weapon mastery damage prompts are sent even if the Player Damage Prompt feature is disabled. This lets you use Graze prompts independently of all other player damage prompts.",
+                                hint: "When enabled, Graze weapon mastery damage prompts are sent even if the Player Damage Prompt feature is disabled. This lets you use Graze prompts independently of all other player damage prompts. Skipped while Automated Masteries 5e is active.",
                                 type: "Boolean",
                                 default: false,
                                 scope: "world",
@@ -1086,7 +1086,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableAutoRollConcentration",
                                 name: "Auto-Roll Concentration Saves",
-                                hint: "Automatically rolls a Constitution save for concentration when taking damage.",
+                                hint: "Automatically rolls a Constitution save for concentration when taking damage. Skipped while midi-qol rolls concentration saves itself.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -1126,7 +1126,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableMagicResistance",
                                 name: "Magic Resistance Automation",
-                                hint: "Creatures with Magic Resistance, Spell Resistance, Gnome Cunning (2014) or an equipped Mantle of Spell Resistance roll saves against spells and magical effects with Advantage. Disabled while midi-qol is active.",
+                                hint: "Creatures with Magic Resistance, Spell Resistance, Gnome Cunning (2014) or an equipped Mantle of Spell Resistance roll saves against spells and magical effects with Advantage. Also works with midi-qol save requests.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -1179,7 +1179,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableAutoStatusZeroHP",
                                 name: "Auto-Apply Status at 0 HP",
-                                hint: "Automatically applies an overlay status condition to tokens when reaching 0 HP. Overrides DnD5e's native Downed Status Automation (autoApplyDowned).",
+                                hint: "Automatically applies an overlay status condition to tokens when reaching 0 HP. Overrides DnD5e's native Downed Status Automation (autoApplyDowned). Defers to midi-qol's Add Dead/Unconscious when that is on.",
                                 type: "Boolean",
                                 default: false,
                                 scope: "world"

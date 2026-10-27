@@ -5,6 +5,7 @@
  * @introduced v14.19.0
  */
 import { getSetting, debug } from "../../main.js";
+import { isMidiActive } from "../../utils/module-compat.js";
 
 /**
  * Auto-Prompt & Auto-Roll Attack Damage on Hit
@@ -19,7 +20,9 @@ import { getSetting, debug } from "../../main.js";
  *
  * Only fires when the attack total meets or exceeds at least one target's AC.
  * Misses and fumbles are ignored. Critical hits are treated as automatic hits.
- * Automatically disabled when midi-qol is active and configured to auto-apply damage.
+ * Automatically disabled when midi-qol is active: midi's workflow owns the attack → damage
+ * sequence (see its "Auto Roll Damage" setting), and rolling damage outside that workflow
+ * would produce a second, unlinked damage roll.
  */
 
 /**
@@ -260,14 +263,10 @@ async function _onCreateChatMessage(message, options, userId) {
             rollMode = isSelf ? CONST.DICE_ROLL_MODES.SELF : CONST.DICE_ROLL_MODES.PRIVATE;
         }
 
-        // Skip if midi-qol is active and configured to auto-apply damage
-        if (game.modules.get("midi-qol")?.active) {
-            const midiAutoApply = globalThis.MidiQOL?.configSettings?.()?.autoApplyDamage
-                ?? game.settings.get("midi-qol", "ConfigSettings")?.autoApplyDamage;
-            if (midiAutoApply && midiAutoApply.toLowerCase().includes("yes")) {
-                debug("Auto-Roll Attack Damage | midi-qol detected and auto-applies damage — feature bypassed.");
-                return;
-            }
+        // midi-qol's workflow owns the attack → damage sequence (its "Auto Roll Damage" setting)
+        if (isMidiActive()) {
+            debug("Auto-Roll Attack Damage | midi-qol is active and handles damage rolls — feature bypassed.");
+            return;
         }
 
         // Resolve the attacker actor

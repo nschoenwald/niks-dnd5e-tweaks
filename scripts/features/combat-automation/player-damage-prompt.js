@@ -6,6 +6,7 @@
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { midiAutoAppliesDamage, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 
 /**
  * Player Damage Prompt
@@ -158,14 +159,11 @@ async function _onCreateChatMessage(message) {
         const gmPromptEnabled = playerPromptEnabled && getSetting("enableGmDamagePrompt");
         if (!playerPromptEnabled && !gmPromptEnabled) return;
 
-        // Skip if midi-qol is active and configured to auto-apply damage
-        if (game.modules.get("midi-qol")?.active) {
-            const midiAutoApply = globalThis.MidiQOL?.configSettings?.()?.autoApplyDamage
-                ?? game.settings.get("midi-qol", "ConfigSettings")?.autoApplyDamage;
-            if (midiAutoApply && midiAutoApply.toLowerCase().includes("yes")) {
-                debug("Player Damage Prompt | midi-qol detected and auto-applies damage — feature bypassed.");
-                return;
-            }
+        // Skip if midi-qol auto-applies damage, or the roll belongs to a midi-qol workflow
+        // (midi's own damage card handles application for those).
+        if (midiAutoAppliesDamage() || isMidiMessage(message)) {
+            debug("Player Damage Prompt | midi-qol handles damage application for this roll — feature bypassed.");
+            return;
         }
 
         // Only process damage rolls from attack activities by default,
@@ -336,6 +334,12 @@ async function _onCreateChatMessage_Attack(message) {
         // Only proceed if this attack used the Graze mastery.
         const rollMastery = message.system?.mastery ?? message.getFlag("dnd5e", "roll.mastery");
         if (rollMastery !== "graze") return;
+
+        // Automated Masteries 5e rolls Graze damage itself; that roll gets the regular damage prompt.
+        if (isWm5eActive()) {
+            debug("Player Damage Prompt | Graze: Automated Masteries 5e handles Graze — skipping graze prompt");
+            return;
+        }
 
         debug("Player Damage Prompt | Graze: Attack roll with Graze mastery detected",
             "| Message ID:", message.id,

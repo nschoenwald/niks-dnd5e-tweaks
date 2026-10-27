@@ -6,6 +6,7 @@
  * @updated v14.49.1 (Auto-Apply Effects list applies matching effects directly and collapses the usage card's effect tray)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
+import { midiAppliesItemEffects } from "../../utils/module-compat.js";
 
 /**
  * Self Effect Application
@@ -390,13 +391,9 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         if (!isFeatureActive("enableSelfEffectApplication", "clientEnableSelfEffectApplication")) return;
 
         // Skip if midi-qol is active and configured to auto-apply item active effects
-        if (game.modules.get("midi-qol")?.active) {
-            const autoEffects = globalThis.MidiQOL?.configSettings?.()?.autoItemEffects
-                ?? game.settings.get("midi-qol", "ConfigSettings")?.autoItemEffects;
-            if (autoEffects && autoEffects !== "off" && autoEffects !== "none") {
-                debug("Self Effect Application | midi-qol detected and auto-applies item effects — feature bypassed.");
-                return;
-            }
+        if (midiAppliesItemEffects()) {
+            debug("Self Effect Application | midi-qol detected and auto-applies item effects — feature bypassed.");
+            return;
         }
 
         const actor = activity.item?.actor;

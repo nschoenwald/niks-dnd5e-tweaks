@@ -391,17 +391,26 @@ All features are managed in the **Settings Dashboard** accessible via *Configure
 Nik's DnD5e Tweaks includes built-in compatibility guards to ensure conflict-free operation:
 
 ### midi-qol Integration Matrix
-When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, conflicting automations are automatically disabled or bypassed:
+When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that would do the same job as midi-qol step back, and features midi-qol doesn't cover keep working inside its workflows:
 
 | Feature | Behavior with midi-qol |
 |---|---|
-| **Auto-Open Damage for Saves** | **Automatically disabled** (midi-qol handles save damage workflows). |
-| **Prompt / Auto-Roll Attack Damage** | **Automatically bypassed** if midi-qol auto-applies damage. |
-| **Auto-Roll Concentration Saves** | **Automatically bypassed** if midi-qol handles concentration checks. Roll card "End Concentration" button remains active. |
-| **Self Effect Application** | **Automatically bypassed** if midi-qol auto-applies item effects. |
-| **Player Damage Prompt** | **Automatically bypassed** if midi-qol auto-applies damage. |
-| **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows. |
-| **Magic Resistance Automation** | **Automatically disabled** (midi-qol handles Magic Resistance). |
+| **Auto-Open Damage for Saves** | **Disabled** (midi-qol handles save damage workflows). |
+| **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
+| **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
+| **Self Effect Application** | **Bypassed** if midi-qol auto-applies item effects. |
+| **Player Damage Prompt** | **Bypassed** if midi-qol auto-applies damage, and for damage rolled inside a midi-qol workflow. |
+| **Auto-Apply Status at 0 HP** | When midi-qol's *Add Dead/Unconscious* is on, midi-qol picks the 0 HP status (and marks defeated if its settings say so). This feature still escalates to Dead after three failed death saves, cleans up on healing and removes tokens from combat. |
+| **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |
+| **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
+| **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit. |
+| **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
+| **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
+| **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
+
+### Automated Conditions 5e & Automated Masteries 5e
+* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
+* **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap & Slow) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.

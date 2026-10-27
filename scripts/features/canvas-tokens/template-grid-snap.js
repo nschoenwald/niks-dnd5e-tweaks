@@ -7,6 +7,7 @@
  */
 import { debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { isMidiActive } from "../../utils/module-compat.js";
 
 /**
  * Enforces placing circle, ring and square/rectangle measured templates on grid intersections (vertices)
@@ -21,7 +22,20 @@ import { patchMethod } from "../../utils/patch-helper.js";
  * - Spell and item templates are placed via TemplatePlacement and canvas.regions.placeRegions().
  * - Live preview snapping wraps _getSnappedPoint on CircleShapeData, RingShapeData and RectangleShapeData.
  * - Final placement is handled via the dnd5e.createMeasuredTemplate and preCreateRegion hooks.
+ *
+ * midi-qol: midi drives activity template placement itself (its "Template Grid Snapping"
+ * setting, range clamping and live targeting). Snapping the final shape afterwards would move
+ * the template away from the position midi targeted and range-checked, so this feature
+ * stands down while midi-qol is active.
  */
+
+/**
+ * Whether template snapping should run for this client.
+ * @returns {boolean}
+ */
+function _isSnapActive() {
+    return !isMidiActive() && isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap");
+}
 
 /**
  * Check whether the Shift key is currently held, which overrides snap behaviour
@@ -105,7 +119,7 @@ function _snapShapeOrigins(shapes, source) {
  * Shared snapping handler for template shapes.
  */
 function _handleShapeSnappedPoint(wrapped, point) {
-    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) {
+    if (!_isSnapActive()) {
         return wrapped(point);
     }
 
@@ -166,7 +180,7 @@ export function initTemplateGridSnap() {
  * @param {object[]} templateData  Data objects for the regions about to be created.
  */
 function _onCreateMeasuredTemplate(activity, templateData) {
-    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
+    if (!_isSnapActive()) return;
     if (_isShiftHeld()) {
         debug("Shift held — skipping template snap in dnd5e.createMeasuredTemplate");
         return;
@@ -201,7 +215,7 @@ function _onCreateMeasuredTemplate(activity, templateData) {
  */
 function _onPreCreateRegion(document, data, options, userId) {
     if (userId && userId !== game.user.id) return;
-    if (!isFeatureActive("enableTemplateGridSnap", "clientEnableTemplateGridSnap")) return;
+    if (!_isSnapActive()) return;
 
     // Only process regions created as spell/item templates
     const isTemplate = document.flags?.core?.MeasuredTemplate
