@@ -6,6 +6,7 @@
  *
  * @introduced v14.43.0
  * @updated v14.49.0 (Reuses actor roll data, lazy breakdowns for older messages, gated document listeners)
+ * @updated v14.55.1 (midi-qol merged card sections; card summaries use their own message)
  */
 import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -2165,6 +2166,21 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
         return;
     }
 
+    const rendered = await _renderDamageBreakdown(message, damageRolls);
+    if (!rendered) return;
+    message._nd5tBreakdownHtml = rendered;
+    breakdownEl.innerHTML = rendered;
+}
+
+/**
+ * Render the damage breakdown for a set of damage rolls: one section per damage type, dice at the
+ * top (base weapon damage first), modifiers below.
+ *
+ * @param {ChatMessage5e} message
+ * @param {DamageRoll[]} damageRolls
+ * @returns {Promise<string|null>} The rendered HTML, or null when there is nothing to show.
+ */
+async function _renderDamageBreakdown(message, damageRolls) {
     try {
         const item = (typeof message.getAssociatedItem === "function" ? message.getAssociatedItem() : null)
             ?? message.item
@@ -2239,7 +2255,7 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
             }
         }
 
-        if (!typeMap.size) return;
+        if (!typeMap.size) return null;
 
         const totalLabel = game.i18n?.localize ? (game.i18n.localize("DND5E.PropertyTotal") || game.i18n.localize("ND5T.RollBreakdownDetails.Total") || "Total") : "Total";
 
@@ -2272,10 +2288,75 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
             }
         );
 
-        message._nd5tBreakdownHtml = rendered;
-        breakdownEl.innerHTML = rendered;
+        return rendered;
     } catch (err) {
         console.error("Nik's DnD5e Tweaks | Error enhancing damage chat message breakdown:", err);
+        return null;
+    }
+}
+
+/**
+ * midi-qol's merged card sections: the `.dice-roll` class of each section and the `rollType`
+ * midi-qol stores on the rolls shown in it (`options.midi-qol.rollType`).
+ */
+const MIDI_SECTIONS = [
+    { selector: ".midi-attack-roll", rollType: "attack" },
+    { selector: ".midi-damage-roll", rollType: "defaultDamage", isDamage: true },
+    { selector: ".midi-other-damage-roll", rollType: "otherDamage", isDamage: true }
+];
+
+/**
+ * Show the detailed breakdown in the attack and damage sections of midi-qol's merged card.
+ *
+ * midi-qol renders those sections with its own tooltip template instead of `roll.getTooltip()`, so
+ * the overlay never reached them. Only the content of an existing `.dice-tooltip` is replaced:
+ * midi-qol removes the tooltip for players when its settings hide roll details (and dnd5e.renderChatMessage
+ * fires after that masking), so nothing hidden comes back. midi-qol's own notes on where
+ * advantage and bonuses came from are kept at the top.
+ *
+ * @param {ChatMessage5e} message
+ * @param {HTMLElement} html
+ */
+async function enhanceMidiSectionBreakdowns(message, html) {
+    if (!isFeatureActive("enableRollBreakdownDetails", "clientEnableRollBreakdownDetails")) return;
+    const root = html instanceof HTMLElement ? html : html?.[0];
+    const results = root?.querySelector?.(".midi-results");
+    if (!results || !message?.rolls?.length) return;
+
+    message._nd5tMidiBreakdowns ??= new Map();
+    for (const { selector, rollType, isDamage } of MIDI_SECTIONS) {
+        const tooltip = results.querySelector(`.dice-roll${selector} .dice-tooltip`);
+        if (!tooltip || tooltip.querySelector(".nd5t-roll-breakdown")) continue;
+        const rolls = message.rolls.filter(r => foundry.utils.getProperty(r, "options.midi-qol.rollType") === rollType);
+        if (!rolls.length) continue;
+
+        // The card re-renders at every workflow step; reuse the breakdown while its rolls are unchanged.
+        const key = `${rollType}:${rolls.map(r => `${r.formula}=${r.total}`).join("|")}`;
+        let rendered = message._nd5tMidiBreakdowns.get(key);
+        if (rendered === undefined) {
+            try {
+                if (isDamage) rendered = await _renderDamageBreakdown(message, rolls);
+                else {
+                    const data = await getDetailedRollBreakdown(rolls[0]);
+                    rendered = data ? await foundry.applications.handlebars.renderTemplate(
+                        "modules/niks-dnd5e-tweaks/templates/chat/roll-breakdown-details.hbs", data) : null;
+                }
+            } catch (err) {
+                console.error("Nik's DnD5e Tweaks | Error rendering midi-qol section breakdown:", err);
+                rendered = null;
+            }
+            message._nd5tMidiBreakdowns.set(key, rendered);
+        }
+        if (!rendered) continue;
+
+        const template = document.createElement("template");
+        template.innerHTML = rendered;
+        const ours = template.content.querySelector(".dice-tooltip");
+        if (!ours) continue;
+        // Keep midi-qol's formula and attribution notes; its dice parts are what ours replaces.
+        const notes = Array.from(tooltip.querySelectorAll(":scope > section.tooltip-part:not(:has(.dice))"));
+        ours.prepend(...notes);
+        tooltip.replaceWith(ours);
     }
 }
 
@@ -2299,7 +2380,9 @@ async function _ensurePopoverBreakdown(popoverEl, message = null) {
     if (popoverEl._nd5tBreakdownLoading || popoverEl._nd5tBreakdownSkipped) return;
     popoverEl._nd5tBreakdownLoading = true;
     try {
-        const chatCard = popoverEl.closest(".chat-message[data-message-id], .message[data-message-id]")
+        // A card summary (a save or check shown inside the card that requested it) belongs to its own
+        // message, not the card's: midi-qol's merged card carries damage rolls of its own.
+        const chatCard = popoverEl.closest(".card-summary[data-message-id], .chat-message[data-message-id], .message[data-message-id]")
             ?? popoverEl.closest(".chat-message, .message")
             ?? popoverEl.parentElement;
         const msgId = chatCard?.dataset?.messageId;
@@ -2348,6 +2431,12 @@ export function initRollBreakdownDetails() {
         for (const popover of popovers) {
             _ensurePopoverBreakdown(popover, message);
         }
+    });
+
+    // midi-qol merged card: its attack and damage sections use midi-qol's own tooltip.
+    // dnd5e.renderChatMessage fires after midi-qol has masked what players may not see.
+    Hooks.on("dnd5e.renderChatMessage", (message, html) => {
+        enhanceMidiSectionBreakdowns(message, html);
     });
 
     // Pre-cache recent historical messages once the world and messages collection are fully ready

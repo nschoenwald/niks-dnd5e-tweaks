@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.55.1] - 2026-10-28
+### Changed
+- **Detailed Roll Breakdown Overlay** with midi-qol: Clicking the attack or damage total on midi-qol's combined card now shows the detailed breakdown too, with every die and bonus and where it came from. Before, midi-qol showed its own plain list of dice there. midi-qol's notes on where advantage or a bonus came from are kept at the top. Rolls that midi-qol hides from players stay hidden.
+
+### Fixed
+- **Detailed Roll Breakdown Overlay**: A save or check shown inside midi-qol's combined card could show the card's damage breakdown when you clicked its total. It now shows its own roll.
+
 ## [14.55.0] - 2026-10-28
 ### Changed
 - **Chat Card Styling Improvements** with midi-qol:

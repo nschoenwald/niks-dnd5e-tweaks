@@ -120,6 +120,7 @@ Modernizes DnD5e chat cards to make actions and roll results readable at a glanc
 Transforms the native DnD5e roll breakdown popover (opened by clicking on the roll total button on chat cards) into a comprehensive, readable breakdown showing the base die and the origin of every bonus or penalty:
 * **All Roll Types**: Fully supports attacks, checks, saves, damage cards, and regular dice rolls (which collapse into the chat card's roll accordion until clicked).
 * **Theme Aware**: Text and borders follow the light/dark theme of the chat card automatically, for any combination of Interface, App and Chat theme settings.
+* **midi-qol Cards**: Also shown when you click the attack or damage total on midi-qol's combined card, keeping midi-qol's notes on where advantage or a bonus came from. Rolls midi-qol hides from players stay hidden.
 * **Damage Cards Breakdown & Consolidation**: Consolidates damage rolls of the same damage type (e.g. base weapon damage, *Vicious* dice, and *Great Weapon Master*) into a single unified section per damage type, displaying damage type badges with icons, subtotals, and grand total. Automatically parses and isolates typed bonus damage from active effects (e.g. Paladin 2024 *Radiant Strikes*, *Divine Favor*, *Improved Divine Smite*) into dedicated damage type sections with their own icons, subtotals, and effect names, rather than lumping them into the weapon's base damage type.
 * **Intuitive Sorting Order**:
   * **Dice at the Top**: All rolled dice are placed at the top of the breakdown, starting with base weapon damage (or base d20 on checks/saves/attacks) followed by additional dice (e.g. *Vicious*, *Bless*).
@@ -439,6 +440,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
 | **Chat Card Styling Improvements** | **Works** on midi-qol cards, including its merged card. midi-qol's Attack, Damage and Apply Effects buttons are color-coded to match. With midi-qol's *Colored Border Messages* on, the player's color keeps the card's left edge. Results midi-qol hides from players stay hidden. |
+| **Detailed Roll Breakdown Overlay** | **Works** on midi-qol's combined card: the attack and damage totals show the detailed breakdown, with midi-qol's advantage and bonus notes kept at the top. Rolls midi-qol hides from players stay hidden. |
 
 ### Automated Conditions 5e & Automated Masteries 5e
 * **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
