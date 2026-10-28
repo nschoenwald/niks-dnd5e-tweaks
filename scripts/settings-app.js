@@ -1,5 +1,15 @@
 import { MODULE_ID, log } from "./main.js";
 import { NiksListEditorApp, normalizeListValue, parseListValue } from "./settings-list-editor.js";
+import { isMidiActive, isWm5eActive } from "./utils/module-compat.js";
+
+/**
+ * Modules that take over a feature completely. Settings tagged with `unavailableWith` are greyed out
+ * and locked in the dashboard while the module is active (their stored value is kept).
+ */
+const UNAVAILABLE_WITH = {
+    midi: { label: "midi-qol", isActive: isMidiActive },
+    wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive }
+};
 
 /**
  * Modern ApplicationV2 Settings Dashboard for Nik's D&D 5e Tweaks.
@@ -81,6 +91,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "clientEnableAttackDamagePrompt",
+                                unavailableWith: "midi",
                                 name: "Prompt for Attack Damage",
                                 hint: "Automatically opens the damage dialog when your player character's attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
                                 type: "Boolean",
@@ -89,6 +100,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "clientEnableAutoRollAttackDamage",
+                                unavailableWith: "midi",
                                 name: "Auto-Roll Attack Damage",
                                 hint: "Automatically rolls damage immediately when your player character's attack roll hits target AC (if enabled by the GM).",
                                 type: "Boolean",
@@ -97,6 +109,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "clientEnableAutoRollSaveDamage",
+                                unavailableWith: "midi",
                                 name: "Auto-Open Damage for Saves",
                                 hint: "Automatically opens the damage roll dialog when you use a Save-type activity with damage (if enabled by the GM).",
                                 type: "Boolean",
@@ -105,6 +118,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "clientEnableWeaponMasteries",
+                                unavailableWith: "wm5e",
                                 name: "Weapon Mastery Automation",
                                 hint: "Enables automatic weapon mastery effects on your client when making weapon attacks (if enabled by the GM).",
                                 type: "Boolean",
@@ -314,6 +328,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         settings: [
                             {
                                 key: "clientEnableTemplateTargeting",
+                                unavailableWith: "midi",
                                 name: "Auto-Target Tokens in Spell Templates",
                                 hint: "Automatically targets tokens inside spell templates placed by you (if enabled by the GM).",
                                 type: "Boolean",
@@ -322,6 +337,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "clientEnableTemplateGridSnap",
+                                unavailableWith: "midi",
                                 name: "Snap Templates to Grid Intersections",
                                 hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
                                 type: "Boolean",
@@ -728,6 +744,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "enableTemplateGridSnap",
+                                unavailableWith: "midi",
                                 name: "Snap Templates to Grid Intersections",
                                 hint: "Forces circle and square/cube spell templates to snap to grid intersections instead of cell centers during placement. Hold Shift to override. Disabled while midi-qol is active.",
                                 type: "Boolean",
@@ -736,6 +753,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "enableTemplateTargeting",
+                                unavailableWith: "midi",
                                 name: "Auto-Target Tokens in Spell Templates",
                                 hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area in real time.",
                                 type: "Boolean",
@@ -895,6 +913,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         settings: [
                             {
                                 key: "enableAutoRollSaveDamage",
+                                unavailableWith: "midi",
                                 name: "Auto-Open Damage Dialog for Saves",
                                 hint: "Automatically opens the damage roll dialog when a Save-type activity that includes damage (e.g. Fireball) is used.",
                                 type: "Boolean",
@@ -903,6 +922,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "promptForAttackDamage",
+                                unavailableWith: "midi",
                                 name: "Prompt for Attack Damage",
                                 hint: "Opens the damage roll dialog automatically when an attack roll hits the target's AC. Disabled while midi-qol is active.",
                                 type: "Select",
@@ -926,6 +946,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "autoRollAttackDamage",
+                                unavailableWith: "midi",
                                 name: "Auto-Roll Attack Damage",
                                 hint: "Automatically rolls damage without dialog when an attack roll hits target AC. Takes precedence over Prompt. Disabled while midi-qol is active.",
                                 type: "Select",
@@ -948,6 +969,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "enableWeaponMasteries",
+                                unavailableWith: "wm5e",
                                 name: "Weapon Mastery Automation",
                                 hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Step 1 automates Slow (reducing speed by 10 ft) and Sap (disadvantage on the creature's next attack roll). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
                                 type: "Boolean",
@@ -956,6 +978,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "masterySapIcon",
+                                unavailableWith: "wm5e",
                                 name: "Sap Effect Icon",
                                 hint: "Select an icon for the Sap weapon mastery active effect.",
                                 type: "FilePicker",
@@ -966,6 +989,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             },
                             {
                                 key: "masterySlowIcon",
+                                unavailableWith: "wm5e",
                                 name: "Slow Effect Icon",
                                 hint: "Select an icon for the Slow weapon mastery active effect.",
                                 type: "FilePicker",
@@ -1181,6 +1205,74 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 type: "Boolean",
                                 default: false,
                                 scope: "world"
+                            },
+                            {
+                                key: "enableDamageEmanation",
+                                name: "Damage Emanation Automation",
+                                hint: "Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield, Dirge and similar emanations trigger their save and damage when a creature enters, the emanation moves onto a creature, or a creature ends its turn inside. Once per creature per turn. Creatures inside at casting are left to the cast. The emanation is removed when concentration ends.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "damageEmanationMode",
+                                name: "Trigger Mode",
+                                hint: "Prompt the caster (and GM), prompt only the GM, or trigger the save automatically.",
+                                type: "Select",
+                                default: "promptCaster",
+                                choices: [
+                                    { value: "promptCaster", label: "Prompt Caster" },
+                                    { value: "promptGM", label: "Prompt GM Only" },
+                                    { value: "automatic", label: "Automatic" }
+                                ],
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationSpells",
+                                name: "Emanation Spells",
+                                list: true,
+                                hint: "Spell identifiers (or names) that get the automation. Other spells can add \"Damage Emanation\" in an activity's Behaviors tab.",
+                                type: "String",
+                                default: "cacophonic-shield, conjure-woodland-beings, dirge, spirit-guardians, yolandes-regal-presence",
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationCombatOnly",
+                                name: "Only During Combat",
+                                hint: "Only trigger emanations while a combat encounter is running on the scene.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationExcludeAllies",
+                                name: "Exclude Allies",
+                                hint: "Creatures with the same token disposition as the caster are never affected.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationRequireSight",
+                                name: "Respect \"Creature You Can See\"",
+                                hint: "Conjure Woodland Beings and Yolande's Regal Presence skip hidden and invisible creatures.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationRememberDamageType",
+                                name: "Remember Damage Type",
+                                hint: "Spirit Guardians keeps the damage type (Radiant or Necrotic) chosen for its first roll.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
                             }
                         ]
                     },
@@ -1382,9 +1474,17 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             // Build combined search index text
                             const searchText = `${s.name} ${s.hint || ""} ${tab.label} ${sec.title || ""}`.toLowerCase();
 
+                            const unavailableModule = s.unavailableWith ? UNAVAILABLE_WITH[s.unavailableWith] : null;
+                            const unavailable = Boolean(unavailableModule?.isActive());
+
                             return {
                                 ...s,
                                 value,
+                                unavailable,
+                                unavailableLabel: unavailable ? unavailableModule.label : "",
+                                unavailableReason: unavailable
+                                    ? `Not available while ${unavailableModule.label} is active. It handles this itself, so this setting has no effect. Your choice is kept for when ${unavailableModule.label} is turned off.`
+                                    : "",
                                 listCount: s.list ? parseListValue(value).length : 0,
                                 choices,
                                 isChild: Boolean(s.parentKey),
@@ -1597,6 +1697,12 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                     controls.forEach(ctrl => ctrl.removeAttribute("disabled"));
                 }
             }
+        });
+
+        // Settings taken over by another module stay locked, whatever their parent says
+        html.querySelectorAll(".nd5t-setting-row.nd5t-unavailable").forEach(row => {
+            row.querySelectorAll(".nd5t-setting-control :is(input, select, button)")
+                .forEach(ctrl => ctrl.setAttribute("disabled", "disabled"));
         });
     }
 

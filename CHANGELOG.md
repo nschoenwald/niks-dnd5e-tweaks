@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.54.0] - 2026-10-28
+### Added
+- **Damage Emanation Automation**:
+  - *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence* now trigger their saving throw and damage on their own when a creature enters the emanation, the emanation moves into a creature's space as the caster moves, or a creature ends its turn inside it.
+  - Each creature saves only once per turn. Creatures already inside when the spell is cast are left to the cast itself. Turning the emanation off and on, revealing it, or placing or summoning a token inside it doesn't count as entering. Creatures triggered at the same moment share one save card, and creatures triggered later in the same turn are added to that turn's card until someone rolls or skips it. This also covers a group of monsters with the same initiative ending their turns in the emanation one after another.
+  - The usual save card is used at the level the spell was cast, without spending a spell slot, so Deafened, Prone and other effects are applied as normal. They end when the caster stops concentrating.
+  - By default, the caster's player and the GM get a card listing the triggered creatures, with **Roll Saves** and **Skip** buttons. If the player and the GM both click, only the first click counts. The new **Trigger Mode** setting can send it to the GM only, or roll automatically.
+  - The emanation is removed from the scene when the caster stops concentrating.
+  - Casting one of these spells always offers to place its emanation, even when the spell's casting activity has template placement turned off (*Yolande's Regal Presence*). Pushing a creature away with *Yolande's Regal Presence* is still done by hand.
+  - New settings: **Emanation Spells** (add more spells by identifier), **Only During Combat**, **Exclude Allies**, **Respect "Creature You Can See"** (*Conjure Woodland Beings*, *Yolande's Regal Presence*) and **Remember Damage Type** (*Spirit Guardians*' Radiant or Necrotic choice).
+  - Spell authors can also add **Damage Emanation** in an activity's **Behaviors** tab.
+
+### Changed
+- **Chat Card Styling Improvements**: The **Apply** buttons in damage and effects trays are now taller, bolder and color-coded (crimson for damage and healing, gold for effects), so they are easier to spot. They also say what they do: **Apply Damage**, **Apply Healing**, **Apply Temp HP** or **Apply Effect**. When every target would get exactly the same amount, the button shows it, e.g. **Apply 17 Damage** or **Apply 6 Temp HP**. It updates as you change targets, multipliers or resistance toggles. Cards only grow by a few pixels, because the empty space at the bottom of the tray is used for it.
+- **Settings Dashboard**: Settings that have no effect because midi-qol or Automated Masteries 5e handles the job are now greyed out and locked, with a badge naming that module. This covers template auto-targeting, template grid snapping, attack damage prompts and auto-rolls, auto-open damage for saves (midi-qol) and Weapon Mastery Automation (Automated Masteries 5e). Your previous choice is kept for when that module is turned off.
+
 ## [14.53.0] - 2026-10-27
 ### Added
 - **Dragging Items Between Actors**: Dragging an inventory item from one actor to another, such as from a character to the party group, now moves it instead of copying it. A new setting lets you choose **Always Move** (default), **Move, but Copy from NPCs** or **Always Copy** (the D&D 5e default). Shift still forces a move and Ctrl a copy. When you aren't allowed to remove the item from the original actor, it is copied instead. Spells, features and classes are always copied.

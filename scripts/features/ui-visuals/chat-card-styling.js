@@ -4,8 +4,10 @@
  *
  * @introduced v14.28.0
  * @updated v14.49.0 (Batched roll result layout measurement)
+ * @updated v14.54.0 (Descriptive Apply button labels in damage / effects trays)
  */
 import { log, isFeatureActive } from "../../main.js";
+import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
  * Roll types that this feature applies card-specific styling to.
@@ -14,6 +16,127 @@ import { log, isFeatureActive } from "../../main.js";
  * @type {Set<string>}
  */
 const STYLED_ROLL_TYPES = new Set(["attack", "damage", "check", "save", "healing", "hitdie", "recharge"]);
+
+/**
+ * Pick the Apply button label for a damage tray from the damage it applies:
+ * only temp HP → "Apply Temp HP", only healing (or healing + temp HP) → "Apply Healing",
+ * anything else → "Apply Damage".
+ * @param {{type: string}[]} damages  DamageApplicationElement#damages
+ * @returns {string} Localization key.
+ */
+function _getDamageApplyLabel(damages) {
+    const types = (damages ?? []).map(d => d.type).filter(Boolean);
+    const healingTypes = CONFIG.DND5E?.healingTypes ?? {};
+    if (types.length && types.every(t => t in healingTypes)) {
+        return types.every(t => t === "temphp") ? "ND5T.ChatCardStyling.ApplyTempHP" : "ND5T.ChatCardStyling.ApplyHealing";
+    }
+    return "ND5T.ChatCardStyling.ApplyDamage";
+}
+
+/**
+ * When every target of a damage tray would receive exactly the same amount, the label including
+ * that amount ("Apply 17 Damage", "Apply 6 Healing", "Apply 6 Temp HP"), otherwise null.
+ * Only targets the user owns are calculated, so players don't learn about other creatures' traits.
+ * @param {HTMLElement} element  The damage-application element.
+ * @returns {string|null}
+ */
+function _getDamageApplyAmountLabel(element) {
+    const uuids = Array.from(element.targetList?.targets ?? []);
+    if (!uuids.length) return null;
+
+    let shared = null;
+    for (const uuid of uuids) {
+        const actor = fromUuidSync(uuid, { strict: false })?.actor;
+        if (!actor?.isOwner) return null;
+        let calc;
+        try {
+            calc = element.calculateDamage(actor, element.getMergedOptions(uuid));
+        } catch {
+            return null;
+        }
+        const values = { total: calc.total ?? 0, temp: calc.temp ?? 0, tempMax: calc.tempMax ?? 0 };
+        if (!shared) shared = values;
+        else if ((values.total !== shared.total) || (values.temp !== shared.temp)
+            || (values.tempMax !== shared.tempMax)) return null;
+    }
+
+    const { total, temp, tempMax } = shared;
+    if (tempMax) return null;
+    let key;
+    let amount;
+    if ((total > 0) && !temp) [key, amount] = ["ND5T.ChatCardStyling.ApplyDamageAmount", total];
+    else if ((total < 0) && !temp) [key, amount] = ["ND5T.ChatCardStyling.ApplyHealingAmount", -total];
+    else if (!total && (temp > 0)) [key, amount] = ["ND5T.ChatCardStyling.ApplyTempHPAmount", temp];
+    else return null;
+    return game.i18n.format(key, { amount: Math.floor(amount).toLocaleString(game.i18n.lang) });
+}
+
+/**
+ * Update a damage tray's Apply button, batching the many entry refreshes of one render.
+ * @param {HTMLElement} element  The damage-application element.
+ */
+function _queueDamageApplyLabel(element) {
+    if (element._nd5tLabelQueued) return;
+    element._nd5tLabelQueued = true;
+    queueMicrotask(() => {
+        element._nd5tLabelQueued = false;
+        const span = element.querySelector(".apply-button > span");
+        if (!span) return;
+        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
+            span.textContent = game.i18n.localize("DND5E.Apply");
+            return;
+        }
+        span.textContent = _getDamageApplyAmountLabel(element)
+            ?? game.i18n.localize(_getDamageApplyLabel(element.damages));
+    });
+}
+
+/**
+ * Set the text of a tray's Apply button, or restore dnd5e's own label when the feature is off.
+ * @param {HTMLElement} element  The damage-application / effect-application element.
+ * @param {string} key           Localization key used while Chat Card Styling is active.
+ * @param {string} defaultKey    dnd5e's own localization key.
+ */
+function _setApplyButtonLabel(element, key, defaultKey) {
+    const span = element.querySelector(".apply-button > span");
+    if (!span) return;
+    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling");
+    span.textContent = game.i18n.localize(active ? key : defaultKey);
+}
+
+/**
+ * Relabel the Apply buttons of dnd5e's damage and effects trays ("Apply Damage", "Apply Healing",
+ * "Apply Temp HP", "Apply Effect") while the trays build their markup.
+ *
+ * connectedCallback itself can't be patched: the browser captures custom element lifecycle callbacks
+ * when dnd5e defines the elements, before this module loads. The methods below are called through
+ * `this` from connectedCallback once the Apply button exists, so patching them works.
+ */
+function _patchApplyButtonLabels() {
+    const components = "dnd5e.applications.components";
+    patchMethod(`${components}.DamageApplicationElement.prototype.buildTargetContainer`, function (wrapped, ...args) {
+        const targetList = wrapped(...args);
+        // Recalculate when targets are added, removed or toggled (incl. selected-token mode)
+        const relabel = () => _queueDamageApplyLabel(this);
+        targetList?.addEventListener("recorded-targets:build", relabel);
+        targetList?.addEventListener("recorded-targets:change", relabel);
+        relabel();
+        return targetList;
+    }, "WRAPPER");
+
+    // Each entry refresh follows a change to multipliers, resistances being ignored, etc.
+    patchMethod(`${components}.DamageApplicationElement.prototype.refreshListEntry`, function (wrapped, ...args) {
+        const result = wrapped(...args);
+        _queueDamageApplyLabel(this);
+        return result;
+    }, "WRAPPER");
+
+    patchMethod(`${components}.EffectApplicationElement.prototype.buildEffectsList`, function (wrapped, ...args) {
+        const result = wrapped(...args);
+        _setApplyButtonLabel(this, "ND5T.ChatCardStyling.ApplyEffect", "DND5E.EFFECT.Action.Apply");
+        return result;
+    }, "WRAPPER");
+}
 
 /**
  * Format the subtitle of damage rolls so it only shows "Damage Roll"
@@ -719,6 +842,8 @@ export function initChatCardStyling() {
     if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
         enableChatCardStyling();
     }
+
+    _patchApplyButtonLabels();
 
     // Tag and format messages as they are rendered in HTML.
     // Both hooks call _tagMessageElement; the dataset guards inside make double-runs safe.

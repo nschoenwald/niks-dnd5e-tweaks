@@ -48,7 +48,8 @@
 
                     <div class="nd5t-settings-list">
                         {{#each this.settings}}
-                        <div class="nd5t-setting-row {{#if this.isChild}}nd5t-child-setting{{/if}}" 
+                        <div class="nd5t-setting-row {{#if this.isChild}}nd5t-child-setting{{/if}} {{#if this.unavailable}}nd5t-unavailable{{/if}}" 
+                             {{#if this.unavailable}}data-tooltip="{{this.unavailableReason}}"{{/if}}
                              data-key="{{this.key}}" 
                              data-scope="{{this.scope}}"
                              {{#if this.parentKey}}data-parent="{{this.parentKey}}"{{/if}}
@@ -67,6 +68,10 @@
                                         <span class="nd5t-badge client" title="This setting is stored locally per client/user">Client</span>
                                         {{else}}
                                         <span class="nd5t-badge world" title="This setting applies to all users in this world">World</span>
+                                        {{/if}}
+
+                                        {{#if this.unavailable}}
+                                        <span class="nd5t-badge unavailable" title="{{this.unavailableReason}}"><i class="fa-solid fa-ban" inert></i> {{this.unavailableLabel}}</span>
                                         {{/if}}
 
                                         {{#if this.requiresReload}}

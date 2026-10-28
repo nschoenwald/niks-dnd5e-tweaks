@@ -78,6 +78,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-End Concentration](#auto-end-concentration)** | Combat & Automation | ✅ Enabled | No |
+| **[Damage Emanation Automation](#damage-emanation-automation)** | Combat & Automation | ✅ Prompt Caster | No |
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-class-features)** | Combat & Automation | ✅ Enabled | No |
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat & Automation | ✅ Enabled | Yes |
@@ -107,6 +108,7 @@ Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly 
 Modernizes DnD5e chat cards to make actions and roll results readable at a glance:
 * **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
 * **Enlarged Targeted / Selected Button**: Expands the target mode toggle button in usage cards and damage/effects trays into an easy-to-click, full-height button displaying both icon and dynamic label (**Targeted** / **Selected**), paired with clean, vertically stacked target pills.
+* **Prominent Apply Buttons**: The **Apply** buttons in damage and effects trays are taller, bolder, color-coded (Crimson for damage and healing, Gold for effects) and say what they do: **Apply Damage**, **Apply Healing**, **Apply Temp HP** or **Apply Effect**. When every target would get exactly the same amount (no resistances, vulnerabilities or different multipliers), the amount is shown too, e.g. **Apply 17 Damage** or **Apply 6 Temp HP**. The tray's bottom spacing is trimmed, so cards barely grow.
 * **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
 * **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
@@ -291,6 +293,21 @@ Creatures with **Magic Resistance** automatically roll saving throws against spe
 * **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
 * **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
 
+### Damage Emanation Automation
+Handles the "enters the Emanation or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*:
+* **Triggers**: A creature enters the emanation, the emanation moves into a creature's space as the caster moves, or a creature ends its turn inside it.
+* **Once Per Turn**: Each creature makes the save only once per turn for each emanation.
+* **Casting Is Left Alone**: Creatures already inside when the spell is cast are handled by the spell's own cast activity and aren't triggered again by the emanation.
+* **Only Real Movement Counts**: Turning the emanation's behavior off and on, revealing a hidden emanation, or placing or summoning a token inside it doesn't count as entering.
+* **Batched**: Creatures triggered at the same moment (for example when the caster walks past several enemies) share one save card. In the prompt modes, creatures triggered later in the same turn are added to that turn's card until someone rolls or skips it. Creatures sharing an initiative count (for example a group of identical monsters taking their turns one after another) share a card too.
+* **Native Save Card**: Uses the spell's save activity at the level it was cast, without spending a spell slot. Save buttons, half damage, damage application and conditions such as Deafened (*Cacophonic Shield*) or Prone (*Dirge*) work as usual. Conditions applied from it end when the caster stops concentrating.
+* **Emanation Always Placed**: Casting a listed spell always offers to place its emanation, even if the spell's casting activity has template placement turned off (*Yolande's Regal Presence*).
+* **Upcasting**: Damage scales with the slot the spell was cast with, including Pact Magic slots.
+* **Concentration Cleanup**: The emanation is removed from the scene when the caster stops concentrating on the spell.
+* **Trigger Mode**: **Prompt Caster** (default) whispers a card to the caster's owners and the GM, listing the triggered creatures with checkboxes and **Roll Saves** / **Skip** buttons. Only the first click counts, so the saves are never rolled twice. **Prompt GM Only** sends it to the GM only. **Automatic** rolls straight away.
+* **Other Spells**: Add spell identifiers to the **Emanation Spells** list, or add the **Damage Emanation** behavior in an activity's **Behaviors** tab and pick its save activity.
+* *Sub-settings*: **Trigger Mode**, **Emanation Spells**, **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected, default on), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
+
 ### Prompt / Auto-Roll Attack Damage
 * **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.
 * **Auto-Roll Attack Damage**: Immediately rolls damage on hit without opening a dialog.
@@ -395,6 +412,7 @@ All features are managed in the **Settings Dashboard** accessible via *Configure
 * **World Settings (GMs & Authorized Users)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities. Fully supports Foundry's native **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, allowing Assistant GMs or trusted players with settings rights to configure and save world settings just like a GM.
 * **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GMs and authorized users with `SETTINGS_MODIFY`, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
 * **Player-First Access**: When non-authorized players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, world settings are shown read-only (disabled), and the "Reset Defaults" action resets only their personal client settings.
+* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves) and Automated Masteries 5e (Weapon Mastery Automation). Your stored choice is kept for when that module is turned off.
 
 ---
 

@@ -56,6 +56,7 @@ import { initPreventGroupActorRolls } from "./features/combat-automation/prevent
 import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
 import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
 import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
+import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
 
 // Utilities
 import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
@@ -1512,6 +1513,81 @@ Hooks.once("init", () => {
         onChange: (value) => onDisableActiveEffectExpiryChanged(value)
     });
 
+    game.settings.register(MODULE_ID, "enableDamageEmanation", {
+        name: "Damage Emanation Automation",
+        hint: "Emanation spells such as Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield and Dirge make their saving throw and damage happen automatically when a creature enters the emanation, the emanation moves into a creature's space, or a creature ends its turn inside it. Each creature saves only once per turn, and creatures inside the emanation when it is cast are left to the casting activity. The emanation is removed when the caster stops concentrating.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationMode", {
+        name: "↳ Trigger Mode",
+        hint: "'Prompt Caster' whispers a card to the caster's owners and the GM, who choose which creatures make the save. 'Prompt GM Only' sends that card to the GM only. 'Automatic' uses the spell's save activity straight away.",
+        scope: "world",
+        config: false,
+        type: String,
+        choices: {
+            promptCaster: "Prompt Caster",
+            promptGM: "Prompt GM Only",
+            automatic: "Automatic"
+        },
+        default: "promptCaster",
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationSpells", {
+        name: "↳ Emanation Spells",
+        hint: "A comma-separated list of spell identifiers (or names) that get Damage Emanation Automation. Other spells can use it through the \"Damage Emanation\" entry in an activity's Behaviors tab.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "cacophonic-shield, conjure-woodland-beings, dirge, spirit-guardians, yolandes-regal-presence",
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationCombatOnly", {
+        name: "↳ Only During Combat",
+        hint: "Only trigger emanations while a combat encounter is running on the scene.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationExcludeAllies", {
+        name: "↳ Exclude Allies",
+        hint: "Creatures with the same token disposition as the caster are never affected.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationRequireSight", {
+        name: "↳ Respect \"Creature You Can See\"",
+        hint: "Spells that only affect creatures the caster can see (Conjure Woodland Beings, Yolande's Regal Presence) skip hidden and invisible creatures.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationRememberDamageType", {
+        name: "↳ Remember Damage Type",
+        hint: "Spells with a choice of damage type (Spirit Guardians: Radiant or Necrotic) keep the type chosen for the first roll for the rest of the spell.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ── Phase 4: Health Thresholds & Incapacitation ─────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoStatusZeroHP", {
@@ -1691,6 +1767,9 @@ Hooks.once("init", () => {
     initDisableUndergroundTokenHiding();
     initToolbarLimitation();
     initFixPactSpellScaling();
+
+    // Region / activity behavior types must be registered before data models are prepared
+    registerDamageEmanationTypes();
 });
 
 Hooks.once("setup", () => {
@@ -1755,6 +1834,7 @@ Hooks.once("setup", () => {
     initPreventGroupActorRolls();
     initWeaponMasteries();
     initConditionalDamage();
+    initDamageEmanation();
 });
 
 Hooks.once("ready", async () => {
@@ -1780,6 +1860,10 @@ Hooks.once("ready", async () => {
         }
         if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect") {
             weaponMasterySocketMessage(data);
+            return;
+        }
+        if (data?.action === "damageEmanationResolve" || data?.action === "damageEmanationClaimResult") {
+            damageEmanationSocketMessage(data);
             return;
         }
         damagePromptSocketMessage(data);

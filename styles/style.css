@@ -534,6 +534,88 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     gap: 6px;
 }
 
+/* ── Damage Emanation Prompt ────────────────────────────────────────── */
+
+.nd5t-emanation-prompt .card-content {
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.nd5t-emanation-prompt .card-content p {
+    margin: 0.3em 0;
+    line-height: 1.4;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-targets {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-target label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-target input {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-target img {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    border: none;
+    object-fit: contain;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-reason {
+    flex: 0 0 auto;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-buttons button {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.nd5t-emanation-prompt button[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
+.nd5t-emanation-prompt .nd5t-emanation-status {
+    margin: 0.3em 0 0;
+    font-size: 12px;
+    font-style: italic;
+    opacity: 0.8;
+}
+
 /* ── Toolbar Limitation ─────────────────────────────────────────────── */
 
 #scene-controls .nd5t-scrollable-toolbar,
@@ -897,6 +979,28 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     pointer-events: none;
 }
 
+/* Settings taken over by another module (e.g. midi-qol): greyed out and locked, but the
+   row keeps pointer events so its tooltip and badge explain why. */
+.nd5t-setting-row.nd5t-unavailable {
+    background: rgba(0, 0, 0, 0.1);
+    border-style: dashed;
+}
+
+.nd5t-setting-row.nd5t-unavailable :is(.nd5t-setting-name, .nd5t-setting-hint, .nd5t-setting-control) {
+    opacity: 0.45;
+}
+
+.nd5t-setting-row.nd5t-unavailable .nd5t-setting-name {
+    text-decoration: line-through;
+    text-decoration-color: rgba(255, 255, 255, 0.4);
+    cursor: default;
+}
+
+.nd5t-setting-row.nd5t-unavailable .nd5t-setting-control {
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
 .nd5t-setting-info {
     flex: 1;
     min-width: 0;
@@ -960,6 +1064,17 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     background: rgba(220, 20, 60, 0.3);
     color: #fca5a5;
     border: 1px solid rgba(220, 20, 60, 0.5);
+}
+
+.nd5t-badge.unavailable {
+    background: rgba(120, 120, 120, 0.3);
+    color: #e5e7eb;
+    border: 1px solid rgba(160, 160, 160, 0.55);
+    cursor: help;
+}
+
+.nd5t-badge.unavailable i {
+    margin-right: 2px;
 }
 
 .nd5t-badge.user {
@@ -1521,7 +1636,7 @@ body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button
     flex-direction: row;
     align-items: center;
     gap: 5px;
-    font-size: var(--font-size-13);
+    font-size: var(--font-size-13, 13px);
     font-family: var(--dnd5e-font-roboto-condensed);
     font-weight: bold;
     text-transform: uppercase;
@@ -1989,7 +2104,7 @@ body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > b
     gap: 6px;
     border-radius: var(--border-radius-default, 4px);
     font-family: var(--dnd5e-font-roboto-condensed);
-    font-size: var(--font-size-12);
+    font-size: var(--font-size-12, 12px);
     font-weight: 600;
     letter-spacing: 0.03em;
     white-space: nowrap;
@@ -3157,6 +3272,79 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.emote:not(.tin
 /* Hide raw .whisper-to element in header to prevent duplicate text with ::after badge */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.tiny-monitor-msg) .message-header .whisper-to {
     display: none !important;
+}
+
+/* ── 5. Prominent Apply buttons in damage / effect trays ──
+   Taller, bolder and colour-coded like the roll buttons. The tray's bottom padding and row gap
+   are trimmed so the card only grows by a few pixels. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .collapsible-content > .wrapper {
+    gap: 6px;
+    padding-bottom: 4px;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .apply-button {
+    --input-height: 28px;
+    font-size: var(--font-size-13, 13px);
+    font-variant: all-small-caps;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border-width: 1px;
+    border-style: solid;
+    transition: filter 0.15s ease;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .apply-button i {
+    font-size: var(--font-size-12, 12px);
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .apply-button:not([disabled]):hover {
+    filter: brightness(1.08);
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .apply-button:not([disabled]):active {
+    filter: brightness(0.94);
+}
+
+/* Damage / healing tray: crimson */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .damage-tray .apply-button {
+    --button-background-color: oklch(95% 0.025 25);
+    --button-border-color: oklch(50% 0.17 25);
+    --button-hover-border-color: oklch(40% 0.18 25);
+    background: oklch(95% 0.025 25) !important;
+    border-color: oklch(50% 0.17 25) !important;
+    color: oklch(38% 0.16 25) !important;
+}
+
+/* Effects tray: gold */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .effects-tray .apply-button {
+    --button-background-color: oklch(96% 0.03 85);
+    --button-border-color: oklch(58% 0.12 85);
+    --button-hover-border-color: oklch(46% 0.13 85);
+    background: oklch(96% 0.03 85) !important;
+    border-color: oklch(58% 0.12 85) !important;
+    color: oklch(38% 0.1 85) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .damage-tray .apply-button,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .damage-tray .apply-button,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .damage-tray .apply-button {
+    --button-background-color: oklch(24% 0.06 25);
+    --button-border-color: oklch(52% 0.17 25);
+    --button-hover-border-color: oklch(68% 0.16 25);
+    background: oklch(24% 0.06 25) !important;
+    border-color: oklch(52% 0.17 25) !important;
+    color: oklch(82% 0.1 25) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .effects-tray .apply-button,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .effects-tray .apply-button,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .effects-tray .apply-button {
+    --button-background-color: oklch(25% 0.05 85);
+    --button-border-color: oklch(58% 0.12 85);
+    --button-hover-border-color: oklch(74% 0.12 85);
+    background: oklch(25% 0.05 85) !important;
+    border-color: oklch(58% 0.12 85) !important;
+    color: oklch(85% 0.1 85) !important;
 }
 
 /* ==========================================================================
