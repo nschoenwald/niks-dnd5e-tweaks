@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.55.0] - 2026-10-28
+### Changed
+- **Chat Card Styling Improvements** with midi-qol:
+  - midi-qol's Attack, Damage and Apply Effects buttons are now color-coded like the other card buttons (violet, orange and gold).
+  - When midi-qol's **Colored Border Messages** is on, the left edge of every card keeps the player's color. Roll and whisper colors still show in the card's background tint.
+
+### Fixed
+- **Chat Card Styling Improvements**: The number on the d20 next to a roll result is now centered in its hexagon, and a single die is the same size as the dice shown for advantage and disadvantage.
+- **Chat Card Styling Improvements**: The d20 number is now always easy to read. It turns white on dark dice (dark themes and fumbles) and stays black on light ones (light themes and critical hits).
+- **Chat Card Styling Improvements**: With midi-qol, save results shown inside its card could show the dice of the card's attack roll. They now show no dice, as in D&D 5e.
+- **Chat Card Styling Improvements**: Rolls that midi-qol hides from players as "??" no longer reveal the d20 result through the advantage / disadvantage dice display.
+
 ## [14.54.0] - 2026-10-28
 ### Added
 - **Damage Emanation Automation**:

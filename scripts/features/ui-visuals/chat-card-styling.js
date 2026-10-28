@@ -5,6 +5,7 @@
  * @introduced v14.28.0
  * @updated v14.49.0 (Batched roll result layout measurement)
  * @updated v14.54.0 (Descriptive Apply button labels in damage / effects trays)
+ * @updated v14.55.0 (midi-qol: card summary dice, obscured results, colored borders, merged card buttons; d20 centering & contrast)
  */
 import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -276,6 +277,15 @@ function _applyCardBorders(message, root) {
 
     if (!isStyledRoll) return;
 
+    // midi-qol's "Colored Border Messages" draws the left edge in the player's colour. It's a choice
+    // the user made in midi-qol, so keep it instead of the roll-type accent (style.css does the same).
+    if (root.classList.contains("midi-qol-colored-border")) {
+        for (const prop of ["border-left", "border-left-color", "border-left-width", "border-left-style"]) {
+            root.style.removeProperty(prop);
+        }
+        return;
+    }
+
     const subType = root.dataset.nd5tCardSubtype;
     const accentVar = (rollType === "healing" && subType === "temphp")
         ? "var(--nd5t-temphp-border-color)"
@@ -479,25 +489,29 @@ function _expandD20DieDisplay(message, root) {
     if (!root) return;
     if (!message?.rolls?.length) return;
 
-    const diceButtons = root.querySelectorAll("button.dice-roll");
+    // Buttons inside a card summary (a save or check rolled from this card) belong to another
+    // message, and dnd5e hides their d20 on purpose. Leave them out: midi-qol's merged card carries
+    // its own attack, damage and save rolls, so counting them would also show another roll's dice.
+    const diceButtons = Array.from(root.querySelectorAll("button.dice-roll"))
+        .filter(btn => !btn.closest(".card-summary"));
     if (!diceButtons.length) return;
 
-    let rollIndex = 0;
+    let rollIndex = -1;
     for (const btn of diceButtons) {
+        rollIndex++;
+
         // Guard: skip already-expanded buttons.
-        if (btn.dataset.nd5tD20Expanded) {
-            rollIndex++;
-            continue;
-        }
+        if (btn.dataset.nd5tD20Expanded) continue;
 
         const originalD20Span = btn.querySelector(".d20die");
-        if (!originalD20Span) {
-            rollIndex++;
-            continue;
-        }
+        if (!originalD20Span) continue;
+
+        // Leave the die alone when it isn't showing its number, e.g. a result midi-qol obscures
+        // for players ("??"): rebuilding it from the roll would reveal what was hidden.
+        const shownResult = originalD20Span.querySelector(".roll")?.textContent.trim();
+        if (!/^\d+$/.test(shownResult ?? "")) continue;
 
         const roll = message.rolls[rollIndex];
-        rollIndex++;
 
         // Only D20Roll instances expose .d20.
         const d20Die = roll?.d20;

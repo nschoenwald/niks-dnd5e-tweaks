@@ -109,9 +109,10 @@ Modernizes DnD5e chat cards to make actions and roll results readable at a glanc
 * **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
 * **Enlarged Targeted / Selected Button**: Expands the target mode toggle button in usage cards and damage/effects trays into an easy-to-click, full-height button displaying both icon and dynamic label (**Targeted** / **Selected**), paired with clean, vertically stacked target pills.
 * **Prominent Apply Buttons**: The **Apply** buttons in damage and effects trays are taller, bolder, color-coded (Crimson for damage and healing, Gold for effects) and say what they do: **Apply Damage**, **Apply Healing**, **Apply Temp HP** or **Apply Effect**. When every target would get exactly the same amount (no resistances, vulnerabilities or different multipliers), the amount is shown too, e.g. **Apply 17 Damage** or **Apply 6 Temp HP**. The tray's bottom spacing is trimmed, so cards barely grow.
-* **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance.
+* **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance. The number is centered in each die and switches between black and white so it stays readable on light, dark, critical (green) and fumble (red) dice.
 * **Saving Throw Shorthand**: Automatically labels saving throw action buttons and roll cards with their ability shorthand (e.g. **CON Save** or **STR Save**) instead of generic Save labels whenever Chat Card Styling Improvements is active.
 * **Themed Message Badges**: Prominent pill badges for Whispers (🔒), Private Rolls (🔒), Blind Rolls (👁), and Emotes (✦).
+* **midi-qol Cards**: midi-qol's merged card gets the same treatment where it uses D&D 5e's markup (save buttons, target buttons, Apply buttons). Its own Attack, Damage and Apply Effects buttons are color-coded to match.
 
 <img width="295" height="581" alt="image" src="https://github.com/user-attachments/assets/9dc57592-74e8-428f-b6aa-cc4d6cfde6ac" />
 
@@ -437,6 +438,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
+| **Chat Card Styling Improvements** | **Works** on midi-qol cards, including its merged card. midi-qol's Attack, Damage and Apply Effects buttons are color-coded to match. With midi-qol's *Colored Border Messages* on, the player's color keeps the card's left edge. Results midi-qol hides from players stay hidden. |
 
 ### Automated Conditions 5e & Automated Masteries 5e
 * **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.

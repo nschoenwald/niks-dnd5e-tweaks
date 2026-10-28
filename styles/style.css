@@ -2454,13 +2454,19 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-damage-ca
  *   .nd5t-d20-discarded  → thrown-away die, dimmed & slightly smaller
  */
 
+/*
+ * Selectors start with `:is(.chat-log, .chat-popout) .message button.dice-roll` so they out-rank
+ * dnd5e's `.chat-log .message.compact button.dice-roll .d20die …` rules. Without that, the single
+ * die kept dnd5e's 16px hexagon and its -2px number offset.
+ */
+
 /* Takes the same absolute slot as the original .d20die */
-body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-multi) {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll :is(.d20die, .nd5t-d20-multi) {
     position: absolute;
     inset-inline-end: 8px;
     inset-block-start: 50%;
     transform: translateY(-50%);
-    padding-block-start: 0;
+    padding: 0;
     margin: 0;
 }
 
@@ -2488,75 +2494,94 @@ body.nd5t-chat-card-styling .icon-row:has(.dice-roll) > i:is(.fa-dice, [class*="
     display: none !important;
 }
 
-
-
-body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-multi {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll .nd5t-d20-multi {
     display: inline-flex;
     align-items: center;
     gap: 3px;
 }
 
-/* Single die: absolute container matching the FA hexagon dimensions */
-body.nd5t-chat-card-styling button.dice-roll .d20die {
-    position: absolute;
+/* Die box (single die and each multi-die badge). --nd5t-die-fill is the hexagon colour; the number
+   picks black or white from it (see .roll below). dnd5e's die colour follows the card's theme. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll :is(.d20die, .nd5t-d20-badge) {
+    --nd5t-die-fill: var(--dnd5e-chat-color-die, #999);
     width: 22px;
     height: 24px;
     box-sizing: border-box;
 }
 
-/* Multi-die badge: relative flex item inside .nd5t-d20-multi */
-body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-badge {
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll .nd5t-d20-badge {
     position: relative;
     display: inline-block;
-    width: 22px;
-    height: 24px;
-    box-sizing: border-box;
 }
 
-/* Hex icon — enlarged for generous breathing room around 2-digit numbers */
-body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge)>i {
+/* Critical & Fumble fill on the kept die */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll.critical :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) {
+    --nd5t-die-fill: var(--color-level-success, #26b231);
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll.fumble :is(.d20die, .nd5t-d20-badge.nd5t-d20-active) {
+    --nd5t-die-fill: var(--color-level-error, #ce0707);
+}
+
+/* Hex icon — fills the die box exactly. Font Awesome 7 gives every icon a fixed 1.25em width
+   (25px here), which pushed the hexagon 1.5px right of the number; `width: auto` lets inset: 0 win. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll :is(.d20die, .nd5t-d20-badge) > i {
     position: absolute;
     inset: 0;
+    width: auto;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--dnd5e-chat-color-die);
+    color: var(--nd5t-die-fill);
     font-size: 20px;
     line-height: 1;
     z-index: 1;
 }
 
-/* Number — flex-centered over the hex icon, guaranteed on top */
-body.nd5t-chat-card-styling button.dice-roll :is(.d20die, .nd5t-d20-badge) .roll {
+/* Number — centered over the hex icon. Its colour is black on light fills and white on dark ones
+   (OKLCH lightness 0.57 is where both reach the same contrast), so it stays readable on the grey,
+   green and red dice in every theme. Browsers without relative colours keep dnd5e's black. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll :is(.d20die, .nd5t-d20-badge) .roll {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--dnd5e-color-black, #000);
+    color: oklch(from var(--nd5t-die-fill) clamp(0, (0.57 - l) * 1000, 1) 0 0);
     font-size: var(--font-size-12, 12px);
     font-weight: bold;
+    font-variant-numeric: proportional-nums;
     letter-spacing: -0.5px;
     line-height: 1;
-    padding-block-start: 1px;
+    /* Letter spacing also trails the last digit; even it out so the digits stay centered */
+    padding-block: 1px 0;
+    padding-inline: 0 0.5px;
     z-index: 2;
     text-align: center;
 }
 
-/* Critical & Fumble coloring on active die */
-body.nd5t-chat-card-styling button.dice-roll.critical :is(.d20die, .nd5t-d20-badge.nd5t-d20-active)>i {
-    color: var(--color-level-success, #22c55e);
+/* Trim the line box to the digits (cap height to baseline) so they center optically */
+@supports (text-box: trim-both cap alphabetic) {
+    body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll :is(.d20die, .nd5t-d20-badge) .roll {
+        padding-block: 0;
+        text-box: trim-both cap alphabetic;
+    }
 }
 
-body.nd5t-chat-card-styling button.dice-roll.fumble :is(.d20die, .nd5t-d20-badge.nd5t-d20-active)>i {
-    color: var(--color-level-error, #ef4444);
-}
-
-/* Discarded badge: dim whole badge and slightly shrink */
-body.nd5t-chat-card-styling button.dice-roll .nd5t-d20-badge.nd5t-d20-discarded {
-    opacity: 0.45;
+/* Discarded badge: smaller with a faded hexagon. The number keeps its contrast against it. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll .nd5t-d20-badge.nd5t-d20-discarded {
     scale: 0.82;
     transform-origin: center;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll .nd5t-d20-badge.nd5t-d20-discarded > i {
+    opacity: 0.45;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message button.dice-roll .nd5t-d20-badge.nd5t-d20-discarded .roll {
+    opacity: 0.85;
 }
 
 /* Dice Roll Button: Themed border & background */
@@ -3185,6 +3210,15 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.emote.nd5t-rec
         linear-gradient(to right, var(--nd5t-recharge-tint-color), transparent 50%) !important;
 }
 
+/* midi-qol "Colored Border Messages": the left edge keeps the player's colour chosen in midi-qol.
+   Roll-type and whisper / blind / emote tints still apply. The doubled class out-ranks the accent
+   rules above (same specificity as the whisper / blind / emote ones, which come earlier). */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.midi-qol-colored-border.midi-qol-colored-border,
+body.nd5t-chat-card-styling .chat-message.message.midi-qol-colored-border.midi-qol-colored-border {
+    border-left: 0.2rem solid var(--midi-qol-player-color) !important;
+    border-inline-start: 0.2rem solid var(--midi-qol-player-color) !important;
+}
+
 /* ─── Message Type Badges (Whisper / Private Roll / Blind Roll / Emote) ─── */
 
 /* Ensure message header flex container aligns badges cleanly alongside sender and metadata */
@@ -3339,6 +3373,69 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .effects-tray .apply-button,
 body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .effects-tray .apply-button,
 body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .effects-tray .apply-button {
+    --button-background-color: oklch(25% 0.05 85);
+    --button-border-color: oklch(58% 0.12 85);
+    --button-hover-border-color: oklch(74% 0.12 85);
+    background: oklch(25% 0.05 85) !important;
+    border-color: oklch(58% 0.12 85) !important;
+    color: oklch(85% 0.1 85) !important;
+}
+
+/* ── 6. midi-qol merged card buttons ──
+   midi-qol draws its own Attack / Damage / Apply Effects buttons instead of dnd5e's action buttons.
+   Colour-code them like ours: violet attack, orange damage, gold effects. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .midi-buttons .midi-qol-attack-buttons button {
+    --button-background-color: oklch(96% 0.015 295);
+    --button-border-color: oklch(52% 0.15 295);
+    --button-hover-border-color: oklch(38% 0.17 295);
+    background: oklch(96% 0.015 295) !important;
+    border-color: oklch(52% 0.15 295) !important;
+    color: oklch(35% 0.16 295) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .midi-buttons .midi-qol-damage-buttons button {
+    --button-background-color: oklch(96% 0.02 50);
+    --button-border-color: oklch(58% 0.15 50);
+    --button-hover-border-color: oklch(45% 0.16 50);
+    background: oklch(96% 0.02 50) !important;
+    border-color: oklch(58% 0.15 50) !important;
+    color: oklch(38% 0.14 50) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .midi-buttons > button[data-action="midiApplyEffects"] {
+    --button-background-color: oklch(96% 0.03 85);
+    --button-border-color: oklch(58% 0.12 85);
+    --button-hover-border-color: oklch(46% 0.13 85);
+    background: oklch(96% 0.03 85) !important;
+    border-color: oklch(58% 0.12 85) !important;
+    color: oklch(38% 0.1 85) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .midi-buttons .midi-qol-attack-buttons button,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .midi-buttons .midi-qol-attack-buttons button,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .midi-buttons .midi-qol-attack-buttons button {
+    --button-background-color: oklch(22% 0.06 295);
+    --button-border-color: oklch(48% 0.16 295);
+    --button-hover-border-color: oklch(65% 0.16 295);
+    background: oklch(22% 0.06 295) !important;
+    border-color: oklch(48% 0.16 295) !important;
+    color: oklch(80% 0.12 295) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .midi-buttons .midi-qol-damage-buttons button,
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .midi-buttons .midi-qol-damage-buttons button,
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .midi-buttons .midi-qol-damage-buttons button {
+    --button-background-color: oklch(22% 0.06 50);
+    --button-border-color: oklch(50% 0.16 50);
+    --button-hover-border-color: oklch(68% 0.16 50);
+    background: oklch(22% 0.06 50) !important;
+    border-color: oklch(50% 0.16 50) !important;
+    color: oklch(80% 0.12 50) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .midi-buttons > button[data-action="midiApplyEffects"],
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .midi-buttons > button[data-action="midiApplyEffects"],
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .midi-buttons > button[data-action="midiApplyEffects"] {
     --button-background-color: oklch(25% 0.05 85);
     --button-border-color: oklch(58% 0.12 85);
     --button-hover-border-color: oklch(74% 0.12 85);
