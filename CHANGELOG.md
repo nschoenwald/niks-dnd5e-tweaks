@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.56.2] - 2026-10-29
+### Fixed
+- **Detailed Roll Breakdown Overlay**: Damage bonuses that use a hyphenated scale value with a label, such as `+@scale.barbarian.rage-damage[Rage]`, no longer cause an error that stops the damage from being rolled.
+
 ## [14.56.1] - 2026-10-29
 ### Fixed
 - **Readable Text Size**: Now also applies while you edit an item description, and to item types that show a single description. Journal and biography editors keep the larger text as well.

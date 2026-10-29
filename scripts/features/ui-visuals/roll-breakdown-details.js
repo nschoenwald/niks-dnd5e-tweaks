@@ -109,7 +109,7 @@ export function getExplicitDamageTypeFromPart(part) {
 
 /**
  * Splits a composite formula string on top-level addition and subtraction operators (+ and -),
- * respecting nested parentheses and bracket tags.
+ * respecting nested parentheses, bracket tags and hyphenated roll data paths.
  *
  * @param {string} formulaStr
  * @returns {string[]}
@@ -119,12 +119,18 @@ export function splitAdditiveFormulaParts(formulaStr) {
     const parts = [];
     let depth = 0;
     let current = "";
+    // Inside an @-reference, "-" belongs to the key (e.g. "@scale.barbarian.rage-damage"),
+    // matching Foundry's own Roll.replaceFormulaData pattern /@([a-z.0-9_-]+)/i.
+    let inDataPath = false;
     for (let i = 0; i < formulaStr.length; i++) {
         const char = formulaStr[i];
+        if (char === "@") inDataPath = true;
+        else if (inDataPath && !/[\w.-]/.test(char)) inDataPath = false;
+
         if (char === "[" || char === "(") depth++;
         else if (char === "]" || char === ")") depth = Math.max(0, depth - 1);
 
-        if (depth === 0 && (char === "+" || char === "-") && current.trim()) {
+        if (depth === 0 && !inDataPath && (char === "+" || char === "-") && current.trim()) {
             parts.push(current.trim());
             current = char === "-" ? "-" : "";
         } else {
