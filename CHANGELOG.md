@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.55.3] - 2026-10-29
+### Fixed
+- **Chat Card Styling Improvements**: Target names and damage numbers in damage trays no longer break onto two lines when Foundry's **Font Size** is set above the default or the chat is in a narrow popout. The **Targeted** / **Selected** button gets narrower when space is tight, and names that still don't fit end in "…" (click the target to see the full name).
+
 ## [14.55.2] - 2026-10-29
 ### Fixed
 - Spells you cast without a spell slot no longer show the **Cast at Level** choice or the "You have no available spell slots" warning when you use them. This covers spells cast with the item's or activity's own uses, such as *Mystic Arcanum*, feat spells and innate spells. They are cast at their own level, as intended. Spells that do use a slot, or whose activity allows its own scaling, are unchanged.

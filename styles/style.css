@@ -2175,6 +2175,40 @@ body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > u
     box-sizing: border-box;
 }
 
+/* Keep names and values on one line. The sidebar width is fixed in px while text follows the
+   core Font Size setting (rem), so larger font sizes or narrow popouts would otherwise wrap them. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets > li > target-pill > label,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets > li > target-pill > label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > ul.targets > li > target-pill > .calculated,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > ul.targets > li > target-pill > .calculated {
+    flex: none;
+    white-space: nowrap;
+}
+
+/* Narrow row relative to the font size: stack the toggle's icon above its label to free room for names */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets > .icon-row,
+body.nd5t-chat-card-styling .chat-message.message recorded-targets > .icon-row {
+    container: nd5t-targets / inline-size;
+}
+
+@container nd5t-targets (max-width: 16rem) {
+    body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle,
+    body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle {
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+        padding: 6px;
+        font-size: var(--font-size-11, 11px);
+    }
+}
+
 /* Light Mode colors */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message recorded-targets .icon-row > button.target-source-toggle,
 body.nd5t-chat-card-styling .chat-message.message recorded-targets .icon-row > button.target-source-toggle {
