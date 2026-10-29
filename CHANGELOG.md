@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.56.4] - 2026-10-30
+### Fixed
+- **Player Damage Prompt**: The damage prompt for an attack could fail to appear when the damage roll wasn't linked to the attack's usage card. It now shows up as expected.
+
 ## [14.56.3] - 2026-10-30
 ### Fixed
 - The **Cast at Level** choice is back on activities like *Moonbeam*'s damage, where you need it to pick the level the spell was cast at. 14.55.2 had hidden it there by mistake. It stays hidden only on spells that are never cast with a spell slot, such as *Mystic Arcanum*.

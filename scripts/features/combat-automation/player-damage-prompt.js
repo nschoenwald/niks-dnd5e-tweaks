@@ -3,6 +3,7 @@
  * Description: Whispers an interactive chat card with a damage breakdown table (resistances, immunities) and an Apply Damage button when attack or save damage is rolled.
  *
  * @introduced v14.10.0
+ * @updated v14.56.4 (Attack damage prompt no longer skipped when the damage roll isn't linked to the usage message)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -200,7 +201,7 @@ async function _onCreateChatMessage(message) {
             "| Settings: playerPrompt=", playerPromptEnabled, "gmPrompt=", gmPromptEnabled);
 
         // Find the originating (usage) message to get original targets
-        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
+        let originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
             ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
             ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
         const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
