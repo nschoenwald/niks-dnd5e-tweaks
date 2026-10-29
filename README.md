@@ -142,7 +142,7 @@ Transforms the native DnD5e roll breakdown popover (opened by clicking on the ro
 
 ### Readable Text Size
 D&D 5e shows descriptions in small text with tight line spacing (13px in item descriptions and biographies, 12px for a character's Ideals, Bonds, Flaws, Traits and Appearance, 11px for their Alignment, Eyes, Height etc. and for items expanded on a sheet, 12px in tooltips). This setting enlarges that text and adds space between lines, without making the rest of the interface bigger the way Foundry's **Font Size** setting does.
-* **Covers**: journal pages, item descriptions, NPC and character biographies including the fields at the top of a character's Biography tab, items, spells and features expanded on a sheet, and item tooltips. Headings scale along; buttons, pills and the rest of the sheet keep their size.
+* **Covers**: journal pages, item descriptions, NPC and character biographies including the fields at the top of a character's Biography tab, items, spells and features expanded on a sheet, and item tooltips. Applies while reading and while editing. Headings scale along; buttons, pills and the rest of the sheet keep their size.
 * **Levels**: **Comfortable** (default, e.g. descriptions 13px → 15px, journals 14px → 16px), **Large** (descriptions 17px, journals 18px), or **Off** for D&D 5e's own sizes. Both still follow Foundry's Font Size setting.
 * **Chat Cards**: Turn on **Readable Text Size in Chat Cards** to also enlarge descriptions inside chat cards (off by default, as it makes cards taller).
 * **World Default & Personal Override**: The GM picks the size (and the chat card option) for everyone. Each player can override both under Personal Preferences; their default is **Use World Setting**.
@@ -176,6 +176,8 @@ Dragging an inventory item from one actor's sheet to another (for example from a
 * **Always Copy**: the D&D 5e default.
 
 When you move a stack of more than one item (e.g. 20 arrows), a dialog asks how many to move. The rest stays with the original actor.
+
+This also applies to containers: dropping onto a container on another actor's sheet, or into another actor's open container window (e.g. the party's Bag of Holding), moves the item into it. Moving a container moves everything inside it.
 
 Hold <kbd>Shift</kbd> to force a move or <kbd>Ctrl</kbd> to force a copy (D&D 5e's *Force Move/Copy when Dragging* keybindings). Items are copied whenever a move isn't allowed: when you can't remove items from the original actor, when the item comes from the sidebar or a compendium, or for spells, features and classes.
 

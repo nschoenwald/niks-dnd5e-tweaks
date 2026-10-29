@@ -5424,14 +5424,15 @@ body.nd5t-readable-text-large {
     --nd5t-rt-line-height: 1.5;
 }
 
-/* Journal pages */
-body.nd5t-readable-text .journal-entry-page .journal-page-content {
+/* Journal pages. The inner .editor-content covers the page editor (edit mode) */
+body.nd5t-readable-text .journal-entry-page :is(.journal-page-content, .journal-page-content .editor-content) {
     font-size: var(--nd5t-rt-journal);
     line-height: var(--nd5t-rt-line-height);
 }
 
-/* Item descriptions and actor biographies */
-body.nd5t-readable-text .dnd5e2.sheet.item .item-descriptions .editor-content,
+/* Item descriptions and actor biographies. Covers the description editor, which dnd5e renders directly in the
+   Description tab while editing, and single-description item types */
+body.nd5t-readable-text .dnd5e2.sheet.item .tab.description .editor-content,
 body.nd5t-readable-text .dnd5e2.sheet.actor .tab[data-tab="biography"] .editor-content {
     font-size: var(--nd5t-rt-sheet);
     line-height: var(--nd5t-rt-line-height);
@@ -5480,7 +5481,7 @@ body.nd5t-readable-text-chat .chat-message.message .card-content {
 /* Paragraph-level line heights set elsewhere would otherwise win over the inherited value */
 body.nd5t-readable-text :is(
     .journal-entry-page .journal-page-content,
-    .dnd5e2.sheet.item .item-descriptions .editor-content,
+    .dnd5e2.sheet.item .tab.description .editor-content,
     .dnd5e2.sheet.actor .tab[data-tab="biography"] .editor-content,
     .dnd5e2 .items-section .item .item-description .item-summary,
     :is(#tooltip, .locked-tooltip).document-tooltip .description

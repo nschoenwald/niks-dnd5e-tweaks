@@ -4,6 +4,7 @@
  * by default instead of copying, falling back to copy whenever a move isn't allowed.
  *
  * @introduced v14.53.0
+ * @updated v14.56.1 (Open container windows follow the same move rules and quantity prompt)
  */
 import { debug, getSetting } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -45,7 +46,20 @@ import { patchMethod } from "../../utils/patch-helper.js";
  * are not split, since their contents can't be divided.
  */
 
+/**
+ * Container windows
+ * ---------------------------------------------------------------------------
+ * An open container's own sheet (`ContainerSheet`, an item sheet) decides through
+ * `ItemSheet5e#_defaultDropBehavior`, which is "move" within the same actor and "copy"
+ * between actors, and handles drops in its own `_onDropItem`. Both are patched with the
+ * same rules as the actor sheet, the target being the actor that owns the container.
+ * Containers in the sidebar or a compendium keep dnd5e's behavior. dnd5e's
+ * `_onDropItem` fetches the item from the drop data itself, so a partial move recreates
+ * its "create inside this container" step with the reduced clone.
+ */
+
 const SHEET_PATH = "dnd5e.applications.actor.BaseActorSheet.prototype";
+const CONTAINER_PATH = "dnd5e.applications.item.ContainerSheet.prototype";
 
 export function initActorItemDragBehavior() {
     const proto = dnd5e?.applications?.actor?.BaseActorSheet?.prototype;
@@ -59,6 +73,13 @@ export function initActorItemDragBehavior() {
     }
     if (typeof proto._onDropItemContainer === "function") {
         patchMethod(`${SHEET_PATH}._onDropItemContainer`, _patchedOnDropItemContainer, "MIXED");
+    }
+    const containerProto = dnd5e.applications.item?.ContainerSheet?.prototype;
+    if (typeof containerProto?._defaultDropBehavior === "function") {
+        patchMethod(`${CONTAINER_PATH}._defaultDropBehavior`, _patchedContainerDefaultDropBehavior, "WRAPPER");
+    }
+    if (typeof containerProto?._onDropItem === "function") {
+        patchMethod(`${CONTAINER_PATH}._onDropItem`, _patchedContainerOnDropItem, "MIXED");
     }
     debug("Initialized item drag behavior patch.");
 }
@@ -82,6 +103,18 @@ function _patchedDefaultDropBehavior(wrapped, event, data, ...args) {
  * @returns {boolean}
  */
 function _shouldMove(sheet, event, data) {
+    return _shouldMoveTo(sheet, event, data, _resolveTargetActor(sheet, event));
+}
+
+/**
+ * Whether a default "copy" drop of this data should move the item to the given actor instead.
+ * @param {Application} sheet  The sheet receiving the drop (actor or container sheet)
+ * @param {DragEvent} event
+ * @param {object} data        The drag payload
+ * @param {Actor|null} targetActor
+ * @returns {boolean}
+ */
+function _shouldMoveTo(sheet, event, data, targetActor) {
     const mode = getSetting("actorItemDragBehavior");
     if (mode === "copy") return false;
     if ((data?.type !== "Item") || !data.uuid) return false;
@@ -92,8 +125,7 @@ function _shouldMove(sheet, event, data) {
     if (item.pack || item.collection?.locked) return false;
     if (!("quantity" in (item.system ?? {}))) return false;
 
-    const targetActor = _resolveTargetActor(sheet, event);
-    if (!targetActor || (targetActor === source) || (targetActor.uuid === source.uuid)) return false;
+    if (!(targetActor instanceof Actor) || (targetActor === source) || (targetActor.uuid === source.uuid)) return false;
     if (!targetActor.isOwner) return false;
 
     if ((mode === "moveExceptNPC") && source.system?.isNPC) return false;
@@ -109,7 +141,7 @@ async function _patchedOnDropCreateItems(wrapped, event, items, behavior, ...arg
     const item = items[0];
     if (!_isSplittableMove(this, item)) return wrapped(event, items, behavior, ...args);
 
-    const quantity = await _promptQuantity(item, this.inventorySource);
+    const quantity = await _promptQuantity(item, this.inventorySource.name);
     if (!quantity) return;
     if (quantity >= item.system.quantity) return wrapped(event, items, behavior, ...args);
 
@@ -123,7 +155,7 @@ async function _patchedOnDropItemContainer(wrapped, event, item, container, ...a
         return wrapped(event, item, container, ...args);
     }
 
-    const quantity = await _promptQuantity(item, this.inventorySource);
+    const quantity = await _promptQuantity(item, this.inventorySource.name);
     if (!quantity) return;
     if (quantity >= item.system.quantity) return wrapped(event, item, container, ...args);
 
@@ -133,14 +165,55 @@ async function _patchedOnDropItemContainer(wrapped, event, item, container, ...a
     return created;
 }
 
+function _patchedContainerDefaultDropBehavior(wrapped, event, data, ...args) {
+    const behavior = wrapped(event, data, ...args);
+    if (behavior !== "copy") return behavior;
+    try {
+        return _shouldMoveTo(this, event, data, this.item?.actor ?? null) ? "move" : behavior;
+    } catch (err) {
+        debug("Container drag behavior check failed, keeping copy.", err);
+        return behavior;
+    }
+}
+
+async function _patchedContainerOnDropItem(wrapped, event, data, ...args) {
+    const container = this.item;
+    const target = container?.actor;
+    if (!target || (data?.type !== "Item") || (this._dropBehavior(event, data) !== "move")) {
+        return wrapped(event, data, ...args);
+    }
+    let item = await Item.implementation.fromDropData(data);
+    if (!_isSplittableMove(this, item, target)) return wrapped(event, data, ...args);
+    if (!container.isOwner || !(await container.system.canDropContents())) return false;
+
+    const quantity = await _promptQuantity(item, `${container.name} (${target.name})`);
+    if (!quantity) return false;
+    if (quantity >= item.system.quantity) return wrapped(event, data, ...args);
+
+    // Mirrors ContainerSheet#_onDropItem's copy path, with the reduced clone
+    const source = item;
+    item = item.clone({ "system.quantity": quantity });
+    if (item.actor?.system.isNPC && item.system.asGear) item = await item.system.asGear();
+    const toCreate = await Item.implementation.createWithContents([item], {
+        container,
+        transformAll: (itemData, options) => this._onDropSingleItem(itemData, { ...options, event })
+    });
+    if (container.folder) toCreate.forEach(d => d.folder = container.folder.id);
+    const created = await Item.implementation.createDocuments(toCreate, {
+        pack: container.pack, parent: target, keepId: true
+    });
+    await _reduceSource(source, quantity);
+    return created;
+}
+
 /**
- * Whether a move of this item onto the sheet should ask how many to move.
- * @param {ActorSheet} sheet
+ * Whether a move of this item should ask how many to move.
+ * @param {Application} sheet  The receiving sheet (unsupported item types are checked on actor sheets)
  * @param {Item} item
+ * @param {Actor} [target]     The receiving actor, defaults to the sheet's inventory source
  * @returns {boolean}
  */
-function _isSplittableMove(sheet, item) {
-    const target = sheet.inventorySource;
+function _isSplittableMove(sheet, item, target = sheet.inventorySource) {
     const source = item?.parent;
     if (!(item instanceof Item) || !(source instanceof Actor) || !target) return false;
     if ((source === target) || (source.uuid === target.uuid)) return false;
@@ -153,14 +226,14 @@ function _isSplittableMove(sheet, item) {
 /**
  * Ask how many items of a stack to move.
  * @param {Item} item
- * @param {Actor} target
+ * @param {string} targetName  Name of the receiving actor or container
  * @returns {Promise<number|null>}  The quantity to move, or null if cancelled
  */
-async function _promptQuantity(item, target) {
+async function _promptQuantity(item, targetName) {
     const max = item.system.quantity;
     const esc = foundry.utils.escapeHTML;
     const content = `
-        <p>Move how many <strong>${esc(item.name)}</strong> from ${esc(item.parent.name)} to ${esc(target.name)}?</p>
+        <p>Move how many <strong>${esc(item.name)}</strong> from ${esc(item.parent.name)} to ${esc(targetName)}?</p>
         <div class="form-group">
             <label>Quantity</label>
             <div class="form-fields">
