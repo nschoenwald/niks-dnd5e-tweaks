@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.56.3] - 2026-10-30
+### Fixed
+- The **Cast at Level** choice is back on activities like *Moonbeam*'s damage, where you need it to pick the level the spell was cast at. 14.55.2 had hidden it there by mistake. It stays hidden only on spells that are never cast with a spell slot, such as *Mystic Arcanum*.
+- The misleading "You have no available spell slots" warning is no longer shown when the spell isn't using a slot. This fix turns itself off from D&D 5e 6.1.0, which fixes the warning itself.
+
 ## [14.56.2] - 2026-10-29
 ### Fixed
 - **Detailed Roll Breakdown Overlay**: Damage bonuses that use a hyphenated scale value with a label, such as `+@scale.barbarian.rage-damage[Rage]`, no longer cause an error that stops the damage from being rolled.
