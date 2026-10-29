@@ -154,7 +154,7 @@ function _getTokenCenter(token) {
  * Wrap TokenLayer.prototype.placeTokens to inject the HUD banner and range boundary ring.
  */
 function _wrapTokenLayerPlaceTokens() {
-    patchMethod("TokenLayer.prototype.placeTokens", async function patchedSummonPlaceTokens(wrapped, data, options = {}) {
+    patchMethod("foundry.canvas.layers.TokenLayer.prototype.placeTokens", async function patchedSummonPlaceTokens(wrapped, data, options = {}) {
         if (!isFeatureActive("enableSummonControlsHUD", "clientEnableSummonControlsHUD")) {
             return wrapped(data, options);
         }

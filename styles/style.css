@@ -5387,3 +5387,104 @@ body.crlngn-ui.nd5t-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .mes
 .roll-configuration .formulas > li {
     transition: opacity 0.2s ease, filter 0.2s ease;
 }
+/* ==========================================================================
+   Readable Text Size
+   Enlarges description body text and loosens its line spacing. Sizes are rem so they keep following
+   the core Font Size setting. Set on the containers, so children with their own sizes (pills, tables,
+   stat block labels) keep them, and em-based headings scale along.
+                       dnd5e   Comfortable   Large
+   Journal pages        14        16          18
+   Descriptions / bio   13        15          17   (Roboto Condensed)
+   Bio text boxes       12        14          16   (Roboto, wider than Condensed)
+   Characteristics      11/10     13/11       14/12 (value / label)
+   Sheet item lists     11        14          15
+   Tooltips             12        14          15
+   ========================================================================== */
+body.nd5t-readable-text-comfortable {
+    --nd5t-rt-journal: 1rem;
+    --nd5t-rt-sheet: 0.9375rem;
+    --nd5t-rt-textbox: 0.875rem;
+    --nd5t-rt-field: 0.8125rem;
+    --nd5t-rt-field-label: 0.6875rem;
+    --nd5t-rt-field-scale: 1.15;
+    --nd5t-rt-list: 0.875rem;
+    --nd5t-rt-tooltip: 0.875rem;
+    --nd5t-rt-line-height: 1.45;
+}
+
+body.nd5t-readable-text-large {
+    --nd5t-rt-journal: 1.125rem;
+    --nd5t-rt-sheet: 1.0625rem;
+    --nd5t-rt-textbox: 1rem;
+    --nd5t-rt-field: 0.875rem;
+    --nd5t-rt-field-label: 0.75rem;
+    --nd5t-rt-field-scale: 1.25;
+    --nd5t-rt-list: 0.9375rem;
+    --nd5t-rt-tooltip: 0.9375rem;
+    --nd5t-rt-line-height: 1.5;
+}
+
+/* Journal pages */
+body.nd5t-readable-text .journal-entry-page .journal-page-content {
+    font-size: var(--nd5t-rt-journal);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Item descriptions and actor biographies */
+body.nd5t-readable-text .dnd5e2.sheet.item .item-descriptions .editor-content,
+body.nd5t-readable-text .dnd5e2.sheet.actor .tab[data-tab="biography"] .editor-content {
+    font-size: var(--nd5t-rt-sheet);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Character biography: Ideals, Bonds, Flaws, Personality Traits, Appearance (view and edit) */
+body.nd5t-readable-text .dnd5e2.sheet.actor .tab[data-tab="biography"] .textbox > :is(p, textarea) {
+    font-size: var(--nd5t-rt-textbox);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Character biography: Alignment, Eyes, Height etc. The fixed 520px grid grows with the text, capped at the tab width */
+body.nd5t-readable-text .dnd5e2.sheet.actor.character .tab[data-tab="biography"] .characteristics {
+    width: min(100%, calc(520px * var(--nd5t-rt-field-scale)));
+    grid-template-columns: minmax(0, 18fr) minmax(0, 16fr) minmax(0, 14fr);
+}
+
+body.nd5t-readable-text .dnd5e2.sheet.actor.character .tab[data-tab="biography"] .characteristics label :is(input, .value) {
+    min-width: 0;
+    font-size: var(--nd5t-rt-field);
+}
+
+body.nd5t-readable-text .dnd5e2.sheet.actor.character .tab[data-tab="biography"] .characteristics label .label {
+    font-size: var(--nd5t-rt-field-label);
+}
+
+/* Expanded items, spells and features in sheet lists */
+body.nd5t-readable-text .dnd5e2 .items-section .item .item-description .item-summary {
+    font-size: var(--nd5t-rt-list);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Item, spell and feature tooltips */
+body.nd5t-readable-text :is(#tooltip, .locked-tooltip).document-tooltip .description {
+    font-size: var(--nd5t-rt-tooltip);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Chat card descriptions (optional) */
+body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications) .message .card-content,
+body.nd5t-readable-text-chat .chat-message.message .card-content {
+    font-size: var(--nd5t-rt-sheet);
+    line-height: var(--nd5t-rt-line-height);
+}
+
+/* Paragraph-level line heights set elsewhere would otherwise win over the inherited value */
+body.nd5t-readable-text :is(
+    .journal-entry-page .journal-page-content,
+    .dnd5e2.sheet.item .item-descriptions .editor-content,
+    .dnd5e2.sheet.actor .tab[data-tab="biography"] .editor-content,
+    .dnd5e2 .items-section .item .item-description .item-summary,
+    :is(#tooltip, .locked-tooltip).document-tooltip .description
+) :is(p, li, dd, dt, blockquote),
+body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .chat-message.message) .card-content :is(p, li, dd, dt, blockquote) {
+    line-height: var(--nd5t-rt-line-height);
+}

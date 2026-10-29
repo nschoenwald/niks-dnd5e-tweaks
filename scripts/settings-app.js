@@ -198,6 +198,33 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 requiresModule: "crlngn-ui"
                             },
                             {
+                                key: "clientReadableTextSize",
+                                name: "Readable Text Size",
+                                hint: "Overrides the GM's Readable Text Size on your screen: larger body text with more space between lines in item descriptions, biographies, journal pages, expanded items on sheets and item tooltips.",
+                                type: "Select",
+                                default: "world",
+                                choices: [
+                                    { value: "world", label: "Use World Setting" },
+                                    { value: "off", label: "Off (D&D 5e Default)" },
+                                    { value: "comfortable", label: "Comfortable" },
+                                    { value: "large", label: "Large" }
+                                ],
+                                scope: "client"
+                            },
+                            {
+                                key: "clientReadableTextSizeChat",
+                                name: "Readable Text Size in Chat Cards",
+                                hint: "Overrides the GM's choice for enlarging item and spell descriptions inside chat cards on your screen.",
+                                type: "Select",
+                                default: "world",
+                                choices: [
+                                    { value: "world", label: "Use World Setting" },
+                                    { value: "on", label: "On" },
+                                    { value: "off", label: "Off" }
+                                ],
+                                scope: "client"
+                            },
+                            {
                                 key: "clientEnableCursorHints",
                                 name: "Cursor Keyboard Hints",
                                 hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
@@ -431,6 +458,27 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: true,
                                 scope: "world",
                                 requiresReload: true
+                            },
+                            {
+                                key: "readableTextSize",
+                                name: "Readable Text Size",
+                                hint: "Default size for the body text of item descriptions, biographies, journal pages, expanded items on sheets and item tooltips, with more space between lines. The rest of the interface keeps its size. Players can override it under Personal Preferences.",
+                                type: "Select",
+                                default: "comfortable",
+                                choices: [
+                                    { value: "off", label: "Off (D&D 5e Default)" },
+                                    { value: "comfortable", label: "Comfortable" },
+                                    { value: "large", label: "Large" }
+                                ],
+                                scope: "world"
+                            },
+                            {
+                                key: "readableTextSizeChat",
+                                name: "Readable Text Size in Chat Cards",
+                                hint: "Also enlarges item and spell descriptions inside chat cards. Cards become taller. Players can override it under Personal Preferences.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world"
                             },
                             {
                                 key: "enableSidebarNameWrap",
@@ -1578,7 +1626,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 const targetInput = html.querySelector(`#${targetId}`);
                 if (!targetInput) return;
 
-                const fp = new FilePicker({
+                const fp = new foundry.applications.apps.FilePicker.implementation({
                     type: btn.dataset.type || "image",
                     current: targetInput.value,
                     callback: (path) => {
@@ -1835,7 +1883,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         if (hasChanges) {
             ui.notifications.info("Nik's D&D 5e Tweaks settings saved successfully.");
             if (requiresReload) {
-                SettingsConfig.reloadConfirm();
+                foundry.applications.settings.SettingsConfig.reloadConfirm();
             }
         }
     }
@@ -1876,7 +1924,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             ? "Nik's D&D 5e Tweaks settings have been reset to default values."
             : "Your personal preferences have been reset to default values.");
         if (requiresReload) {
-            SettingsConfig.reloadConfirm();
+            foundry.applications.settings.SettingsConfig.reloadConfirm();
         }
 
         this.render();
@@ -1893,7 +1941,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                 for (const s of sec.settings) {
                     try {
                         settingsData[s.key] = game.settings.get(MODULE_ID, s.key);
-                    } catch (err) {
+                    } catch {
                         settingsData[s.key] = s.default;
                     }
                 }
@@ -1910,7 +1958,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         };
 
         const filename = `niks-dnd5e-tweaks-settings-${new Date().toISOString().slice(0, 10)}.json`;
-        saveDataToFile(JSON.stringify(exportPayload, null, 2), "application/json", filename);
+        foundry.utils.saveDataToFile(JSON.stringify(exportPayload, null, 2), "application/json", filename);
         ui.notifications.info(`Settings exported to ${filename}`);
     }
 
@@ -1943,7 +1991,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         if (!file) return;
 
         try {
-            const rawContent = await readTextFromFile(file);
+            const rawContent = await foundry.utils.readTextFromFile(file);
             const data = JSON.parse(rawContent);
 
             if (!data || data.module !== MODULE_ID || typeof data.settings !== "object") {
@@ -1984,7 +2032,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
 
             ui.notifications.info(`Successfully imported ${appliedCount} settings from ${file.name}.`);
             if (requiresReload) {
-                SettingsConfig.reloadConfirm();
+                foundry.applications.settings.SettingsConfig.reloadConfirm();
             }
             this.render();
         } catch (err) {

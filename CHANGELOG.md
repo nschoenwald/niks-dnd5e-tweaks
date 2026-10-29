@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.56.0] - 2026-10-29
+### Added
+- **Readable Text Size**: Descriptions are now easier to read. Journal pages, item descriptions, biographies (including Ideals, Bonds, Flaws, Personality Traits, Appearance and the Alignment / Eyes / Height fields on character sheets), items expanded on your sheet and item tooltips use larger text with more space between lines, while the rest of the interface stays the same size. The GM chooses **Comfortable** (default), **Large** or **Off** for the world, and each player can override it under Personal Preferences (default: **Use World Setting**). A separate option also enlarges descriptions in chat cards.
+
+### Fixed
+- Removed the deprecation warnings Foundry showed in the browser console for the settings dashboard (import, export, file picker), template Shift-snapping, template and summon placement, Retroactive Advantage and the Item / Spell Add choice dialog. These features keep working the same and are ready for Foundry V15, which removes the old names.
+
 ## [14.55.3] - 2026-10-29
 ### Fixed
 - **Chat Card Styling Improvements**: Target names and damage numbers in damage trays no longer break onto two lines when Foundry's **Font Size** is set above the default or the chat is in a narrow popout. The **Targeted** / **Selected** button gets narrower when space is tight, and names that still don't fit end in "…" (click the target to see the full name).

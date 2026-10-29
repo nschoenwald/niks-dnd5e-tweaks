@@ -347,7 +347,6 @@ function getDynamicRingTexture(name) {
         const sheetPath = CONFIG.Token?.ring?.spritesheet;
         if (sheetPath) {
             const sheet = foundry.canvas?.TextureLoader?.loader?.getCache?.(sheetPath)
-                || (typeof TextureLoader !== "undefined" ? TextureLoader.loader?.getCache?.(sheetPath) : null)
                 || PIXI.Assets?.cache?.get?.(sheetPath);
             const tex = sheet?.textures?.[name];
             if (tex && tex.valid && tex !== PIXI.Texture.EMPTY) return tex;
@@ -360,7 +359,6 @@ function getDynamicRingTexture(name) {
         const sheetPath = CONFIG.Token?.ring?.spritesheet;
         if (ringClass?.baseTexture?.valid && sheetPath) {
             const sheet = foundry.canvas?.TextureLoader?.loader?.getCache?.(sheetPath)
-                || (typeof TextureLoader !== "undefined" ? TextureLoader.loader?.getCache?.(sheetPath) : null)
                 || PIXI.Assets?.cache?.get?.(sheetPath);
             const frameData = sheet?.data?.frames?.[name]?.frame;
             if (frameData) {

@@ -37,6 +37,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Detailed Roll Breakdown Overlay](#detailed-roll-breakdown-overlay)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Readable Text Size](#readable-text-size)** | UI & Visuals | ✅ Comfortable | Yes |
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Sheet Pop-out Button](#sheet-pop-out-button)** | UI & Visuals | ✅ Enabled | Yes |
@@ -138,6 +139,13 @@ Transforms the native DnD5e roll breakdown popover (opened by clicking on the ro
 * **Theme Harmony**: High contrast text styling across parchment chat logs, Carolingian UI, and dark Foundry themes.
 * **Vibrant Damage Type Icons**: Renders damage type icons with dedicated accent colors matching Nik's Action HUD (e.g. Slashing in red, Fire in orange-red, Cold in light blue, Radiant in gold) using CSS masking and subtle drop-shadows, ensuring clear visibility against parchment, white, or dark overlay backgrounds.
 * **Sidebar & Viewport Responsive**: Accurately anchors popovers to the roll trigger and expands inward/leftward to respect sidebar boundaries and scrollbars, preventing breakdown content and totals from overflowing or cutting off on high-resolution displays or narrow panels.
+
+### Readable Text Size
+D&D 5e shows descriptions in small text with tight line spacing (13px in item descriptions and biographies, 12px for a character's Ideals, Bonds, Flaws, Traits and Appearance, 11px for their Alignment, Eyes, Height etc. and for items expanded on a sheet, 12px in tooltips). This setting enlarges that text and adds space between lines, without making the rest of the interface bigger the way Foundry's **Font Size** setting does.
+* **Covers**: journal pages, item descriptions, NPC and character biographies including the fields at the top of a character's Biography tab, items, spells and features expanded on a sheet, and item tooltips. Headings scale along; buttons, pills and the rest of the sheet keep their size.
+* **Levels**: **Comfortable** (default, e.g. descriptions 13px → 15px, journals 14px → 16px), **Large** (descriptions 17px, journals 18px), or **Off** for D&D 5e's own sizes. Both still follow Foundry's Font Size setting.
+* **Chat Cards**: Turn on **Readable Text Size in Chat Cards** to also enlarge descriptions inside chat cards (off by default, as it makes cards taller).
+* **World Default & Personal Override**: The GM picks the size (and the chat card option) for everyone. Each player can override both under Personal Preferences; their default is **Use World Setting**.
 
 ### Item Sheet Attunement Tag
 Adds a prominent **Attunement Required** or **No Attunement Required** badge to magic item sheets and rich item tooltips.

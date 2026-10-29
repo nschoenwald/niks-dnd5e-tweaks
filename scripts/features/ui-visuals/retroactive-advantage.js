@@ -401,9 +401,9 @@ export function initRetroactiveAdvantage() {
         }
 
         // 2. Wrap Game.prototype.configureUI so Foundry core theme changes update buttons
-        if (typeof Game?.prototype?.configureUI === "function") {
+        if (typeof foundry.Game?.prototype?.configureUI === "function") {
             patchMethod(
-                "Game.prototype.configureUI",
+                "foundry.Game.prototype.configureUI",
                 function(wrapped, ...args) {
                     const result = wrapped(...args);
                     try {

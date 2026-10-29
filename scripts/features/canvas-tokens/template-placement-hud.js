@@ -70,7 +70,7 @@ export function initTemplatePlacementHUD() {
  * Wrap RegionLayer.prototype.placeRegion to inject the HUD banner during template placement.
  */
 function _wrapRegionLayerPlaceRegion() {
-    patchMethod("RegionLayer.prototype.placeRegion", async function patchedHudPlaceRegion(wrapped, data, options = {}) {
+    patchMethod("foundry.canvas.layers.RegionLayer.prototype.placeRegion", async function patchedHudPlaceRegion(wrapped, data, options = {}) {
         const isTemplate = _isTemplatePlacement(data, options, this);
         if (!isTemplate) {
             return wrapped(data, options);

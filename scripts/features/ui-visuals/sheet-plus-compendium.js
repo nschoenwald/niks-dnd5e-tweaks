@@ -540,54 +540,30 @@ function _getActorMaxSpellLevel(actor) {
 }
 
 async function _showChoiceDialog({ title, content, createLabel, browseLabel, defaultAction = "browse" }) {
-    const DialogV2 = foundry.applications.api?.DialogV2;
-    if (DialogV2) {
-        return await DialogV2.wait({
-            window: {
-                title,
-                icon: "fas fa-plus-circle",
-                width: 400
-            },
-            content,
-            buttons: [
-                {
-                    action: "browse",
-                    label: browseLabel,
-                    icon: "fas fa-book-open",
-                    className: defaultAction === "browse" ? "default bright" : "bright",
-                    callback: () => "browse"
-                },
-                {
-                    action: "create",
-                    label: createLabel,
-                    icon: "fas fa-plus",
-                    className: defaultAction === "create" ? "default bright" : "",
-                    callback: () => "create"
-                }
-            ],
-            rejectClose: false,
-            close: () => null
-        });
-    }
-
-    return new Promise((resolve) => {
-        new Dialog({
+    return await foundry.applications.api.DialogV2.wait({
+        window: {
             title,
-            content,
-            buttons: {
-                browse: {
-                    icon: '<i class="fas fa-book-open"></i>',
-                    label: browseLabel,
-                    callback: () => resolve("browse")
-                },
-                create: {
-                    icon: '<i class="fas fa-plus"></i>',
-                    label: createLabel,
-                    callback: () => resolve("create")
-                }
+            icon: "fas fa-plus-circle",
+            width: 400
+        },
+        content,
+        buttons: [
+            {
+                action: "browse",
+                label: browseLabel,
+                icon: "fas fa-book-open",
+                className: defaultAction === "browse" ? "default bright" : "bright",
+                callback: () => "browse"
             },
-            default: defaultAction,
-            close: () => resolve(null)
-        }).render(true);
+            {
+                action: "create",
+                label: createLabel,
+                icon: "fas fa-plus",
+                className: defaultAction === "create" ? "default bright" : "",
+                callback: () => "create"
+            }
+        ],
+        rejectClose: false,
+        close: () => null
     });
 }

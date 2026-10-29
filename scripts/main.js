@@ -3,6 +3,7 @@ import { initSceneNavName } from "./features/ui-visuals/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/ui-visuals/cursor-hints.js";
 import { initActorDispositionColors } from "./features/ui-visuals/actor-disposition-colors.js";
 import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/ui-visuals/sidebar-name-wrap.js";
+import { updateReadableTextSize } from "./features/ui-visuals/readable-text-size.js";
 import { initBloodDropIcon } from "./features/ui-visuals/blood-drop-icon.js";
 import { initCleanSheetTitles } from "./features/ui-visuals/clean-sheet-titles.js";
 import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/ui-visuals/sheet-popout-button.js";
@@ -508,6 +509,37 @@ Hooks.once("init", () => {
         }
     });
 
+    game.settings.register(MODULE_ID, "clientReadableTextSize", {
+        name: "Readable Text Size (Personal)",
+        hint: "Overrides the GM's Readable Text Size on your screen.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "world",
+        choices: {
+            world: "Use World Setting",
+            off: "Off (D&D 5e Default)",
+            comfortable: "Comfortable",
+            large: "Large"
+        },
+        onChange: () => updateReadableTextSize()
+    });
+
+    game.settings.register(MODULE_ID, "clientReadableTextSizeChat", {
+        name: "Readable Text Size in Chat Cards (Personal)",
+        hint: "Overrides the GM's choice for enlarging descriptions in chat cards on your screen.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "world",
+        choices: {
+            world: "Use World Setting",
+            on: "On",
+            off: "Off"
+        },
+        onChange: () => updateReadableTextSize()
+    });
+
     game.settings.register(MODULE_ID, "clientEnableCarolingianTheme", {
         name: "Carolingian UI Theme Harmony (Personal)",
         hint: "Adopts Carolingian UI's active color theme and styling on your client (if enabled by the GM and Carolingian UI is active).",
@@ -772,6 +804,33 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         requiresReload: true
+    });
+
+    game.settings.register(MODULE_ID, "readableTextSize", {
+        name: "Readable Text Size",
+        hint: "Default size for the body text of item descriptions, biographies, journal pages, expanded items on sheets and item tooltips, with more space between lines. The rest of the interface keeps its size. Players can override it under Personal Preferences.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "comfortable",
+        choices: {
+            off: "Off (D&D 5e Default)",
+            comfortable: "Comfortable",
+            large: "Large"
+        },
+        restricted: true,
+        onChange: () => updateReadableTextSize()
+    });
+
+    game.settings.register(MODULE_ID, "readableTextSizeChat", {
+        name: "Readable Text Size in Chat Cards",
+        hint: "Also enlarges item and spell descriptions inside chat cards. Cards become taller. Players can override it under Personal Preferences.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true,
+        onChange: () => updateReadableTextSize()
     });
 
     game.settings.register(MODULE_ID, "enableSidebarNameWrap", {
@@ -1848,6 +1907,7 @@ Hooks.once("ready", async () => {
     if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
+    updateReadableTextSize();
     if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
 
     // ── Central socket dispatcher ──────────────────────────────────────

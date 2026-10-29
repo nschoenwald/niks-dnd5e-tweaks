@@ -43,7 +43,7 @@ function _isSnapActive() {
  * @returns {boolean}
  */
 function _isShiftHeld() {
-    return !!game.keyboard?.isModifierActive(KeyboardManager.MODIFIER_KEYS.SHIFT);
+    return !!game.keyboard?.isModifierActive(foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT);
 }
 
 /**

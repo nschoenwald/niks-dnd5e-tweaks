@@ -135,7 +135,7 @@ export function initTemplateTargeting() {
  * Wrap RegionLayer.prototype.placeRegion to intercept onChange and update targets in real time.
  */
 function _wrapRegionLayerPlaceRegion() {
-    patchMethod("RegionLayer.prototype.placeRegion", async function patchedTargetingPlaceRegion(wrapped, data, options = {}) {
+    patchMethod("foundry.canvas.layers.RegionLayer.prototype.placeRegion", async function patchedTargetingPlaceRegion(wrapped, data, options = {}) {
         if (!isFeatureActive("enableTemplateTargeting", "clientEnableTemplateTargeting")) {
             return wrapped(data, options);
         }
