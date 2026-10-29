@@ -68,6 +68,7 @@ import { initFixPactSpellScaling, refreshAllPactSpellScaling } from "./features/
 import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray-grouping-key.js";
 import { initFixTokenBarRefresh } from "./features/patches/fix-token-bar-refresh.js";
 import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
+import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-spell-scaling.js";
 
 // Settings Dashboard
 import { NiksTweaksSettingsApp } from "./settings-app.js";
@@ -1812,6 +1813,7 @@ Hooks.once("setup", () => {
     initFixDamageTrayGroupingKey();
     initFixTokenBarRefresh();
     initFixTokenHPBarAnimation();
+    initFixFreeCastSpellScaling();
 
     // Utilities
     initAutoUnpauseOnLogin();

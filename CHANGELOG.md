@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.55.2] - 2026-10-29
+### Fixed
+- Spells you cast without a spell slot no longer show the **Cast at Level** choice or the "You have no available spell slots" warning when you use them. This covers spells cast with the item's or activity's own uses, such as *Mystic Arcanum*, feat spells and innate spells. They are cast at their own level, as intended. Spells that do use a slot, or whose activity allows its own scaling, are unchanged.
+
 ## [14.55.1] - 2026-10-28
 ### Changed
 - **Detailed Roll Breakdown Overlay** with midi-qol: Clicking the attack or damage total on midi-qol's combined card now shows the detailed breakdown too, with every die and bonus and where it came from. Before, midi-qol showed its own plain list of dice there. midi-qol's notes on where advantage or a bonus came from are kept at the top. Rolls that midi-qol hides from players stay hidden.
