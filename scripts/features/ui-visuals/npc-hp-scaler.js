@@ -3,6 +3,7 @@
  * Description: Adds quick plus and minus buttons to the NPC Hit Points configuration dialog to scale hit dice counts and recalculate average HP and health formulas.
  *
  * @introduced v14.21.1
+ * @updated v14.57.0 (Removed a duplicate render hook)
  */
 import { getSetting, log, debug } from "../../main.js";
 
@@ -23,7 +24,6 @@ import { getSetting, log, debug } from "../../main.js";
  * Supports Shift-clicking to scale by 5 hit dice at a time.
  */
 
-let _hookIdAppV2 = null;
 let _hookIdHpConfig = null;
 
 export function initNpcHpScaler() {
@@ -32,14 +32,6 @@ export function initNpcHpScaler() {
     if (_hookIdHpConfig === null) {
         _hookIdHpConfig = Hooks.on("renderHitPointsConfig", (app, element) => {
             _injectScalingButtons(app, element);
-        });
-    }
-
-    if (_hookIdAppV2 === null) {
-        _hookIdAppV2 = Hooks.on("renderApplicationV2", (app, element) => {
-            if (_isHitPointsConfig(app)) {
-                _injectScalingButtons(app, element);
-            }
         });
     }
 
@@ -59,10 +51,6 @@ export function disableNpcHpScaler() {
     if (_hookIdHpConfig !== null) {
         Hooks.off("renderHitPointsConfig", _hookIdHpConfig);
         _hookIdHpConfig = null;
-    }
-    if (_hookIdAppV2 !== null) {
-        Hooks.off("renderApplicationV2", _hookIdAppV2);
-        _hookIdAppV2 = null;
     }
     document.querySelectorAll(".nd5t-hp-scaler-btn").forEach(el => el.remove());
 }

@@ -3,6 +3,7 @@
  * Description: Adds a one-click pop-out button (↗) to Actor and Item sheet window headers to detach them into separate browser windows using native pop-out functionality.
  *
  * @introduced v14.17.0
+ * @updated v14.57.0 (Render hook registered only once when settings change)
  */
 import { log, debug, isFeatureActive } from "../../main.js";
 
@@ -30,7 +31,8 @@ let _hookId = null;
 export function initSheetPopoutButton() {
     if (!isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) return;
 
-    _hookId = Hooks.on("renderApplicationV2", (app, _element) => {
+    // Both the world and the client setting call this on change, so register the hook only once
+    _hookId ??= Hooks.on("renderApplicationV2", (app, _element) => {
         _injectPopoutButton(app);
     });
 

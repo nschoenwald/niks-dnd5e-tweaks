@@ -3,6 +3,7 @@
  * Description: Displays a color-coded status dot next to each actor name in the sidebar Actors directory tab indicating their default token disposition (Friendly, Neutral, Hostile, or Secret).
  *
  * @introduced v13.0.1
+ * @updated v14.57.0 (Dots are added once per render instead of twice)
  */
 import { getSetting, debug } from "../../main.js";
 
@@ -36,8 +37,7 @@ function colorActorDispositionRender(app, html, options) {
   if (!getSetting("enableActorDispositionColors")) return;
   const colors = getDispositionColors();
 
-  const directoryHTML = html[0] || html;
-  directoryHTML.querySelectorAll("li.directory-item.entry.actor").forEach(item => {
+  html.querySelectorAll("li.directory-item.entry.actor").forEach(item => {
     let actorId = item.dataset.entryId || item.dataset.documentId;
     let actor = game.actors.get(actorId);
 
@@ -66,12 +66,6 @@ export function initActorDispositionColors() {
   if (initialized) return;
   initialized = true;
   Hooks.on("renderActorDirectory", colorActorDispositionRender);
-  // Also support AppV2 sidebar rendering (V14+)
-  Hooks.on("renderApplicationV2", (app, html) => {
-    if (app instanceof CONFIG.ui?.actors?.constructor || app.constructor?.name === "ActorDirectory") {
-      colorActorDispositionRender(app, html);
-    }
-  });
   Hooks.on("updateActor", (actor, updates, options, userId) => {
    if (updates.prototypeToken?.disposition !== undefined)
     colorActorDisposition(actor, updates, options, userId);

@@ -3,6 +3,7 @@
  * Description: Intercepts "+" buttons on character sheets in Items, Spells, or Features tabs to offer a choice between creating an item directly or opening the filtered Compendium Browser.
  *
  * @introduced v14.14.1
+ * @updated v14.57.0 (Listens to actor sheet renders only instead of every window render)
  */
 import { debug, isFeatureActive } from "../../main.js";
 
@@ -28,13 +29,8 @@ export function initSheetPlusCompendium() {
         _attachPlusButtonInterceptor(app, html);
     };
 
-    // Standard DnD5e hooks
-    Hooks.on("renderActorSheet", attach);
-    Hooks.on("renderApplicationV2", (app, html) => {
-        if (app.document?.documentName === "Actor" || app.actor || (globalThis.dnd5e?.applications?.actor?.BaseActorSheet && app instanceof globalThis.dnd5e.applications.actor.BaseActorSheet)) {
-            attach(app, html);
-        }
-    });
+    // Every actor sheet (dnd5e and Tidy 5e) extends ActorSheetV2
+    Hooks.on("renderActorSheetV2", attach);
 
     // Tidy 5e Sheets dedicated hook
     Hooks.on("tidy5e-sheet.renderActorSheet", (app, element) => {

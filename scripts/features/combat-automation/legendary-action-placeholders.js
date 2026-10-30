@@ -5,6 +5,7 @@
  * @introduced v14.3.1
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
  * @updated v14.48.0 (Native core combat turn marker displayed on legendary creatures during placeholder turns)
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -623,7 +624,7 @@ export function initLegendaryActionPlaceholders() {
         try {
             _invalidateLegendaryCache(combat);
             // Only run for the primary GM
-            const activeGM = game.users.primaryGM ?? game.users.activeGM;
+            const activeGM = game.users.activeGM;
             if (!activeGM?.isSelf) return;
 
             // Check if the setting is enabled

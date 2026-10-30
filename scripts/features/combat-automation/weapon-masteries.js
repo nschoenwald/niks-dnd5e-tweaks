@@ -19,6 +19,7 @@
  *
  * @introduced v14.42.0
  * @updated v14.51.0 (midi-qol workflow support)
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
@@ -485,8 +486,7 @@ async function _onRollAttack(rolls, data) {
  * @param {string} userId
  */
 async function _onUpdateCombat(combat, changed, options, userId) {
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (!primaryGM?.isSelf) return;
+    if (!game.user.isActiveGM) return;
     if (!getSetting("enableWeaponMasteries")) return;
     if (changed.turn === undefined && changed.round === undefined) return;
 
@@ -540,8 +540,7 @@ async function _onUpdateCombat(combat, changed, options, userId) {
  * @param {Combat} combat
  */
 async function _onDeleteCombat(combat) {
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (!primaryGM?.isSelf) return;
+    if (!game.user.isActiveGM) return;
     if (!getSetting("enableWeaponMasteries")) return;
 
     try {
@@ -578,8 +577,7 @@ async function _onDeleteCombat(combat) {
  * @param {object} data
  */
 export async function weaponMasterySocketMessage(data) {
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (!primaryGM?.isSelf) return;
+    if (!game.user.isActiveGM) return;
 
     try {
         if (data?.action === "applyWeaponMasteryEffect" && data.targetActorUuid && data.effectData) {

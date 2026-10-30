@@ -3,6 +3,7 @@
  * Description: Automatically triggers the death saving throw dialog for player characters starting their combat turn at 0 HP.
  *
  * @introduced v13.0.1
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { debug, isFeatureActive } from "../../main.js";
 
@@ -116,8 +117,7 @@ async function handleDeathSavePrompt(combat) {
     // Only run on the primary/active GM to avoid duplicate chat messages.
     // Check whether any non-GM owner of this actor is currently connected.
     // If an owner is online, their client will handle Path 1 — no card needed.
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (!primaryGM?.isSelf) return;
+    if (!game.user.isActiveGM) return;
 
     const hasConnectedOwner = game.users.some(u =>
         !u.isGM && u.active && actor.testUserPermission(u, "OWNER")

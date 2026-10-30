@@ -4,6 +4,7 @@
  *
  * @introduced v14.10.0
  * @updated v14.56.4 (Attack damage prompt no longer skipped when the damage roll isn't linked to the usage message)
+ * @updated v14.57.0 (Canvas target fallback only uses the GM's targets for the GM's own rolls)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -147,9 +148,9 @@ function _waitForDiceSoNice(messageId) {
  */
 async function _onCreateChatMessage(message) {
     try {
-        const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-        if (primaryGM) {
-            if (!primaryGM.isSelf) return;
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (!activeGM.isSelf) return;
         } else {
             const authorId = message.author?.id ?? message.user?.id;
             if (game.user.id !== authorId) return;
@@ -237,8 +238,9 @@ async function _onCreateChatMessage(message) {
             || (damageTargets?.length ? damageTargets : null)
             || [];
 
-        // Fallback to canvas targets if message has no targets
-        if (!targets.length && game.user.targets?.size > 0) {
+        // Fallback to canvas targets if message has no targets. This runs on the active GM's client,
+        // so its targets only belong to the roll when the GM rolled it.
+        if (!targets.length && messageAuthor?.isSelf && game.user.targets?.size > 0) {
             targets = Array.from(game.user.targets).map(t => ({
                 token: t.document?.uuid,
                 actor: t.actor?.uuid,
@@ -299,9 +301,9 @@ async function _onCreateChatMessage(message) {
  */
 async function _onCreateChatMessage_Attack(message) {
     try {
-        const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-        if (primaryGM) {
-            if (!primaryGM.isSelf) return;
+        const activeGM = game.users.activeGM;
+        if (activeGM) {
+            if (!activeGM.isSelf) return;
         } else {
             const authorId = message.author?.id ?? message.user?.id;
             if (game.user.id !== authorId) return;
@@ -360,7 +362,8 @@ async function _onCreateChatMessage_Attack(message) {
             || (attackTargets?.length ? attackTargets : null)
             || [];
 
-        if (!targets.length && game.user.targets?.size > 0) {
+        // Canvas targets fallback: this runs on the active GM's client, so only the GM's own rolls may use its targets
+        if (!targets.length && message.author?.isSelf && game.user.targets?.size > 0) {
             targets = Array.from(game.user.targets).map(t => ({
                 token: t.document?.uuid,
                 actor: t.actor?.uuid,

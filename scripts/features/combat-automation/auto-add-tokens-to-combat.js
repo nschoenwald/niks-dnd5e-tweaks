@@ -3,6 +3,7 @@
  * Description: Automatically adds new tokens created or dragged to the canvas during an ongoing combat encounter into the active combat.
  *
  * @introduced v14.16.0
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 
@@ -29,7 +30,7 @@ function _onCreateToken(tokenDocument, options, userId) {
         if (!getSetting("enableAutoAddTokensToCombat")) return;
 
         // Primary GM check to ensure single client execution
-        const activeGM = game.users.primaryGM ?? game.users.activeGM;
+        const activeGM = game.users.activeGM;
         if (!activeGM?.isSelf) return;
 
         // Check if an active combat exists

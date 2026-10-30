@@ -2,7 +2,7 @@
  * Helper to dynamically center floating HUD banners (teleport, template, summon)
  * on the visible canvas area rather than the total window width.
  *
- * Accounts for the left scene controls toolbar (#controls) and the right sidebar (#sidebar),
+ * Accounts for the left scene controls toolbar (#scene-controls) and the right sidebar (#sidebar),
  * and dynamically adjusts when the sidebar collapses/expands or the window resizes.
  */
 
@@ -12,7 +12,7 @@
  */
 export function getVisibleCanvasCenter() {
     const sidebar = document.getElementById("sidebar");
-    const controls = document.getElementById("controls");
+    const controls = document.getElementById("scene-controls");
 
     const left = controls ? Math.max(0, controls.getBoundingClientRect().right) : 0;
     const right = sidebar ? Math.min(window.innerWidth, sidebar.getBoundingClientRect().left) : window.innerWidth;

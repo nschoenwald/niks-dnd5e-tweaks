@@ -620,7 +620,6 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 #scene-controls .nd5t-scrollable-toolbar,
 #scene-controls menu.nd5t-scrollable-toolbar,
-#controls .nd5t-scrollable-toolbar,
 .nd5t-scrollable-toolbar {
     display: flex !important;
     flex-direction: column !important;
@@ -634,7 +633,6 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 #scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar,
 #scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar,
-#controls .nd5t-scrollable-toolbar::-webkit-scrollbar,
 .nd5t-scrollable-toolbar::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -642,14 +640,12 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 #scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-track,
 #scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-track,
-#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-track,
 .nd5t-scrollable-toolbar::-webkit-scrollbar-track {
     background: transparent;
 }
 
 #scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
 #scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
-#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb,
 .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 3px;
@@ -657,7 +653,6 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 #scene-controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
 #scene-controls menu.nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
-#controls .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover,
 .nd5t-scrollable-toolbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }

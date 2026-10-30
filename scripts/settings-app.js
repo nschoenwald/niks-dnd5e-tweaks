@@ -809,14 +809,6 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
-                                key: "enableAutoClearMovementHistory",
-                                name: "Auto-Clear Movement History",
-                                hint: "Automatically clears token movement history trails for all combatants at the start of each turn and when combat begins.",
-                                type: "Boolean",
-                                default: true,
-                                scope: "world"
-                            },
-                            {
                                 key: "disableUndergroundTokenHiding",
                                 name: "Disable Underground Token Hiding",
                                 hint: "Prevents tokens with negative elevation from disappearing behind the scene background layer.",

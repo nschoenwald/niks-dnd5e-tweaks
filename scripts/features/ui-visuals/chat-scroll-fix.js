@@ -3,6 +3,7 @@
  * Description: Keeps the chat log reliably scrolled to the bottom when new cards appear, expand, or update, while preserving reading position when scrolled up.
  *
  * @introduced v14.26.0
+ * @updated v14.57.0 (Hooks are registered even when the feature starts disabled, so enabling it mid-session works)
  */
 import { getSetting, log, debug } from "../../main.js";
 
@@ -157,8 +158,8 @@ function _watchChatLog(app, element) {
  * Initialize Reliable Chat Log Auto-Scroll.
  */
 export function initChatScrollFix() {
-    if (!getSetting("enableChatScrollFix")) return;
-
+    // The hooks are registered even while the feature is off, so turning it on mid-session
+    // keeps working after the chat log re-renders. Each hook checks the setting itself.
     Hooks.on("renderChatLog", (app, element) => {
         if (!getSetting("enableChatScrollFix")) return;
         const el = element instanceof HTMLElement ? element : (element?.[0] ?? app.element);
@@ -199,11 +200,9 @@ export function initChatScrollFix() {
     });
 
     // If chat log is already rendered when init/setup runs, attach immediately
-    if (ui.chat?.element) {
+    if (getSetting("enableChatScrollFix") && ui.chat?.element) {
         _watchChatLog(ui.chat, ui.chat.element);
     }
-
-    log("Reliable Chat Log Auto-Scroll enabled");
 }
 
 /**

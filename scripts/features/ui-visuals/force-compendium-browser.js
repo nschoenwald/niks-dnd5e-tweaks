@@ -3,6 +3,7 @@
  * Description: Automatically redirects non-GM players clicking the Compendium sidebar tab to open the DnD5e Compendium Browser, with optional Shift-click bypass for standard pack lists.
  *
  * @introduced v13.0.1
+ * @updated v14.57.0 (Removed a duplicate render hook)
  */
 import { getSetting, debug } from "../../main.js";
 
@@ -39,16 +40,6 @@ export function initForceCompendiumBrowser() {
         }
     };
 
-    Hooks.on("renderSidebar", (app, html, data) => {
-        const sidebar = html[0] || html;
-        interceptCompendiumClick(sidebar);
-    });
-    // Also support AppV2 sidebar rendering (V14+)
-    Hooks.on("renderApplicationV2", (app, html) => {
-        if (app.id === "sidebar" || app.constructor?.name === "Sidebar") {
-            const sidebar = html[0] || html;
-            interceptCompendiumClick(sidebar);
-        }
-    });
+    Hooks.on("renderSidebar", (app, html) => interceptCompendiumClick(html));
 }
 

@@ -3,6 +3,7 @@
  * Description: Automatically triggers Constitution saving throws when a concentrating actor takes damage, routes roll prompts to connected player owners, and appends an End Concentration button.
  *
  * @introduced v14.12.0
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -385,8 +386,7 @@ async function _onDamageActor(actor, changes, update, userId) {
             const isPrimaryOwner = connectedOwners[0].id === game.userId;
             if (!isPrimaryOwner) return;
         } else {
-            const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-            if (!primaryGM?.isSelf) return;
+            if (!game.user.isActiveGM) return;
         }
 
         const dc = typeof actor.getConcentrationDC === "function"

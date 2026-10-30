@@ -3,6 +3,7 @@
  * Description: Automatically prompts connected players with an initiative dialog or auto-rolls initiative immediately when combatants are added to an encounter.
  *
  * @introduced v14.17.0
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 
@@ -159,8 +160,7 @@ function _onCreateCombatant(combatant, options, userId) {
         }
 
         // ── Path 2 & 3: Primary GM Client Handling ──────────────────────────
-        const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-        if (!primaryGM?.isSelf) return;
+        if (!game.user.isActiveGM) return;
 
         const hasConnectedOwner = game.users.some(u => !u.isGM && u.active && actor.testUserPermission(u, "OWNER"));
 

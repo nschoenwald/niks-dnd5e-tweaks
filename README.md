@@ -64,7 +64,6 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Auto-Clear Movement History](#auto-clear-movement-history)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Prompt for Initiative](#prompt-for-initiative)** | Combat & Automation | ✅ Players | Yes |
 | **[Auto-Roll Initiative](#auto-roll-initiative)** | Combat & Automation | ❌ Disabled | Yes |
@@ -271,9 +270,6 @@ Snaps circle, ring and square spell templates to grid intersections instead of c
 
 ### Clear Targets Token Control Button
 Adds a dedicated crosshair button to the canvas Token Controls toolbar, positioned directly below the core Select Targets button. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
-
-### Auto-Clear Movement History
-Automatically clears token movement history trails at the start of combat and on each turn (GM client).
 
 ### Disable Underground Token Hiding
 Prevents tokens with negative elevation from disappearing behind the scene background layer.

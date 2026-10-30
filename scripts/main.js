@@ -26,7 +26,6 @@ import { initCarolingianHarmony, updateCarolingianThemeState } from "./features/
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
-import { initAutoClearMovementHistory, disableAutoClearMovementHistory, enableAutoClearMovementHistory } from "./features/canvas-tokens/auto-clear-movement-history.js";
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
@@ -181,6 +180,25 @@ export function isFeatureActive(worldKey, clientKey) {
         return false;
     }
     return true;
+}
+
+/**
+ * Drop the cached auto-collapse decisions on every message and re-render the chat log,
+ * so a changed damage tray collapse setting applies to existing cards.
+ */
+function resetDamageTrayCollapse() {
+    game.messages?.forEach(m => {
+        delete m._nd5tShouldCollapseTray;
+        delete m._nd5tIsHealingMistarget;
+        delete m._nd5tHadHtml;
+        if (m._nd5tAutoCollapsed) {
+            m._trayStates?.delete("DAMAGE-APPLICATION");
+            m._trayStates?.delete("damage-application");
+            delete m._nd5tAutoCollapsed;
+        }
+    });
+    ui.chat?.render(true);
+    if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
 }
 
 Hooks.once("init", () => {
@@ -717,20 +735,7 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true,
-        onChange: () => {
-            game.messages?.forEach(m => {
-                delete m._nd5tShouldCollapseTray;
-                delete m._nd5tIsHealingMistarget;
-                delete m._nd5tHadHtml;
-                if (m._nd5tAutoCollapsed) {
-                    m._trayStates?.delete("DAMAGE-APPLICATION");
-                    m._trayStates?.delete("damage-application");
-                    delete m._nd5tAutoCollapsed;
-                }
-            });
-            ui.chat?.render(true);
-            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
-        }
+        onChange: resetDamageTrayCollapse
     });
 
     game.settings.register(MODULE_ID, "enableAutoCollapsePlayerDamageTrays", {
@@ -741,20 +746,7 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true,
-        onChange: () => {
-            game.messages?.forEach(m => {
-                delete m._nd5tShouldCollapseTray;
-                delete m._nd5tIsHealingMistarget;
-                delete m._nd5tHadHtml;
-                if (m._nd5tAutoCollapsed) {
-                    m._trayStates?.delete("DAMAGE-APPLICATION");
-                    m._trayStates?.delete("damage-application");
-                    delete m._nd5tAutoCollapsed;
-                }
-            });
-            ui.chat?.render(true);
-            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
-        }
+        onChange: resetDamageTrayCollapse
     });
 
     game.settings.register(MODULE_ID, "enableAggregateShortRestRolls", {
@@ -1048,20 +1040,6 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableAutoClearMovementHistory", {
-        name: "Auto-Clear Movement History",
-        hint: "Automatically clears token movement history trails for all combatants at the start of each combat turn and when combat starts (GM client only).",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: (value) => {
-            if (value) enableAutoClearMovementHistory();
-            else disableAutoClearMovementHistory();
-        }
     });
 
     game.settings.register(MODULE_ID, "disableUndergroundTokenHiding", {
@@ -1840,7 +1818,6 @@ Hooks.once("setup", () => {
     initCleanSheetTitles();
 
     // Register settings for features that manage their own state
-    initAutoClearMovementHistory();
     initAutoAddTokensToCombat();
     initAutoRollInitiative();
     initDeathSavePrompt();
@@ -1900,8 +1877,8 @@ Hooks.once("setup", () => {
 
 Hooks.once("ready", async () => {
 
-    // One-time migrations (GM only)
-    if (game.user.isGM) await runMigrations();
+    // One-time migrations (active GM only, so two connected GMs never run them at once)
+    if (game.user.isActiveGM) await runMigrations();
 
     // Features that can run at ready or need the game to be fully loaded
     if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
@@ -1950,7 +1927,7 @@ async function runMigrations() {
             const updates = [];
             for (const token of scene.tokens) {
                 if (token.getFlag(MODULE_ID, "originalRotation") !== undefined) {
-                    updates.push({ _id: token.id, [`flags.${MODULE_ID}.-=originalRotation`]: null });
+                    updates.push({ _id: token.id, [`flags.${MODULE_ID}.originalRotation`]: _del });
                 }
             }
             if (updates.length) {
@@ -1965,18 +1942,23 @@ async function runMigrations() {
     // Migration 2: Migrate legacy boolean enableAutoRollInitiative & autoRollInitiativeFastForward
     if (currentVersion < 2) {
         log("Running migration 2: migrating initiative settings...");
-        try {
-            const oldEnable = game.settings.get(MODULE_ID, "enableAutoRollInitiative");
-            const oldFastForward = game.settings.get(MODULE_ID, "autoRollInitiativeFastForward");
+        // Only worlds that stored a legacy value need migrating. On a fresh world the legacy settings
+        // return their defaults, which would overwrite the new settings' own defaults.
+        const worldStorage = game.settings.storage.get("world");
+        const hasLegacy = ["enableAutoRollInitiative", "autoRollInitiativeFastForward"]
+            .some(key => worldStorage.getSetting(`${MODULE_ID}.${key}`));
+        if (!hasLegacy) log("  No legacy initiative settings stored, keeping defaults.");
+        else {
+            try {
+                const oldEnable = game.settings.get(MODULE_ID, "enableAutoRollInitiative");
+                const oldFastForward = game.settings.get(MODULE_ID, "autoRollInitiativeFastForward");
 
-            let newPrompt = "all";
-            let newAutoRoll = "none";
+                let newPrompt = "all";
+                let newAutoRoll = "none";
 
-            if (oldEnable === false) {
-                newPrompt = "none";
-                newAutoRoll = "none";
-            } else {
-                if (oldFastForward === "all") {
+                if (oldEnable === false) {
+                    newPrompt = "none";
+                } else if (oldFastForward === "all") {
                     newAutoRoll = "all";
                     newPrompt = "none";
                 } else if (oldFastForward === "npcsOnly" || oldFastForward === "npcs") {
@@ -1985,17 +1967,14 @@ async function runMigrations() {
                 } else if (oldFastForward === "playersOnly" || oldFastForward === "players") {
                     newAutoRoll = "players";
                     newPrompt = "npcs";
-                } else {
-                    newPrompt = "all";
-                    newAutoRoll = "none";
                 }
-            }
 
-            await game.settings.set(MODULE_ID, "promptForInitiative", newPrompt);
-            await game.settings.set(MODULE_ID, "autoRollInitiative", newAutoRoll);
-            log(`  Migrated initiative settings: promptForInitiative="${newPrompt}", autoRollInitiative="${newAutoRoll}"`);
-        } catch (err) {
-            log("  Could not read legacy initiative settings, using defaults.", err);
+                await game.settings.set(MODULE_ID, "promptForInitiative", newPrompt);
+                await game.settings.set(MODULE_ID, "autoRollInitiative", newAutoRoll);
+                log(`  Migrated initiative settings: promptForInitiative="${newPrompt}", autoRollInitiative="${newAutoRoll}"`);
+            } catch (err) {
+                log("  Could not read legacy initiative settings, using defaults.", err);
+            }
         }
         await game.settings.set(MODULE_ID, "migrationVersion", 2);
         log("Migration 2 complete.");

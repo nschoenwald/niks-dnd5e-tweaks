@@ -4,6 +4,7 @@
  *
  * @introduced v14.13.0
  * @updated v14.49.1 (Auto-Apply Effects list applies matching effects directly and collapses the usage card's effect tray)
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
@@ -1313,10 +1314,9 @@ export function onSocketMessage(data) {
     const msg = game.messages.get(data.messageId);
     if (!msg) return;
 
-    // Only the message author or the primary GM should write the flag.
+    // Only the message author or the active GM should write the flag.
     const authorId = msg.author?.id ?? msg.user?.id;
-    const primaryGM = game.users.primaryGM ?? game.users.activeGM;
-    if (game.user.id !== authorId && !primaryGM?.isSelf) return;
+    if (game.user.id !== authorId && !game.user.isActiveGM) return;
 
     debug("Self Effect Application | Socket received: selfEffectApplied for message", data.messageId, data.effectsApplied);
     _writeEffectsAppliedFlag(data.messageId, data.effectsApplied);

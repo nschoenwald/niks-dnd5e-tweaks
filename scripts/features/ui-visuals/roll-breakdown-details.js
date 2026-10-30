@@ -1397,7 +1397,6 @@ export function evaluateTermExpression(expr) {
     }
     try {
         if (/^[\d\s+\-*/%().]+$/.test(expr)) {
-            // eslint-disable-next-line no-new-func
             const res = Function(`"use strict"; return (${expr});`)();
             if (!isNaN(res) && Number.isFinite(res)) return res;
         }

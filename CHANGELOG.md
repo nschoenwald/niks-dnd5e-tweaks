@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.57.0] - 2026-10-30
+### Changed
+- **Auto-Clear Movement History** has been removed. Foundry V14 already clears every combatant's movement history at the start of each turn, so the feature only repeated that work. Movement trails behave the same as before.
+
+### Fixed
+- **Player Damage Prompt**: When a player's damage roll carried no targets, the prompt could be sent for whatever tokens the GM had targeted. It now only falls back to canvas targets for the GM's own rolls.
+- **Sheet Pop-out Button**: Turning the button off now removes it reliably, even after the setting was switched on and off during the session.
+- **Reliable Chat Log Auto-Scroll**: Turning the feature on mid-session now keeps working after the chat log redraws, and snaps to your own new messages, without needing a reload.
+- **Template, Summon and Teleport placement banners** are now centred on the visible canvas between the scene controls and the sidebar, as intended.
+- New worlds now start with **Prompt for Initiative** set to its intended default (**Players**) instead of **All**.
+- Slightly less work on every render for **Actor Directory Disposition Dots**, **Force Compendium Browser**, **NPC Hit Point Scaling**, **Toolbar Limitation** and the **Item / Spell Add choice dialog**. Toolbar Limitation no longer watches the scene controls while it is turned off.
+
 ## [14.56.4] - 2026-10-30
 ### Fixed
 - **Player Damage Prompt**: The damage prompt for an attack could fail to appear when the damage roll wasn't linked to the attack's usage card. It now shows up as expected.

@@ -4,6 +4,7 @@
  *
  * @introduced v14.15.0
  * @updated v14.49.0 (Capped layout retries and debounced resize handling)
+ * @updated v14.57.0 (One render hook instead of two, observer disconnected while disabled, dropped pre-V13 selectors)
  */
 import { getSetting, debug } from "../../main.js";
 
@@ -67,9 +68,6 @@ function getToolbarContainers() {
         "#scene-controls ul",
         "#scene-controls-layers",
         "#scene-controls-tools",
-        "#controls ol",
-        "#controls ul",
-        "#controls menu",
         ".scene-control-layers",
         ".scene-control-tools",
         ".main-controls",
@@ -81,7 +79,7 @@ function getToolbarContainers() {
 
     // Fallback: search within root controls element if selector returned nothing
     if (elements.length === 0) {
-        const root = document.getElementById("scene-controls") || document.getElementById("controls") || ui.controls?.element;
+        const root = ui.controls?.element;
         if (root && !isMacroToolbar(root)) {
             return Array.from(root.children).filter(child => child.children.length > 0 && !isMacroToolbar(child));
         }
@@ -282,6 +280,9 @@ function resetSingleToolbar(toolbar) {
  * Resets all toolbars in scene controls to default.
  */
 export function resetToolbars() {
+    // Nothing to watch while the feature is off; applyToolbarLimitation sets the observer up again
+    observer?.disconnect();
+    observer = null;
     const toolbars = getToolbarContainers();
     for (const toolbar of toolbars) {
         resetSingleToolbar(toolbar);
@@ -300,15 +301,17 @@ export function resetToolbars() {
  */
 function setupObserver() {
     if (observer) return;
-    const root = document.getElementById("scene-controls") || document.getElementById("controls") || ui.controls?.element;
+    const root = ui.controls?.element;
     if (!root) return;
 
     observer = new MutationObserver(() => {
         // Disconnect temporarily to avoid triggering on our own style/DOM mutations
         observer.disconnect();
         applyToolbarLimitation();
+        // Disabling the feature drops the observer (see resetToolbars)
+        if (!observer) return;
         // Re-observe
-        const activeRoot = document.getElementById("scene-controls") || document.getElementById("controls") || ui.controls?.element;
+        const activeRoot = ui.controls?.element;
         if (activeRoot) {
             observer.observe(activeRoot, { childList: true, subtree: true });
         } else {
@@ -331,13 +334,6 @@ export function initToolbarLimitation() {
     // Recalculate on Scene Controls render
     Hooks.on("renderSceneControls", () => {
         applyToolbarLimitation();
-    });
-
-    // Support ApplicationV2 Scene Controls rendering
-    Hooks.on("renderApplicationV2", (app) => {
-        if (app.constructor?.name === "SceneControls" || app instanceof (CONFIG.ui?.controls?.constructor ?? Object)) {
-            applyToolbarLimitation();
-        }
     });
 
     // Initial check when canvas/UI is ready

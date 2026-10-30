@@ -3,6 +3,7 @@
  * Description: Automatically applies configurable condition overlays (such as Unconscious or Dead) and combat tracker actions when tokens drop to 0 HP.
  *
  * @introduced v14.7.0
+ * @updated v14.57.0 (Active GM check uses the V14 API)
  */
 import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -274,7 +275,7 @@ function _onUpdateActor(actor, change, options, userId) {
         if (!getSetting("enableAutoStatusZeroHP")) return;
 
         // Only the active primary GM client should process this to avoid duplicate updates.
-        const activeGM = game.users.primaryGM ?? game.users.activeGM;
+        const activeGM = game.users.activeGM;
         if (!activeGM?.isSelf) return;
 
         // React when HP or death save failures change.
