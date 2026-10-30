@@ -1249,7 +1249,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "enableDamageEmanation",
                                 name: "Damage Emanation Automation",
-                                hint: "Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield, Dirge and similar emanations trigger their save and damage when a creature enters, the emanation moves onto a creature, or a creature ends its turn inside. Once per creature per turn. Creatures inside at casting are left to the cast. The emanation is removed when concentration ends.",
+                                hint: "Spirit Guardians, Moonbeam, Cloudkill and similar emanations and areas trigger their save and damage when a creature enters, the area moves onto a creature, or a creature ends its turn inside. Once per creature per turn. Creatures inside at casting are left to the cast. The area is removed when concentration ends.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
@@ -1274,7 +1274,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 list: true,
                                 hint: "Spell identifiers (or names) that get the automation. Other spells can add \"Damage Emanation\" in an activity's Behaviors tab.",
                                 type: "String",
-                                default: "cacophonic-shield, conjure-woodland-beings, dirge, spirit-guardians, yolandes-regal-presence",
+                                default: "cacophonic-shield, cloudkill, conjure-woodland-beings, dirge, doomtide, moonbeam, spirit-guardians, yolandes-regal-presence",
                                 scope: "world",
                                 parentKey: "enableDamageEmanation"
                             },
@@ -1290,7 +1290,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                             {
                                 key: "damageEmanationExcludeAllies",
                                 name: "Exclude Allies",
-                                hint: "Creatures with the same token disposition as the caster are never affected.",
+                                hint: "Creatures with the caster's token disposition are never affected by emanations centered on the caster or spells that let the caster choose. Placed areas (Moonbeam, Cloudkill) affect everyone inside.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world",
@@ -1302,6 +1302,15 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 hint: "Conjure Woodland Beings and Yolande's Regal Presence skip hidden and invisible creatures.",
                                 type: "Boolean",
                                 default: true,
+                                scope: "world",
+                                parentKey: "enableDamageEmanation"
+                            },
+                            {
+                                key: "damageEmanationDrift",
+                                name: "Move Drifting Areas",
+                                hint: "Cloudkill and Doomtide move 10 ft away from the caster at the start of each of the caster's turns.",
+                                type: "Boolean",
+                                default: false,
                                 scope: "world",
                                 parentKey: "enableDamageEmanation"
                             },

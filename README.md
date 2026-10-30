@@ -302,19 +302,22 @@ Creatures with **Magic Resistance** automatically roll saving throws against spe
 * **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
 
 ### Damage Emanation Automation
-Handles the "enters the Emanation or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*:
-* **Triggers**: A creature enters the emanation, the emanation moves into a creature's space as the caster moves, or a creature ends its turn inside it.
+Handles the "enters the area or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*, and of placed areas such as *Moonbeam*, *Cloudkill* and *Doomtide*:
+* **Triggers**: A creature enters the area, the area moves into a creature's space (an emanation moving with its caster, or *Moonbeam* being moved), or a creature ends its turn inside it.
+* **Who Is Affected**: An emanation centered on the caster never affects the caster. Placed areas such as *Moonbeam* and *Cloudkill* affect every creature inside, including the caster and their allies, as written.
+* **Drifting Areas** (optional, off by default): *Cloudkill* and *Doomtide* move 10 ft straight away from the caster at the start of each of the caster's turns. Creatures the area moves onto make their save. If the area is centered exactly on the caster, it stays put so the GM can move it.
 * **Once Per Turn**: Each creature makes the save only once per turn for each emanation.
 * **Casting Is Left Alone**: Creatures already inside when the spell is cast are handled by the spell's own cast activity and aren't triggered again by the emanation.
 * **Only Real Movement Counts**: Turning the emanation's behavior off and on, revealing a hidden emanation, or placing or summoning a token inside it doesn't count as entering.
 * **Batched**: Creatures triggered at the same moment (for example when the caster walks past several enemies) share one save card. In the prompt modes, creatures triggered later in the same turn are added to that turn's card until someone rolls or skips it. Creatures sharing an initiative count (for example a group of identical monsters taking their turns one after another) share a card too.
 * **Native Save Card**: Uses the spell's save activity at the level it was cast, without spending a spell slot. Save buttons, half damage, damage application and conditions such as Deafened (*Cacophonic Shield*) or Prone (*Dirge*) work as usual. Conditions applied from it end when the caster stops concentrating.
+* **Moving Moonbeam**: Move the *Moonbeam* area on the Regions layer when the caster takes the Magic action to move it. Creatures it moves onto make their save.
 * **Emanation Always Placed**: Casting a listed spell always offers to place its emanation, even if the spell's casting activity has template placement turned off (*Yolande's Regal Presence*).
 * **Upcasting**: Damage scales with the slot the spell was cast with, including Pact Magic slots.
-* **Concentration Cleanup**: The emanation is removed from the scene when the caster stops concentrating on the spell.
+* **Concentration Cleanup**: The emanation or area is removed from the scene when the caster stops concentrating on the spell.
 * **Trigger Mode**: **Prompt Caster** (default) whispers a card to the caster's owners and the GM, listing the triggered creatures with checkboxes and **Roll Saves** / **Skip** buttons. Only the first click counts, so the saves are never rolled twice. **Prompt GM Only** sends it to the GM only. **Automatic** rolls straight away.
 * **Other Spells**: Add spell identifiers to the **Emanation Spells** list, or add the **Damage Emanation** behavior in an activity's **Behaviors** tab and pick its save activity.
-* *Sub-settings*: **Trigger Mode**, **Emanation Spells**, **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected, default on), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
+* *Sub-settings*: **Trigger Mode**, **Emanation Spells**, **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected by emanations centered on the caster or by spells that let the caster choose, default on), **Move Drifting Areas** (*Cloudkill* and *Doomtide*, default off), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
 
 ### Prompt / Auto-Roll Attack Damage
 * **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.

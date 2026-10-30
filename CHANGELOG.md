@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.58.0] - 2026-10-30
+### Added
+- **Damage Emanation Automation**:
+  - *Moonbeam*, *Cloudkill* and *Doomtide* are now automated too. A creature makes the save when it enters the area, when the area moves into its space, or when it ends its turn inside, once per turn.
+  - These placed areas affect every creature inside, including the caster and their allies, as written. **Exclude Allies** now only applies to emanations centered on the caster and to spells that let the caster choose who is affected.
+  - *Cloudkill* and *Doomtide* move 10 feet away from the caster at the start of each of the caster's turns. Turn on the new **Move Drifting Areas** setting for this (off by default); otherwise move the area by hand.
+  - To move *Moonbeam*, drag its area on the Regions layer. Creatures it lands on make their save.
+  - Worlds with a customised **Emanation Spells** list get the three new spells added to it.
+
 ## [14.57.0] - 2026-10-30
 ### Changed
 - **Auto-Clear Movement History** has been removed. Foundry V14 already clears every combatant's movement history at the start of each turn, so the feature only repeated that work. Movement trails behave the same as before.

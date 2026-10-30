@@ -1,10 +1,11 @@
 /**
  * Feature: Damage Emanation Automation
- * Description: Triggers the saving throw and damage of emanation spells such as Spirit Guardians,
- * Conjure Woodland Beings, Cacophonic Shield and Dirge whenever a creature enters the emanation,
- * the emanation moves into a creature's space, or a creature ends its turn inside it.
+ * Description: Triggers the saving throw and damage of emanation and area spells such as Spirit Guardians,
+ * Conjure Woodland Beings, Cacophonic Shield, Dirge, Moonbeam, Cloudkill and Doomtide whenever a creature
+ * enters the area, the area moves into a creature's space, or a creature ends its turn inside it.
  *
  * @introduced v14.54.0
+ * @updated v14.58.0 (Placed areas: Moonbeam, Cloudkill, Doomtide; Cloudkill / Doomtide drift each caster turn)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../main.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -38,6 +39,9 @@ const ACTIVITY_BEHAVIOR_TYPE = "niksDamageEmanation";
 
 /** Spells (by identifier) that only affect creatures the caster can see. */
 const SIGHT_REQUIRED_SPELLS = new Set(["conjure-woodland-beings", "yolandes-regal-presence"]);
+
+/** Spells (by identifier) whose area moves this many feet away from the caster at the start of each of the caster's turns. */
+const DRIFTING_SPELLS = new Map([["cloudkill", 10], ["doomtide", 10]]);
 
 /** Actor types that count as creatures. */
 const CREATURE_ACTOR_TYPES = new Set(["character", "npc"]);
@@ -121,6 +125,7 @@ function _createRegionBehaviorType() {
                 activity: new StringField({ required: true, blank: true, initial: "" }),
                 scaling: new NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null }),
                 damageType: new StringField({ required: false, blank: true, initial: "" }),
+                drift: new NumberField({ required: false, nullable: false, min: 0, initial: 0 }),
                 triggered: new ObjectField()
             };
         }
@@ -139,7 +144,7 @@ function _createRegionBehaviorType() {
  * @returns {typeof foundry.abstract.DataModel}
  */
 function _createActivityBehaviorType(BaseActivityBehavior) {
-    const { StringField } = foundry.data.fields;
+    const { NumberField, StringField } = foundry.data.fields;
 
     return class DamageEmanationActivityBehavior extends BaseActivityBehavior {
 
@@ -149,7 +154,8 @@ function _createActivityBehaviorType(BaseActivityBehavior) {
         /** @override */
         static defineSchema() {
             return {
-                damageActivity: new StringField({ required: true, blank: true, initial: "" })
+                damageActivity: new StringField({ required: true, blank: true, initial: "" }),
+                drift: new NumberField({ required: false, nullable: false, min: 0, initial: 0 })
             };
         }
 
@@ -161,7 +167,7 @@ function _createActivityBehaviorType(BaseActivityBehavior) {
             if (!damageActivity) return false;
             return {
                 type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
-                system: { activity: damageActivity.uuid, scaling: null }
+                system: { activity: damageActivity.uuid, scaling: null, drift: this.drift ?? 0 }
             };
         }
 
@@ -216,6 +222,7 @@ export function initDamageEmanation() {
     Hooks.on("dnd5e.rollDamage", _onRollDamage);
     Hooks.on("renderChatMessageHTML", _onRenderChatMessage);
     Hooks.on("updateChatMessage", _onUpdateChatMessage);
+    Hooks.on("combatTurnChange", _onCombatTurnChange);
     log("Damage Emanation | Initialized");
 }
 
@@ -300,13 +307,14 @@ function _onCreateMeasuredTemplate(activity, regionData) {
     }
 
     const scaling = _getUsageScaling(activity);
+    const drift = DRIFTING_SPELLS.get(item.system?.identifier) ?? 0;
     for (const data of regionData) {
         data.behaviors = [
             ...(data.behaviors ?? []),
             {
                 type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
                 name: game.i18n.localize(`TYPES.RegionBehavior.${DAMAGE_EMANATION_BEHAVIOR_TYPE}`),
-                system: { activity: damageActivity.uuid, scaling }
+                system: { activity: damageActivity.uuid, scaling, drift }
             }
         ];
     }
@@ -570,20 +578,25 @@ function _isSpellStillActive(activity) {
 
 /**
  * Whether the emanation affects a token.
+ * An emanation centered on the caster never affects the caster. Placed areas (Moonbeam, Cloudkill)
+ * affect everyone inside, the caster and allies included, unless the spell lets the caster choose.
  * @param {TokenDocument} token
  * @param {TokenDocument|null} casterToken
  * @param {Activity} activity
+ * @param {RegionDocument} region
  * @returns {boolean}
  */
-function _isAffected(token, casterToken, activity) {
+function _isAffected(token, casterToken, activity, region) {
     const actor = token.actor;
     if (!actor || !CREATURE_ACTOR_TYPES.has(actor.type)) return false;
-    if (casterToken && (token.id === casterToken.id)) return false;
-    if (actor === activity.actor) return false;
+    const centeredOnCaster = !!region?.attachment?.token
+        && ((region.attachment.token === casterToken) || (region.attachment.token.actor === activity.actor));
+    if (centeredOnCaster && ((token.id === casterToken?.id) || (actor === activity.actor))) return false;
     if (token.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) return false;
     if (actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) || actor.statuses?.has("dead")) return false;
 
-    if (getSetting("damageEmanationExcludeAllies") && casterToken
+    const choosesTargets = centeredOnCaster || !!activity.item?.system.target?.affects?.choice;
+    if (getSetting("damageEmanationExcludeAllies") && choosesTargets && casterToken
         && (token.disposition === casterToken.disposition)) return false;
 
     if (getSetting("damageEmanationRequireSight") && SIGHT_REQUIRED_SPELLS.has(activity.item?.system.identifier)) {
@@ -616,7 +629,7 @@ function _enqueueTrigger(behavior, token, reason, turnKey, mergeKey) {
     const region = behavior.region;
     const casterToken = region?.attachment?.token
         ?? fromUuidSync(region?.getFlag("dnd5e", "origin"), { strict: false });
-    if (!_isAffected(token, casterToken, activity)) return;
+    if (!_isAffected(token, casterToken, activity, region)) return;
 
     let queue = _queues.get(behavior.uuid);
     if (turnKey) {
@@ -1152,6 +1165,74 @@ export function onSocketMessage(data) {
                 action: "damageEmanationClaimResult", requestId: data.requestId, userId: data.userId, granted
             });
         });
+}
+
+// ── Drifting areas (Cloudkill, Doomtide) ─────────────────────────────
+
+/**
+ * At the start of a caster's turn, move their drifting areas away from them.
+ * @param {Combat} combat
+ * @param {CombatHistoryData} previous
+ * @param {CombatHistoryData} current
+ */
+async function _onCombatTurnChange(combat, previous, current) {
+    if (!getSetting("enableDamageEmanation") || !getSetting("damageEmanationDrift")) return;
+    if (!previous || !current) return;
+    const advanced = (current.round > previous.round)
+        || ((current.round === previous.round) && (current.turn > previous.turn));
+    if (!advanced) return;
+
+    const actor = combat.combatants.get(current.combatantId)?.actor;
+    const scene = combat.scene ?? canvas.scene;
+    if (!actor || !scene) return;
+
+    for (const region of scene.regions) {
+        if (region.attachment?.token) continue;
+        const behavior = _getEmanationBehaviors(region).find(b => !b.disabled && (b.system.drift > 0));
+        if (!behavior) continue;
+        const activity = behavior.system.activity ? fromUuidSync(behavior.system.activity, { strict: false }) : null;
+        if (!activity || (activity.actor !== actor) || !_isExecutor(actor) || !_isSpellStillActive(activity)) continue;
+        try {
+            await _driftRegion(region, behavior.system.drift, scene);
+        } catch (err) {
+            console.error("Nik's DnD5e Tweaks | Damage Emanation: Failed to move area", err);
+        }
+    }
+}
+
+/**
+ * Move a region the given distance straight away from its caster's token.
+ * @param {RegionDocument} region
+ * @param {number} distanceFt
+ * @param {Scene} scene
+ */
+async function _driftRegion(region, distanceFt, scene) {
+    const casterToken = fromUuidSync(region.getFlag("dnd5e", "origin"), { strict: false });
+    const shapes = region.toObject().shapes ?? [];
+    const anchor = shapes.find(s => Number.isFinite(s.x) && Number.isFinite(s.y));
+    if (!casterToken?.getCenterPoint || !anchor || (casterToken.parent !== scene)) return;
+
+    const from = casterToken.getCenterPoint();
+    const dx = anchor.x - from.x;
+    const dy = anchor.y - from.y;
+    const length = Math.hypot(dx, dy);
+    // Centered on the caster: there's no "away", so leave it to the GM
+    if (length < 1) return;
+
+    const distance = dnd5e.utils?.convertLength?.(distanceFt, "ft", scene.grid.units, { strict: false }) ?? distanceFt;
+    const pixels = distance * (scene.grid.size / scene.grid.distance);
+    const offsetX = (dx / length) * pixels;
+    const offsetY = (dy / length) * pixels;
+
+    for (const shape of shapes) {
+        if (Number.isFinite(shape.x)) shape.x += offsetX;
+        if (Number.isFinite(shape.y)) shape.y += offsetY;
+        if (Array.isArray(shape.points)) {
+            shape.points = shape.points.map((value, index) => value + ((index % 2) ? offsetY : offsetX));
+        }
+    }
+    debug(`Damage Emanation | Moving "${region.name}" ${distanceFt} ft away from ${casterToken.name}`);
+    await region.update({ shapes });
 }
 
 // ── Concentration cleanup ────────────────────────────────────────────

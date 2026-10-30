@@ -1553,7 +1553,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableDamageEmanation", {
         name: "Damage Emanation Automation",
-        hint: "Emanation spells such as Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield and Dirge make their saving throw and damage happen automatically when a creature enters the emanation, the emanation moves into a creature's space, or a creature ends its turn inside it. Each creature saves only once per turn, and creatures inside the emanation when it is cast are left to the casting activity. The emanation is removed when the caster stops concentrating.",
+        hint: "Emanation and area spells such as Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield, Dirge, Moonbeam, Cloudkill and Doomtide make their saving throw and damage happen automatically when a creature enters the area, the area moves into a creature's space, or a creature ends its turn inside it. Each creature saves only once per turn, and creatures inside the area when it is cast are left to the casting activity. The area is removed when the caster stops concentrating.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1582,7 +1582,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: String,
-        default: "cacophonic-shield, conjure-woodland-beings, dirge, spirit-guardians, yolandes-regal-presence",
+        default: "cacophonic-shield, cloudkill, conjure-woodland-beings, dirge, doomtide, moonbeam, spirit-guardians, yolandes-regal-presence",
         restricted: true
     });
 
@@ -1598,7 +1598,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "damageEmanationExcludeAllies", {
         name: "↳ Exclude Allies",
-        hint: "Creatures with the same token disposition as the caster are never affected.",
+        hint: "Creatures with the same token disposition as the caster are never affected by emanations centered on the caster, or by spells that let the caster choose who is affected. Placed areas such as Moonbeam and Cloudkill still affect everyone inside, as written.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1613,6 +1613,16 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "damageEmanationDrift", {
+        name: "↳ Move Drifting Areas",
+        hint: "Cloudkill and Doomtide move 10 feet straight away from the caster at the start of each of the caster's turns.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
         restricted: true
     });
 
@@ -1978,5 +1988,25 @@ async function runMigrations() {
         }
         await game.settings.set(MODULE_ID, "migrationVersion", 2);
         log("Migration 2 complete.");
+    }
+
+    // Migration 3: Add Moonbeam, Cloudkill and Doomtide to a stored Damage Emanation spell list
+    if (currentVersion < 3) {
+        log("Running migration 3: adding new spells to the Damage Emanation spell list...");
+        // Worlds that never saved the list use the new default already
+        const worldStorage = game.settings.storage.get("world");
+        if (worldStorage.getSetting(`${MODULE_ID}.damageEmanationSpells`)) {
+            const current = String(game.settings.get(MODULE_ID, "damageEmanationSpells") ?? "")
+                .split(",").map(s => s.trim()).filter(Boolean);
+            const known = new Set(current.map(s => s.slugify({ strict: true })));
+            const added = ["cloudkill", "doomtide", "moonbeam"].filter(id => !known.has(id));
+            if (added.length) {
+                const merged = [...current, ...added].sort((a, b) => a.localeCompare(b)).join(", ");
+                await game.settings.set(MODULE_ID, "damageEmanationSpells", merged);
+                log(`  Added ${added.join(", ")} to the Damage Emanation spell list.`);
+            }
+        }
+        await game.settings.set(MODULE_ID, "migrationVersion", 3);
+        log("Migration 3 complete.");
     }
 }
