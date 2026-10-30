@@ -329,7 +329,7 @@ Handles the "enters the area or ends its turn there" rule of emanation spells su
 * **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
 
 ### Auto-Open Damage Dialog for Saves
-Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). Automatically bypassed when midi-qol is active.
+Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
 
 ### Weapon Mastery Automation
 Automatically creates and manages Active Effects when player characters roll damage with mastery weapons:

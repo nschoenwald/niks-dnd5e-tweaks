@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.58.1] - 2026-10-30
+### Fixed
+- **Auto-Open Damage Dialog for Saves**: When an area spell such as *Acid Splash* was cast while creatures from an earlier cast were still targeted, the damage card listed those old creatures instead of the ones caught in the new area. It now uses the creatures inside the new area.
+
 ## [14.58.0] - 2026-10-30
 ### Added
 - **Damage Emanation Automation**:

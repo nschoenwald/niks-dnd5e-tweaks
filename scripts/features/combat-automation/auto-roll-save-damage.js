@@ -3,6 +3,7 @@
  * Description: Automatically opens the damage roll dialog when a Save-type activity containing damage is activated.
  *
  * @introduced v14.7.0
+ * @updated v14.58.1 (Damage roll uses the targets of the placed area template, not the ones recorded before placement)
  */
 import { getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
@@ -51,9 +52,13 @@ function _onPostUseActivity(activity, usageConfig, results) {
         shouldConfigure
     });
 
-    const targets = results?.message?.system?.targets?.length
+    // dnd5e records the usage message's targets before the area template is placed, so after a placement they can
+    // still be the previous cast's targets. Template Targeting syncs the new ones to the message asynchronously, too
+    // late for this hook, so read the user's current targets instead whenever a template was placed.
+    const currentTargets = () => dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? [];
+    const targets = (!results?.templates?.length && results?.message?.system?.targets?.length)
         ? results.message.system.targets
-        : (dnd5e.dataModels?.chatMessage?.fields?.TargetsField?.getDescriptors?.(game.user.targets) ?? []);
+        : currentTargets();
 
     if (results?.message?._targetState) {
         results.message._targetState.mode = "targeted";
