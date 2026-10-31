@@ -4,7 +4,7 @@
  * Offers toggles in damage roll configuration dialogs when an actor is actively
  * concentrating on Hex or Hunter's Mark, attacks with a ranged or finesse weapon (Sneak Attack),
  * attacks with a Heavy weapon under 2024 rules with Great Weapon Master (+PB bonus flavored with GWM),
- * attacks with Brutal Strike (@scale.barbarian.brutal-strike bonus matching weapon damage type, once per turn),
+ * attacks with Brutal Strike (@scale.brutal-strike.damage or @scale.barbarian.brutal-strike bonus matching weapon damage type, once per turn),
  * attacks after moving 10+ ft with Charger (+1d8 bonus, once per turn),
  * attacks with Savage Attacker (rolling weapon damage dice twice and keeping higher, once per turn),
  * attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative),
@@ -570,16 +570,29 @@ export function isEligibleBrutalStrikeAttack(item, activity = null, config = nul
 
 /**
  * Resolve the Brutal Strike scale value formula for display and fallback calculation.
- * Resolves @scale.barbarian.brutal-strike advancement on the Barbarian class,
- * falling back to 1d10 (or 2d10 at level 17+).
+ * Reads both places the scale value can live, whatever the system version, since characters built from
+ * older content keep their old items:
+ *  - on the Brutal Strike feature itself (D&D 5e 6.1 content, `@scale.brutal-strike.damage`);
+ *  - on the Barbarian class (older content, `@scale.barbarian.brutal-strike`).
+ * Falls back to 1d10 (or 2d10 at level 17+).
  *
  * @param {Actor5e|null} actor
  * @returns {string}
  */
 export function getBrutalStrikeFormula(actor) {
     if (!actor) return "1d10";
+    const scales = actor.system?.scale ?? {};
+    const feats = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "feat");
 
-    // 1. Check Barbarian class scale values
+    // 1. Scale value on the Brutal Strike feature (scale values are keyed by the item's identifier)
+    const brutalFeature = feats.find(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        return id === "brutal-strike" || id === "brutal_strike";
+    });
+    const featureScale = scales[brutalFeature?.identifier] ?? scales["brutal-strike"];
+    let scaleObj = featureScale?.damage;
+
+    // 2. Scale value on the Barbarian class
     const classes = actor.itemTypes?.class ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "class");
     const barbarianClass = classes.find(c => {
         const id = (c.identifier || c.system?.identifier || "").toLowerCase();
@@ -587,20 +600,22 @@ export function getBrutalStrikeFormula(actor) {
         return id === "barbarian" || name === "barbarian";
     });
 
-    const barbarianScale = actor.system?.scale?.[barbarianClass?.identifier]
-        ?? actor.system?.scale?.barbarian
+    const barbarianScale = scales[barbarianClass?.identifier]
+        ?? scales.barbarian
         ?? barbarianClass?.scaleValues
         ?? {};
 
-    let scaleObj = barbarianScale["brutal-strike"] ?? barbarianScale["brutalStrike"] ?? barbarianScale["brutal_strike"];
-    if (!scaleObj && actor.system?.scale) {
-        for (const classScale of Object.values(actor.system.scale)) {
-            if (classScale && typeof classScale === "object") {
-                for (const [key, val] of Object.entries(classScale)) {
-                    if (key.toLowerCase().includes("brutal")) {
-                        scaleObj = val;
-                        break;
-                    }
+    scaleObj ??= barbarianScale["brutal-strike"] ?? barbarianScale["brutalStrike"] ?? barbarianScale["brutal_strike"];
+
+    // Renamed identifiers: a "brutal" scale on any class, or a "damage" scale on any Brutal Strike item
+    if (!scaleObj) {
+        for (const [group, groupScale] of Object.entries(scales)) {
+            if (!groupScale || (typeof groupScale !== "object")) continue;
+            const isBrutalItem = group.toLowerCase().includes("brutal") && !group.toLowerCase().includes("improved");
+            for (const [key, val] of Object.entries(groupScale)) {
+                if (key.toLowerCase().includes("brutal") || (isBrutalItem && (key === "damage"))) {
+                    scaleObj = val;
+                    break;
                 }
             }
             if (scaleObj) break;
@@ -610,15 +625,14 @@ export function getBrutalStrikeFormula(actor) {
     const rawFormula = scaleObj?.formula ?? (typeof scaleObj === "string" ? scaleObj : scaleObj?.value);
     if (rawFormula) return String(rawFormula);
 
-    // 2. Fallback based on Barbarian class level if available (1d10 at lvl 9+, 2d10 at lvl 17+)
+    // 3. Fallback based on Barbarian class level if available (1d10 at lvl 9+, 2d10 at lvl 17+)
     if (barbarianClass) {
         const levels = Number(barbarianClass.system?.levels ?? 0);
         if (levels >= 17) return "2d10";
         if (levels >= 9) return "1d10";
     }
 
-    // 3. Fallback to feature item damage parts if present, or improved-brutal-strike-2 feature
-    const feats = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "feat");
+    // 4. Fallback to feature item damage parts if present, or improved-brutal-strike-2 feature
     const hasImpBrutal2 = feats.some(i => {
         const id = (i.identifier || i.system?.identifier || "").toLowerCase();
         const name = (i.name || "").toLowerCase();
@@ -626,12 +640,8 @@ export function getBrutalStrikeFormula(actor) {
     });
     if (hasImpBrutal2) return "2d10";
 
-    const brutalItem = feats.find(i => {
-        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
-        return id === "brutal-strike" || id === "brutal_strike";
-    });
-    if (brutalItem) {
-        const activities = brutalItem.system?.activities;
+    if (brutalFeature) {
+        const activities = brutalFeature.system?.activities;
         if (activities) {
             const list = activities.values ? Array.from(activities.values()) : Object.values(activities);
             for (const act of list) {

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.59.1] - 2026-10-31
+### Fixed
+- **Conditional Damage Bonuses**: *Brutal Strike* uses the damage set on the feature itself, as in the D&D 5e 6.1 compendium, including your own changes to it. Barbarians built from older content keep working as before.
+
 ## [14.59.0] - 2026-10-31
 ### Changed
 - **D&D 5e 6.1 support**: The module now accepts D&D 5e 6.1 and keeps working on 6.0.
