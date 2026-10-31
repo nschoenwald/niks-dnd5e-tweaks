@@ -5,6 +5,7 @@
  *
  * @introduced v14.53.0
  * @updated v14.56.1 (Open container windows follow the same move rules and quantity prompt)
+ * @updated v14.59.0 (Quantity prompt works with the options object `_onDropCreateItems` takes in D&D 5e 6.1)
  */
 import { debug, getSetting } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -59,6 +60,13 @@ import { patchMethod } from "../../utils/patch-helper.js";
  */
 
 const SHEET_PATH = "dnd5e.applications.actor.BaseActorSheet.prototype";
+
+/**
+ * D&D 5e 6.1 changed `_onDropCreateItems(event, items, behavior)` to `_onDropCreateItems(event, items, options)`
+ * with `options.behavior`. Group and encounter sheets pass `{}` to it. A behavior string still works there but logs
+ * a deprecation warning (removed in 6.3).
+ */
+const DROP_OPTIONS_VERSION = "6.1.0";
 const CONTAINER_PATH = "dnd5e.applications.item.ContainerSheet.prototype";
 
 export function initActorItemDragBehavior() {
@@ -134,18 +142,20 @@ function _shouldMoveTo(sheet, event, data, targetActor) {
     return true;
 }
 
-async function _patchedOnDropCreateItems(wrapped, event, items, behavior, ...args) {
-    if ((behavior ?? event?._behavior) !== "move" || (items?.length !== 1)) {
-        return wrapped(event, items, behavior, ...args);
-    }
+async function _patchedOnDropCreateItems(wrapped, event, items, options, ...args) {
+    const behavior = (typeof options === "string") ? options : (options?.behavior ?? event?._behavior);
+    if ((behavior !== "move") || (items?.length !== 1)) return wrapped(event, items, options, ...args);
     const item = items[0];
-    if (!_isSplittableMove(this, item)) return wrapped(event, items, behavior, ...args);
+    if (!_isSplittableMove(this, item)) return wrapped(event, items, options, ...args);
 
     const quantity = await _promptQuantity(item, this.inventorySource.name);
     if (!quantity) return;
-    if (quantity >= item.system.quantity) return wrapped(event, items, behavior, ...args);
+    if (quantity >= item.system.quantity) return wrapped(event, items, options, ...args);
 
-    const created = await wrapped(event, [item.clone({ "system.quantity": quantity })], "copy", ...args);
+    const copy = foundry.utils.isNewerVersion(DROP_OPTIONS_VERSION, game.system.version)
+        ? "copy"
+        : { ...(foundry.utils.getType(options) === "Object" ? options : {}), behavior: "copy" };
+    const created = await wrapped(event, [item.clone({ "system.quantity": quantity })], copy, ...args);
     await _reduceSource(item, quantity);
     return created;
 }

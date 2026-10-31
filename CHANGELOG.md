@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.59.0] - 2026-10-31
+### Changed
+- **D&D 5e 6.1 support**: The module now accepts D&D 5e 6.1 and keeps working on 6.0.
+
+### Fixed
+- **Player Damage Prompt**:
+  - On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability, or turn immunity into resistance, are now respected when you click Apply, just like on the system's own damage card.
+  - The damage breakdown now matches what is actually applied, for example when a magical weapon bypasses a resistance.
+- **Dragging Items Between Actors**: On D&D 5e 6.1, moving a stack onto a group or encounter sheet asks how many to move again, instead of moving the whole stack.
+- **Detailed Roll Breakdown Overlay**: On D&D 5e 6.1, right-clicking a damage card target whose actor no longer exists no longer causes an error.
+- **Conditional Damage Bonuses** (*Charger*) and **Damage Emanation Automation** (drifting areas) no longer log deprecation warnings on D&D 5e 6.1 when converting distances.
+
 ## [14.58.1] - 2026-10-30
 ### Fixed
 - **Auto-Open Damage Dialog for Saves**: When an area spell such as *Acid Splash* was cast while creatures from an earlier cast were still targeted, the damage card listed those old creatures instead of the ones caught in the new area. It now uses the creatures inside the new area.

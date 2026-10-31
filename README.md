@@ -385,7 +385,7 @@ Dynamically removes the Bloodied icon and status when a creature dies or reaches
 Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat.
 
 ### Player Damage Prompt
-Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP.
+Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP. The breakdown uses the system's own damage calculation, so it matches what is applied, including magical weapons bypassing resistance. On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability (or turn immunity into resistance) are respected by both the breakdown and the Apply button.
 
 ### Combat Experience Tracker
 Tallies hostile NPC XP at the end of combat with a one-click button for the GM to distribute experience evenly among players.
@@ -481,7 +481,7 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 
 ### Requirements
 * **Foundry VTT**: Version 14 (maximum 14)
-* **DnD5e System**: Version 6.0.0 or higher
+* **DnD5e System**: Version 6.0.0 to 6.1.x
 
 ---
 

@@ -15,6 +15,7 @@
 import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isWm5eActive } from "../../utils/module-compat.js";
+import { convertLength } from "../../utils/dnd5e-compat.js";
 
 /**
  * Registry of static conditional damage bonus definitions.
@@ -859,14 +860,8 @@ export function hasAttackerMovedChargerDistance(actor, token = null, minDistance
 
     let effectiveMinDistance = minDistance;
     if (units && typeof dnd5e?.utils?.convertLength === "function") {
-        try {
-            const converted = dnd5e.utils.convertLength(minDistance, "ft", units, { strict: false });
-            if (typeof converted === "number" && !isNaN(converted) && converted > 0) {
-                effectiveMinDistance = converted;
-            }
-        } catch {
-            // Fall back below
-        }
+        const converted = convertLength(minDistance, "ft", units);
+        if (converted > 0) effectiveMinDistance = converted;
     } else if (gridDistance > 0 && gridDistance <= 2) {
         // Metric scenes (e.g. 1.5m) or unit spaces (1 space)
         effectiveMinDistance = gridDistance * 2;

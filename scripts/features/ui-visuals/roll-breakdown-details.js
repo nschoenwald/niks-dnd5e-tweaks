@@ -7,6 +7,7 @@
  * @introduced v14.43.0
  * @updated v14.49.0 (Reuses actor roll data, lazy breakdowns for older messages, gated document listeners)
  * @updated v14.55.1 (midi-qol merged card sections; card summaries use their own message)
+ * @updated v14.59.0 (Missing-actor fallback in the damage tray includes the D&D 5e 6.1 `potential` changes)
  */
 import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -2085,14 +2086,17 @@ function wrapBasicRollGetTooltip() {
  */
 function _onCalculateDamage(wrapped, actor, options = {}) {
     if (!actor?.calculateDamage) {
+        const noChanges = () => ({
+            modification: new Set(),
+            resistance: new Set(),
+            vulnerability: new Set(),
+            immunity: new Set(),
+            threshold: false
+        });
+        // D&D 5e 6.1 also reads `potential` (the target's right-click menu); 6.0.x ignores it
         return {
-            active: {
-                modification: new Set(),
-                resistance: new Set(),
-                vulnerability: new Set(),
-                immunity: new Set(),
-                threshold: false
-            },
+            active: noChanges(),
+            potential: noChanges(),
             temp: 0,
             tempMax: 0,
             total: 0

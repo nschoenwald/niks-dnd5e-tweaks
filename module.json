@@ -5,7 +5,7 @@
   "url": "https://github.com/nschoenwald/niks-dnd5e-tweaks",
   "manifest": "https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module.json",
   "download": "https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module.zip",
-  "version": "14.58.1",
+  "version": "14.59.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14",
@@ -20,7 +20,7 @@
         "compatibility": {
           "minimum": "6.0.0",
           "verified": "6.0.6",
-          "maximum": "6.0.99"
+          "maximum": "6.1.99"
         }
       }
     ]

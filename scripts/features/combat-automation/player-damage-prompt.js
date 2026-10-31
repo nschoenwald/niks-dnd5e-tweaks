@@ -5,6 +5,7 @@
  * @introduced v14.10.0
  * @updated v14.56.4 (Attack damage prompt no longer skipped when the damage roll isn't linked to the usage message)
  * @updated v14.57.0 (Canvas target fallback only uses the GM's targets for the GM's own rolls)
+ * @updated v14.59.0 (Applies and previews the damage card's "ignore resistance" options from D&D 5e 6.1; preview uses dnd5e's own calculation)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -1019,7 +1020,10 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         `| Damage Mods: [${dmEntries.length ? dmEntries.map(([t, v]) => `${t}: ${v}`).join(", ") : "none"}]`);
 
     // Calculate effective damage and trait summary
-    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(actor, damageByType);
+    const applicationOptions = _getDamageApplicationOptions(damageMessage);
+    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(
+        actor, damageByType, rawDamages, applicationOptions
+    );
     const totalRaw = Object.values(damageByType).reduce((sum, v) => sum + v, 0);
     debug(`Player Damage Prompt |    Effective damage: ${effectiveDamage} (raw: ${totalRaw})`,
         traitText ? `| Trait text: ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
@@ -1050,11 +1054,65 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         }
     }
     
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details, originatingMessage ?? damageMessage);
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details, originatingMessage ?? damageMessage, damageMessage);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
 // ── Damage calculation ───────────────────────────────────────────────
+
+/**
+ * The damage application options a damage card carries. D&D 5e 6.1 stores options from effect rules on the
+ * damage message (ignore resistance / immunity / vulnerability, downgrade immunity), and its own damage tray
+ * applies them. Older versions have no such options.
+ * @param {ChatMessage|null} damageMessage  The damage roll message.
+ * @returns {object}  Options to merge into `calculateDamage` / `applyDamage`.
+ */
+function _getDamageApplicationOptions(damageMessage) {
+    try {
+        const { multiplier, ...options } = damageMessage?.system?.getDamageApplicationOptions?.({}) ?? {};
+        return options;
+    } catch (err) {
+        debug("Player Damage Prompt | Could not read damage application options:", err);
+        return {};
+    }
+}
+
+/**
+ * Run dnd5e's own damage calculation for the preview and group the outcome by damage type.
+ * It covers everything `applyDamage` will do: bypasses (e.g. magical weapons), "All" traits, the card's
+ * application options and, in D&D 5e 6.1, special resistance types such as falling.
+ * @param {Actor} actor
+ * @param {Array<{value: number, type: string, properties: string[]}>|null} rawDamages
+ * @param {object} applicationOptions
+ * @returns {Map<string, {effective: number, immune: boolean, resistant: boolean, vulnerable: boolean,
+ *   modified: boolean}>|null}  Null when the calculation isn't available or was cancelled.
+ */
+function _calculateSystemDamage(actor, rawDamages, applicationOptions = {}) {
+    if (!rawDamages?.length || (typeof actor?.calculateDamage !== "function")) return null;
+    try {
+        const damages = rawDamages.map(d => ({ ...d, properties: new Set(d.properties ?? []) }));
+        const result = actor.calculateDamage(damages, { ...applicationOptions, invertHealing: false });
+        if (!result) return null;
+        const has = (active, change) => Boolean(active?.type?.[change] || active?.all?.[change]
+            || Object.values(active?.special ?? {}).some(s => s?.[change]));
+        const byType = new Map();
+        for (const d of result) {
+            const entry = byType.get(d.type) ?? {
+                effective: 0, immune: false, resistant: false, vulnerable: false, modified: false
+            };
+            entry.effective += d.value;
+            entry.immune ||= has(d.active, "immunity");
+            entry.resistant ||= has(d.active, "resistance");
+            entry.vulnerable ||= has(d.active, "vulnerability");
+            entry.modified ||= has(d.active, "modification");
+            byType.set(d.type, entry);
+        }
+        return byType;
+    } catch (err) {
+        debug("Player Damage Prompt | System damage calculation failed, using own preview:", err);
+        return null;
+    }
+}
 
 /**
  * Resolve all dm.amount formula strings to numeric values.
@@ -1100,11 +1158,15 @@ function _resolveModifications(dmAmount, actor) {
  * - Modifications apply to healing types too (e.g. dm.amount.healing)
  * - An "ALL" modification applies to all non-healing damage types
  * - Modifications cannot flip the sign of a damage value (clamped to 0)
+ * When dnd5e's own calculation is available (`_calculateSystemDamage`), its per-type result and traits are used;
+ * the formulas here only label flat modifications and serve as a fallback.
  * @param {Actor} actor
  * @param {Record<string, number>} damageByType
+ * @param {Array|null} [rawDamages]          Per-roll DamageDescriptions (properties as arrays).
+ * @param {object} [applicationOptions={}]   Damage application options of the damage card.
  * @returns {{effectiveDamage: number, traitText: string}}
  */
-function _calculateEffectiveDamage(actor, damageByType) {
+function _calculateEffectiveDamage(actor, damageByType, rawDamages = null, applicationOptions = {}) {
     const dr = actor.system.traits?.dr?.value ?? new Set();
     const di = actor.system.traits?.di?.value ?? new Set();
     const dv = actor.system.traits?.dv?.value ?? new Set();
@@ -1120,14 +1182,16 @@ function _calculateEffectiveDamage(actor, damageByType) {
     const vulnerable = [];
     const modified = []; // types with flat damage modifications (positive or negative)
     const details = [];  // per-type breakdown for structured layout
+    const system = _calculateSystemDamage(actor, rawDamages, applicationOptions);
 
     for (const [type, amount] of Object.entries(damageByType)) {
         totalRaw += amount;
 
         const isHealingType = !!CONFIG.DND5E?.healingTypes?.[type];
-        const isImmune = !isHealingType && di.has(type);
-        const isResistant = !isHealingType && dr.has(type);
-        const isVulnerable = !isHealingType && dv.has(type);
+        const sys = system?.get(type);
+        const isImmune = sys ? sys.immune : (!isHealingType && di.has(type));
+        const isResistant = sys ? sys.resistant : (!isHealingType && dr.has(type));
+        const isVulnerable = sys ? sys.vulnerable : (!isHealingType && dv.has(type));
 
         if (isImmune) {
             immune.push(type);
@@ -1146,7 +1210,7 @@ function _calculateEffectiveDamage(actor, damageByType) {
         //    Mirrors the system's applyModification which prevents sign flips.
         const typeMod = modifications[type] ?? 0;
         const allMod = (!isHealingType && modifications["ALL"]) ? modifications["ALL"] : 0;
-        const totalMod = typeMod + allMod;
+        const totalMod = (!sys || sys.modified) ? typeMod + allMod : 0;
 
         if (totalMod !== 0) {
             // Prevent sign flip: if adding the modification would change
@@ -1177,6 +1241,9 @@ function _calculateEffectiveDamage(actor, damageByType) {
 
         // If both resistant and vulnerable, they cancel out — no modification
         // (flat adjustment still applies)
+
+        // dnd5e's own result is exact (rounding, bypasses, damage threshold)
+        if (sys) effective = sys.effective;
 
         details.push({ type, raw: amount, effective, modifier });
         effectiveDamage += effective;
@@ -1429,7 +1496,9 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
     const grazeRawDamages = [grazeDamage];
 
     // Calculate effective graze damage accounting for target traits
-    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(targetActor, grazeDamageByType);
+    const { effectiveDamage, traitText, details } = _calculateEffectiveDamage(
+        targetActor, grazeDamageByType, grazeRawDamages
+    );
 
     debug(`Player Damage Prompt |    Graze: effective damage ${effectiveDamage}`,
         traitText ? `| ${traitText.replace(/<[^>]+>/g, "")}` : "| No trait modifiers");
@@ -1456,8 +1525,11 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {string}   [activityType="attack"]  The type of activity.
  * @param {Item|null} [sourceItem=null]       The source item of the damage.
  * @param {boolean}  [hasHalfDamage=false]    Whether the activity does half damage on save.
+ * @param {Array}    [details=[]]             Per-type breakdown for the structured layout.
+ * @param {ChatMessage|null} [originatingMessage=null]  The usage message the prompt belongs to.
+ * @param {ChatMessage|null} [damageMessage=null]       The damage roll message, for its application options.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null, damageMessage = null) {
     // Guard against empty whisper recipients (prevents accidental public broadcast)
     if (!whisperUsers?.length) {
         debug(`Player Damage Prompt | ✗ Aborting _sendDamagePrompt: no whisper recipients for ${actor?.name}`);
@@ -1511,6 +1583,7 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
         speaker: Object.assign(ChatMessage.getSpeaker({ actor, token: speakerToken }), { alias: tokenName }),
         flags
     };
+    if (damageMessage?.id) flags[MODULE_ID].damageMessageId = damageMessage.id;
     if (originatingMessage?.id) {
         flags[MODULE_ID].originatingMessageId = originatingMessage.id;
         flags.dnd5e = { originatingMessage: originatingMessage.id };
@@ -2007,7 +2080,9 @@ function _bindApplyDamageButton(message, element) {
                     ?? message.flags?.dnd5e?.originatingMessage;
                 const originatingMessage = origMsgId ? game.messages.get(origMsgId) : message;
 
+                const damageMessage = game.messages.get(message.getFlag(MODULE_ID, "damageMessageId"));
                 await actor.applyDamage(damages, {
+                    ..._getDamageApplicationOptions(damageMessage),
                     originatingMessage: originatingMessage,
                     origin: originatingMessage
                 });

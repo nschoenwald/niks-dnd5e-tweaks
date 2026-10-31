@@ -6,9 +6,11 @@
  *
  * @introduced v14.54.0
  * @updated v14.58.0 (Placed areas: Moonbeam, Cloudkill, Doomtide; Cloudkill / Doomtide drift each caster turn)
+ * @updated v14.59.0 (Length conversion uses the D&D 5e 6.1 signature where available)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../main.js";
 import { isMidiActive } from "../../utils/module-compat.js";
+import { convertLength } from "../../utils/dnd5e-compat.js";
 
 /**
  * Damage Emanation Automation
@@ -1219,7 +1221,7 @@ async function _driftRegion(region, distanceFt, scene) {
     // Centered on the caster: there's no "away", so leave it to the GM
     if (length < 1) return;
 
-    const distance = dnd5e.utils?.convertLength?.(distanceFt, "ft", scene.grid.units, { strict: false }) ?? distanceFt;
+    const distance = convertLength(distanceFt, "ft", scene.grid.units) ?? distanceFt;
     const pixels = distance * (scene.grid.size / scene.grid.distance);
     const offsetX = (dx / length) * pixels;
     const offsetY = (dy / length) * pixels;
