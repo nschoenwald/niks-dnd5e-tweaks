@@ -10,7 +10,8 @@
  *                        (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) or has the
  *                        Prone condition. The save is a prompt card for the target's owners that also
  *                        opens the roll dialog for its player (or the GM), a prompt card only, or rolled
- *                        automatically (setting "masteryToppleSaveMode").
+ *                        automatically (setting "masteryToppleSaveMode"). Spending a Legendary Resistance
+ *                        on the failed save (dnd5e's Resist button) removes the Prone condition again.
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
  *              - Clean lifecycle: Lingering effects are automatically cleaned up when combat is terminated.
  *
@@ -27,6 +28,7 @@
  * @updated v14.51.0 (midi-qol workflow support)
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.60.0 (Topple)
+ * @updated v14.60.1 (Legendary Resistance on the Topple save removes Prone)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
@@ -615,7 +617,9 @@ async function _onApplyDamage(targetActor, amount, options = {}) {
  * @param {number} dc
  */
 async function _rollToppleSave(targetActor, dc) {
-    const rolls = await targetActor.rollSavingThrow({ ability: "con", target: dc }, { configure: false });
+    const rolls = await targetActor.rollSavingThrow({ ability: "con", target: dc }, { configure: false }, {
+        data: { flags: { [MODULE_ID]: { toppleSave: { promptId: null, targetActorUuid: targetActor.uuid } } } }
+    });
     const roll = rolls?.[0];
     if (!roll) return;
     if (roll.total < dc) await _applyProne(targetActor);
@@ -705,9 +709,10 @@ function _onRenderTopplePrompt(message, html) {
         if (!content.querySelector(".nd5t-topple-result")) {
             const result = document.createElement("div");
             result.classList.add("nd5t-topple-result");
-            result.innerHTML = topple.result === "prone"
-                ? '<i class="fa-solid fa-person-falling" inert></i> Failed: knocked Prone'
-                : '<i class="fa-solid fa-person" inert></i> Succeeded: stays standing';
+            result.innerHTML = {
+                prone: '<i class="fa-solid fa-person-falling" inert></i> Failed: knocked Prone',
+                resisted: '<i class="fa-solid fa-dragon" inert></i> Legendary Resistance: stays standing'
+            }[topple.result] ?? '<i class="fa-solid fa-person" inert></i> Succeeded: stays standing';
             content.append(result);
         }
         return;
@@ -718,6 +723,53 @@ function _onRenderTopplePrompt(message, html) {
         if (!event.target.closest?.('button[data-action="roll"]')) return;
         _pendingTopplePrompt = { messageId: message.id, targetActorUuid: topple.targetActorUuid, dc: topple.dc };
     }, { capture: true });
+}
+
+/**
+ * Hook dnd5e.preRollSavingThrow: tag the save started from a Topple prompt, so a Legendary Resistance
+ * spent on it later can be traced back to Topple.
+ * @param {object} config
+ * @param {object} dialog
+ * @param {object} message
+ */
+function _onPreRollSavingThrow(config, dialog, message) {
+    const pending = _pendingTopplePrompt;
+    if (!pending || (config?.ability !== "con") || (config.subject?.uuid !== pending.targetActorUuid) || !message) return;
+    foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.toppleSave`, {
+        promptId: pending.messageId,
+        targetActorUuid: pending.targetActorUuid
+    });
+}
+
+/**
+ * Hook updateChatMessage: when a Legendary Resistance turns a failed Topple save into a success
+ * (dnd5e sets `system.resisted` on the save message), remove the Prone condition again.
+ * Runs on the active GM, who can update the actor and the prompt card.
+ * @param {ChatMessage} message
+ * @param {object} changes
+ */
+async function _onUpdateToppleSave(message, changes) {
+    if (!game.user.isActiveGM) return;
+    if (foundry.utils.getProperty(changes, "system.resisted") !== true) return;
+    const toppleSave = message.getFlag(MODULE_ID, "toppleSave");
+    if (!toppleSave) return;
+
+    try {
+        const target = fromUuidSync(toppleSave.targetActorUuid, { strict: false });
+        const actor = target?.actor ?? target;
+        if (!(actor instanceof Actor)) return;
+
+        // The failed save may still be applying Prone (player rolls go through the socket)
+        await new Promise(resolve => setTimeout(resolve, 250));
+        if (_isProne(actor)) {
+            await actor.toggleStatusEffect("prone", { active: false });
+            debug(`Weapon Mastery | ${actor.name} used a Legendary Resistance against Topple; Prone removed`);
+        }
+        const prompt = toppleSave.promptId ? game.messages.get(toppleSave.promptId) : null;
+        await prompt?.setFlag(MODULE_ID, "topple.result", "resisted");
+    } catch (err) {
+        console.error("Weapon Mastery | Error removing Prone after Legendary Resistance:", err);
+    }
 }
 
 /**
@@ -922,7 +974,9 @@ export function initWeaponMasteries() {
     Hooks.on("deleteCombat", _onDeleteCombat);
     if (isMidiActive()) Hooks.on("midi-qol.DamageRollComplete", _onMidiDamageRollComplete);
     Hooks.on("dnd5e.applyDamage", _onApplyDamage);
+    Hooks.on("dnd5e.preRollSavingThrow", _onPreRollSavingThrow);
     Hooks.on("dnd5e.rollSavingThrow", _onRollSavingThrow);
+    Hooks.on("updateChatMessage", _onUpdateToppleSave);
     Hooks.on("renderChatMessageHTML", _onRenderTopplePrompt);
 
     log("Weapon Mastery automation initialized (Slow, Sap & Topple)");
