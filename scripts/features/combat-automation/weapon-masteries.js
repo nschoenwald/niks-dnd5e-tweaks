@@ -8,7 +8,8 @@
  *                      Uses system movement bonus to cleanly reduce active speeds without negative values.
  *              - Topple: When the damage of the hit is applied, the target makes a Constitution saving throw
  *                        (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) or has the
- *                        Prone condition. The save is a prompt card for the target's owners or rolled
+ *                        Prone condition. The save is a prompt card for the target's owners that also
+ *                        opens the roll dialog for its player (or the GM), a prompt card only, or rolled
  *                        automatically (setting "masteryToppleSaveMode").
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
  *              - Clean lifecycle: Lingering effects are automatically cleaned up when combat is terminated.
@@ -596,11 +597,13 @@ async function _onApplyDamage(targetActor, amount, options = {}) {
         const dc = 8 + abilityMod + (attackerActor.system.attributes?.prof ?? 0);
 
         debug(`Weapon Mastery | TOPPLE on ${targetActor.name}: Constitution save DC ${dc}`);
-        if (getSetting("masteryToppleSaveMode") === "auto") {
+        const saveMode = getSetting("masteryToppleSaveMode");
+        if (saveMode === "auto") {
             await _rollToppleSave(targetActor, dc);
-        } else {
-            await _createTopplePrompt(targetActor, attackerActor, weapon, dc);
+            return;
         }
+        const prompt = await _createTopplePrompt(targetActor, attackerActor, weapon, dc);
+        if (prompt && (saveMode !== "prompt")) _requestToppleSaveDialog(prompt, targetActor);
     } catch (err) {
         console.error("Weapon Mastery | Error processing Topple on damage application:", err);
     }
@@ -624,10 +627,11 @@ async function _rollToppleSave(targetActor, dc) {
  * @param {Actor5e} attackerActor
  * @param {Item5e} weapon
  * @param {number} dc
+ * @returns {Promise<ChatMessage|undefined>}
  */
 async function _createTopplePrompt(targetActor, attackerActor, weapon, dc) {
     const token = targetActor.token ?? targetActor.getActiveTokens?.(false, true)?.[0] ?? null;
-    await ChatMessage.implementation.create({
+    return ChatMessage.implementation.create({
         speaker: ChatMessage.implementation.getSpeaker({ actor: targetActor, token }),
         flavor: `<strong>Topple</strong>: ${attackerActor.name}'s ${weapon.name} knocks ${targetActor.name} Prone unless they succeed on a Constitution saving throw.`,
         system: { broadcast: false, buttons: [{ type: "save", ability: "con", dc, format: "short" }] },
@@ -639,6 +643,50 @@ async function _createTopplePrompt(targetActor, attackerActor, weapon, dc) {
             }
         }
     });
+}
+
+/**
+ * Open the Topple save dialog on the client responsible for the target, like concentration saves:
+ * its first connected player owner, otherwise the active GM. The prompt card stays as a fallback
+ * if the dialog is closed without rolling.
+ * @param {ChatMessage} prompt
+ * @param {Actor5e} targetActor
+ */
+function _requestToppleSaveDialog(prompt, targetActor) {
+    const playerOwner = game.users
+        .filter(u => !u.isGM && u.active && targetActor.testUserPermission(u, "OWNER"))
+        .sort((a, b) => a.id.localeCompare(b.id))[0];
+    const user = playerOwner ?? game.users.activeGM;
+    if (!user) return;
+    if (user.isSelf) {
+        _openToppleSaveDialog(prompt.id);
+        return;
+    }
+    game.socket.emit(`module.${MODULE_ID}`, { action: "openToppleSaveDialog", userId: user.id, messageId: prompt.id });
+}
+
+/**
+ * Open the saving throw dialog for a Topple prompt on this client. The save resolves the prompt
+ * through _onRollSavingThrow, just like clicking the card's button.
+ * @param {string} messageId
+ */
+async function _openToppleSaveDialog(messageId) {
+    const topple = game.messages.get(messageId)?.getFlag(MODULE_ID, "topple");
+    if (!topple || topple.result) return;
+    const target = fromUuidSync(topple.targetActorUuid, { strict: false });
+    const actor = target?.actor ?? target;
+    if (!(actor instanceof Actor)) return;
+
+    const pending = { messageId, targetActorUuid: topple.targetActorUuid, dc: topple.dc };
+    _pendingTopplePrompt = pending;
+    try {
+        await actor.rollSavingThrow({ ability: "con", target: topple.dc });
+    } catch (err) {
+        console.error("Weapon Mastery | Error opening Topple saving throw dialog:", err);
+    } finally {
+        // Dialog closed without rolling
+        if (_pendingTopplePrompt === pending) _pendingTopplePrompt = null;
+    }
 }
 
 /**
@@ -805,6 +853,10 @@ async function _onDeleteCombat(combat) {
  * @param {object} data
  */
 export async function weaponMasterySocketMessage(data) {
+    if (data?.action === "openToppleSaveDialog") {
+        if (data.userId === game.user.id) await _openToppleSaveDialog(data.messageId);
+        return;
+    }
     if (!game.user.isActiveGM) return;
 
     try {

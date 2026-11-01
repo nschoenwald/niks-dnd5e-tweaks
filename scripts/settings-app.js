@@ -1020,11 +1020,12 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "masteryToppleSaveMode",
                                 unavailableWith: "wm5e",
                                 name: "Topple Saving Throw",
-                                hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card whispered to the creature's owners, or rolled automatically.",
+                                hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card whispered to the creature's owners that also opens the roll dialog for its player (or the GM if no owner is online, as with concentration saves), the prompt card only, or rolled automatically.",
                                 type: "Select",
-                                default: "prompt",
+                                default: "promptDialog",
                                 choices: [
-                                    { value: "prompt", label: "Prompt for the Saving Throw" },
+                                    { value: "promptDialog", label: "Prompt and Open the Roll Dialog" },
+                                    { value: "prompt", label: "Prompt Card Only" },
                                     { value: "auto", label: "Roll Automatically" }
                                 ],
                                 scope: "world",

@@ -334,13 +334,13 @@ Automatically opens the damage roll dialog when using Save-type activities that 
 ### Weapon Mastery Automation
 Automatically handles weapon masteries when player characters deal damage with mastery weapons:
 * **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
-* **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the card shows the outcome once the save is rolled; the GM can switch to rolling the save automatically. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
+* **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the roll dialog opens right away for the creature's player (or for the GM if no owner is online), just like concentration saves. The card shows the outcome once the save is rolled, and stays clickable if the dialog is closed. The GM can switch to the prompt card only, or to rolling the save automatically. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
 * **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
 * **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
 * **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
 * **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
 * **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
-* *Sub-settings*: Topple saving throw (prompt or roll automatically) and configurable active effect icons for Sap and Slow.
+* *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
 
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
 

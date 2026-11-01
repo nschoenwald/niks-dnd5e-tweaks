@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [14.60.0] - 2026-11-01
 ### Added
-- **Weapon Mastery Automation**: Topple is now automated. When the damage of a Topple attack is applied, the creature makes a Constitution saving throw (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) and is knocked Prone on a failure. By default its owners get a card with a save button that shows the outcome afterwards; a new setting rolls the save automatically instead. Works with midi-qol.
+- **Weapon Mastery Automation**: Topple is now automated. When the damage of a Topple attack is applied, the creature makes a Constitution saving throw (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) and is knocked Prone on a failure. By default its owners get a card with a save button that shows the outcome afterwards, and the roll dialog opens right away for the creature's player (or for the GM if no owner is online), just like concentration saves. A new setting switches to the card only, or rolls the save automatically instead. Works with midi-qol.
 
 ## [14.59.1] - 2026-10-31
 ### Fixed

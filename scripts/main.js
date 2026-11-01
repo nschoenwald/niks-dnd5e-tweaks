@@ -1291,13 +1291,14 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "masteryToppleSaveMode", {
         name: "Topple Saving Throw",
-        hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card for the creature's owners, or rolled automatically.",
+        hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card for the creature's owners that also opens the roll dialog for its player (or the GM), the prompt card only, or rolled automatically.",
         scope: "world",
         config: false,
         type: String,
-        default: "prompt",
+        default: "promptDialog",
         choices: {
-            prompt: "Prompt for the Saving Throw",
+            promptDialog: "Prompt and Open the Roll Dialog",
+            prompt: "Prompt Card Only",
             auto: "Roll Automatically"
         },
         restricted: true
@@ -1921,7 +1922,7 @@ Hooks.once("ready", async () => {
             onClearTargetsSocket(data);
             return;
         }
-        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave") {
+        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave" || data?.action === "openToppleSaveDialog") {
             weaponMasterySocketMessage(data);
             return;
         }
