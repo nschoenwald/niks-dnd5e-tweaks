@@ -72,7 +72,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Roll Attack Damage](#auto-roll-attack-damage)** | Combat & Automation | ❌ Disabled | Yes |
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)](#conditional-damage-bonuses-sneak-attack-hex--hunters-mark)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Weapon Mastery Automation (Slow & Sap)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
@@ -332,14 +332,15 @@ Handles the "enters the area or ends its turn there" rule of emanation spells su
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
 
 ### Weapon Mastery Automation
-Automatically creates and manages Active Effects when player characters roll damage with mastery weapons:
+Automatically handles weapon masteries when player characters deal damage with mastery weapons:
 * **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
+* **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the card shows the outcome once the save is rolled; the GM can switch to rolling the save automatically. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
 * **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
 * **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
 * **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
 * **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
 * **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
-* *Sub-settings*: Configurable active effect icons for Sap and Slow.
+* *Sub-settings*: Topple saving throw (prompt or roll automatically) and configurable active effect icons for Sap and Slow.
 
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
 
@@ -445,7 +446,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Auto-Apply Status at 0 HP** | When midi-qol's *Add Dead/Unconscious* is on, midi-qol picks the 0 HP status (and marks defeated if its settings say so). This feature still escalates to Dead after three failed death saves, cleans up on healing and removes tokens from combat. |
 | **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |
 | **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
-| **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit. |
+| **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
@@ -454,7 +455,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 
 ### Automated Conditions 5e & Automated Masteries 5e
 * **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
-* **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap & Slow) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
+* **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow & Topple) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.

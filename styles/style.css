@@ -5484,3 +5484,18 @@ body.nd5t-readable-text :is(
 body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .chat-message.message) .card-content :is(p, li, dd, dt, blockquote) {
     line-height: var(--nd5t-rt-line-height);
 }
+
+/* ============================================================ */
+/*  Weapon Mastery Automation: Topple prompt outcome             */
+/* ============================================================ */
+
+/* Colours are inherited from the chat card, so every theme combination works */
+.chat-message .nd5t-topple-result {
+    margin-top: 4px;
+    text-align: center;
+    font-style: italic;
+}
+
+.chat-message .nd5t-topple-result i {
+    margin-right: 4px;
+}

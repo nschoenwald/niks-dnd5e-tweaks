@@ -1281,11 +1281,25 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableWeaponMasteries", {
         name: "Weapon Mastery Automation",
-        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Step 1 automates Slow (reducing speed by 10 ft until the start of the attacker's next turn) and Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn). Works with midi-qol workflows. Disabled while Automated Masteries 5e is active.",
+        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Automates Slow (reducing speed by 10 ft until the start of the attacker's next turn), Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn) and Topple (a Constitution saving throw when the damage is applied, knocking the creature Prone on a failure). Works with midi-qol workflows. Disabled while Automated Masteries 5e is active.",
         scope: "world",
         config: false,
         type: Boolean,
         default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "masteryToppleSaveMode", {
+        name: "Topple Saving Throw",
+        hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card for the creature's owners, or rolled automatically.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "prompt",
+        choices: {
+            prompt: "Prompt for the Saving Throw",
+            auto: "Roll Automatically"
+        },
         restricted: true
     });
 
@@ -1907,7 +1921,7 @@ Hooks.once("ready", async () => {
             onClearTargetsSocket(data);
             return;
         }
-        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect") {
+        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave") {
             weaponMasterySocketMessage(data);
             return;
         }

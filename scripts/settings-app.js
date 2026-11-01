@@ -1011,10 +1011,24 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "enableWeaponMasteries",
                                 unavailableWith: "wm5e",
                                 name: "Weapon Mastery Automation",
-                                hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Step 1 automates Slow (reducing speed by 10 ft) and Sap (disadvantage on the creature's next attack roll). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
+                                hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Automates Slow (reducing speed by 10 ft), Sap (disadvantage on the creature's next attack roll) and Topple (a Constitution save when the damage is applied, Prone on a failure). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "world"
+                            },
+                            {
+                                key: "masteryToppleSaveMode",
+                                unavailableWith: "wm5e",
+                                name: "Topple Saving Throw",
+                                hint: "How the Constitution saving throw against Topple is made when the damage is applied: a prompt card whispered to the creature's owners, or rolled automatically.",
+                                type: "Select",
+                                default: "prompt",
+                                choices: [
+                                    { value: "prompt", label: "Prompt for the Saving Throw" },
+                                    { value: "auto", label: "Roll Automatically" }
+                                ],
+                                scope: "world",
+                                parentKey: "enableWeaponMasteries"
                             },
                             {
                                 key: "masterySapIcon",

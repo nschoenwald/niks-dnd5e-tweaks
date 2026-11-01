@@ -1,17 +1,22 @@
 /**
- * Feature: Weapon Mastery Automation (Step 1: Slow & Sap)
+ * Feature: Weapon Mastery Automation (Slow, Sap & Topple)
  * Description: Automates weapon masteries when the attacker rolls weapon damage with the required mastery.
  *              Strictly applies to player character actors (not NPCs).
  *              - Sap: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn.
  *                     Expires after the creature makes an attack or at the start of the attacker's next turn.
  *              - Slow: Reduces target creature's Speed by 10 ft until the start of the attacker's next turn.
  *                      Uses system movement bonus to cleanly reduce active speeds without negative values.
+ *              - Topple: When the damage of the hit is applied, the target makes a Constitution saving throw
+ *                        (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) or has the
+ *                        Prone condition. The save is a prompt card for the target's owners or rolled
+ *                        automatically (setting "masteryToppleSaveMode").
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
  *              - Clean lifecycle: Lingering effects are automatically cleaned up when combat is terminated.
  *
  * midi-qol: midi rolls attacks and damage inside its workflow card without creating separate
- * attack / damage roll messages, so masteries are applied from midi's DamageRollComplete hook
- * to the workflow's hit targets instead.
+ * attack / damage roll messages, so Sap and Slow are applied from midi's DamageRollComplete hook
+ * to the workflow's hit targets instead. Topple uses dnd5e.applyDamage, which midi also fires
+ * (on the GM, with the item card as origin) for the hit targets when it applies damage.
  *
  * Automated Masteries 5e (wm5e): wm5e automates every mastery itself, Sap and Slow included, under
  * its own effect names. This feature stands down while wm5e is active so creatures aren't sapped or
@@ -20,6 +25,7 @@
  * @introduced v14.42.0
  * @updated v14.51.0 (midi-qol workflow support)
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.60.0 (Topple)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
 import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
@@ -28,6 +34,12 @@ const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp"
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
 
 const _pendingDeletions = new Set();
+
+/** "<attack or usage message id>:<target actor uuid>" pairs Topple was already triggered for on this client. */
+const _toppleTriggered = new Set();
+
+/** The Topple prompt whose save button this client clicked last, until that save is rolled. */
+let _pendingTopplePrompt = null;
 
 /**
  * Safely delete an ActiveEffect document, guarding against concurrent duplicate deletions
@@ -258,6 +270,22 @@ function _getOriginatingMessage(message) {
 }
 
 /**
+ * Find the most recent attack roll made from a usage card.
+ * @param {ChatMessage} message                   The message to exclude (the damage roll itself).
+ * @param {ChatMessage|null} originatingMessage   The usage card.
+ * @returns {ChatMessage|null}
+ */
+function _findAttackMessage(message, originatingMessage) {
+    if (!originatingMessage) return null;
+    return game.messages.contents.findLast(m => {
+        if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") return false;
+        const origin = m.system?.origin;
+        const originId = origin instanceof ChatMessage ? origin.id : (origin ?? m.getFlag("dnd5e", "originatingMessage"));
+        return originId === originatingMessage.id;
+    }) ?? null;
+}
+
+/**
  * Resolve the mastery used for a damage roll.
  * Prefers the mastery chosen on the most recent attack roll from the same usage card, then the
  * last mastery dnd5e remembered for the activity, then the weapon's own mastery if the actor qualifies.
@@ -269,16 +297,9 @@ function _getOriginatingMessage(message) {
  * @returns {string|null}
  */
 function _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon) {
-    if (originatingMessage) {
-        const attackMessage = game.messages.contents.findLast(m => {
-            if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") return false;
-            const origin = m.system?.origin;
-            const originId = origin instanceof ChatMessage ? origin.id : (origin ?? m.getFlag("dnd5e", "originatingMessage"));
-            return originId === originatingMessage.id;
-        });
-        if (attackMessage) {
-            return attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
-        }
+    const attackMessage = _findAttackMessage(message, originatingMessage);
+    if (attackMessage) {
+        return attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
     }
 
     const activityId = activity?.id ?? message.system?.activity?.id;
@@ -478,6 +499,213 @@ async function _onRollAttack(rolls, data) {
     }
 }
 
+/* -------------------------------------------- */
+/*  Topple                                      */
+/* -------------------------------------------- */
+
+/**
+ * Whether an actor currently has the Prone condition.
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+function _isProne(actor) {
+    return Boolean(actor?.statuses?.has("prone"));
+}
+
+/**
+ * Give an actor the Prone condition. Callers make sure this client owns the actor
+ * (it applied the damage or rolled the save) or is the active GM.
+ * @param {Actor5e} actor
+ */
+async function _applyProne(actor) {
+    if (!actor || _isProne(actor)) return;
+    if (actor.isOwner) {
+        await actor.toggleStatusEffect("prone", { active: true });
+        debug(`Weapon Mastery | ✓ ${actor.name} is Prone (Topple)`);
+    }
+}
+
+/**
+ * Hook dnd5e.applyDamage: when the damage of a weapon attack with the Topple mastery is applied,
+ * the target makes a Constitution saving throw or has the Prone condition.
+ * Fires on the client that applied the damage, which owns the damaged actor.
+ * @param {Actor5e} targetActor
+ * @param {number} amount
+ * @param {object} options      Damage application options; `origin` or `originatingMessage` is the
+ *                              damage roll, the usage card or midi-qol's item card.
+ */
+async function _onApplyDamage(targetActor, amount, options = {}) {
+    try {
+        if (!isFeatureActive("enableWeaponMasteries", "clientEnableWeaponMasteries")) return;
+        if (!(targetActor instanceof Actor) || (amount < 0)) return;
+
+        let message = options.originatingMessage ?? options.origin;
+        if (typeof message === "string") message = game.messages.get(message) ?? fromUuidSync(message, { strict: false });
+        if (!(message instanceof ChatMessage)) return;
+
+        let activity = null;
+        try {
+            activity = message.getAssociatedActivity?.();
+        } catch {}
+        activity ??= (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
+        if (activity?.type !== "attack") return;
+
+        const weapon = activity.item;
+        if (!weapon || weapon.type !== "weapon") return;
+
+        const attackerActor = activity.actor;
+        if (!attackerActor || attackerActor.type !== "character" || attackerActor === targetActor) return;
+
+        // A damage roll points to its usage card; a usage card or midi item card is the card itself
+        const usageMessage = _getOriginatingMessage(message) ?? message;
+        const attackMessage = _findAttackMessage(message, usageMessage);
+
+        // midi-qol rolls the attack inside its workflow; the workflow lives on the attacker's client
+        let midiAttackOptions = null;
+        if (!attackMessage && isMidiMessage(message)) {
+            try {
+                midiAttackOptions = globalThis.MidiQOL?.Workflow?.getWorkflow?.(usageMessage.uuid)?.attackRoll?.options ?? null;
+            } catch {}
+        }
+
+        let mastery;
+        if (attackMessage) mastery = attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
+        else if (midiAttackOptions?.mastery) mastery = midiAttackOptions.mastery;
+        else mastery = _resolveDamageMastery(message, usageMessage, activity, attackerActor, weapon);
+        if (mastery !== "topple") return;
+
+        const triggerKey = `${attackMessage?.id ?? usageMessage.id}:${targetActor.uuid}`;
+        if (_toppleTriggered.has(triggerKey)) {
+            debug(`Weapon Mastery | Topple already triggered for ${targetActor.name} by this attack, skipping`);
+            return;
+        }
+        _toppleTriggered.add(triggerKey);
+
+        if (_isProne(targetActor)) {
+            debug(`Weapon Mastery | ${targetActor.name} is already Prone, skipping Topple`);
+            return;
+        }
+
+        const ability = attackMessage?.system?.ability
+            || attackMessage?.rolls?.[0]?.options?.ability
+            || midiAttackOptions?.ability
+            || weapon.getFlag("dnd5e", `last.${activity.id}.ability`)
+            || activity.ability
+            || "str";
+        const abilityMod = attackerActor.system.abilities?.[ability]?.mod ?? 0;
+        const dc = 8 + abilityMod + (attackerActor.system.attributes?.prof ?? 0);
+
+        debug(`Weapon Mastery | TOPPLE on ${targetActor.name}: Constitution save DC ${dc}`);
+        if (getSetting("masteryToppleSaveMode") === "auto") {
+            await _rollToppleSave(targetActor, dc);
+        } else {
+            await _createTopplePrompt(targetActor, attackerActor, weapon, dc);
+        }
+    } catch (err) {
+        console.error("Weapon Mastery | Error processing Topple on damage application:", err);
+    }
+}
+
+/**
+ * Roll the Topple saving throw for the target right away and knock it Prone on a failure.
+ * @param {Actor5e} targetActor
+ * @param {number} dc
+ */
+async function _rollToppleSave(targetActor, dc) {
+    const rolls = await targetActor.rollSavingThrow({ ability: "con", target: dc }, { configure: false });
+    const roll = rolls?.[0];
+    if (!roll) return;
+    if (roll.total < dc) await _applyProne(targetActor);
+}
+
+/**
+ * Whisper a Constitution saving throw prompt for the Topple mastery to the target's owners.
+ * @param {Actor5e} targetActor
+ * @param {Actor5e} attackerActor
+ * @param {Item5e} weapon
+ * @param {number} dc
+ */
+async function _createTopplePrompt(targetActor, attackerActor, weapon, dc) {
+    const token = targetActor.token ?? targetActor.getActiveTokens?.(false, true)?.[0] ?? null;
+    await ChatMessage.implementation.create({
+        speaker: ChatMessage.implementation.getSpeaker({ actor: targetActor, token }),
+        flavor: `<strong>Topple</strong>: ${attackerActor.name}'s ${weapon.name} knocks ${targetActor.name} Prone unless they succeed on a Constitution saving throw.`,
+        system: { broadcast: false, buttons: [{ type: "save", ability: "con", dc, format: "short" }] },
+        type: "prompt",
+        whisper: game.users.filter(u => targetActor.testUserPermission(u, "OWNER")).map(u => u.id),
+        flags: {
+            [MODULE_ID]: {
+                topple: { targetActorUuid: targetActor.uuid, sourceActorUuid: attackerActor.uuid, dc, result: null }
+            }
+        }
+    });
+}
+
+/**
+ * Hook renderChatMessageHTML for Topple prompts: remember which prompt's save button was clicked,
+ * and show the outcome once the save has been rolled.
+ * @param {ChatMessage} message
+ * @param {HTMLElement} html
+ */
+function _onRenderTopplePrompt(message, html) {
+    const topple = message.getFlag(MODULE_ID, "topple");
+    if (!topple || !(html instanceof HTMLElement)) return;
+
+    if (topple.result) {
+        html.querySelectorAll('button[data-action="roll"]').forEach(button => { button.disabled = true; });
+        const content = html.querySelector(".message-content") ?? html;
+        if (!content.querySelector(".nd5t-topple-result")) {
+            const result = document.createElement("div");
+            result.classList.add("nd5t-topple-result");
+            result.innerHTML = topple.result === "prone"
+                ? '<i class="fa-solid fa-person-falling" inert></i> Failed: knocked Prone'
+                : '<i class="fa-solid fa-person" inert></i> Succeeded: stays standing';
+            content.append(result);
+        }
+        return;
+    }
+
+    // Capture phase, so this runs before dnd5e's own click handler starts the roll
+    html.addEventListener("click", event => {
+        if (!event.target.closest?.('button[data-action="roll"]')) return;
+        _pendingTopplePrompt = { messageId: message.id, targetActorUuid: topple.targetActorUuid, dc: topple.dc };
+    }, { capture: true });
+}
+
+/**
+ * Hook dnd5e.rollSavingThrow: resolve the Topple prompt whose button started this save.
+ * @param {D20Roll[]} rolls
+ * @param {object} data
+ * @param {string} data.ability
+ * @param {Actor5e} data.subject
+ */
+async function _onRollSavingThrow(rolls, { ability, subject } = {}) {
+    const pending = _pendingTopplePrompt;
+    if (!pending || (ability !== "con") || (subject?.uuid !== pending.targetActorUuid)) return;
+    _pendingTopplePrompt = null;
+
+    try {
+        const roll = rolls?.[0];
+        if (!roll) return;
+        const failed = roll.total < pending.dc;
+        const message = game.messages.get(pending.messageId);
+
+        if (subject.isOwner && (!message || message.canUserModify(game.user, "update"))) {
+            if (failed) await _applyProne(subject);
+            await message?.setFlag(MODULE_ID, "topple.result", failed ? "prone" : "saved");
+        } else {
+            game.socket.emit(`module.${MODULE_ID}`, {
+                action: "resolveToppleSave",
+                messageId: pending.messageId,
+                targetActorUuid: subject.uuid,
+                failed
+            });
+        }
+    } catch (err) {
+        console.error("Weapon Mastery | Error resolving Topple saving throw:", err);
+    }
+}
+
 /**
  * Hook updateCombat to expire Sap and Slow at the start of the source attacker's next turn.
  * @param {Combat} combat
@@ -605,6 +833,12 @@ export async function weaponMasterySocketMessage(data) {
 
             await ActiveEffect.createDocuments([data.effectData], { parent: actor });
             debug(`Weapon Mastery Socket | GM created ${mastery} effect on ${actor.name}`);
+        } else if (data?.action === "resolveToppleSave" && data.targetActorUuid) {
+            const target = fromUuidSync(data.targetActorUuid, { strict: false });
+            const actor = target?.actor ?? target;
+            if (!actor || !(actor instanceof Actor)) return;
+            if (data.failed) await _applyProne(actor);
+            await game.messages.get(data.messageId)?.setFlag(MODULE_ID, "topple.result", data.failed ? "prone" : "saved");
         } else if (data?.action === "removeWeaponMasteryEffect" && data.targetActorUuid && data.effectId) {
             const target = fromUuidSync(data.targetActorUuid, { strict: false });
             const actor = target?.actor ?? target;
@@ -635,6 +869,9 @@ export function initWeaponMasteries() {
     Hooks.on("updateCombat", _onUpdateCombat);
     Hooks.on("deleteCombat", _onDeleteCombat);
     if (isMidiActive()) Hooks.on("midi-qol.DamageRollComplete", _onMidiDamageRollComplete);
+    Hooks.on("dnd5e.applyDamage", _onApplyDamage);
+    Hooks.on("dnd5e.rollSavingThrow", _onRollSavingThrow);
+    Hooks.on("renderChatMessageHTML", _onRenderTopplePrompt);
 
-    log("Weapon Mastery automation initialized (Slow & Sap)");
+    log("Weapon Mastery automation initialized (Slow, Sap & Topple)");
 }

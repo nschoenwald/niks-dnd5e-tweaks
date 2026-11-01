@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.60.0] - 2026-11-01
+### Added
+- **Weapon Mastery Automation**: Topple is now automated. When the damage of a Topple attack is applied, the creature makes a Constitution saving throw (DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus) and is knocked Prone on a failure. By default its owners get a card with a save button that shows the outcome afterwards; a new setting rolls the save automatically instead. Works with midi-qol.
+
 ## [14.59.1] - 2026-10-31
 ### Fixed
 - **Conditional Damage Bonuses**: *Brutal Strike* uses the damage set on the feature itself, as in the D&D 5e 6.1 compendium, including your own changes to it. Barbarians built from older content keep working as before.
