@@ -5,6 +5,7 @@
  * @introduced v14.13.0
  * @updated v14.49.1 (Auto-Apply Effects list applies matching effects directly and collapses the usage card's effect tray)
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.60.2 (Re-enabled effects keep the conditions of their changes and of the effect)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
@@ -943,8 +944,11 @@ async function _createEffectOnActor(actor, {
             if (effectData.img) updateData.img = effectData.img;
             if (effectData.name) updateData.name = effectData.name;
 
-            // Properly handle changes in both DnD5e 6.x (system.changes) and legacy (changes)
-            const baseChanges = sourceEffect?.system?.changes ?? effectData.system?.changes;
+            // Properly handle changes in both DnD5e 6.x (system.changes) and legacy (changes).
+            // Read the source data, not the prepared data: prepared conditions are Filter instances
+            // whose definition is a private field, so they would be saved as an empty "{}" filter.
+            const baseSystem = sourceEffect?.toObject ? sourceEffect.toObject().system : effectData.system;
+            const baseChanges = baseSystem?.changes;
             if (baseChanges) {
                 let systemChanges = foundry.utils.deepClone(baseChanges);
                 if (typeof ActiveEffect.implementation.forApplication === "function") {
@@ -952,6 +956,8 @@ async function _createEffectOnActor(actor, {
                 }
                 updateData.system = updateData.system ?? {};
                 updateData.system.changes = systemChanges;
+                // Effect-wide conditions (DnD5e BaseEffectData) must follow the source too.
+                if (typeof baseSystem.conditions === "string") updateData.system.conditions = baseSystem.conditions;
             } else if (effectData.changes) {
                 updateData.changes = foundry.utils.deepClone(effectData.changes);
             }
