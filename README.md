@@ -505,7 +505,7 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 * **[Nik's Token Motion](https://github.com/nschoenwald/niks-token-motion)** – Tokens hop square by square like miniatures, lift and set down like chess pieces, or glide smoothly, and long moves no longer crawl across the map.
 * **[Nik's Tiny Change Logs](https://github.com/nschoenwald/niks-tiny-changelogs)** – Compact, single-line chat messages logging token HP and Temp HP changes.
 
-### 🎲 Visuals & Display
+### 🎨 Visuals & Display
 * **[Nik's Dynamic Roll Area](https://github.com/nschoenwald/niks-dynamic-roll-area)** – Dynamically restricts Dice So Nice 3D dice rolling area to exclude the sidebar / chat log across all screen resolutions and window sizes.
 
 ### ⚙️ Utilities & System Management
