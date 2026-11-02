@@ -467,6 +467,14 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 
 ---
 
+## 🌐 Languages
+
+English, Deutsch, Français, Español, Italiano, Português (Brasil), 日本語, Polski and Čeština.
+
+All translations were written with AI help and may contain mistakes. Corrections are welcome as an issue or pull request.
+
+---
+
 ## 📦 Installation
 
 ### Via Foundry VTT Package Browser

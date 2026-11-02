@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.61.0] - 2026-11-02
+### Added
+- The module is now available in German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Polish and Czech.
+
 ## [14.60.2] - 2026-11-02
 ### Fixed
 - **Self Effect Application Prompt**: Applying an effect the character already had from an earlier use (such as Rage) no longer drops its conditions. A bonus limited to, for example, Strength attacks stays limited to them instead of applying to everything.
