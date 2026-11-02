@@ -25,7 +25,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 - [⚙️ Settings Dashboard & Personal Preferences](#️-settings-dashboard--personal-preferences)
 - [🤝 Module Compatibility](#-module-compatibility)
 - [📦 Installation](#-installation)
-- [❤️ Other Modules by Nik](#️-other-modules-by-nik)
+- [❤️ Modules by Nik](#️-modules-by-nik)
 
 ---
 
@@ -494,7 +494,7 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 
 ---
 
-## ❤️ Other Modules by Nik
+## ❤️ Modules by Nik
 
 ### 🎲 D&D 5e Specific
 * **[Nik's DnD5e Tweaks](https://github.com/nschoenwald/niks-dnd5e-tweaks)** – Consolidated collection of quality-of-life enhancements and combat automation tweaks for DnD5e.
