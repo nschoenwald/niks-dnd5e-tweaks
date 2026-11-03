@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.61.1] - 2026-11-03
+### Fixed
+- **Placeables Sidebar Recovery** (silent patch): When the Placeables sidebar failed to show its token list once, for example after deleting tokens whose actor had been deleted, the sidebar moved to the left and stayed broken until you reloaded the page. It now recovers on its own the next time the list updates.
+
 ## [14.61.0] - 2026-11-02
 ### Added
 - The module is now available in German, French, Spanish, Italian, Brazilian Portuguese, Japanese, Polish and Czech.

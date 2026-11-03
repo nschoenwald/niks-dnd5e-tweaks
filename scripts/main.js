@@ -69,6 +69,7 @@ import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray
 import { initFixTokenBarRefresh } from "./features/patches/fix-token-bar-refresh.js";
 import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
 import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-spell-scaling.js";
+import { initFixPlaceablesSidebarTab } from "./features/patches/fix-placeables-sidebar-tab.js";
 
 // Settings Dashboard
 import { NiksTweaksSettingsApp } from "./settings-app.js";
@@ -1875,6 +1876,7 @@ Hooks.once("setup", () => {
     initFixTokenBarRefresh();
     initFixTokenHPBarAnimation();
     initFixFreeCastSpellScaling();
+    initFixPlaceablesSidebarTab();
 
     // Utilities
     initAutoUnpauseOnLogin();

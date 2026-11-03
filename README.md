@@ -414,6 +414,7 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 * **Pact Magic Formula Scaling**: Dynamically corrects damage and healing formulas for Pact Magic spells to reflect the caster's pact slot level in sheet inventory rows and activity tables.
 * **Damage Application Tray Grouping**: Prevents an upstream D&D 5e system TypeError (`token.getGroupingKey is not a function`) when rendering damage application trays for targets resolved via actor UUID or unplaced tokens.
 * **Token Resource Bar Refresh**: Fixes an upstream Foundry VTT V14 core issue where the first HP change of an unlinked token in a session (e.g. via the Token HUD) did not visually update its resource bar. Only applies to Foundry 14.369 and lower (fixed upstream in 14.370).
+* **Placeables Sidebar Recovery**: Fixes an upstream Foundry VTT V14 core issue where one failed render of the Placeables sidebar's token list (for example caused by another module) pushed the sidebar to the left and broke it until reload, with the console error `Cannot read properties of null (reading 'replaceWith')`. The sidebar now recovers on its next update.
 * **Animated HP Bars**: Foundry VTT V14 smoothly animates token resource bars when their values change, but the D&D 5e HP bar skipped the animation and jumped straight to the new value. HP bars (including temporary HP and temporary max HP) now slide to their new value and colour like every other bar.
 
 ---
