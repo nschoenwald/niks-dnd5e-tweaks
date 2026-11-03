@@ -241,12 +241,15 @@ A floating glassmorphic banner appears during spell and item template placement:
 <img width="774" height="677" alt="image" src="https://github.com/user-attachments/assets/aeb11a42-ec74-424a-84e1-6521cb3fd092" />
 
 ### Auto-Target Tokens in Spell Templates
-Automatically selects and targets tokens inside spell templates during placement and updates targets in real time.
+Automatically selects and targets tokens inside spell templates during placement and updates targets in real time. Walls, elevation and scene levels are respected, and large creatures count when any square they occupy is inside the area.
+* **Follows the Affects Type**: Areas set to affect **Ally** only target the caster's allies, **Enemy** only its opponents, and **Self** only the caster. Areas that affect only creatures leave vehicles out.
 * **Origin / Source Token Exclusion**: Cones and lines/rays exclude the caster from targeting, and emanations exclude the token that is both the source and the attached token for the region in accordance with D&D 5e / 2024 rules.
 * **Allies-Only Healing**: Templates placed for healing activities only target the caster's allies: player characters target other PCs and friendly tokens, and hostile NPCs target other hostile tokens.
-* **Opponents-Only Choose Targets**: Damaging spells and features with **Choose Targets** enabled only target the caster's opponents: PCs and friendly NPCs target hostile tokens, and hostile NPCs target PCs and friendly tokens.
+* **Opponents-Only Choose Targets**: Damaging spells and features, and saving throw spells, with **Choose Targets** enabled only target the caster's opponents: PCs and friendly NPCs target hostile tokens, and hostile NPCs target PCs and friendly tokens.
+* **Secret Tokens**: Tokens with the Secret disposition count as both ally and opponent, so they are always targeted. A Secret caster's areas are not filtered by side.
+* **Skips Non-Targets**: Dead and defeated creatures, party and encounter tokens, tokens without an actor and Item Piles are never targeted. Unconscious creatures are, so healing reaches them.
 * **Chat Synchronization**: Updates targets directly on spell chat cards for subsequent saving throws and damage application.
-* **GM Privacy**: Non-GM players only target tokens visible to them.
+* **GM Privacy**: Non-GM players only target tokens visible to them. Areas placed by the GM skip hidden tokens unless the caster is hidden too.
 
 ### Enhanced Summoning Placement HUD & Range Preview
 Appears during creature summoning activities (*Find Familiar*, *Summon Celestial*, etc.):

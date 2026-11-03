@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.62.0] - 2026-11-03
+### Changed
+- **Auto-Target Tokens in Spell Templates**: Targeting now follows what the spell or feature says it affects. "Ally" areas only target the caster's allies, "Enemy" areas only its opponents, and "Self" areas only the caster. Areas that affect only creatures no longer target vehicles.
+- **Auto-Target Tokens in Spell Templates**: Dead and defeated creatures, party and encounter tokens, and Item Piles are no longer targeted. Creatures that are only unconscious still are, so healing reaches them.
+- **Auto-Target Tokens in Spell Templates**: Tokens with the Secret disposition are always targeted, whether the area hits allies or opponents, so area spells don't reveal what side they are on.
+- **Auto-Target Tokens in Spell Templates**: Saving throw spells with **Choose Targets**, such as *Slow*, now only target the caster's opponents, like damaging spells already did.
+- **Auto-Target Tokens in Spell Templates**: Areas placed by the GM no longer target tokens hidden from players, unless the caster is hidden as well.
+
+### Fixed
+- **Auto-Target Tokens in Spell Templates**: When the GM placed a cone or line without a caster token, tokens the GM happened to have selected were wrongly left out of the targets.
+
 ## [14.61.1] - 2026-11-03
 ### Fixed
 - **Placeables Sidebar Recovery** (silent patch): When the Placeables sidebar failed to show its token list once, for example after deleting tokens whose actor had been deleted, the sidebar moved to the left and stayed broken until you reloaded the page. It now recovers on its own the next time the list updates.

@@ -5,6 +5,7 @@
  * @introduced v14.19.0
  * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
  * @updated v14.48.4 (Heal activities target allies only, "Choose Targets" damage activities target opponents only)
+ * @updated v14.62.0 (Respect the activity's Affects type, skip dead, non-creature and GM-hidden tokens, Secret tokens always targeted, "Choose Targets" saves target opponents, GM selection no longer treated as caster, per-placement caching, no duplicate final targeting)
  */
 import { debug, log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -21,6 +22,11 @@ let _pendingPlacementRAF = null;
 let _lastPlacementChangeArgs = null;
 let _isPlacingRegion = false;
 let _cachedOriginIds = null;
+/** Per-placement caches: the activity, caster and template shape don't change while a preview is moved */
+let _cachedTargetFilter = null;
+let _cachedExcludeOrigin = null;
+/** Region IDs already targeted by dnd5e.postCreateMeasuredTemplate, so the createRegion fallback can skip them */
+const _finalizedRegionIds = new Set();
 let lastChatActionMessageId = null;
 
 // ── Initialisation ───────────────────────────────────────────────────
@@ -76,6 +82,9 @@ export function initTemplateTargeting() {
 
         const targetIds = _getTargetsForRegions(created);
         _setTargetsIfChanged(targetIds);
+        for (const r of created) {
+            if (r?.id) _finalizedRegionIds.add(r.id);
+        }
 
         // If template placement was triggered from a chat card button, sync targets to that card
         if (lastChatActionMessageId) {
@@ -120,6 +129,8 @@ export function initTemplateTargeting() {
         _lastPlacementChangeArgs = null;
         _isPlacingRegion = false;
         _cachedOriginIds = null;
+        _resetPlacementCaches();
+        _finalizedRegionIds.clear();
         activePlacementActivity = null;
         initialPlacementTargets = null;
         activePlacementBatchRegionIds.clear();
@@ -152,6 +163,7 @@ function _wrapRegionLayerPlaceRegion() {
         if (isFirstRegion) {
             initialPlacementTargets = Array.from(game.user.targets ?? []).map(t => t.id);
             _cachedOriginIds = null;
+            _resetPlacementCaches();
         }
 
         // Intercept onChange to update targets in real-time as the preview moves or rotates
@@ -173,6 +185,7 @@ function _wrapRegionLayerPlaceRegion() {
             }
             _lastPlacementChangeArgs = null;
             _cachedOriginIds = null;
+            _resetPlacementCaches();
 
             // If placement was aborted/cancelled (result is null/falsy), restore previous targets
             if (!result) {
@@ -303,12 +316,26 @@ function _onCreateRegion(regionDoc, options, userId) {
     }
 
     // Defer by one tick so the Region's polygon tree is fully built before we call testInsideRegion()
+    // dnd5e.postCreateMeasuredTemplate usually runs first (promise continuation before this timer) and has
+    // already targeted this region, so only fall back when it did not (e.g. regions created by other code).
     setTimeout(() => {
+        if (_finalizedRegionIds.delete(regionDoc.id)) {
+            debug(`Template Targeting | createRegion: region ${regionDoc.id} already targeted, skipping`);
+            return;
+        }
         _applyTargetsFromRegion(regionDoc);
     }, 0);
 }
 
 // ── Containment Helpers ──────────────────────────────────────────────
+
+/**
+ * Clear the per-placement target filter caches.
+ */
+function _resetPlacementCaches() {
+    _cachedTargetFilter = null;
+    _cachedExcludeOrigin = null;
+}
 
 /**
  * Template types that originate from a creature/object and exclude that origin from the area of effect.
@@ -414,7 +441,9 @@ function _getOriginatingTokenIds(regionDocs) {
             }
         }
 
-        if (!sourceTokenIds.size) {
+        // Last resort for players only: their controlled tokens and assigned character.
+        // A GM's selection is often unrelated to the template, so it is never treated as the caster.
+        if (!sourceTokenIds.size && !game.user.isGM) {
             for (const token of canvas.tokens?.controlled ?? []) {
                 sourceTokenIds.add(token.id);
             }
@@ -480,6 +509,16 @@ function _getPlacementActivity(regionDocs) {
 }
 
 /**
+ * Actor types that never count as creatures or objects caught in an area (party groups, encounters, factions).
+ */
+const NON_TARGETABLE_ACTOR_TYPES = new Set(["group", "encounter", "faction"]);
+
+/**
+ * Activity "Affects" types that only include creatures, so vehicles are left out.
+ */
+const CREATURE_ONLY_AFFECTS_TYPES = new Set(["creature", "ally", "enemy", "willing"]);
+
+/**
  * Get the disposition used to decide whether a token is an ally.
  * Player characters and player-owned actors always count as friendly, regardless of token disposition.
  * @param {TokenDocument|PrototypeToken|null} tokenDoc
@@ -492,45 +531,103 @@ function _getAllyDisposition(tokenDoc, actor = tokenDoc?.actor) {
 }
 
 /**
- * Get the disposition that template targets must have, based on the activity and its caster.
- * - Heal activities only target allies: hostile casters heal hostile tokens; PCs and friendly NPCs heal PCs
- *   and friendly tokens.
- * - Damaging activities whose item or activity has "Choose Targets" enabled only target opponents: friendly
- *   casters target hostile tokens and vice versa. Neutral or secret casters have no opponents, so no filtering.
- * @param {RegionDocument[]} regionDocs
- * @returns {number|null}  The disposition targets must have, or null if no filtering applies.
+ * Check whether a potential target is on the required side.
+ * Secret tokens are a wildcard: the GM uses that disposition to hide an NPC's intent, so they count as
+ * both allies and opponents and are always targeted.
+ * @param {TokenDocument} tokenDoc
+ * @param {number} side
+ * @returns {boolean}
  */
-function _getTemplateTargetDisposition(regionDocs) {
-    const activity = _getPlacementActivity(regionDocs);
+function _isOnSide(tokenDoc, side) {
+    if (tokenDoc.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) return true;
+    return _getAllyDisposition(tokenDoc) === side;
+}
+
+/**
+ * Resolve the token document that is using the activity.
+ * @param {Activity|null} activity
+ * @returns {TokenDocument|null}
+ */
+function _getSourceTokenDocument(activity) {
     if (!activity) return null;
-
-    const isHeal = activity.type === "heal";
-    const choosesTargets = !!(activity.target?.affects?.choice || activity.item?.system?.target?.affects?.choice);
-    const dealsDamage = !!activity.damage?.parts?.length;
-    if (!isHeal && !(choosesTargets && dealsDamage)) return null;
-
-    const actor = activity.actor ?? activity.item?.actor;
-    if (!actor) return null;
-
     let sourceToken = null;
     try {
         sourceToken = activity.getUsageToken?.() ?? null;
     } catch (err) {}
-    sourceToken ??= actor.getActiveTokens?.(false, true)?.[0] ?? actor.prototypeToken;
+    const actor = activity.actor ?? activity.item?.actor;
+    sourceToken ??= actor?.getActiveTokens?.(false, true)?.[0] ?? null;
+    return sourceToken;
+}
 
-    const casterDisposition = _getAllyDisposition(sourceToken, actor);
-    if (isHeal) return casterDisposition;
+/**
+ * Work out which tokens a template's activity can affect.
+ * - The activity's "Affects" type wins: "Ally" targets the caster's allies, "Enemy" the caster's opponents,
+ *   "Self" only the caster, and creature-only types skip vehicles.
+ * - Otherwise heal activities only target allies, and damage or save activities with "Choose Targets"
+ *   only target opponents. Neutral casters have no opponents; secret casters get no side filtering at all.
+ * @param {RegionDocument[]} regionDocs
+ * @returns {{side: number|null, selfOnly: boolean, creaturesOnly: boolean, sourceToken: TokenDocument|null}}
+ */
+function _getTemplateTargetFilter(regionDocs) {
+    const filter = { side: null, selfOnly: false, creaturesOnly: false, sourceToken: null };
+    const activity = _getPlacementActivity(regionDocs);
+    if (!activity) return filter;
 
-    const { FRIENDLY, HOSTILE } = CONST.TOKEN_DISPOSITIONS;
-    if (casterDisposition === FRIENDLY) return HOSTILE;
-    if (casterDisposition === HOSTILE) return FRIENDLY;
-    return null;
+    const actor = activity.actor ?? activity.item?.actor;
+    filter.sourceToken = _getSourceTokenDocument(activity);
+
+    const affectsType = activity.target?.affects?.type || activity.item?.system?.target?.affects?.type || "";
+    filter.creaturesOnly = CREATURE_ONLY_AFFECTS_TYPES.has(affectsType);
+    if (affectsType === "self") {
+        filter.selfOnly = true;
+        return filter;
+    }
+    if (!actor) return filter;
+
+    const { FRIENDLY, HOSTILE, SECRET } = CONST.TOKEN_DISPOSITIONS;
+    const casterSide = _getAllyDisposition(filter.sourceToken ?? actor.prototypeToken, actor);
+    // A secret caster is a wildcard too: its allies and opponents are unknown, so no side filtering
+    if (casterSide === SECRET) return filter;
+    const opponentSide = casterSide === FRIENDLY ? HOSTILE : casterSide === HOSTILE ? FRIENDLY : null;
+
+    if (affectsType === "ally") filter.side = casterSide;
+    else if (affectsType === "enemy") filter.side = opponentSide;
+    else if (activity.type === "heal") filter.side = casterSide;
+    else {
+        const choosesTargets = !!(activity.target?.affects?.choice || activity.item?.system?.target?.affects?.choice);
+        const isHarmful = !!activity.damage?.parts?.length || activity.type === "save";
+        if (choosesTargets && isHarmful) filter.side = opponentSide;
+    }
+    return filter;
+}
+
+/**
+ * Check whether a token can be caught in an area at all.
+ * Skips tokens without an actor, party groups, encounters and factions, Item Piles, and dead or defeated
+ * creatures. Creatures at 0 HP that are only unconscious stay targetable, so healing still reaches them.
+ * @param {Token} token
+ * @param {{creaturesOnly: boolean}} filter
+ * @returns {boolean}
+ */
+function _isTargetableToken(token, filter) {
+    const tokenDoc = token.document;
+    const actor = tokenDoc?.actor;
+    if (!actor) return false;
+    if (NON_TARGETABLE_ACTOR_TYPES.has(actor.type)) return false;
+    if (filter.creaturesOnly && (actor.type === "vehicle")) return false;
+    // Read the flag directly: getFlag() throws when the Item Piles module is not active
+    if (tokenDoc.flags?.["item-piles"]?.data?.enabled || actor.flags?.["item-piles"]?.data?.enabled) return false;
+    if (actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED)) return false;
+    if (tokenDoc.combatant?.isDefeated) return false;
+    return true;
 }
 
 /**
  * Calculate which tokens fall inside any of the specified Region documents.
- * Uses native TokenDocument#testInsideRegion() API.
- * Respects token visibility so non-GMs cannot auto-target hidden tokens.
+ * Uses native TokenDocument#testInsideRegion(), which already respects walls (the template region's
+ * restriction), elevation, scene levels and every square a large token occupies.
+ * Respects token visibility so non-GMs cannot auto-target hidden tokens, and skips GM-hidden tokens
+ * unless the caster is hidden too.
  * For cone, ray/line, and emanation templates, always excludes the originating token.
  *
  * @param {RegionDocument|RegionDocument[]} regionDocs  One or more Region documents to test against.
@@ -541,9 +638,23 @@ function _getTargetsForRegions(regionDocs) {
     const docs = Array.isArray(regionDocs) ? regionDocs : [regionDocs];
     if (!docs.length) return [];
 
-    const shouldExcludeOrigin = _shouldExcludeOrigin(docs);
+    // During live placement these only depend on the activity, its caster and the template shape, so they
+    // are computed once per placement instead of on every animation frame.
+    let filter;
+    let shouldExcludeOrigin;
+    if (_isPlacingRegion && _cachedTargetFilter) {
+        filter = _cachedTargetFilter;
+        shouldExcludeOrigin = _cachedExcludeOrigin;
+    } else {
+        filter = _getTemplateTargetFilter(docs);
+        shouldExcludeOrigin = !filter.selfOnly && _shouldExcludeOrigin(docs);
+        if (_isPlacingRegion) {
+            _cachedTargetFilter = filter;
+            _cachedExcludeOrigin = shouldExcludeOrigin;
+        }
+    }
     const originIds = shouldExcludeOrigin ? _getOriginatingTokenIds(docs) : null;
-    const requiredDisposition = _getTemplateTargetDisposition(docs);
+    const casterHidden = !!filter.sourceToken?.hidden;
 
     const targetIds = [];
     for (const token of canvas.tokens.placeables) {
@@ -552,30 +663,23 @@ function _getTargetsForRegions(regionDocs) {
         // Non-GMs cannot target tokens they cannot see
         if (!token.visible && !game.user.isGM) continue;
 
+        // GM-hidden tokens (staged reinforcements, secret watchers) are only caught by a hidden caster
+        if (token.document.hidden && !casterHidden) continue;
+
+        // "Self" activities only affect the caster
+        if (filter.selfOnly && (token.document !== filter.sourceToken)) continue;
+
         // For cone, ray/line, and emanation templates, always exclude the originating token
         if (originIds?.has(token.id)) continue;
 
-        // Heal activities only target allies, "Choose Targets" damage activities only target opponents
-        if ((requiredDisposition !== null) && (_getAllyDisposition(token.document) !== requiredDisposition)) continue;
+        if (!_isTargetableToken(token, filter)) continue;
+
+        // Ally / enemy filtering from the activity's Affects type, healing and "Choose Targets"
+        if ((filter.side !== null) && !_isOnSide(token.document, filter.side)) continue;
 
         let inside = false;
         for (const doc of docs) {
             try {
-                // Fast-path AABB pre-filtering: skip expensive polygon containment
-                // if the token's bounding box does not intersect the region's bounding box
-                const docBounds = doc.bounds ?? doc.object?.bounds;
-                if (docBounds) {
-                    const tw = token.w ?? (token.document?.width ? token.document.width * (canvas.grid?.size ?? 100) : 100);
-                    const th = token.h ?? (token.document?.height ? token.document.height * (canvas.grid?.size ?? 100) : 100);
-                    const tx = token.x;
-                    const ty = token.y;
-                    const overlaps = (tx <= docBounds.x + docBounds.width)
-                        && (tx + tw >= docBounds.x)
-                        && (ty <= docBounds.y + docBounds.height)
-                        && (ty + th >= docBounds.y);
-                    if (!overlaps) continue;
-                }
-
                 if (token.document.testInsideRegion(doc)) {
                     inside = true;
                     break;
