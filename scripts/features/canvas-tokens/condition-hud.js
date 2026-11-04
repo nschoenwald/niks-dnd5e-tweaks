@@ -8,6 +8,7 @@
  *
  * @introduced v14.63.0
  * @updated v14.63.2 (fixed equal-width columns; cut-off names show as tooltip)
+ * @updated v14.64.0 (gear in the hint line opens the Hidden Statuses setting)
  */
 import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -201,6 +202,21 @@ function _onRenderTokenHUD(app, element, context) {
         const hint = doc.createElement("p");
         hint.className = "nd5t-status-hint";
         hint.innerHTML = '<i class="fa-solid fa-computer-mouse" inert></i> Right-click: show as overlay, or lower the level';
+        if (game.user.can("SETTINGS_MODIFY")) {
+            // Shortcut to the Hidden Statuses setting in the dashboard.
+            const config = doc.createElement("a");
+            config.className = "nd5t-status-config";
+            config.dataset.tooltipText = "Choose which statuses are hidden";
+            config.setAttribute("role", "button");
+            config.setAttribute("aria-label", "Choose which statuses are hidden");
+            config.innerHTML = '<i class="fa-solid fa-gear" inert></i>';
+            config.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                game.modules.get(MODULE_ID)?.api?.openSettings("hudHiddenStatuses");
+            });
+            hint.append(config);
+        }
 
         palette.replaceChildren(...groups, hint);
         palette.classList.add("nd5t-status-palette");

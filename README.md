@@ -17,10 +17,12 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 ## ⚡ Quick Navigation
 
 - [📊 Feature Matrix (At a Glance)](#-feature-matrix-at-a-glance)
-- [🎨 User Interface & Visuals](#-user-interface--visuals)
+- [🎨 UI & Visuals](#-ui--visuals)
 - [🎯 Canvas & Tokens](#-canvas--tokens)
-- [⚔️ Combat & Automation](#-combat--automation)
-- [📜 Rules, Restrictions & Utilities](#-rules-restrictions--utilities)
+- [🏁 Combat Flow](#-combat-flow)
+- [💥 Rolls & Damage](#-rolls--damage)
+- [🌀 Conditions & Effects](#-conditions--effects)
+- [🔧 Utilities](#-utilities)
 - [🛠️ Silent System Patches](#️-silent-system-patches)
 - [⚙️ Settings Dashboard & Personal Preferences](#️-settings-dashboard--personal-preferences)
 - [🤝 Module Compatibility](#-module-compatibility)
@@ -53,50 +55,52 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Sidebar Multi-line Names](#sidebar-multi-line-names)** | UI & Visuals | ✅ Enabled | No |
 | **[NPC Hit Point Scaling Buttons](#npc-hit-point-scaling-buttons)** | UI & Visuals | ✅ Enabled | No |
 | **[Toolbar Limitation](#toolbar-limitation)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile-damage-trays-for-gm)** | UI & Visuals | ✅ Enabled | No |
-| **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-unowned-damage-trays-for-players)** | UI & Visuals | ✅ Enabled | No |
+| **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
+| **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Carolingian UI Theme Harmony](#carolingian-ui-theme-harmony)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Force Compendium Browser](#force-compendium-browser)** | UI & Visuals | ✅ Enabled | No |
+| **[Hide Private GM Rolls from Players](#hide-private-gm-rolls-from-players)** | UI & Visuals | ✅ Enabled | No |
 | **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
-| **[Prompt for Initiative](#prompt-for-initiative)** | Combat & Automation | ✅ Players | Yes |
-| **[Auto-Roll Initiative](#auto-roll-initiative)** | Combat & Automation | ❌ Disabled | Yes |
-| **[Auto-Add Tokens to Combat](#auto-add-tokens-to-combat)** | Combat & Automation | ✅ Enabled | No |
-| **[Prompt for Attack Damage](#prompt-for-attack-damage)** | Combat & Automation | ✅ For All | Yes |
-| **[Auto-Roll Attack Damage](#auto-roll-attack-damage)** | Combat & Automation | ❌ Disabled | Yes |
-| **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)](#conditional-damage-bonuses-sneak-attack-hex--hunters-mark)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Prone Rules (Crawling, Standing Up & Attacks)](#prone-rules)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
-| **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
-| **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
-| **[Magic Resistance Automation](#magic-resistance-automation)** | Combat & Automation | ✅ Enabled | No |
-| **[Auto-End Concentration](#auto-end-concentration)** | Combat & Automation | ✅ Enabled | No |
-| **[Damage Emanation Automation](#damage-emanation-automation)** | Combat & Automation | ✅ Prompt Caster | No |
-| **[Auto-End Class Features (Rage, etc.)](#auto-end-class-features)** | Combat & Automation | ✅ Enabled | No |
-| **[Self Effect Application Prompt](#self-effect-application-prompt)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat & Automation | ✅ Enabled | Yes |
-| **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat & Automation | ✅ Enabled | No |
-| **[Suppress Bloodied Condition on Dead Tokens](#suppress-bloodied-condition-on-dead-tokens)** | Combat & Automation | ✅ Enabled | No |
-| **[Player Damage Prompt](#player-damage-prompt)** | Combat & Automation | ❌ Disabled | Yes |
-| **[Auto-Apply Status at 0 HP](#auto-apply-status-at-0-hp)** | Combat & Automation | ❌ Disabled | No |
-| **[Healing Roll Context Menu](#healing-roll-context-menu)** | Combat & Automation | ✅ Enabled | No |
-| **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Combat & Automation | ❌ Disabled | No |
-| **[Combat Experience Tracker](#combat-experience-tracker)** | Combat & Automation | ❌ Disabled | No |
-| **[Force Compendium Browser](#force-compendium-browser)** | Rules & Utilities | ✅ Enabled | No |
-| **[Auto-Unpause When Logging In](#auto-unpause-when-logging-in)** | Rules & Utilities | ❌ Disabled | Yes (GM) |
-
+| **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Prompt for Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ✅ Players | Yes |
+| **[Auto-Roll Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ❌ Disabled | Yes |
+| **[Auto-Add Tokens to Combat](#auto-add-tokens-to-combat)** | Combat Flow | ✅ Enabled | No |
+| **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat Flow | ✅ Enabled | Yes |
+| **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat Flow | ✅ Enabled | No |
+| **[Suppress Bloodied Condition on Dead Tokens](#suppress-bloodied-condition-on-dead-tokens)** | Combat Flow | ✅ Enabled | No |
+| **[Auto-Apply Status at 0 HP](#auto-apply-status-at-0-hp)** | Combat Flow | ❌ Disabled | No |
+| **[Combat Experience Tracker](#combat-experience-tracker)** | Combat Flow | ❌ Disabled | No |
+| **[Prompt for Attack Damage](#prompt--auto-roll-attack-damage)** | Rolls & Damage | ✅ For All | Yes |
+| **[Auto-Roll Attack Damage](#prompt--auto-roll-attack-damage)** | Rolls & Damage | ❌ Disabled | Yes |
+| **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)](#conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Rolls & Damage | ✅ Enabled | No |
+| **[Player Damage Prompt](#player-damage-prompt)** | Rolls & Damage | ❌ Disabled | Yes |
+| **[Healing Roll Context Menu](#healing-roll-context-menu)** | Rolls & Damage | ✅ Enabled | No |
+| **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Conditions & Effects | ✅ Enabled | No |
+| **[Prone Rules (Crawling, Standing Up & Attacks)](#prone-rules)** | Conditions & Effects | ✅ Enabled | Yes |
+| **[Auto-Roll / Prompt Concentration Saves](#auto-roll--prompt-concentration-saves)** | Conditions & Effects | ✅ NPCs Only | No |
+| **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Conditions & Effects | ✅ Enabled | No |
+| **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
+| **[Auto-End Concentration](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
+| **[Damage Emanation Automation](#damage-emanation-automation)** | Conditions & Effects | ✅ Prompt Caster | No |
+| **[Auto-End Class Features (Rage, etc.)](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
+| **[Self Effect Application Prompt](#self-effect-application-prompt)** | Conditions & Effects | ✅ Enabled | Yes |
+| **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Conditions & Effects | ❌ Disabled | No |
+| **[Auto-Unpause When Logging In](#auto-unpause-when-logging-in)** | Utilities | ❌ Disabled | Yes (GM) |
+| **[Debug Mode](#debug-mode)** | Utilities | ❌ Disabled | No |
 ---
 
-## 🎨 User Interface & Visuals
+## 🎨 UI & Visuals
 
 ### Retroactive Advantage / Disadvantage
 Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly below the dice roll bar on d20 check, save, and attack roll chat cards.
@@ -198,8 +202,17 @@ Color-codes right-click context menu options across sheets, compendiums, directo
 ### Reliable Chat Log Auto-Scroll
 Fixes the native DnD5e chat log failing to auto-scroll when new cards appear or trays expand, while preserving scroll position when reading older history.
 
+### Hide Private GM Rolls from Players
+Whispered, private and blind rolls made by the GM no longer show up for players as empty placeholder cards in the chat log.
+
 ### Actor Directory Disposition Dots
 Displays colored disposition dots (Friendly, Neutral, Hostile, Secret) next to actor names in the sidebar.
+
+### Blood Drop Bloodied Icon
+Replaces the D&D 5e **Bloodied** condition icon with a red blood drop, so bloodied tokens are easier to spot. Takes effect after reloading.
+
+### Sidebar Multi-line Names
+Long names of actors, items, scenes and other documents in the right sidebar wrap onto several lines instead of being cut off.
 
 ### Cursor Keyboard Hints
 Displays subtle floating modifier icons near the mouse cursor when holding keys for Skip Dialog, Advantage, or Disadvantage.
@@ -225,12 +238,30 @@ Fixes chat log spam during short rests when characters roll multiple hit dice:
 * **Consolidated Tiny Changelogs**: When `niks-tiny-changelogs` is active, suppresses individual per-roll messages and outputs exactly two consolidated entries: one for total Hit Dice expended and one for total HP gained.
 * **Anti-Cheat & Save-Scumming Prevention**: Hit dice and HP changes are committed to the database immediately on every roll. Closing or canceling the short rest dialog after rolling dice immediately posts the aggregated card and changelogs for the dice rolled, preventing roll-fishing or re-rolling bad outcomes.
 
+### Force Compendium Browser
+Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendium Browser instead of the raw pack directory. Hold <kbd>Shift</kbd> to access the default sidebar.
+
 ### Carolingian UI Theme Harmony
 Seamlessly adapts the Settings Dashboard, floating canvas HUDs, and damage cards to **Carolingian UI** color palettes, typography, top scene navigation offsets, and Combat Carousel legendary action placeholders.
 
 ---
 
 ## 🎯 Canvas & Tokens
+
+### Token HUD Condition Palette
+Replaces the Token HUD's grid of small status icons with a labelled list:
+* **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one. The three columns have a fixed width; very long names (some modules add these) are shortened and show in full on hover.
+* **Grouped**: The system's conditions (Blinded to Unconscious) come first, other effects (Concentrating, Bleeding, Flying, …) below them.
+* **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
+* **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
+* **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
+* Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
+
+### Clear Targets Token Control Button
+Adds a dedicated crosshair button to the canvas Token Controls toolbar, positioned directly below the core Select Targets button. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
+
+### Disable Underground Token Hiding
+Prevents tokens with negative elevation from disappearing behind the scene background layer.
 
 ### Template Placement Controls HUD & Scroll Rotation
 A floating glassmorphic banner appears during spell and item template placement:
@@ -253,6 +284,12 @@ Automatically selects and targets tokens inside spell templates during placement
 * **Chat Synchronization**: Updates targets directly on spell chat cards for subsequent saving throws and damage application.
 * **GM Privacy**: Non-GM players only target tokens visible to them. Areas placed by the GM skip hidden tokens unless the caster is hidden too.
 
+### Snap Templates to Grid Intersections
+Snaps circle, ring and square spell templates to grid intersections instead of cell centers. On hex grids, circles and rings snap to hex centers and squares keep the default Foundry snapping. Cones, lines and emanations are not affected. Hold <kbd>Shift</kbd> while placing to override snapping.
+
+### Auto-Attach Self Emanation Templates
+When a creature uses something with an emanation area centered on itself (e.g. *Spirit Guardians*, Paladin auras), the template is attached to its token right away, without placing it on the canvas. Players can turn this off for themselves.
+
 ### Enhanced Summoning Placement HUD & Range Preview
 Appears during creature summoning activities (*Find Familiar*, *Summon Celestial*, etc.):
 * **Live Distance Measurement**: Real-time distance readout with emerald `✓ In Range` and crimson `⚠ Out of Range` status badges.
@@ -267,100 +304,44 @@ Improves teleport preset destination picking (*Misty Step*, *Dimension Door*):
 * Real-time status badges for valid range, out-of-range, and wall collision.
 * Uninterrupted right-click canvas panning and clean <kbd>ESC</kbd> / Cancel flow.
 
-### Token HUD Condition Palette
-Replaces the Token HUD's grid of small status icons with a labelled list:
-* **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one. The three columns have a fixed width; very long names (some modules add these) are shortened and show in full on hover.
-* **Grouped**: The system's conditions (Blinded to Unconscious) come first, other effects (Concentrating, Bleeding, Flying, …) below them.
-* **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
-* **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
-* **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
-* Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
+---
 
-### Auto-Rotate Prone / Unconscious / Dead Tokens
-Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
+## 🏁 Combat Flow
 
-### Snap Templates to Grid Intersections
-Snaps circle, ring and square spell templates to grid intersections instead of cell centers. On hex grids, circles and rings snap to hex centers and squares keep the default Foundry snapping. Cones, lines and emanations are not affected. Hold <kbd>Shift</kbd> while placing to override snapping.
+### Auto-Add Tokens to Combat
+Tokens created or dragged onto the scene while a combat is running are added to the combat automatically.
 
-### Clear Targets Token Control Button
-Adds a dedicated crosshair button to the canvas Token Controls toolbar, positioned directly below the core Select Targets button. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
+### Prompt / Auto-Roll Initiative
+* **Prompt for Initiative**: Prompts players with initiative dialogs when added to combat (with whispered cards for offline players).
+* **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
 
-### Disable Underground Token Hiding
-Prevents tokens with negative elevation from disappearing behind the scene background layer.
+### Legendary Action Placeholders
+Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
+* *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
+
+### Auto-Apply Status at 0 HP
+Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat.
+
+### Prompt for Death Saves
+Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.
+
+### Suppress Bloodied Condition on Dead Tokens
+Dynamically removes the Bloodied icon and status when a creature dies or reaches 0 HP, restoring it if revived below 50% HP.
+
+### Combat Experience Tracker
+Tallies hostile NPC XP at the end of combat with a one-click button for the GM to distribute experience evenly among players.
 
 ---
 
-## ⚔️ Combat & Automation
-
-### Auto-Roll / Prompt Concentration Saves
-Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage.
-* **Player Ownership**: Prompts are delivered directly to the connected player owning the character.
-* **Concentration Badges**: Chat cards feature an interactive **"Concentrating on: [Spell]"** badge with sheet shortcuts.
-* **One-Click End**: Appends an **End Concentration** button directly to roll cards.
-* **Boon of the Iron Mind**: Automatically exempts characters with *Unshakable Focus*.
-* *Sub-settings*: **Fast-Forward Rolls** (NPCs Only, All, Players Only, Never), **Auto-End Concentration on Failure**.
-
-### Mage Slayer: Concentration Disadvantage
-Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens.
-
-### Magic Resistance Automation
-Creatures with **Magic Resistance** automatically roll saving throws against spells and magical effects with Advantage. Works when the save is rolled from a spell's or feature's chat card (including inline save links in chat). The roll dialog opens with Advantage pre-selected, and Disadvantage still cancels it out as usual.
-* **Recognized Features**: Magic Resistance (monsters, Yuan-ti, Satyr), Spell Resistance (School of Abjuration, spells only), Gnome Cunning (2014, Intelligence, Wisdom and Charisma saves only) and an equipped, attuned Mantle of Spell Resistance (spells only). Homebrew features named "Magic Resistance" or "Spell Resistance" are recognized too.
-* **Homebrew Flag**: Give any actor Magic Resistance with an Active Effect or flag `flags.niks-dnd5e-tweaks.magicResistance` = `true` (spells and magical effects) or `spell` (spells only).
-* **Magical Monster Abilities**: Tick the **Magical** property on a monster feature (for example a Banshee's Wail) to make Magic Resistance apply against it. Breath weapons, claws and other mundane abilities are not affected.
-* **Not Affected**: Concentration saves, death saves, and saves rolled from the character sheet without a source. Use the Retroactive Advantage buttons for edge cases.
-* *Sub-settings*: **What Counts as Magical** (Spells Only, Spells & Magic Items, Spells, Magic Items & Magical Features).
-
-### Auto-End Concentration & Class Features
-* **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
-* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
-
-### Damage Emanation Automation
-Handles the "enters the area or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*, and of placed areas such as *Moonbeam*, *Cloudkill* and *Doomtide*:
-* **Triggers**: A creature enters the area, the area moves into a creature's space (an emanation moving with its caster, or *Moonbeam* being moved), or a creature ends its turn inside it.
-* **Who Is Affected**: An emanation centered on the caster never affects the caster. Placed areas such as *Moonbeam* and *Cloudkill* affect every creature inside, including the caster and their allies, as written.
-* **Drifting Areas** (optional, off by default): *Cloudkill* and *Doomtide* move 10 ft straight away from the caster at the start of each of the caster's turns. Creatures the area moves onto make their save. If the area is centered exactly on the caster, it stays put so the GM can move it.
-* **Once Per Turn**: Each creature makes the save only once per turn for each emanation.
-* **Casting Is Left Alone**: Creatures already inside when the spell is cast are handled by the spell's own cast activity and aren't triggered again by the emanation.
-* **Only Real Movement Counts**: Turning the emanation's behavior off and on, revealing a hidden emanation, or placing or summoning a token inside it doesn't count as entering.
-* **Batched**: Creatures triggered at the same moment (for example when the caster walks past several enemies) share one save card. In the prompt modes, creatures triggered later in the same turn are added to that turn's card until someone rolls or skips it. Creatures sharing an initiative count (for example a group of identical monsters taking their turns one after another) share a card too.
-* **Native Save Card**: Uses the spell's save activity at the level it was cast, without spending a spell slot. Save buttons, half damage, damage application and conditions such as Deafened (*Cacophonic Shield*) or Prone (*Dirge*) work as usual. Conditions applied from it end when the caster stops concentrating.
-* **Moving Moonbeam**: Move the *Moonbeam* area on the Regions layer when the caster takes the Magic action to move it. Creatures it moves onto make their save.
-* **Emanation Always Placed**: Casting a listed spell always offers to place its emanation, even if the spell's casting activity has template placement turned off (*Yolande's Regal Presence*).
-* **Upcasting**: Damage scales with the slot the spell was cast with, including Pact Magic slots.
-* **Concentration Cleanup**: The emanation or area is removed from the scene when the caster stops concentrating on the spell.
-* **Trigger Mode**: **Prompt Caster** (default) whispers a card to the caster's owners and the GM, listing the triggered creatures with checkboxes and **Roll Saves** / **Skip** buttons. Only the first click counts, so the saves are never rolled twice. **Prompt GM Only** sends it to the GM only. **Automatic** rolls straight away.
-* **Other Spells**: Add spell identifiers to the **Emanation Spells** list, or add the **Damage Emanation** behavior in an activity's **Behaviors** tab and pick its save activity.
-* *Sub-settings*: **Trigger Mode**, **Emanation Spells**, **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected by emanations centered on the caster or by spells that let the caster choose, default on), **Move Drifting Areas** (*Cloudkill* and *Doomtide*, default off), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
+## 💥 Rolls & Damage
 
 ### Prompt / Auto-Roll Attack Damage
 * **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.
 * **Auto-Roll Attack Damage**: Immediately rolls damage on hit without opening a dialog.
 * **Auto-Roll Flat / Static Damage**: Automatically rolls flat bonuses without opening dialogs if formulas have no dice.
 
-### Prompt / Auto-Roll Initiative
-* **Prompt for Initiative**: Prompts players with initiative dialogs when added to combat (with whispered cards for offline players).
-* **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
-
 ### Auto-Open Damage Dialog for Saves
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
-
-### Weapon Mastery Automation
-Automatically handles weapon masteries when player characters deal damage with mastery weapons:
-* **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
-* **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the roll dialog opens right away for the creature's player (or for the GM if no owner is online), just like concentration saves. The card shows the outcome once the save is rolled, and stays clickable if the dialog is closed. The GM can switch to the prompt card only, or to rolling the save automatically. If a creature spends a Legendary Resistance on the failed save (the system's Resist button on the save card), Prone is removed again and the prompt card says so. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
-* **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
-* **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
-* **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
-* **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
-* **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
-* *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
-
-### Prone Rules
-The system only stops Prone creatures from flying, climbing or swimming. This feature adds the rest of the Prone rules. Each rule can be turned off on its own:
-* **Crawl While Prone**: A Prone token switches to the **Crawl** movement action, and back to what it used before once it stands up. Walking while Prone costs 1 extra foot per foot, just like crawling, so a creature with 30 ft of Speed can crawl 15 ft. Follows the system's *Movement Automation* setting: with automation off, movement costs are left alone.
-* **Standing Up Costs Half Speed**: Removing Prone on the creature's own turn in combat costs half its Speed (rounded down). The cost is added to the first step the creature takes after standing up, so the ruler shows it and the system's speed limit counts it. Undoing that move gives the movement back, and the next move pays it again. A player can't remove Prone without enough movement left this turn (or with a Speed of 0) and gets a message instead; the GM gets a warning but can still remove it. Outside combat, or on another creature's turn, standing up is free.
-* **Prone Attack Rolls**: A Prone attacker has Disadvantage on attack rolls. An attack roll against a Prone creature has Advantage if the attacker is within 5 feet of it (measured between the closest spaces, including height), and Disadvantage otherwise. Both apply together, so a Prone creature attacking a Prone creature next to it rolls normally. The roll dialog opens with the right mode already selected. Only applied when the attack has a single target. Switched off while Automated Conditions 5e is active, which handles this itself.
 
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
 
@@ -384,6 +365,77 @@ Offers seamless toggles in damage roll configuration dialogs for conditional dam
 ### Prevent Rolling as Group Actors
 Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.
 
+### Player Damage Prompt
+Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP. The breakdown uses the system's own damage calculation, so it matches what is applied, including magical weapons bypassing resistance. On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability (or turn immunity into resistance) are respected by both the breakdown and the Apply button.
+
+### Healing Roll Context Menu
+Adds **Apply Damage**, **Apply Healing** and **Apply Temp HP** to the right-click menu of healing roll chat cards. Takes effect after reloading.
+
+### Weapon Mastery Automation
+Automatically handles weapon masteries when player characters deal damage with mastery weapons:
+* **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
+* **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the roll dialog opens right away for the creature's player (or for the GM if no owner is online), just like concentration saves. The card shows the outcome once the save is rolled, and stays clickable if the dialog is closed. The GM can switch to the prompt card only, or to rolling the save automatically. If a creature spends a Legendary Resistance on the failed save (the system's Resist button on the save card), Prone is removed again and the prompt card says so. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
+* **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
+* **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
+* **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
+* **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
+* **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
+* *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
+
+---
+
+## 🌀 Conditions & Effects
+
+### Prone Rules
+The system only stops Prone creatures from flying, climbing or swimming. This feature adds the rest of the Prone rules. Each rule can be turned off on its own:
+* **Crawl While Prone**: A Prone token switches to the **Crawl** movement action, and back to what it used before once it stands up. Walking while Prone costs 1 extra foot per foot, just like crawling, so a creature with 30 ft of Speed can crawl 15 ft. Follows the system's *Movement Automation* setting: with automation off, movement costs are left alone.
+* **Standing Up Costs Half Speed**: Removing Prone on the creature's own turn in combat costs half its Speed (rounded down). The cost is added to the first step the creature takes after standing up, so the ruler shows it and the system's speed limit counts it. Undoing that move gives the movement back, and the next move pays it again. A player can't remove Prone without enough movement left this turn (or with a Speed of 0) and gets a message instead; the GM gets a warning but can still remove it. Outside combat, or on another creature's turn, standing up is free.
+* **Prone Attack Rolls**: A Prone attacker has Disadvantage on attack rolls. An attack roll against a Prone creature has Advantage if the attacker is within 5 feet of it (measured between the closest spaces, including height), and Disadvantage otherwise. Both apply together, so a Prone creature attacking a Prone creature next to it rolls normally. The roll dialog opens with the right mode already selected. Only applied when the attack has a single target. Switched off while Automated Conditions 5e is active, which handles this itself.
+
+### Auto-Rotate Prone / Unconscious / Dead Tokens
+Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
+
+### Auto-Roll / Prompt Concentration Saves
+Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage.
+* **Player Ownership**: Prompts are delivered directly to the connected player owning the character.
+* **Concentration Badges**: Chat cards feature an interactive **"Concentrating on: [Spell]"** badge with sheet shortcuts.
+* **One-Click End**: Appends an **End Concentration** button directly to roll cards.
+* **Boon of the Iron Mind**: Automatically exempts characters with *Unshakable Focus*.
+* *Sub-settings*: **Fast-Forward Rolls** (NPCs Only, All, Players Only, Never), **Auto-End Concentration on Failure**.
+
+### Mage Slayer: Concentration Disadvantage
+Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens.
+
+### Auto-End Concentration & Class Features
+* **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
+* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
+
+### Magic Resistance Automation
+Creatures with **Magic Resistance** automatically roll saving throws against spells and magical effects with Advantage. Works when the save is rolled from a spell's or feature's chat card (including inline save links in chat). The roll dialog opens with Advantage pre-selected, and Disadvantage still cancels it out as usual.
+* **Recognized Features**: Magic Resistance (monsters, Yuan-ti, Satyr), Spell Resistance (School of Abjuration, spells only), Gnome Cunning (2014, Intelligence, Wisdom and Charisma saves only) and an equipped, attuned Mantle of Spell Resistance (spells only). Homebrew features named "Magic Resistance" or "Spell Resistance" are recognized too.
+* **Homebrew Flag**: Give any actor Magic Resistance with an Active Effect or flag `flags.niks-dnd5e-tweaks.magicResistance` = `true` (spells and magical effects) or `spell` (spells only).
+* **Magical Monster Abilities**: Tick the **Magical** property on a monster feature (for example a Banshee's Wail) to make Magic Resistance apply against it. Breath weapons, claws and other mundane abilities are not affected.
+* **Not Affected**: Concentration saves, death saves, and saves rolled from the character sheet without a source. Use the Retroactive Advantage buttons for edge cases.
+* *Sub-settings*: **What Counts as Magical** (Spells Only, Spells & Magic Items, Spells, Magic Items & Magical Features).
+
+### Damage Emanation Automation
+Handles the "enters the area or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*, and of placed areas such as *Moonbeam*, *Cloudkill* and *Doomtide*:
+* **Triggers**: A creature enters the area, the area moves into a creature's space (an emanation moving with its caster, or *Moonbeam* being moved), or a creature ends its turn inside it.
+* **Who Is Affected**: An emanation centered on the caster never affects the caster. Placed areas such as *Moonbeam* and *Cloudkill* affect every creature inside, including the caster and their allies, as written.
+* **Drifting Areas** (optional, off by default): *Cloudkill* and *Doomtide* move 10 ft straight away from the caster at the start of each of the caster's turns. Creatures the area moves onto make their save. If the area is centered exactly on the caster, it stays put so the GM can move it.
+* **Once Per Turn**: Each creature makes the save only once per turn for each emanation.
+* **Casting Is Left Alone**: Creatures already inside when the spell is cast are handled by the spell's own cast activity and aren't triggered again by the emanation.
+* **Only Real Movement Counts**: Turning the emanation's behavior off and on, revealing a hidden emanation, or placing or summoning a token inside it doesn't count as entering.
+* **Batched**: Creatures triggered at the same moment (for example when the caster walks past several enemies) share one save card. In the prompt modes, creatures triggered later in the same turn are added to that turn's card until someone rolls or skips it. Creatures sharing an initiative count (for example a group of identical monsters taking their turns one after another) share a card too.
+* **Native Save Card**: Uses the spell's save activity at the level it was cast, without spending a spell slot. Save buttons, half damage, damage application and conditions such as Deafened (*Cacophonic Shield*) or Prone (*Dirge*) work as usual. Conditions applied from it end when the caster stops concentrating.
+* **Moving Moonbeam**: Move the *Moonbeam* area on the Regions layer when the caster takes the Magic action to move it. Creatures it moves onto make their save.
+* **Emanation Always Placed**: Casting a listed spell always offers to place its emanation, even if the spell's casting activity has template placement turned off (*Yolande's Regal Presence*).
+* **Upcasting**: Damage scales with the slot the spell was cast with, including Pact Magic slots.
+* **Concentration Cleanup**: The emanation or area is removed from the scene when the caster stops concentrating on the spell.
+* **Trigger Mode**: **Prompt Caster** (default) whispers a card to the caster's owners and the GM, listing the triggered creatures with checkboxes and **Roll Saves** / **Skip** buttons. Only the first click counts, so the saves are never rolled twice. **Prompt GM Only** sends it to the GM only. **Automatic** rolls straight away.
+* **Other Spells**: Add spell identifiers to the **Emanation Spells** list, or add the **Damage Emanation** behavior in an activity's **Behaviors** tab and pick its save activity.
+* *Sub-settings*: **Trigger Mode**, **Emanation Spells**, **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected by emanations centered on the caster or by spells that let the caster choose, default on), **Move Drifting Areas** (*Cloudkill* and *Doomtide*, default off), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
+
 ### Self Effect Application Prompt
 When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*, *Blur*), whispers a chat card with one-click **Apply** and **Undo** buttons.
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
@@ -392,31 +444,12 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Patient Defense (Focus Point)`, `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
 * Both name lists are edited in the settings dashboard with an **Edit List** button that opens a pop-out editor: search the list, add entries (Enter, or paste several separated by commas), remove them individually, or reset to the defaults. Lists are kept sorted alphabetically without duplicates.
 
-### Legendary Action Placeholders
-Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
-* *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
-
-### Prompt for Death Saves
-Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.
-
-### Suppress Bloodied Condition on Dead Tokens
-Dynamically removes the Bloodied icon and status when a creature dies or reaches 0 HP, restoring it if revived below 50% HP.
-
-### Auto-Apply Status at 0 HP
-Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat.
-
-### Player Damage Prompt
-Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP. The breakdown uses the system's own damage calculation, so it matches what is applied, including magical weapons bypassing resistance. On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability (or turn immunity into resistance) are respected by both the breakdown and the Apply button.
-
-### Combat Experience Tracker
-Tallies hostile NPC XP at the end of combat with a one-click button for the GM to distribute experience evenly among players.
+### Disable Active Effect Expiry
+Stops D&D 5e from ending and deleting Active Effects on its own (out of combat, at the end of combat, on a rest, and at turn-based expiry). Effects stay until you turn them off or remove them. Off by default.
 
 ---
 
-## 📜 Rules, Restrictions & Utilities
-
-### Force Compendium Browser
-Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendium Browser instead of the raw pack directory. Hold <kbd>Shift</kbd> to access the default sidebar.
+## 🔧 Utilities
 
 ### Auto-Unpause When Logging In
 Per-user GM setting to automatically unpause the world upon login (**Always**, **When no players connected**, or **Never**).
@@ -441,12 +474,29 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 
 ## ⚙️ Settings Dashboard & Personal Preferences
 
-All features are managed in the **Settings Dashboard** accessible via *Configure Settings > Nik's DnD5e Tweaks*:
+All features are managed in the **Settings Dashboard**, opened from *Configure Settings → Nik's DnD5e Tweaks → Configure Module*. When there are settings you haven't seen yet, that button shows how many.
 
-* **World Settings (GMs & Authorized Users)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities. Fully supports Foundry's native **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, allowing Assistant GMs or trusted players with settings rights to configure and save world settings just like a GM.
-* **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GMs and authorized users with `SETTINGS_MODIFY`, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
-* **Player-First Access**: When non-authorized players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, world settings are shown read-only (disabled), and the "Reset Defaults" action resets only their personal client settings.
+**Finding settings**
+* **Overview**: The first tab shows every feature as a card with a one-line summary, whether it is on, and a switch to turn it on or off. Click a feature's name to jump to all its options.
+* **Tabs**: The settings are grouped like this README: UI & Visuals, Canvas & Tokens, Combat Flow, Rolls & Damage, Conditions & Effects, Utilities & Debug, and Personal Preferences.
+* **Search**: Finds settings by name, description and related terms (e.g. *Topple* finds Weapon Mastery, *Misty Step* the teleport UI, *Sneak Attack* the conditional damage bonuses). Words can be in any order. Matches are highlighted and every tab with results shows how many it has. Press <kbd>Enter</kbd> to jump to the first one, <kbd>Esc</kbd> to clear the search.
+* **Quick filters**: Show only settings that are **Changed** from their default, **New** since you last opened the dashboard, **Turned Off**, that **Need a Reload**, or that are **Handled Elsewhere** by another module. Filters combine with each other and with the search.
+* **Short or full descriptions**: Descriptions take one line by default; click one to read it in full, or switch to full descriptions in the header.
+* **Docs**: The ⓘ next to a feature (and *Docs* on its card) opens its section of this README.
+
+**Discovering features**
+* **New since you last looked**: The Overview lists settings added since you last opened the dashboard, they carry a **New** badge, and each tab shows how many new settings it holds.
+* **World and personal settings are linked**: A world setting that players can change for themselves shows *Personal: …* with your own choice; the personal setting shows *World: …* and is dimmed when the world setting is off, since it has no effect then. Click either to jump to the other.
+* **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros and other modules can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
+
+**Changing settings**
+* **Changed from default**: A dot after the name marks a setting that differs from its default; the ↺ button next to it puts it back.
+* **Unsaved changes**: Edited settings get a colored bar, and *Save Changes* shows how many are pending. Closing the dashboard with unsaved changes asks first.
+* **World Settings (GMs & Authorized Users)**: Fully supports Foundry's **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, so Assistant GMs or trusted players with that permission can change world settings like a GM.
+* **Personal Preferences (All Players & GMs)**: Settings stored in your own browser (`scope: "client"`). Players turn prompts, auto-rolls and interface tweaks on or off for their own screen without changing anything for others. For GMs this tab is at the bottom.
+* **Players**: Players without settings permission see their Personal Preferences first and an **Active in This World** tab that lists the features the GM turned on, each linked to their own choice. "Reset Defaults" resets only their personal settings.
 * **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
+* **Backup**: *Export JSON* saves all settings to a file; *Import JSON* loads them into a world.
 
 ---
 

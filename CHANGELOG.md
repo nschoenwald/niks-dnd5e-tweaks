@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.64.0] - 2026-11-04
+### Added
+- **Settings Dashboard**: A new **Overview** tab shows every feature as a card with a short summary, whether it is on, a switch to turn it on or off, and a link to its documentation. Click a feature's name to see all its options.
+- **Settings Dashboard**: Quick filters show only settings that are changed from their default, new, turned off, need a reload, or are handled by another module.
+- **Settings Dashboard**: New settings are marked **New** until you've opened the dashboard once, the Overview lists them, and the dashboard button in Configure Settings shows how many there are.
+- **Settings Dashboard**: World settings and the matching personal settings now point to each other. Your personal setting shows whether the world setting is on and is dimmed when it is off, since it has no effect then.
+- **Settings Dashboard**: Settings changed from their default are marked and can be reset one by one. *Save Changes* shows how many changes are unsaved, and closing with unsaved changes asks first.
+- **Settings Dashboard**: Every feature links to its section in the documentation.
+- **Token HUD Condition Palette**: A gear at the bottom of the palette opens the Hidden Statuses setting (for users who can change settings).
+- Macros and other modules can open the dashboard at a setting with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
+
+### Changed
+- **Settings Dashboard**: Search finds settings by related terms too (e.g. *Topple*, *Misty Step*, *Sneak Attack*), words can be in any order, and matches are highlighted. Press Enter to jump to the first result. Switching tabs no longer clears the search.
+- **Settings Dashboard**: Descriptions take one line by default. Click one to read it in full, or switch to full descriptions in the header.
+- **Settings Dashboard**: The large Combat & Automation tab is split into **Combat Flow**, **Rolls & Damage** and **Conditions & Effects**. Canvas & Tokens is split into tokens and template placement, and the two Prone features now sit together.
+- **Settings Dashboard**: Players see their Personal Preferences and an **Active in This World** list of the features the GM turned on, instead of every world setting greyed out.
+- The README is grouped like the dashboard tabs, and the features that had no description there now have one.
+
 ## [14.63.2] - 2026-11-04
 ### Fixed
 - **Token HUD Condition Palette**: A single long status name (such as midi-qol's "Invisible (until it attacks…)") no longer widens its column and stretches the whole palette. All columns now have the same width; long names are shortened and show in full when you hover over them.

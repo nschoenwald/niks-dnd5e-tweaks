@@ -74,7 +74,7 @@ import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-sp
 import { initFixPlaceablesSidebarTab } from "./features/patches/fix-placeables-sidebar-tab.js";
 
 // Settings Dashboard
-import { NiksTweaksSettingsApp } from "./settings-app.js";
+import { NiksTweaksSettingsApp, refreshSettingsMenuBadge } from "./settings-app.js";
 
 
 
@@ -218,6 +218,32 @@ Hooks.once("init", () => {
         type: NiksTweaksSettingsApp,
         restricted: false
     });
+
+    // Dashboard view state: the version this user last opened it in ("New" badges) and the description length.
+    game.settings.register(MODULE_ID, "dashboardLastSeenVersion", {
+        scope: "client",
+        config: false,
+        type: String,
+        default: ""
+    });
+
+    game.settings.register(MODULE_ID, "dashboardFullHints", {
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
+    // Public API: open the dashboard at a setting, e.g. from a macro or another module.
+    const moduleData = game.modules.get(MODULE_ID);
+    if (moduleData) {
+        moduleData.api = {
+            openSettings: (key) => NiksTweaksSettingsApp.open({ key })
+        };
+    }
+
+    // "N new" on the dashboard button in Configure Settings
+    Hooks.on("renderSettingsConfig", (app, element) => refreshSettingsMenuBadge(element));
 
     // ==========================================
     // GROUP 0: Client & Personal Settings

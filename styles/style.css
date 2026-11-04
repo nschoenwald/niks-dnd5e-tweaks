@@ -718,9 +718,9 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 .nd5t-dashboard-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px 8px;
     background: rgba(0, 0, 0, 0.35);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     gap: 12px;
@@ -1268,6 +1268,561 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 .nd5t-btn-clear-search:hover {
     background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Findability: header row, filters, overview, change markers ─────── */
+/* Accent for the dashboard's own elements; Carolingian UI harmony swaps it for its highlight color. */
+.nd5t-settings-app {
+    --nd5t-dash-accent: #ff6400;
+    --nd5t-dash-accent-soft: rgba(255, 100, 0, 0.18);
+    --nd5t-dash-new: #facc15;
+}
+
+.nd5t-settings-app [hidden] {
+    display: none !important;
+}
+
+/* Core gives every button a fixed height and centered content; these are text-like controls. */
+.nd5t-settings-app :is(.nd5t-link, .nd5t-feature-name, .nd5t-pair-chip, .nd5t-filter-chip, .nd5t-hint-toggle, .nd5t-row-reset) {
+    min-height: 0;
+    flex-wrap: nowrap;
+}
+
+.nd5t-settings-app :is(.nd5t-link, .nd5t-feature-name) {
+    display: block;
+    height: auto;
+    text-align: left;
+}
+
+.nd5t-settings-app .nd5t-pair-chip,
+.nd5t-settings-app .nd5t-filter-chip {
+    height: auto;
+}
+
+.nd5t-settings-app .nd5t-nav-tab {
+    justify-content: flex-start;
+    height: auto;
+    min-height: 0;
+}
+
+/* The dashboard has its own clear button. */
+.nd5t-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.nd5t-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nd5t-search-status kbd {
+    padding: 0 4px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 10.5px;
+    font-family: inherit;
+}
+
+.nd5t-hint-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 5px;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.nd5t-hint-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.nd5t-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.nd5t-filter-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.nd5t-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    height: auto;
+    padding: 2px 9px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    line-height: 18px;
+    cursor: pointer;
+}
+
+.nd5t-filter-chip i {
+    font-size: 10px;
+}
+
+.nd5t-filter-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.nd5t-filter-chip.active {
+    background: var(--nd5t-dash-accent-soft);
+    border-color: var(--nd5t-dash-accent);
+    color: #ffffff;
+}
+
+.nd5t-filter-count {
+    min-width: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.nd5t-filter-chip.active .nd5t-filter-count {
+    background: var(--nd5t-dash-accent);
+}
+
+/* Tabs: "new" count, and dimmed tabs without results while searching */
+.nd5t-nav-tab .tab-new {
+    margin-left: auto;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--nd5t-dash-new);
+    color: #1b1b1b;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.nd5t-filtering .nd5t-nav-tab .tab-new {
+    display: none;
+}
+
+.nd5t-nav-tab.nd5t-no-matches {
+    opacity: 0.4;
+}
+
+/* Hidden by search or filters */
+.nd5t-settings-app .nd5t-row-hidden {
+    display: none !important;
+}
+
+/* While searching or filtering, every tab with results is listed; the overview steps aside. */
+.nd5t-filtering .nd5t-tab-panel.nd5t-overview {
+    display: none;
+}
+
+.nd5t-filtering .nd5t-tab-panel.active + .nd5t-tab-panel.active {
+    margin-top: 10px;
+}
+
+/* Short descriptions: one line, click to open. Search matches inside a description open it too. */
+.nd5t-setting-hint {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.nd5t-full-hints .nd5t-setting-hint,
+.nd5t-setting-row.nd5t-hint-open .nd5t-setting-hint,
+.nd5t-filtering .nd5t-setting-row.nd5t-hint-match .nd5t-setting-hint {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: none;
+}
+
+.nd5t-setting-hint:hover {
+    color: #cbd5e1;
+}
+
+.nd5t-settings-app mark {
+    padding: 0 1px;
+    border-radius: 2px;
+    background: rgba(250, 204, 21, 0.35);
+    color: inherit;
+}
+
+/* Badges added for findability */
+.nd5t-badge.new {
+    background: rgba(250, 204, 21, 0.2);
+    color: #fde68a;
+    border: 1px solid rgba(250, 204, 21, 0.55);
+}
+
+/* Changed from default: a dot after the name, and the reset button appears */
+.nd5t-modified-dot {
+    display: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--nd5t-dash-accent);
+}
+
+.nd5t-setting-row.nd5t-modified .nd5t-modified-dot {
+    display: inline-block;
+}
+
+.nd5t-row-reset {
+    visibility: hidden;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    margin: 0 8px 0 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #94a3b8;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.nd5t-setting-row.nd5t-modified .nd5t-row-reset {
+    visibility: visible;
+}
+
+.nd5t-row-reset:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* Unsaved: accent bar on the left */
+.nd5t-setting-row.nd5t-dirty {
+    box-shadow: inset 3px 0 0 var(--nd5t-dash-accent);
+}
+
+/* Jump target */
+@keyframes nd5t-flash {
+    0%, 30% { background: var(--nd5t-dash-accent-soft); border-color: var(--nd5t-dash-accent); }
+    100% { background: rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.06); }
+}
+
+.nd5t-setting-row.nd5t-flash {
+    animation: nd5t-flash 1.8s ease-out;
+}
+
+/* Linked world and personal settings */
+.nd5t-pair-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    height: auto;
+    padding: 0 7px;
+    background: rgba(46, 139, 87, 0.12);
+    border: 1px solid rgba(46, 139, 87, 0.45);
+    border-radius: 999px;
+    color: #bbf7d0;
+    font-size: 10.5px;
+    line-height: 17px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.nd5t-pair-chip i {
+    font-size: 9px;
+}
+
+.nd5t-pair-chip:hover:not(:disabled) {
+    background: rgba(46, 139, 87, 0.25);
+    color: #ffffff;
+}
+
+.nd5t-pair-chip.off {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.4);
+    color: #cbd5e1;
+}
+
+.nd5t-pair-value {
+    font-weight: 700;
+}
+
+/* A personal setting whose world setting is off has no effect */
+.nd5t-setting-row.nd5t-world-off :is(.nd5t-setting-name, .nd5t-setting-hint, .nd5t-setting-control) {
+    opacity: 0.55;
+}
+
+.nd5t-setting-row.nd5t-world-off .nd5t-pair-chip {
+    background: rgba(220, 38, 38, 0.15);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #fecaca;
+}
+
+.nd5t-docs-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #94a3b8;
+    font-size: 11px;
+    text-decoration: none;
+}
+
+.nd5t-docs-link:hover {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.nd5t-docs-icon {
+    font-size: 12px;
+}
+
+/* Overview */
+.nd5t-whats-new {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    border-radius: 6px;
+    background: rgba(250, 204, 21, 0.07);
+}
+
+.nd5t-whats-new h3 {
+    margin: 0 0 6px;
+    border: none;
+    color: #fde68a;
+    font-size: 13px;
+}
+
+.nd5t-whats-new ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.nd5t-whats-new li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.nd5t-whats-new-where,
+.nd5t-whats-new-more {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.nd5t-whats-new-more {
+    margin-top: 6px;
+}
+
+.nd5t-link {
+    display: inline;
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nd5t-link:hover {
+    color: var(--nd5t-dash-accent);
+    text-decoration: underline;
+}
+
+.nd5t-group-count {
+    margin-left: auto;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.nd5t-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 8px;
+}
+
+.nd5t-feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #22c55e;
+    border-radius: 6px;
+}
+
+.nd5t-feature-card.off {
+    border-left-color: rgba(148, 163, 184, 0.45);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.nd5t-feature-card.unavailable {
+    border-left-style: dashed;
+    border-left-color: rgba(148, 163, 184, 0.45);
+}
+
+.nd5t-feature-card.nd5t-dirty {
+    border-color: var(--nd5t-dash-accent);
+}
+
+.nd5t-feature-card > header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nd5t-feature-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: left;
+}
+
+button.nd5t-feature-name {
+    cursor: pointer;
+}
+
+button.nd5t-feature-name:hover {
+    color: var(--nd5t-dash-accent);
+    text-decoration: underline;
+}
+
+.nd5t-feature-card.off .nd5t-feature-name {
+    color: #cbd5e1;
+}
+
+.nd5t-feature-value {
+    flex: 0 0 auto;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+.nd5t-feature-card > p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.nd5t-feature-card > footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 2px;
+}
+
+.nd5t-feature-card > footer .nd5t-docs-link {
+    margin-left: auto;
+}
+
+.nd5t-switch.nd5t-switch-small {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 18px;
+}
+
+.nd5t-switch-small .nd5t-slider:before {
+    width: 12px;
+    height: 12px;
+}
+
+.nd5t-switch-small input:checked + .nd5t-slider:before {
+    transform: translateX(14px);
+}
+
+.nd5t-overview-hidden {
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 11px;
+    font-style: italic;
+}
+
+.nd5t-overview-group {
+    margin-bottom: 14px;
+}
+
+/* Footer: pending changes */
+.nd5t-pending-note {
+    color: #fdba74;
+    font-size: 12px;
+}
+
+.nd5t-save-count {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #1b1b1b;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* "N new" on the dashboard button in Configure Settings */
+.nd5t-menu-new {
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #facc15;
+    color: #1b1b1b;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
@@ -4726,6 +5281,11 @@ button.nd5t-attunement-badge.nd5t-attuned:hover {
 
 /* ── 1. Settings Dashboard Palette & Font Harmony ────────────────────────── */
 
+body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-settings-app {
+    --nd5t-dash-accent: var(--color-highlights, #4493ad);
+    --nd5t-dash-accent-soft: var(--color-highlights-15, rgba(68, 147, 173, 0.15));
+}
+
 body.crlngn-ui.nd5t-crlngn-theme-active .nd5t-nav-tab.active {
     background: var(--color-highlights-15, rgba(68, 147, 173, 0.15)) !important;
     color: var(--color-light-1, #ffffff) !important;
@@ -5621,8 +6181,29 @@ body.nd5t-condition-hud #token-hud .nd5t-status-hint {
     opacity: 0.7;
 }
 
+body.nd5t-condition-hud #token-hud .nd5t-status-hint {
+    display: flex;
+    align-items: center;
+}
+
 body.nd5t-condition-hud #token-hud .nd5t-status-hint i {
     margin-right: 4px;
+}
+
+/* Gear: opens the Hidden Statuses setting (users who may change settings) */
+body.nd5t-condition-hud #token-hud .nd5t-status-config {
+    margin-left: auto;
+    padding: 0 2px;
+    color: var(--control-icon-color);
+    cursor: var(--cursor-pointer, pointer);
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-config i {
+    margin: 0;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-config:hover {
+    color: var(--control-hover-icon-color);
 }
 
 /* Active count on the palette button. */
