@@ -147,5 +147,10 @@
   "ND5T.DamageEmanation.Skipped": "Skipped by {user}.",
   "ND5T.DamageEmanation.ActivityMissing": "Damage Emanation: The spell's save activity could not be found.",
   "ND5T.DamageEmanation.NoPermission": "Damage Emanation: You don't own the caster of this emanation.",
-  "ND5T.DamageEmanation.EmanationGone": "Damage Emanation: The emanation no longer exists."
+  "ND5T.DamageEmanation.EmanationGone": "Damage Emanation: The emanation no longer exists.",
+
+  "ND5T.UndeadFortitude.Name": "Undead Fortitude",
+  "ND5T.UndeadFortitude.Flavor": "{feature}: Constitution Saving Throw (DC {dc})",
+  "ND5T.UndeadFortitude.SkippedRadiant": "{name} drops to 0 HP. {feature} doesn't apply against Radiant damage.",
+  "ND5T.UndeadFortitude.SkippedCritical": "{name} drops to 0 HP. {feature} doesn't apply against a critical hit."
 }

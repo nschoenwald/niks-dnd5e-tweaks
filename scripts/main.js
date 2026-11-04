@@ -46,6 +46,7 @@ import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage }
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
+import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
@@ -1824,6 +1825,26 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableUndeadFortitude", {
+        name: "Undead Fortitude Automation",
+        hint: "When damage would reduce a creature with Undead Fortitude to 0 HP, it rolls a Constitution saving throw (DC 5 + the damage taken) and drops to 1 HP instead on a success. Radiant damage and critical hits skip the save.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "undeadFortitudeFastForward", {
+        name: "↳ Roll Without Dialog",
+        hint: "Roll the Undead Fortitude save straight away. When off, the roll dialog opens so you can add bonuses first.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableDeathSavePrompt", {
         name: "Prompt for Death Saves",
         hint: "When a player character starts their combat turn at 0 HP, automatically whispers a chat message with a Death Saving Throw button to the owning player and the GM.",
@@ -1960,6 +1981,7 @@ Hooks.once("setup", () => {
     initAutoRollConcentration();
     initMageSlayerConcentration();
     initMagicResistance();
+    initUndeadFortitude();
     initSelfEffectApplication();
     initSheetPlusCompendium();
     initNpcHpScaler();

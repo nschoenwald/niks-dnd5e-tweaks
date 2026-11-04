@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.65.0] - 2026-11-04
+### Added
+- **Undead Fortitude Automation**: When damage would drop a creature with Undead Fortitude to 0 HP, it rolls its Constitution save (DC 5 + the damage taken) and stays at 1 HP on a success. Radiant damage and critical hits skip the save, and the GM gets a short note saying why. Works with midi-qol too.
+
 ## [14.64.0] - 2026-11-04
 ### Added
 - **Settings Dashboard**: A new **Overview** tab shows every feature as a card with a short summary, whether it is on, a switch to turn it on or off, and a link to its documentation. Click a feature's name to see all its options.

@@ -131,5 +131,10 @@
   "ND5T.DamageEmanation.Skipped": "Übersprungen von {user}.",
   "ND5T.DamageEmanation.ActivityMissing": "Schadensausstrahlung: Die Rettungswurf-Aktivität des Zaubers wurde nicht gefunden.",
   "ND5T.DamageEmanation.NoPermission": "Schadensausstrahlung: Du besitzt den Zaubernden dieser Ausstrahlung nicht.",
-  "ND5T.DamageEmanation.EmanationGone": "Schadensausstrahlung: Die Ausstrahlung existiert nicht mehr."
+  "ND5T.DamageEmanation.EmanationGone": "Schadensausstrahlung: Die Ausstrahlung existiert nicht mehr.",
+
+  "ND5T.UndeadFortitude.Name": "Untote Zähigkeit",
+  "ND5T.UndeadFortitude.Flavor": "{feature}: Konstitutionsrettungswurf (SG {dc})",
+  "ND5T.UndeadFortitude.SkippedRadiant": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen gleißenden Schaden.",
+  "ND5T.UndeadFortitude.SkippedCritical": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen einen kritischen Treffer."
 }

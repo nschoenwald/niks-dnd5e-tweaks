@@ -1404,6 +1404,27 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "enableUndeadFortitude",
+                                introduced: "14.65.0",
+                                docs: "undead-fortitude-automation",
+                                keywords: ["zombie", "undead", "0 HP", "Constitution save", "radiant", "critical hit"],
+                                name: "Undead Fortitude Automation",
+                                hint: "When damage would reduce a creature with Undead Fortitude to 0 HP, it rolls a Constitution save (DC 5 + the damage taken) and stays at 1 HP on a success. Radiant damage and critical hits skip the save. Also works with midi-qol damage.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "undeadFortitudeFastForward",
+                                introduced: "14.65.0",
+                                name: "Roll Without Dialog",
+                                hint: "Roll the save straight away. When off, the roll dialog opens so you can add bonuses first.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableUndeadFortitude"
+                            },
+                            {
                                 key: "enableSuppressBloodiedWhileDead",
                                 introduced: "14.31.0",
                                 docs: "suppress-bloodied-condition-on-dead-tokens",

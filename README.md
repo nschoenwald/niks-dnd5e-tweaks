@@ -75,6 +75,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Add Tokens to Combat](#auto-add-tokens-to-combat)** | Combat Flow | ✅ Enabled | No |
 | **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat Flow | ✅ Enabled | Yes |
 | **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat Flow | ✅ Enabled | No |
+| **[Undead Fortitude Automation](#undead-fortitude-automation)** | Combat Flow | ✅ Enabled | No |
 | **[Suppress Bloodied Condition on Dead Tokens](#suppress-bloodied-condition-on-dead-tokens)** | Combat Flow | ✅ Enabled | No |
 | **[Auto-Apply Status at 0 HP](#auto-apply-status-at-0-hp)** | Combat Flow | ❌ Disabled | No |
 | **[Combat Experience Tracker](#combat-experience-tracker)** | Combat Flow | ❌ Disabled | No |
@@ -325,6 +326,13 @@ Configurable status overlays (Unconscious, Dead, None) and combat tracker action
 ### Prompt for Death Saves
 Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.
 
+### Undead Fortitude Automation
+When damage would reduce a creature with **Undead Fortitude** (Zombies, Ogre Zombies and the like) to 0 HP, it rolls a Constitution saving throw with a DC of 5 + the damage taken. On a success it stays at 1 HP; on a failure it drops to 0 HP. Radiant damage and critical hits skip the save, and the GM gets a whispered note saying why.
+* **While the save is rolled** the creature stays at 1 HP, so Dead status, defeated marks and other 0 HP automation only happen once the save has failed. Cancelling the roll dialog counts as a failure.
+* **Works with** damage applied from the damage tray, the chat context menu, the token HP bar and midi-qol. Critical hits are recognised from the damage roll (or midi-qol's workflow); typed numbers on the token HP bar carry no damage type or critical hit, so they always allow the save.
+* **Recognized Features**: Undead Fortitude from the 2014 and 2024 rules, and homebrew features with that name. Give any other actor the feature with an Active Effect or flag `flags.niks-dnd5e-tweaks.undeadFortitude` = `true`.
+* *Sub-setting*: **Roll Without Dialog** (on by default). Turn it off to open the roll dialog and add bonuses first.
+
 ### Suppress Bloodied Condition on Dead Tokens
 Dynamically removes the Bloodied icon and status when a creature dies or reaches 0 HP, restoring it if revived below 50% HP.
 
@@ -520,6 +528,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
+| **Undead Fortitude Automation** | **Works** with midi-qol damage application, which has no Undead Fortitude handling of its own. Critical hits come from the midi-qol workflow. midi-qol's damage card may still show 0 HP for the creature while it is held at 1 HP. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
 | **Chat Card Styling Improvements** | **Works** on midi-qol cards, including its merged card. midi-qol's Attack, Damage and Apply Effects buttons are color-coded to match. With midi-qol's *Colored Border Messages* on, the player's color keeps the card's left edge. Results midi-qol hides from players stay hidden. |
