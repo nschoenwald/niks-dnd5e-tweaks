@@ -5,6 +5,7 @@
  * @introduced v14.12.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.67.1 (Damage detected via updateActor so dnd5e's concentrationCheck option is honoured; removed the roll hook that flagged the wrong chat message)
+ * @updated v14.67.4 (Badge and End Concentration button added after dnd5e renders the card, so they no longer get wiped)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -32,10 +33,9 @@ export function initAutoRollConcentration() {
     // Manually triggered concentration saves (the system's prompt card, the character sheet) need no
     // hook: their chat cards carry `system.type === "concentration"`, which _onRenderChatMessage detects.
 
-    Hooks.on("renderChatMessageHTML", (message, html) => {
-        if (html instanceof HTMLElement) _onRenderChatMessage(message, html);
-    });
-
+    // Only `dnd5e.renderChatMessage`: core's `renderChatMessageHTML` fires inside
+    // `ChatMessage#renderHTML` before dnd5e's `ChatMessage5e#renderHTML` lets the message's data model
+    // (save, check and prompt cards) replace `.message-content`, which wiped anything added there.
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
         const root = html instanceof HTMLElement ? html : html?.[0];
         if (root instanceof HTMLElement) _onRenderChatMessage(message, root);

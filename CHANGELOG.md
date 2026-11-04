@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.4] - 2026-11-04
+### Fixed
+- **Auto-Roll / Prompt Concentration Saves**: The End Concentration button and the "Concentrating on" badge show up on concentration save cards and prompt cards again. They were missing, and the system's own Break button was hidden too, which left no way to end concentration from the card.
+
 ## [14.67.3] - 2026-11-04
 ### Fixed
 - **Auto-End Class Features**: When several unlinked tokens of the same creature fall at once (for example from one Fireball), Rage, Wrath of the Sea and Starry Form now end for each of them, not just the last one.
