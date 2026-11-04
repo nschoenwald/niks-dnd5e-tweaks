@@ -4,6 +4,7 @@
  *
  * @introduced v14.11.0
  * @updated v14.67.1 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
+ * @updated v14.67.2 (Chat message names the condition that broke concentration, not the last effect added)
  */
 import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -27,6 +28,34 @@ const BOON_OF_THE_IRON_MIND_BREAK_STATUSES = new Set([
     "dead",
     "petrified"
 ]);
+
+/**
+ * Breaking statuses from most to least significant. Used to name the reason in the chat message
+ * when several arrive together (e.g. Unconscious + Prone from Auto-Status at 0 HP, or Paralyzed
+ * with its Incapacitated rider).
+ */
+const BREAKING_STATUS_PRIORITY = ["dead", "unconscious", "petrified", "paralyzed", "stunned", "incapacitated"];
+
+/**
+ * Name the condition that ends a feature, for chat messages.
+ * Picks the most significant status from `statuses` that the actor has, and returns the name of
+ * the active effect carrying it (falling back to the status's configured name).
+ * @param {Actor} actor
+ * @param {Set<string>} statuses    The statuses that end the feature.
+ * @param {string} [fallback]       Used when none of the statuses is found.
+ * @returns {string}
+ */
+export function getBreakingConditionName(actor, statuses, fallback = "") {
+    const ordered = [...BREAKING_STATUS_PRIORITY.filter(s => statuses.has(s)), ...[...statuses].filter(s => !BREAKING_STATUS_PRIORITY.includes(s))];
+    for (const status of ordered) {
+        if (!actor.statuses?.has(status)) continue;
+        const effect = (actor.appliedEffects ?? []).find(e => e.statuses?.has(status));
+        if (effect?.name) return effect.name;
+        const config = CONFIG.statusEffects?.[status];
+        if (config?.name) return game.i18n.localize(config.name);
+    }
+    return fallback;
+}
 
 /**
  * Per-actor debounce timers to prevent duplicate processing when multiple
@@ -152,7 +181,7 @@ function _processEffect(effect, userId) {
  * Check whether the actor has any concentration-breaking status and, if so,
  * end all active concentration effects.
  * @param {Actor} actor
- * @param {string} effectName       The name of the effect that triggered the check
+ * @param {string} effectName       The name of the last effect that triggered the check (fallback for the message)
  */
 async function _checkAndEndConcentration(actor, effectName) {
     const isIronMind = hasBoonOfTheIronMind(actor);
@@ -188,8 +217,11 @@ async function _checkAndEndConcentration(actor, effectName) {
         return;
     }
 
+    // The debounce keeps only the last effect's name (e.g. Prone, added after Unconscious), so name
+    // the condition that actually breaks concentration instead.
+    const reason = getBreakingConditionName(actor, breakingStatuses, effectName);
     const safeName = foundry.utils.escapeHTML?.(actor.name) ?? actor.name;
-    const safeEffect = foundry.utils.escapeHTML?.(effectName) ?? effectName;
+    const safeEffect = foundry.utils.escapeHTML?.(reason) ?? reason;
 
     ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),

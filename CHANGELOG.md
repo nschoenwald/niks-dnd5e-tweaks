@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.2] - 2026-11-04
+### Fixed
+- **Auto-End Concentration**: The chat message now names the condition that actually ended concentration. A character dropping to 0 HP who becomes Unconscious and Prone now loses concentration "due to Unconscious" instead of "due to Prone".
+- **Auto-End Class Features**: Same fix for the messages about Rage, Wrath of the Sea and Starry Form ending.
+
 ## [14.67.1] - 2026-11-04
 ### Fixed
 - **Auto-Roll / Prompt Concentration Saves**: No longer rolls a concentration save when the system skips one, for example when a Wild Shape or Polymorph ends or when only a creature's maximum HP drops.

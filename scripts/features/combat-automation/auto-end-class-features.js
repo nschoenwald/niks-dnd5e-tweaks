@@ -3,8 +3,10 @@
  * Description: Automatically terminates active class feature effects (such as Barbarian Rage, Wrath of the Sea, and Starry Form) when an actor gains an incapacitating condition.
  *
  * @introduced v14.13.3
+ * @updated v14.67.2 (Chat message names the condition that ended the feature, not the last effect added)
  */
 import { getSetting, debug } from "../../main.js";
+import { getBreakingConditionName } from "./auto-end-concentration.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
     "incapacitated",
@@ -202,7 +204,12 @@ async function _checkAndEndClassFeatures(actor, effectName) {
             continue;
         }
 
-        const chatContent = feature.chatMessage(actor.name, effectName);
+        // Persistent Rage (Barbarian 15+) only ends on Unconscious or Dead.
+        const endingStatuses = (feature.id === "rage" && _getBarbarianLevel(actor) >= 15)
+            ? new Set(["unconscious", "dead"])
+            : BREAK_CONCENTRATION_STATUSES;
+        const reason = getBreakingConditionName(actor, endingStatuses, effectName);
+        const chatContent = feature.chatMessage(actor.name, reason);
         ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor }),
             content: `<p>${chatContent}</p>`
