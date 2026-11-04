@@ -3,6 +3,7 @@
  * Description: Imposes Disadvantage on concentration saving throws when the damage was dealt by an attacker possessing the Mage Slayer feat.
  *
  * @introduced v14.12.1
+ * @updated v14.67.1 (Pending disadvantage is cleared on every client after the save; entries expire after 2 minutes)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 
@@ -28,7 +29,8 @@ import { MODULE_ID, getSetting, debug } from "../../main.js";
  *       advantage + disadvantage → NORMAL (2024 rules).
  *
  *  3. dnd5e.rollConcentration — fires after the concentration saving throw has been
- *     evaluated and created, cleanly clearing the pending disadvantage entry.
+ *     evaluated and created, clearing the pending disadvantage entry on this client and,
+ *     via socket, on every other client.
  */
 
 /**
@@ -43,11 +45,13 @@ import { MODULE_ID, getSetting, debug } from "../../main.js";
 const _pendingMageSlayerDisadvantage = new Map();
 
 /**
- * Maximum age (ms) of a pending Mage Slayer entry (5 minutes).
- * Ensures that if a concentration save is rolled via a chat prompt card or after discussion
- * in a roll configuration dialog, the disadvantage is still properly applied.
+ * Maximum age (ms) of a pending Mage Slayer entry (2 minutes).
+ * Covers the time between the damage and the start of the save (e.g. a player clicking the
+ * chat prompt card a little later). The roll dialog opens after dnd5e.preRollConcentration,
+ * so time spent in the dialog doesn't count. Entries for damage that never led to a save
+ * expire instead of affecting an unrelated later save.
  */
-const MAGE_SLAYER_TTL_MS = 300000;
+const MAGE_SLAYER_TTL_MS = 120000;
 
 // ── Attacker & Mage Slayer detection ──────────────────────────────────
 
@@ -288,11 +292,32 @@ function _onRollConcentration(rolls, { subject } = {}) {
         const actor = subject ?? rolls?.[0]?.options?.actor;
         if (!actor) return;
 
-        if (actor.uuid) _pendingMageSlayerDisadvantage.delete(actor.uuid);
-        if (actor.id && !actor.isToken) _pendingMageSlayerDisadvantage.delete(actor.id);
+        _clearPending(actor.uuid, actor.id, actor.isToken);
+
+        // The entry was synced to every client; clear it there too, or a later concentration save
+        // rolled on another client (e.g. the GM's) would still get disadvantage.
+        if (getSetting("enableMageSlayerConcentration")) {
+            game.socket.emit(`module.${MODULE_ID}`, {
+                type: "mageSlayerConcentrationCleared",
+                actorId: actor.id,
+                actorUuid: actor.uuid,
+                isToken: actor.isToken ?? false
+            });
+        }
     } catch (err) {
         console.error("Nik's DnD5e Tweaks | Error in _onRollConcentration for Mage Slayer:", err);
     }
+}
+
+/**
+ * Remove a pending entry by UUID, and by ID for world actors (unlinked tokens share the ID).
+ * @param {string} uuid
+ * @param {string} id
+ * @param {boolean} isToken
+ */
+function _clearPending(uuid, id, isToken) {
+    if (uuid) _pendingMageSlayerDisadvantage.delete(uuid);
+    if (id && !isToken) _pendingMageSlayerDisadvantage.delete(id);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -314,6 +339,11 @@ export function initMageSlayerConcentration() {
  * @param {object} data
  */
 export function onSocketMessage(data) {
+    if (data?.type === "mageSlayerConcentrationCleared") {
+        _clearPending(data.actorUuid, data.actorId, data.isToken);
+        debug(`Mage Slayer | Received socket clear for actor ${data.actorUuid || data.actorId}`);
+        return;
+    }
     if (data?.type !== "mageSlayerConcentrationDisadvantage") return;
     const now = data.timestamp || Date.now();
     if (data.actorUuid) _pendingMageSlayerDisadvantage.set(data.actorUuid, now);

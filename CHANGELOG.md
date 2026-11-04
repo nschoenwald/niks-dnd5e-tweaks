@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.1] - 2026-11-04
+### Fixed
+- **Auto-Roll / Prompt Concentration Saves**: No longer rolls a concentration save when the system skips one, for example when a Wild Shape or Polymorph ends or when only a creature's maximum HP drops.
+- **Auto-Roll / Prompt Concentration Saves**: The "Concentrating on" badge and the End Concentration button no longer appear on an unrelated earlier save card (such as a Dexterity save) after a concentration save.
+- **Auto-End Concentration**: When several unlinked tokens of the same creature fall at once (for example from one Fireball), each of them now loses concentration, not just the last one.
+- **Mage Slayer: Concentration Disadvantage**: Disadvantage no longer carries over to a later, unrelated concentration save rolled by the GM or another player. It now lapses after 2 minutes if no save is rolled.
+
 ## [14.67.0] - 2026-11-04
 ### Added
 - **Rules-Accurate Cones on Square Grids**: Cone templates on square grids can follow the D&D grid rules. A cone starts at a grid intersection and has exactly 1, 2, 3, 4 … squares at 5, 10, 15, 20 … ft from it, so a 15 ft cone always covers 6 squares. Each cone fills the wedge between two neighbouring grid directions, and scrolling turns it to the next wedge, 45° at a time. Highlighting and auto-targeting use the same squares. Off by default; turn it on in the settings dashboard (Templates). Not available while midi-qol is active.

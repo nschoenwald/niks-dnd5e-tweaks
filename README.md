@@ -418,7 +418,7 @@ The system only stops Prone creatures from flying, climbing or swimming. This fe
 Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
 
 ### Auto-Roll / Prompt Concentration Saves
-Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage.
+Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage. It follows the system's own rules for when a save is due, so no save is rolled when the system skips one (for example when a Wild Shape or Polymorph ends, or when only the creature's maximum HP drops).
 * **Player Ownership**: Prompts are delivered directly to the connected player owning the character.
 * **Concentration Badges**: Chat cards feature an interactive **"Concentrating on: [Spell]"** badge with sheet shortcuts.
 * **One-Click End**: Appends an **End Concentration** button directly to roll cards.
@@ -426,10 +426,10 @@ Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating
 * *Sub-settings*: **Fast-Forward Rolls** (NPCs Only, All, Players Only, Never), **Auto-End Concentration on Failure**.
 
 ### Mage Slayer: Concentration Disadvantage
-Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens.
+Deals damage to a concentrating creature from an attacker with the Mage Slayer feat -> concentration save is automatically rolled with Disadvantage (or cancels with Advantage). Fully synchronized across clients and supports unlinked tokens. The disadvantage applies only to the next concentration save, and it lapses if no save is rolled within 2 minutes of the damage.
 
 ### Auto-End Concentration & Class Features
-* **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules).
+* **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules). Works for each unlinked token separately, even when several fall at once.
 * **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
 
 ### Magic Resistance Automation

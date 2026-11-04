@@ -4,6 +4,7 @@
  *
  * @introduced v14.12.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.67.1 (Damage detected via updateActor so dnd5e's concentrationCheck option is honoured; removed the roll hook that flagged the wrong chat message)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -22,13 +23,14 @@ export function initAutoRollConcentration() {
     _patchRollConcentration();
 
     Hooks.on("preUpdateActor", _onPreUpdateActor);
-    Hooks.on("dnd5e.damageActor", _onDamageActor);
+    // `updateActor` instead of `dnd5e.damageActor`: the latter receives the change delta but not the
+    // update options, so `options.dnd5e.concentrationCheck = false` (e.g. dnd5e reverting a
+    // polymorph / wild shape) couldn't be honoured.
+    Hooks.on("updateActor", _onUpdateActor);
     Hooks.on("dnd5e.preRollConcentration", _onPreRollConcentration);
 
-    // Hook every concentration save — including manually triggered ones (clicking the system's
-    // DC prompt card, or rolling directly from the character sheet) — so the "End Concentration"
-    // button is added regardless of who or what initiated the roll.
-    Hooks.on("dnd5e.rollConcentration", _onRollConcentration);
+    // Manually triggered concentration saves (the system's prompt card, the character sheet) need no
+    // hook: their chat cards carry `system.type === "concentration"`, which _onRenderChatMessage detects.
 
     Hooks.on("renderChatMessageHTML", (message, html) => {
         if (html instanceof HTMLElement) _onRenderChatMessage(message, html);
@@ -332,13 +334,41 @@ function _onPreRollConcentration(config, dialog, message) {
 }
 
 /**
- * Handler for the dnd5e.damageActor hook.
+ * Handler for the updateActor hook. Mirrors the conditions dnd5e uses before it calls
+ * `challengeConcentration` (`onUpdateHP`, identical in 6.0.6 and 6.1.0), so the auto-roll happens
+ * exactly when the system would prompt for a save.
  * @param {Actor} actor
- * @param {{hp: number, temp: number, total: number}} changes
- * @param {object} update
+ * @param {object} changed
+ * @param {object} options
  * @param {string} userId
  */
-async function _onDamageActor(actor, changes, update, userId) {
+function _onUpdateActor(actor, changed, options, userId) {
+    try {
+        if (!changed?.system?.attributes?.hp) return;
+        const prev = options?.dnd5e?.hp;
+        if (!prev || options.isRest || options.isAdvancement) return;
+        if (options.dnd5e.concentrationCheck === false) return;
+
+        const curr = actor.system?.attributes?.hp;
+        if (!curr) return;
+        const changes = { hp: curr.value - prev.value, temp: curr.temp - prev.temp };
+        changes.total = changes.hp + changes.temp;
+        if (!Number.isInteger(changes.total) || changes.total >= 0) return;
+        // dnd5e skips the check when only the HP maximum dropped (value clamped, temp HP untouched).
+        if (!(changes.temp < 0) && !(curr.value < curr.effectiveMax)) return;
+
+        _onDamageActor(actor, changes);
+    } catch (err) {
+        console.error("Nik's DnD5e Tweaks | Error in _onUpdateActor for Auto-Roll Concentration:", err);
+    }
+}
+
+/**
+ * Roll the concentration save for an actor that took damage.
+ * @param {Actor} actor
+ * @param {{hp: number, temp: number, total: number}} changes
+ */
+async function _onDamageActor(actor, changes) {
     try {
         if (!getSetting("enableAutoRollConcentration")) return;
 
@@ -362,9 +392,6 @@ async function _onDamageActor(actor, changes, update, userId) {
 
         // Only process if total net HP change is negative (damage)
         if (!changes || typeof changes.total !== "number" || changes.total >= 0) return;
-
-        // Respect dnd5e concentrationCheck option if set to false
-        if (update?.dnd5e?.concentrationCheck === false) return;
 
         const damage = Math.abs(changes.total);
         if (damage <= 0) return;
@@ -438,43 +465,6 @@ async function _onDamageActor(actor, changes, update, userId) {
         }
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Failed auto concentration roll for ${actor?.name}:`, err);
-    }
-}
-
-/**
- * Hook that fires after any concentration save is rolled (auto or manual).
- * Backfills our module flag onto the resulting ChatMessage so the "End Concentration"
- * button will be injected when the message (re-)renders.
- * @param {D20Roll[]} rolls
- * @param {{ subject: Actor5e }} data
- */
-function _onRollConcentration(rolls, { subject: actor } = {}) {
-    try {
-        if (!actor) return;
-
-        // The message was just created by buildPost. Find it in the recent message log by matching
-        // the actor's speaker ID. We check the last 10 messages to guard against busy chat logs.
-        const recentMessages = game.messages.contents.slice(-10).reverse();
-        const message = recentMessages.find(m =>
-            m.speaker?.actor === actor.id &&
-            (m.system?.type === "concentration" || m.type === "save" || m.flags?.dnd5e?.roll?.type === "save") &&
-            !m.flags?.[MODULE_ID]?.isConcentrationSave
-        );
-        if (!message) return;
-
-        // Stamp the flags — this triggers a message update which re-renders the card,
-        // causing _onRenderChatMessage to run again and inject the pill and button.
-        const concentratingItems = message.flags?.[MODULE_ID]?.concentratingItems ?? getConcentratingItems(actor);
-        const updates = {
-            [`flags.${MODULE_ID}.isConcentrationSave`]: true,
-            [`flags.${MODULE_ID}.actorUuid`]: actor.uuid
-        };
-        if (concentratingItems?.length) {
-            updates[`flags.${MODULE_ID}.concentratingItems`] = concentratingItems;
-        }
-        message.update(updates);
-    } catch (err) {
-        console.error(`Nik's DnD5e Tweaks | Error in _onRollConcentration:`, err);
     }
 }
 

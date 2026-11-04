@@ -3,6 +3,7 @@
  * Description: Automatically removes all concentration effects from an actor when they gain an incapacitating condition, respecting Boon of the Iron Mind exemptions.
  *
  * @introduced v14.11.0
+ * @updated v14.67.1 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
  */
 import { getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -133,16 +134,18 @@ function _processEffect(effect, userId) {
 
     const effectName = effect.name;
 
-    const existingTimer = _debounceTimers.get(actor.id);
+    // Keyed by UUID: unlinked tokens of the same actor share `actor.id`.
+    const key = actor.uuid;
+    const existingTimer = _debounceTimers.get(key);
     if (existingTimer) clearTimeout(existingTimer);
 
     const timer = setTimeout(() => {
-        _debounceTimers.delete(actor.id);
+        _debounceTimers.delete(key);
         _checkAndEndConcentration(actor, effectName).catch(err => {
             console.error(`Nik's DnD5e Tweaks | Failed processing concentration check:`, err);
         });
     }, 250);
-    _debounceTimers.set(actor.id, timer);
+    _debounceTimers.set(key, timer);
 }
 
 /**
