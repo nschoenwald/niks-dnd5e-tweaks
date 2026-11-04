@@ -46,6 +46,7 @@ import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage }
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
+import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
@@ -1637,6 +1638,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableDeathWard", {
+        name: "Death Ward Automation",
+        hint: "The first time a creature under Death Ward would drop to 0 HP, it drops to 1 HP instead and the spell ends.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -1981,6 +1992,8 @@ Hooks.once("setup", () => {
     initAutoRollConcentration();
     initMageSlayerConcentration();
     initMagicResistance();
+    // Before Undead Fortitude: a creature with both keeps 1 HP from the ward without rolling
+    initDeathWard();
     initUndeadFortitude();
     initSelfEffectApplication();
     initSheetPlusCompendium();

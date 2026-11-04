@@ -152,5 +152,7 @@
   "ND5T.UndeadFortitude.Name": "Undead Fortitude",
   "ND5T.UndeadFortitude.Flavor": "{feature}: Constitution Saving Throw (DC {dc})",
   "ND5T.UndeadFortitude.SkippedRadiant": "{name} drops to 0 HP. {feature} doesn't apply against Radiant damage.",
-  "ND5T.UndeadFortitude.SkippedCritical": "{name} drops to 0 HP. {feature} doesn't apply against a critical hit."
+  "ND5T.UndeadFortitude.SkippedCritical": "{name} drops to 0 HP. {feature} doesn't apply against a critical hit.",
+
+  "ND5T.DeathWard.Triggered": "Death Ward: {name} drops to 1 HP instead of 0, and the spell ends."
 }

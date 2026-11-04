@@ -1884,6 +1884,17 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 parentKey: "enableMagicResistance"
                             },
                             {
+                                key: "enableDeathWard",
+                                introduced: "14.66.0",
+                                docs: "death-ward-automation",
+                                keywords: ["0 HP", "1 HP", "Protection from Death", "spell"],
+                                name: "Death Ward Automation",
+                                hint: "The first time a creature under Death Ward would drop to 0 HP, it drops to 1 HP instead and the spell's effect is removed. Also works with midi-qol damage.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
                                 key: "enableDamageEmanation",
                                 introduced: "14.54.0",
                                 docs: "damage-emanation-automation",
