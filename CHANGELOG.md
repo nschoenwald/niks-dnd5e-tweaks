@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.63.1] - 2026-11-04
+### Removed
+- Removed the French, Spanish, Italian, Brazilian Portuguese, Japanese, Polish and Czech translations. They were machine-translated and never checked by a native speaker. Players who use Foundry in one of these languages now see this module in English. Translations by native speakers are welcome as an issue or pull request.
+
 ## [14.63.0] - 2026-11-04
 ### Added
 - **Prone Rules**: Prone tokens now crawl. They switch to the Crawl movement action, and walking while Prone costs double movement, as crawling does.
