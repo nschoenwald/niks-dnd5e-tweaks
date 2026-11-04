@@ -4,6 +4,7 @@
  *
  * @introduced v14.13.3
  * @updated v14.67.2 (Chat message names the condition that ended the feature, not the last effect added)
+ * @updated v14.67.3 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
  */
 import { getSetting, debug } from "../../main.js";
 import { getBreakingConditionName } from "./auto-end-concentration.js";
@@ -145,16 +146,18 @@ function _processEffect(effect, userId) {
 
     const effectName = effect.name;
 
-    const existingTimer = _debounceTimers.get(actor.id);
+    // Keyed by UUID: unlinked tokens of the same actor share `actor.id`.
+    const key = actor.uuid;
+    const existingTimer = _debounceTimers.get(key);
     if (existingTimer) clearTimeout(existingTimer);
 
     const timer = setTimeout(() => {
-        _debounceTimers.delete(actor.id);
+        _debounceTimers.delete(key);
         _checkAndEndClassFeatures(actor, effectName).catch(err => {
             console.error(`Nik's DnD5e Tweaks | Failed processing class feature check:`, err);
         });
     }, 250);
-    _debounceTimers.set(actor.id, timer);
+    _debounceTimers.set(key, timer);
 }
 
 /**

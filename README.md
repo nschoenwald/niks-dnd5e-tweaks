@@ -430,7 +430,7 @@ Deals damage to a concentrating creature from an attacker with the Mage Slayer f
 
 ### Auto-End Concentration & Class Features
 * **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules). Works for each unlinked token separately, even when several fall at once.
-* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted.
+* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted. Works for each unlinked token separately, even when several fall at once.
 
 ### Magic Resistance Automation
 Creatures with **Magic Resistance** automatically roll saving throws against spells and magical effects with Advantage. Works when the save is rolled from a spell's or feature's chat card (including inline save links in chat). The roll dialog opens with Advantage pre-selected, and Disadvantage still cancels it out as usual.

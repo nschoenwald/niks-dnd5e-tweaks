@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.3] - 2026-11-04
+### Fixed
+- **Auto-End Class Features**: When several unlinked tokens of the same creature fall at once (for example from one Fireball), Rage, Wrath of the Sea and Starry Form now end for each of them, not just the last one.
+
 ## [14.67.2] - 2026-11-04
 ### Fixed
 - **Auto-End Concentration**: The chat message now names the condition that actually ended concentration. A character dropping to 0 HP who becomes Unconscious and Prone now loses concentration "due to Unconscious" instead of "due to Prone".
