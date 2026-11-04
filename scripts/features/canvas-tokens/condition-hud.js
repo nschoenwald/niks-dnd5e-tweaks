@@ -7,6 +7,7 @@
  *              token currently has them.
  *
  * @introduced v14.63.0
+ * @updated v14.63.2 (fixed equal-width columns; cut-off names show as tooltip)
  */
 import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -155,6 +156,19 @@ function _buildGroup(doc, title, entries) {
 }
 
 /**
+ * Give an entry the full status name as tooltip while its label is cut off. Measured on hover because the palette
+ * is hidden until opened. `pointerover` fires before `pointerenter`, which core's TooltipManager listens for.
+ * @param {PointerEvent} event
+ */
+function _onPointerOverEntry(event) {
+    const entry = event.target.closest?.(".nd5t-status-entry");
+    const label = entry?.querySelector(".nd5t-status-label");
+    if (!label) return;
+    if (label.scrollWidth > label.clientWidth) entry.dataset.tooltipText = label.textContent;
+    else delete entry.dataset.tooltipText;
+}
+
+/**
  * renderTokenHUD: rebuild the status palette as a labelled, grouped list.
  * @param {TokenHUD} app
  * @param {HTMLElement} element
@@ -190,6 +204,7 @@ function _onRenderTokenHUD(app, element, context) {
 
         palette.replaceChildren(...groups, hint);
         palette.classList.add("nd5t-status-palette");
+        palette.addEventListener("pointerover", _onPointerOverEntry);
 
         // Number of active statuses on the palette button.
         const button = element.querySelector('[data-action="togglePalette"][data-palette="effects"]');

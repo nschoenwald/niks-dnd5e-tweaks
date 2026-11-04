@@ -5515,8 +5515,9 @@ body.nd5t-condition-hud #token-hud .palette.status-effects.nd5t-status-palette {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    width: max-content;
-    max-width: min(560px, 80vw);
+    /* Fixed width with equal columns: one long status name (e.g. from midi-qol) must not widen its column and
+       push the others around. Long names are cut off and show in full as a tooltip. */
+    width: min(510px, 80vw);
     max-height: min(560px, 75vh);
     padding: 6px;
     overflow: hidden auto;
@@ -5540,7 +5541,7 @@ body.nd5t-condition-hud #token-hud .nd5t-status-heading {
 
 body.nd5t-condition-hud #token-hud .nd5t-status-grid {
     display: grid;
-    grid-template-columns: repeat(var(--nd5t-status-columns), minmax(120px, max-content));
+    grid-template-columns: repeat(var(--nd5t-status-columns), minmax(0, 1fr));
     gap: 2px 4px;
     margin-top: 4px;
 }

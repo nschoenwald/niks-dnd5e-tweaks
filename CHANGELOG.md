@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.63.2] - 2026-11-04
+### Fixed
+- **Token HUD Condition Palette**: A single long status name (such as midi-qol's "Invisible (until it attacks…)") no longer widens its column and stretches the whole palette. All columns now have the same width; long names are shortened and show in full when you hover over them.
+
 ## [14.63.1] - 2026-11-04
 ### Removed
 - Removed the French, Spanish, Italian, Brazilian Portuguese, Japanese, Polish and Czech translations. They were machine-translated and never checked by a native speaker. Players who use Foundry in one of these languages now see this module in English. Translations by native speakers are welcome as an issue or pull request.

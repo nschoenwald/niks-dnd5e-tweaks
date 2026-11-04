@@ -269,7 +269,7 @@ Improves teleport preset destination picking (*Misty Step*, *Dimension Door*):
 
 ### Token HUD Condition Palette
 Replaces the Token HUD's grid of small status icons with a labelled list:
-* **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one.
+* **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one. The three columns have a fixed width; very long names (some modules add these) are shortened and show in full on hover.
 * **Grouped**: The system's conditions (Blinded to Unconscious) come first, other effects (Concentrating, Bleeding, Flying, …) below them.
 * **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
 * **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
