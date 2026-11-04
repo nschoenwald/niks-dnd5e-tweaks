@@ -5499,3 +5499,232 @@ body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .
 .chat-message .nd5t-topple-result i {
     margin-right: 4px;
 }
+
+/* ============================================================ */
+/* Token HUD Condition Palette                                  */
+/* ============================================================ */
+/* Colors come from core's --control-* HUD variables, which Foundry sets for the light and dark interface
+   themes. Only the accent is mixed from core's warm palette so it reads on both. */
+
+body.nd5t-condition-hud #token-hud .palette.status-effects.nd5t-status-palette {
+    --nd5t-status-columns: 3;
+    --nd5t-status-icon: 20px;
+    --nd5t-status-accent: var(--color-warm-2, #ee9b3a);
+    --nd5t-status-active-bg: color-mix(in srgb, var(--nd5t-status-accent) 22%, transparent);
+    --nd5t-status-hover-bg: color-mix(in srgb, var(--control-icon-color) 12%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: max-content;
+    max-width: min(560px, 80vw);
+    max-height: min(560px, 75vh);
+    padding: 6px;
+    overflow: hidden auto;
+    text-align: left;
+    color: var(--control-icon-color);
+    font-size: var(--font-size-12, 12px);
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-heading {
+    margin: 0;
+    padding: 0 4px 2px;
+    border: none;
+    border-bottom: 1px solid var(--control-border-color);
+    font-size: var(--font-size-11, 11px);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--control-icon-color);
+    opacity: 0.8;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--nd5t-status-columns), minmax(120px, max-content));
+    gap: 2px 4px;
+    margin-top: 4px;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-entry {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 2px 6px 2px 3px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: var(--cursor-pointer, pointer);
+    white-space: nowrap;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-entry:hover {
+    background: var(--nd5t-status-hover-bg);
+    border-color: var(--control-hover-border-color);
+    color: var(--control-hover-icon-color);
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-entry.active {
+    background: var(--nd5t-status-active-bg);
+    border-color: var(--nd5t-status-accent);
+    color: var(--control-active-icon-color);
+    font-weight: 600;
+}
+
+/* The icon inside an entry: core and dnd5e size and border the bare grid icons. */
+body.nd5t-condition-hud #token-hud .nd5t-status-entry .effect-control {
+    flex: 0 0 var(--nd5t-status-icon);
+    width: var(--nd5t-status-icon);
+    height: var(--nd5t-status-icon);
+    border: none;
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-entry:hover .effect-control,
+body.nd5t-condition-hud #token-hud .nd5t-status-entry.active .effect-control {
+    opacity: 1;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-level {
+    flex: 0 0 auto;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--nd5t-status-accent);
+    color: #1b1b1b;
+    font-size: var(--font-size-11, 11px);
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-overlay {
+    flex: 0 0 auto;
+    font-size: var(--font-size-10, 10px);
+    color: var(--nd5t-status-accent);
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-hint {
+    margin: 0;
+    padding: 4px 4px 0;
+    border-top: 1px solid var(--control-border-color);
+    font-size: var(--font-size-11, 11px);
+    opacity: 0.7;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-hint i {
+    margin-right: 4px;
+}
+
+/* Active count on the palette button. */
+body.nd5t-condition-hud #token-hud [data-palette="effects"].control-icon {
+    position: relative;
+}
+
+body.nd5t-condition-hud #token-hud .nd5t-status-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--color-warm-2, #ee9b3a);
+    color: #1b1b1b;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 0 3px var(--color-shadow-dark, rgba(0, 0, 0, 0.6));
+}
+
+/* ── Status picker (Settings Dashboard pop-out, dark like the dashboard) ── */
+
+.nd5t-status-picker-groups {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 16px 10px;
+}
+
+.nd5t-status-picker-groups:empty {
+    display: none;
+}
+
+.nd5t-status-picker-group h4 {
+    margin: 8px 0 6px;
+    padding: 0 0 3px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.nd5t-status-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.nd5t-settings-app .nd5t-status-pick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    color: #f1f5f9;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.nd5t-settings-app .nd5t-status-pick:hover,
+.nd5t-settings-app .nd5t-status-pick:focus-visible {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 100, 0, 0.6);
+    outline: none;
+    box-shadow: none;
+}
+
+.nd5t-settings-app .nd5t-status-pick img {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border: none;
+}
+
+.nd5t-settings-app .nd5t-status-pick-eye {
+    flex: 0 0 auto;
+    color: #4ade80;
+    font-size: 12px;
+}
+
+.nd5t-settings-app .nd5t-status-pick.hidden-status {
+    opacity: 0.55;
+}
+
+.nd5t-settings-app .nd5t-status-pick.hidden-status .nd5t-list-editor-name {
+    text-decoration: line-through;
+}
+
+.nd5t-settings-app .nd5t-status-pick.hidden-status .nd5t-status-pick-eye {
+    color: #fca5a5;
+}

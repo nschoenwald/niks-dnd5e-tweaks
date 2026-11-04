@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.63.0] - 2026-11-04
+### Added
+- **Prone Rules**: Prone tokens now crawl. They switch to the Crawl movement action, and walking while Prone costs double movement, as crawling does.
+- **Prone Rules**: Standing up on your own turn in combat costs half your Speed. The cost shows in the ruler on your first step after standing up and counts toward your movement for the turn. Players can't stand up without enough movement left.
+- **Prone Rules**: Attacking while Prone has Disadvantage. Attacks against a Prone creature have Advantage from within 5 feet and Disadvantage from farther away. Works with midi-qol. This part is switched off while Automated Conditions 5e is active, which already handles it.
+- **Token HUD Condition Palette**: The status palette in the Token HUD now lists every status with its name. Conditions and other effects are grouped, active ones are highlighted (with their level for Exhaustion and similar conditions, and a mark when shown as an overlay), and the palette button shows how many are active. Players can switch back to the icon grid in their personal settings.
+- **Token HUD Condition Palette**: The GM can hide statuses from the palette in a small picker in the settings. Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still shows while a token has it, so it can be removed.
+
 ## [14.62.0] - 2026-11-03
 ### Changed
 - **Auto-Target Tokens in Spell Templates**: Targeting now follows what the spell or feature says it affects. "Ally" areas only target the caster's allies, "Enemy" areas only its opponents, and "Self" areas only the caster. Areas that affect only creatures no longer target vehicles.

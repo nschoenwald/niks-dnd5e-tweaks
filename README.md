@@ -61,6 +61,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
@@ -73,6 +74,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)](#conditional-damage-bonuses-sneak-attack-hex--hunters-mark)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Combat & Automation | ✅ Enabled | Yes |
+| **[Prone Rules (Crawling, Standing Up & Attacks)](#prone-rules)** | Combat & Automation | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Combat & Automation | ✅ Enabled | No |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll-concentration-saves)** | Combat & Automation | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Combat & Automation | ✅ Enabled | No |
@@ -265,6 +267,15 @@ Improves teleport preset destination picking (*Misty Step*, *Dimension Door*):
 * Real-time status badges for valid range, out-of-range, and wall collision.
 * Uninterrupted right-click canvas panning and clean <kbd>ESC</kbd> / Cancel flow.
 
+### Token HUD Condition Palette
+Replaces the Token HUD's grid of small status icons with a labelled list:
+* **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one.
+* **Grouped**: The system's conditions (Blinded to Unconscious) come first, other effects (Concentrating, Bleeding, Flying, …) below them.
+* **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
+* **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
+* **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
+* Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
+
 ### Auto-Rotate Prone / Unconscious / Dead Tokens
 Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
 
@@ -344,6 +355,12 @@ Automatically handles weapon masteries when player characters deal damage with m
 * **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
 * **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
 * *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
+
+### Prone Rules
+The system only stops Prone creatures from flying, climbing or swimming. This feature adds the rest of the Prone rules. Each rule can be turned off on its own:
+* **Crawl While Prone**: A Prone token switches to the **Crawl** movement action, and back to what it used before once it stands up. Walking while Prone costs 1 extra foot per foot, just like crawling, so a creature with 30 ft of Speed can crawl 15 ft. Follows the system's *Movement Automation* setting: with automation off, movement costs are left alone.
+* **Standing Up Costs Half Speed**: Removing Prone on the creature's own turn in combat costs half its Speed (rounded down). The cost is added to the first step the creature takes after standing up, so the ruler shows it and the system's speed limit counts it. Undoing that move gives the movement back, and the next move pays it again. A player can't remove Prone without enough movement left this turn (or with a Speed of 0) and gets a message instead; the GM gets a warning but can still remove it. Outside combat, or on another creature's turn, standing up is free.
+* **Prone Attack Rolls**: A Prone attacker has Disadvantage on attack rolls. An attack roll against a Prone creature has Advantage if the attacker is within 5 feet of it (measured between the closest spaces, including height), and Disadvantage otherwise. Both apply together, so a Prone creature attacking a Prone creature next to it rolls normally. The roll dialog opens with the right mode already selected. Only applied when the attack has a single target. Switched off while Automated Conditions 5e is active, which handles this itself.
 
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
 
@@ -429,7 +446,7 @@ All features are managed in the **Settings Dashboard** accessible via *Configure
 * **World Settings (GMs & Authorized Users)**: Global defaults and master toggles across UI, Canvas, Combat, Rules, and Utilities. Fully supports Foundry's native **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, allowing Assistant GMs or trusted players with settings rights to configure and save world settings just like a GM.
 * **Personal Preferences (All Players & GMs)**: Client-side preference overrides (`scope: "client"`). Players can independently toggle prompts, auto-rolls, and interface tweaks for their own screen without altering other players' setups or GM defaults. For GMs and authorized users with `SETTINGS_MODIFY`, this section is positioned at the bottom of the navigation tabs so world-level configuration is immediately accessible.
 * **Player-First Access**: When non-authorized players open the dashboard, it immediately displays their Personal Preferences tab at the top of the menu, world settings are shown read-only (disabled), and the "Reset Defaults" action resets only their personal client settings.
-* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves) and Automated Masteries 5e (Weapon Mastery Automation). Your stored choice is kept for when that module is turned off.
+* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
 
 ---
 
@@ -451,6 +468,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |
 | **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
+| **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |
@@ -458,7 +476,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Detailed Roll Breakdown Overlay** | **Works** on midi-qol's combined card: the attack and damage totals show the detailed breakdown, with midi-qol's advantage and bonus notes kept at the top. Rolls midi-qol hides from players stay hidden. |
 
 ### Automated Conditions 5e & Automated Masteries 5e
-* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
+* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone itself, so **Prone Attack Rolls** is switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
 * **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow & Topple) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules

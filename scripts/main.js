@@ -24,6 +24,7 @@ import { initCarolingianHarmony, updateCarolingianThemeState } from "./features/
 
 // Canvas & Tokens
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
+import { initConditionHud, refreshConditionHud, DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
@@ -45,6 +46,7 @@ import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage }
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
+import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
 import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/combat-automation/disable-active-effect-expiry.js";
@@ -511,6 +513,16 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableConditionHud", {
+        name: "Token HUD Condition Palette (Personal)",
+        hint: "Shows the Token HUD's status palette as a labelled, grouped list (if enabled by the GM). Turn off for the original icon grid.",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => refreshConditionHud()
     });
 
     game.settings.register(MODULE_ID, "clientEnableClearTargetsButton", {
@@ -1009,6 +1021,28 @@ Hooks.once("init", () => {
     // GROUP 2: Canvas & Tokens
     // ==========================================
 
+    game.settings.register(MODULE_ID, "enableConditionHud", {
+        name: "Token HUD Condition Palette",
+        hint: "Shows the Token HUD's status palette as a labelled list with conditions and other effects grouped, active statuses highlighted with their level or overlay mark, and the number of active statuses on the palette button.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshConditionHud()
+    });
+
+    game.settings.register(MODULE_ID, "hudHiddenStatuses", {
+        name: "Token HUD: Hidden Statuses",
+        hint: "Comma-separated status IDs left out of the Token HUD palette unless the token has them.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: DEFAULT_HIDDEN_STATUSES,
+        restricted: true,
+        onChange: () => refreshConditionHud()
+    });
+
     game.settings.register(MODULE_ID, "enableProneRotation", {
         name: "Auto-Rotate Prone Tokens",
         hint: "Automatically rotates tokens 90° clockwise when the Prone or Unconscious condition is applied (counter-clockwise for Dead), and resets them to 0° when all of them are removed.",
@@ -1322,6 +1356,46 @@ Hooks.once("init", () => {
         config: false,
         type: String,
         default: "icons/creatures/invertebrates/snail-movement-green.webp",
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableProneRules", {
+        name: "Prone Rules",
+        hint: "Automates the movement and attack rules of the Prone condition: crawling, the cost of standing up, and Advantage / Disadvantage on attack rolls.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "proneCrawlMovement", {
+        name: "Prone: Crawl",
+        hint: "Prone tokens switch to the Crawl movement action, and walking while Prone costs 1 extra foot per foot.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "proneStandUpCost", {
+        name: "Prone: Standing Up Costs Half Speed",
+        hint: "Ending Prone on the creature's own turn in combat costs half its Speed, added to its first step after standing up. Players can't stand up without enough movement left.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "proneAttackRolls", {
+        name: "Prone: Attack Rolls",
+        hint: "A Prone attacker has Disadvantage. Attacks against a Prone creature have Advantage from within 5 feet and Disadvantage from farther away.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
         restricted: true
     });
 
@@ -1898,6 +1972,8 @@ Hooks.once("setup", () => {
     initClearTargets();
     initPreventGroupActorRolls();
     initWeaponMasteries();
+    initProneRules();
+    initConditionHud();
     initConditionalDamage();
     initDamageEmanation();
 });

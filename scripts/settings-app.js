@@ -1,6 +1,8 @@
 import { MODULE_ID, log } from "./main.js";
 import { NiksListEditorApp, normalizeListValue, parseListValue } from "./settings-list-editor.js";
-import { isMidiActive, isWm5eActive } from "./utils/module-compat.js";
+import { NiksStatusPickerApp } from "./settings-status-picker.js";
+import { DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
+import { isAc5eActive, isMidiActive, isWm5eActive } from "./utils/module-compat.js";
 
 /**
  * Modules that take over a feature completely. Settings tagged with `unavailableWith` are greyed out
@@ -8,7 +10,8 @@ import { isMidiActive, isWm5eActive } from "./utils/module-compat.js";
  */
 const UNAVAILABLE_WITH = {
     midi: { label: "midi-qol", isActive: isMidiActive },
-    wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive }
+    wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive },
+    ac5e: { label: "Automated Conditions 5e", isActive: isAc5eActive }
 };
 
 /**
@@ -42,6 +45,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
             exportSettings: NiksTweaksSettingsApp.#onExportSettings,
             importSettings: NiksTweaksSettingsApp.#onImportSettings,
             editList: NiksTweaksSettingsApp.#onEditList,
+            editStatuses: NiksTweaksSettingsApp.#onEditStatuses,
             close: function(event, target) { return this.close(); }
         }
     };
@@ -61,7 +65,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
 
     /**
      * Open list editor windows, keyed by setting key. Closed together with the dashboard.
-     * @type {Map<string, NiksListEditorApp>}
+     * @type {Map<string, NiksListEditorApp|NiksStatusPickerApp>}
      */
     #listEditors = new Map();
 
@@ -399,6 +403,14 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 key: "clientEnableSummonControlsHUD",
                                 name: "Summoning Placement Controls HUD",
                                 hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
+                                type: "Boolean",
+                                default: true,
+                                scope: "client"
+                            },
+                            {
+                                key: "clientEnableConditionHud",
+                                name: "Token HUD Condition Palette",
+                                hint: "Shows the Token HUD's status palette as a labelled, grouped list (if enabled by the GM). Turn off for the original icon grid.",
                                 type: "Boolean",
                                 default: true,
                                 scope: "client"
@@ -783,6 +795,25 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                         icon: "fa-solid fa-chess-knight",
                         settings: [
                             {
+                                key: "enableConditionHud",
+                                name: "Token HUD Condition Palette",
+                                hint: "Shows the Token HUD's status palette as a labelled list: conditions and other effects in separate groups, active ones highlighted with their level (e.g. Exhaustion 2) or an overlay mark, and the number of active statuses on the palette button. Hidden statuses are left out unless the token has them.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "hudHiddenStatuses",
+                                name: "Hidden Statuses",
+                                list: true,
+                                statusPicker: true,
+                                hint: "Statuses left out of the Token HUD palette for everyone. A hidden status still shows while a token has it, so it can be removed.",
+                                type: "String",
+                                default: DEFAULT_HIDDEN_STATUSES,
+                                scope: "world",
+                                parentKey: "enableConditionHud"
+                            },
+                            {
                                 key: "enableProneRotation",
                                 name: "Auto-Rotate Prone Tokens",
                                 hint: "Automatically rotates tokens 90° clockwise when the Prone condition is applied, and rotates them back when removed.",
@@ -1052,6 +1083,42 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 default: "icons/creatures/invertebrates/snail-movement-green.webp",
                                 scope: "world",
                                 parentKey: "enableWeaponMasteries"
+                            },
+                            {
+                                key: "enableProneRules",
+                                name: "Prone Rules",
+                                hint: "Automates the movement and attack rules of the Prone condition that the system leaves to the table. Choose the rules below.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "proneCrawlMovement",
+                                name: "Crawl While Prone",
+                                hint: "Prone tokens switch to the Crawl movement action (and back when they stand up), and walking while Prone costs 1 extra foot per foot, like crawling. Follows the system's Movement Automation setting.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableProneRules"
+                            },
+                            {
+                                key: "proneStandUpCost",
+                                name: "Standing Up Costs Half Speed",
+                                hint: "Ending Prone on the creature's own turn in combat costs half its Speed. The cost is added to its first step after standing up, so it shows in the ruler and counts toward its movement this turn. Players can't stand up without enough movement left; the GM gets a warning instead.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableProneRules"
+                            },
+                            {
+                                key: "proneAttackRolls",
+                                unavailableWith: "ac5e",
+                                name: "Prone Attack Rolls",
+                                hint: "A Prone attacker has Disadvantage. An attack against a Prone creature has Advantage if the attacker is within 5 feet, and Disadvantage otherwise (single target only). Works with midi-qol. Disabled while Automated Conditions 5e is active.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableProneRules"
                             },
                             {
                                 key: "enableConditionalDamage",
@@ -1726,6 +1793,46 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
         editor.addEventListener("close", () => this.#listEditors.delete(key), { once: true });
         this.#listEditors.set(key, editor);
         editor.render({ force: true });
+    }
+
+    /**
+     * Open the status picker for a status list setting. Apply writes the hidden IDs into the dashboard's
+     * hidden input; they are stored when the dashboard is saved.
+     * @this {NiksTweaksSettingsApp}
+     * @param {PointerEvent} event
+     * @param {HTMLElement} target
+     */
+    static #onEditStatuses(event, target) {
+        const key = target.dataset.key;
+        const setting = NiksTweaksSettingsApp.SETTINGS_SCHEMA
+            .flatMap(tab => tab.sections.flatMap(sec => sec.settings))
+            .find(s => s.key === key);
+        const input = this.element.querySelector(`input[name="${key}"]`);
+        if (!setting || !input) return;
+
+        const open = this.#listEditors.get(key);
+        if (open?.rendered) {
+            open.bringToFront();
+            return;
+        }
+
+        const picker = new NiksStatusPickerApp({
+            settingKey: key,
+            settingName: setting.name,
+            hint: setting.hint,
+            value: input.value,
+            defaultValue: setting.default,
+            onApply: (value) => {
+                input.value = value;
+                const label = target.querySelector(".nd5t-list-count");
+                if (label) label.textContent = parseListValue(value).length;
+                target.classList.add("nd5t-list-modified");
+                target.title = "Edited. Use Save Changes to store this choice.";
+            }
+        });
+        picker.addEventListener("close", () => this.#listEditors.delete(key), { once: true });
+        this.#listEditors.set(key, picker);
+        picker.render({ force: true });
     }
 
     /**

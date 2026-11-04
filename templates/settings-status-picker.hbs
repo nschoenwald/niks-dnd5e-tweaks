@@ -1,0 +1,43 @@
+<div class="nd5t-list-editor-wrapper">
+    {{#if hint}}
+    <p class="nd5t-list-editor-hint">{{hint}}</p>
+    {{/if}}
+
+    <div class="nd5t-list-editor-add">
+        <div class="nd5t-search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" class="nd5t-search-input nd5t-list-editor-input" placeholder="Search statuses…" autocomplete="off" spellcheck="false" aria-label="Search statuses">
+        </div>
+        <button type="button" class="nd5t-btn secondary nd5t-list-editor-add-btn" data-action="showAll" title="Show every status in the Token HUD">
+            <i class="fa-solid fa-eye"></i> Show All
+        </button>
+    </div>
+
+    <div class="nd5t-list-editor-status">
+        <span class="nd5t-list-editor-count"></span>
+    </div>
+
+    {{!-- Groups are rendered by NiksStatusPickerApp#renderStatuses --}}
+    <div class="nd5t-status-picker-groups"></div>
+
+    <div class="nd5t-list-editor-empty" hidden>
+        <i class="fa-solid fa-eye-slash"></i>
+        <p>No statuses match your search.</p>
+    </div>
+
+    <footer class="nd5t-dashboard-footer">
+        <div class="nd5t-footer-left">
+            <button type="button" class="nd5t-btn secondary" data-action="resetStatuses" title="Hide only the default statuses (Dehydration, Malnutrition and Suffocation)">
+                <i class="fa-solid fa-rotate-left"></i> Reset to Default
+            </button>
+        </div>
+        <div class="nd5t-footer-right">
+            <button type="button" class="nd5t-btn cancel" data-action="close" title="Discard these changes">
+                <i class="fa-solid fa-xmark"></i> Cancel
+            </button>
+            <button type="button" class="nd5t-btn primary" data-action="applyStatuses" title="Apply to the dashboard. Use Save Changes there to store it.">
+                <i class="fa-solid fa-check"></i> Apply
+            </button>
+        </div>
+    </footer>
+</div>
