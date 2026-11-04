@@ -26,6 +26,7 @@ import { initCarolingianHarmony, updateCarolingianThemeState } from "./features/
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
 import { initConditionHud, refreshConditionHud, DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
+import { initGridConeRules, refreshGridCones } from "./features/canvas-tokens/grid-cone-rules.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
@@ -1095,6 +1096,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableGridConeRules", {
+        name: "Rules-Accurate Cones on Square Grids",
+        hint: "Cone templates on square grids cover whole squares as in the D&D grid rules: they start at a grid intersection, have exactly 1, 2, 3, 4 … squares at 5, 10, 15, 20 … ft from it, and fill one of the 8 wedges between neighbouring grid directions (scrolling steps 45°). Highlighting, auto-targeting and Region behaviours use the same squares. Applies to every player; disabled while midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true,
+        onChange: () => refreshGridCones()
+    });
+
     game.settings.register(MODULE_ID, "enableTemplateTargeting", {
         name: "Auto-Target Tokens in Spell Templates",
         hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active.",
@@ -1982,6 +1994,7 @@ Hooks.once("setup", () => {
     initAutoStatusZeroHP();
     initLegendaryActionPlaceholders();
     initTemplateGridSnap();
+    initGridConeRules();
     initHealingContextMenu();
     initAutoRollSaveDamage();
     initAutoRollAttackDamage();

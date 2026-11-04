@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.0] - 2026-11-04
+### Added
+- **Rules-Accurate Cones on Square Grids**: Cone templates on square grids can follow the D&D grid rules. A cone starts at a grid intersection and has exactly 1, 2, 3, 4 … squares at 5, 10, 15, 20 … ft from it, so a 15 ft cone always covers 6 squares. Each cone fills the wedge between two neighbouring grid directions, and scrolling turns it to the next wedge, 45° at a time. Highlighting and auto-targeting use the same squares. Off by default; turn it on in the settings dashboard (Templates). Not available while midi-qol is active.
+
+### Fixed
+- **Death Ward Automation**: Fixed an error on startup ("Cannot access 'MODULE_ID' before initialization") that came with 14.66.0.
+
 ## [14.66.0] - 2026-11-04
 ### Added
 - **Death Ward Automation**: The first time a creature under Death Ward would drop to 0 HP, it drops to 1 HP instead and the spell ends on its own. A chat message says so. Works with midi-qol too.

@@ -4,6 +4,7 @@
  * spell's effect is removed.
  *
  * @introduced v14.66.0
+ * @updated v14.67.0 (Fix load error: flag key no longer read from MODULE_ID at import time)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 
@@ -22,7 +23,12 @@ import { MODULE_ID, getSetting, debug } from "../../main.js";
  */
 
 const HP_KEY = "system.attributes.hp.value";
-const FLAG_KEY = `flags.${MODULE_ID}.deathWard`;
+/**
+ * Effect change key that marks a custom Death Ward effect. Built on use: main.js imports this file before it
+ * defines MODULE_ID, so reading MODULE_ID at the top level throws.
+ * @returns {string}
+ */
+const flagKey = () => `flags.${MODULE_ID}.deathWard`;
 
 /** Effect names, lowercase: the spell's own name and the PHB 2024 effect name. */
 const EFFECT_NAMES = ["death ward", "protection from death"];
@@ -44,7 +50,7 @@ function _isDeathWard(effect) {
     if (EFFECT_NAMES.some(n => name.includes(n))) return true;
 
     const changes = effect.system?.changes ?? effect.changes ?? [];
-    if (changes.some?.(c => c.key === FLAG_KEY)) return true;
+    if (changes.some?.(c => c.key === flagKey())) return true;
 
     if (effect.getFlag?.(MODULE_ID, "deathWard")) return true;
 

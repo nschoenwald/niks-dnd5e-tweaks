@@ -67,6 +67,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
@@ -288,6 +289,18 @@ Automatically selects and targets tokens inside spell templates during placement
 
 ### Snap Templates to Grid Intersections
 Snaps circle, ring and square spell templates to grid intersections instead of cell centers. On hex grids, circles and rings snap to hex centers and squares keep the default Foundry snapping. Cones, lines and emanations are not affected. Hold <kbd>Shift</kbd> while placing to override snapping.
+
+### Rules-Accurate Cones on Square Grids
+Cone templates on square grids cover whole squares, following the D&D grid rules, instead of Foundry's round 53° cone.
+* **Pattern**: A cone starts at a grid intersection. Counting distance on the grid, it has exactly 1 square at 5 ft, 2 squares at 10 ft, 3 at 15 ft and so on. A 15 ft cone always covers 6 squares, a 30 ft cone 21, a 60 ft cone 66. Numbered by distance, a 15 ft cone looks like this:
+  ```
+  1 2 3
+  . 2 3
+  . . 3
+  ```
+* **8 orientations**: The cone fills the wedge between two neighbouring grid directions (for example between east and south-east). Scrolling or dragging the rotation handle steps to the next wedge, 45° at a time.
+* **One set of squares**: The highlighted squares, auto-targeting and Region behaviours all use the same squares. The origin always snaps to an intersection, also with <kbd>Shift</kbd> held. The angle is left out of the measurement label.
+* **Scope**: Applies to spell and item templates and to templates drawn with Foundry's template tools. Hex and gridless scenes and ordinary Regions keep the default cone. It applies to everyone in the world (no personal opt-out), so every player sees the same squares. Turned off by default.
 
 ### Auto-Attach Self Emanation Templates
 When a creature uses something with an emanation area centered on itself (e.g. *Spirit Guardians*, Paladin auras), the template is attached to its token right away, without placing it on the canvas. Players can turn this off for themselves.
@@ -532,6 +545,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Auto-Apply Status at 0 HP** | When midi-qol's *Add Dead/Unconscious* is on, midi-qol picks the 0 HP status (and marks defeated if its settings say so). This feature still escalates to Dead after three failed death saves, cleans up on healing and removes tokens from combat. |
 | **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |
 | **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
+| **Rules-Accurate Cones on Square Grids** | **Disabled** (midi-qol targets cones from its own cone shape, which would not match the squares). |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
