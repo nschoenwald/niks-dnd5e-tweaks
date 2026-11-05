@@ -10,6 +10,7 @@
  *                from within 5 feet and Disadvantage from farther away.
  *
  * @introduced v14.63.0
+ * @updated v14.67.6 (Standing up no longer charged twice in the drag ruler)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -39,6 +40,8 @@ import { convertLength } from "../../utils/dnd5e-compat.js";
  *  - `Token#measureMovementPath` is wrapped. The first new segment (not yet in the movement history) that
  *    starts at the marked position gets the cost added, as do the cumulative totals after it. Foundry stores
  *    each history waypoint with its measured cost, so the charge stays in the history for the rest of the turn.
+ *    A new segment that already carries a fixed cost was measured with the charge before (planned drag
+ *    waypoints keep their measured cost and the ruler measures them again), so it isn't charged twice.
  *  - moveToken records the movement that paid the cost in `marker.consumedBy`. While that movement is in the
  *    history the cost isn't charged again; undoing it removes it from the history, so the next move pays again.
  *  The wrapper works on whole segments rather than inside the per-grid-space cost function, because Foundry
@@ -295,6 +298,9 @@ function _wrapMeasureMovementPath(wrapped, waypoints, ...args) {
         if (marker.consumedBy && historyIds.has(marker.consumedBy)) return result;
 
         const index = _findStandUpSegment(waypoints, marker, historyIds);
+        // A waypoint with a fixed cost was measured before (Foundry stores the measured cost on planned drag
+        // waypoints, which the ruler measures again), so its cost already includes the stand-up charge.
+        if ((index < 0) || Number.isFinite(waypoints[index]?.cost)) return result;
         const segment = result?.waypoints?.[index]?.backward;
         if (!segment) return result;
         segment.cost += marker.cost;

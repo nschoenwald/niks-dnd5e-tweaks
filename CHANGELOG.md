@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.6] - 2026-11-05
+### Fixed
+- **Prone Rules**: Standing up from Prone costs half the creature's Speed again. While moving after standing up, the ruler charged the cost twice, so it looked as if the creature's whole Speed was gone after one step.
+
 ## [14.67.5] - 2026-11-05
 ### Changed
 - **Rules-Accurate Cones on Square Grids**: Now turned on by default. Worlds where the GM has already switched it off keep it off.
