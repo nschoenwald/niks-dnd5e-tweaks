@@ -3894,8 +3894,9 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.whisper:not(.t
 
 /* ── 5. Prominent Apply buttons in damage / effect trays ──
    Taller, bolder and colour-coded like the roll buttons. The tray's bottom padding and row gap
-   are trimmed so the card only grows by a few pixels. */
-body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray .collapsible-content > .wrapper {
+   are trimmed so the card only grows by a few pixels. Open trays only: this selector outranks dnd5e's
+   collapsed `padding-block: 0`, and the leftover padding showed the top of the buttons in a closed tray. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tray:not(.collapsed) .collapsible-content > .wrapper {
     gap: 6px;
     padding-bottom: 4px;
 }

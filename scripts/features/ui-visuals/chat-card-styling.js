@@ -6,6 +6,7 @@
  * @updated v14.49.0 (Batched roll result layout measurement)
  * @updated v14.54.0 (Descriptive Apply button labels in damage / effects trays)
  * @updated v14.55.0 (midi-qol: card summary dice, obscured results, colored borders, merged card buttons; d20 centering & contrast)
+ * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
  */
 import { log, isFeatureActive } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";

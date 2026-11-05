@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.5] - 2026-11-05
+### Changed
+- **Rules-Accurate Cones on Square Grids**: Now turned on by default. Worlds where the GM has already switched it off keep it off.
+
+### Fixed
+- **Auto-Roll / Prompt Concentration Saves**: The End Concentration button on a concentration save card now changes to "Concentration Ended" for everyone at the table. Before, it only changed for the person who clicked it, so a GM still saw an active button after a player ended concentration (and the other way round). It also updates when concentration ends some other way, such as from the character sheet or a failed save.
+- **Chat Card Styling Improvements**: Closed damage and effects trays are fully hidden again. A thin strip at the top of their Apply buttons used to show below the tray label.
+
 ## [14.67.4] - 2026-11-04
 ### Fixed
 - **Auto-Roll / Prompt Concentration Saves**: The End Concentration button and the "Concentrating on" badge show up on concentration save cards and prompt cards again. They were missing, and the system's own Break button was hidden too, which left no way to end concentration from the card.

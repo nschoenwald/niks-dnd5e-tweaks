@@ -5,6 +5,7 @@
  * the 8 wedges between neighbouring grid directions.
  *
  * @introduced v14.67.0
+ * @updated v14.67.5 (Enabled by default)
  */
 import { log, getSetting } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";

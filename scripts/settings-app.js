@@ -1177,7 +1177,7 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 name: "Rules-Accurate Cones on Square Grids",
                                 hint: "Cone templates on square grids cover whole squares as in the D&D grid rules: exactly 1, 2, 3, 4 … squares at 5, 10, 15, 20 … ft from a grid intersection, in one of 8 wedges between grid directions. Applies to every player. Disabled while midi-qol is active.",
                                 type: "Boolean",
-                                default: false,
+                                default: true,
                                 scope: "world"
                             },
                             {

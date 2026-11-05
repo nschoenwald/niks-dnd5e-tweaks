@@ -6,6 +6,7 @@
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.67.1 (Damage detected via updateActor so dnd5e's concentrationCheck option is honoured; removed the roll hook that flagged the wrong chat message)
  * @updated v14.67.4 (Badge and End Concentration button added after dnd5e renders the card, so they no longer get wiped)
+ * @updated v14.67.5 (End Concentration buttons follow the actor's live concentration state on every client)
  */
 import { MODULE_ID, getSetting, debug } from "../../main.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -41,7 +42,59 @@ export function initAutoRollConcentration() {
         if (root instanceof HTMLElement) _onRenderChatMessage(message, root);
     });
 
+    // Keep rendered End Concentration buttons in sync on every client. Before, a button only changed on
+    // the client that clicked it, so concentration ended by a player still read "End Concentration" for
+    // the GM (and vice versa), as it did when concentration ended any other way.
+    for (const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"]) {
+        Hooks.on(hook, _onConcentrationEffectChange);
+    }
+
     debug("Auto-Roll Concentration | Initialized");
+}
+
+/**
+ * Whether an actor currently concentrates, read from its live effects.
+ * @param {Actor} actor
+ * @returns {boolean}
+ */
+function _isActorConcentrating(actor) {
+    const concStatus = CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating";
+    return (actor?.concentration?.effects?.size > 0) || !!actor?.statuses?.has?.(concStatus);
+}
+
+/**
+ * Show the End Concentration button in its live state.
+ * @param {HTMLButtonElement} button
+ * @param {Actor} actor
+ */
+function _setEndConcentrationButtonState(button, actor) {
+    if (button.dataset.busy) return;
+    const canManage = actor.isOwner || game.user.isGM;
+    if (_isActorConcentrating(actor)) {
+        button.disabled = !canManage;
+        button.innerHTML = `<i class="fa-solid fa-brain" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.EndConcentration")}`;
+    } else {
+        button.disabled = true;
+        button.innerHTML = `<i class="fa-solid fa-check" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.ConcentrationEnded")}`;
+    }
+}
+
+/**
+ * Refresh every rendered End Concentration button of an actor whose concentration effect changed
+ * (chat log, chat popout, notifications).
+ * @param {ActiveEffect} effect
+ */
+function _onConcentrationEffectChange(effect) {
+    const actor = effect?.parent;
+    if (!(actor instanceof Actor)) return;
+    const concStatus = CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating";
+    if (!effect.statuses?.has(concStatus)) return;
+    // Deferred: the effect hooks fire before the actor is re-prepared, so `actor.concentration`
+    // (cached until the next reset) would still list a deleted effect.
+    setTimeout(() => {
+        const selector = `.nd5t-end-concentration-btn[data-actor-uuid="${CSS.escape(actor.uuid)}"]`;
+        for (const button of document.querySelectorAll(selector)) _setEndConcentrationButtonState(button, actor);
+    }, 0);
 }
 
 const BOON_OF_THE_IRON_MIND_REGEX = /.*boon.*of.*the.*iron.*mind.*/i;
@@ -645,27 +698,15 @@ function _onRenderChatMessage(message, html) {
     // 3. Inject "End Concentration" Button (only into save roll cards, never prompt cards)
     if (isPromptCard || html.querySelector(".nd5t-end-concentration-btn")) return;
 
-    const isConcentrating = (actor.concentration?.effects?.size > 0)
-        || (actor.statuses?.has?.("concentrating"))
-        || (concentratingItems.length > 0);
     const canManage = actor.isOwner || game.user.isGM;
 
-    // Create the button element
+    // State follows the actor's live effects, not the stored badge items: those are a snapshot from when
+    // the card was made and kept the button active after concentration had ended.
     const button = document.createElement("button");
     button.type = "button";
     button.className = "nd5t-end-concentration-btn";
     button.dataset.actorUuid = actor.uuid;
-
-    if (!canManage) {
-        button.disabled = true;
-    }
-
-    if (isConcentrating) {
-        button.innerHTML = `<i class="fa-solid fa-brain" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.EndConcentration")}`;
-    } else {
-        button.disabled = true;
-        button.innerHTML = `<i class="fa-solid fa-check" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.ConcentrationEnded")}`;
-    }
+    _setEndConcentrationButtonState(button, actor);
 
     button.addEventListener("click", async (event) => {
         event.preventDefault();
@@ -674,6 +715,7 @@ function _onRenderChatMessage(message, html) {
         if (!canManage) return;
 
         button.disabled = true;
+        button.dataset.busy = "true";
         button.innerHTML = `<i class="fa-solid fa-spinner fa-spin" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.EndingConcentration")}`;
 
         try {
@@ -686,12 +728,12 @@ function _onRenderChatMessage(message, html) {
                     }
                 }
             }
-            button.innerHTML = `<i class="fa-solid fa-check" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.ConcentrationEnded")}`;
         } catch (err) {
             console.error(`Nik's DnD5e Tweaks | Failed to end concentration for ${actor.name}:`, err);
-            button.disabled = false;
-            button.innerHTML = `<i class="fa-solid fa-brain" inert></i> ${game.i18n.localize("ND5T.AutoRollConcentration.EndConcentration")}`;
         }
+        delete button.dataset.busy;
+        // Deferred like the effect hook, so the actor's concentration data is current.
+        setTimeout(() => _setEndConcentrationButtonState(button, actor), 0);
     });
 
     const cardTarget = html.querySelector(".card-content") || html.querySelector(".message-content") || html;

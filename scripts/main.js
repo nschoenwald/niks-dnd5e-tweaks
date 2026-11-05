@@ -1102,7 +1102,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: Boolean,
-        default: false,
+        default: true,
         restricted: true,
         onChange: () => refreshGridCones()
     });

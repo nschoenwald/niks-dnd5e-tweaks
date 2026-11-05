@@ -67,7 +67,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ❌ Disabled | No |
+| **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
@@ -300,7 +300,7 @@ Cone templates on square grids cover whole squares, following the D&D grid rules
   ```
 * **8 orientations**: The cone fills the wedge between two neighbouring grid directions (for example between east and south-east). Scrolling or dragging the rotation handle steps to the next wedge, 45° at a time.
 * **One set of squares**: The highlighted squares, auto-targeting and Region behaviours all use the same squares. The origin always snaps to an intersection, also with <kbd>Shift</kbd> held. The angle is left out of the measurement label.
-* **Scope**: Applies to spell and item templates and to templates drawn with Foundry's template tools. Hex and gridless scenes and ordinary Regions keep the default cone. It applies to everyone in the world (no personal opt-out), so every player sees the same squares. Turned off by default.
+* **Scope**: Applies to spell and item templates and to templates drawn with Foundry's template tools. Hex and gridless scenes and ordinary Regions keep the default cone. It applies to everyone in the world (no personal opt-out), so every player sees the same squares. Turned on by default.
 
 ### Auto-Attach Self Emanation Templates
 When a creature uses something with an emanation area centered on itself (e.g. *Spirit Guardians*, Paladin auras), the template is attached to its token right away, without placing it on the canvas. Players can turn this off for themselves.
@@ -421,7 +421,7 @@ Automatically tilts tokens 90° clockwise when given the Prone or Unconscious co
 Prompts or rolls concentration saves (DC 10 or half damage) when a concentrating creature takes damage. It follows the system's own rules for when a save is due, so no save is rolled when the system skips one (for example when a Wild Shape or Polymorph ends, or when only the creature's maximum HP drops).
 * **Player Ownership**: Prompts are delivered directly to the connected player owning the character.
 * **Concentration Badges**: Chat cards feature an interactive **"Concentrating on: [Spell]"** badge with sheet shortcuts.
-* **One-Click End**: Appends an **End Concentration** button directly to roll cards.
+* **One-Click End**: Appends an **End Concentration** button directly to roll cards. It switches to "Concentration Ended" for everyone as soon as concentration ends, however it ended.
 * **Boon of the Iron Mind**: Automatically exempts characters with *Unshakable Focus*.
 * *Sub-settings*: **Fast-Forward Rolls** (NPCs Only, All, Players Only, Never), **Auto-End Concentration on Failure**.
 
