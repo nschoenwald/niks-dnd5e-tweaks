@@ -27,6 +27,7 @@ import { enableProneRotation, disableProneRotation } from "./features/canvas-tok
 import { initConditionHud, refreshConditionHud, DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
 import { initGridConeRules, refreshGridCones } from "./features/canvas-tokens/grid-cone-rules.js";
+import { initGridBasedTemplates } from "./features/canvas-tokens/grid-based-templates.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
 import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
@@ -1107,6 +1108,76 @@ Hooks.once("init", () => {
         onChange: () => refreshGridCones()
     });
 
+    game.settings.register(MODULE_ID, "enableGridBasedTemplates", {
+        name: "Grid-Based Templates",
+        hint: "New spell, item and drawn templates of the chosen types are measured with the scene's grid rules instead of as round shapes, like Foundry's grid-based Region shapes. On a square grid with 5/5/5 diagonals a 20 ft sphere covers a square, with 5/10/5 diagonals an octagon; on hex grids round shapes follow the hexes. Existing templates keep their shape. Applies to every player.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesCircle", {
+        name: "Grid-Based: Circles and Spheres",
+        hint: "Circle, sphere and cylinder templates (and ellipses drawn with Foundry's template tools).",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesCone", {
+        name: "Grid-Based: Cones",
+        hint: "Cone templates. On square grids, Rules-Accurate Cones takes precedence when it is on.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesRectangle", {
+        name: "Grid-Based: Cubes and Squares",
+        hint: "Cube and square templates.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesLine", {
+        name: "Grid-Based: Lines",
+        hint: "Line templates: the length is measured along the grid.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesRing", {
+        name: "Grid-Based: Rings",
+        hint: "Ring templates.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "gridBasedTemplatesEmanation", {
+        name: "Grid-Based: Emanations",
+        hint: "Emanation templates around a creature.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableTemplateTargeting", {
         name: "Auto-Target Tokens in Spell Templates",
         hint: "When a spell or ability template is placed on the canvas, automatically targets all tokens within the template area. Targets update live while dragging. Disabled automatically when midi-qol is active.",
@@ -1995,6 +2066,8 @@ Hooks.once("setup", () => {
     initLegendaryActionPlaceholders();
     initTemplateGridSnap();
     initGridConeRules();
+    // Before Template Targeting and the Template HUD, so their placeRegion wrappers see the grid-based shapes
+    initGridBasedTemplates();
     initHealingContextMenu();
     initAutoRollSaveDamage();
     initAutoRollAttackDamage();

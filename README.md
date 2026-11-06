@@ -68,6 +68,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
+| **[Grid-Based Templates](#grid-based-templates)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
@@ -301,6 +302,15 @@ Cone templates on square grids cover whole squares, following the D&D grid rules
 * **8 orientations**: The cone fills the wedge between two neighbouring grid directions (for example between east and south-east). Scrolling or dragging the rotation handle steps to the next wedge, 45° at a time.
 * **One set of squares**: The highlighted squares, auto-targeting and Region behaviours all use the same squares. The origin always snaps to an intersection, also with <kbd>Shift</kbd> held. The angle is left out of the measurement label.
 * **Scope**: Applies to spell and item templates and to templates drawn with Foundry's template tools. Hex and gridless scenes and ordinary Regions keep the default cone. It applies to everyone in the world (no personal opt-out), so every player sees the same squares. Turned on by default.
+
+### Grid-Based Templates
+Templates are measured with the scene's grid rules instead of being drawn as round shapes, using Foundry's grid-based Region shapes. Choose which template types this applies to.
+* **What changes**: On a square grid with 5/5/5 diagonals, a 20 ft sphere covers a square of squares; with 5/10/5 diagonals it covers an octagon. On hex grids, round shapes follow the hexes. Line lengths are measured along the grid. Gridless scenes are not affected.
+* **Per template type**: Circles and spheres (also ellipses drawn with Foundry's template tools), cones, cubes and squares, lines, rings and emanations each have their own switch. Circles, spheres and rings are off by default; the other types are on.
+* **Scope**: Applies to spell and item templates and to templates drawn with Foundry's template tools (Regions layer, template mode). The preview while placing already shows the final shape. Other Regions are not affected.
+* **New templates only**: The choice is stored on each template, so templates already on the scene keep their shape when you change the settings.
+* **With Rules-Accurate Cones**: On square grids, that feature decides the cone's squares, so the Cones switch only matters on hex grids while it is on.
+* Applies to everyone in the world (no personal opt-out). Turned on by default. Works with midi-qol.
 
 ### Auto-Attach Self Emanation Templates
 When a creature uses something with an emanation area centered on itself (e.g. *Spirit Guardians*, Paladin auras), the template is attached to its token right away, without placing it on the canvas. Players can turn this off for themselves.
@@ -546,6 +556,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |
 | **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
 | **Rules-Accurate Cones on Square Grids** | **Disabled** (midi-qol targets cones from its own cone shape, which would not match the squares). |
+| **Grid-Based Templates** | **Works**: midi-qol targets the grid-based template shape. |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |

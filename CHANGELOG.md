@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.68.0] - 2026-11-06
+### Added
+- **Grid-Based Templates**: Templates can follow the scene's grid instead of being drawn as round shapes. On a square grid with 5/5/5 diagonals a 20 ft sphere covers a square of squares, with 5/10/5 diagonals an octagon, and on hex grids round shapes follow the hexes. Choose which template types it applies to: cones, cubes, lines and emanations are on by default, circles, spheres and rings can be turned on too. Works for spell and item templates and for templates drawn with Foundry's template tools; templates already on the scene keep their shape. On by default; change it in the settings dashboard (Templates). Works with midi-qol.
+
 ## [14.67.7] - 2026-11-06
 ### Fixed
 - **Readable Text Size**: With Carolingian UI active, attack, damage, check and save text in item tooltips is now as large as the rest of the description. It used to stay at the small default size.

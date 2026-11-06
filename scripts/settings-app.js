@@ -1181,6 +1181,77 @@ export class NiksTweaksSettingsApp extends foundry.applications.api.HandlebarsAp
                                 scope: "world"
                             },
                             {
+                                key: "enableGridBasedTemplates",
+                                introduced: "14.68.0",
+                                docs: "grid-based-templates",
+                                keywords: ["AoE", "area of effect", "measured template", "grid", "region", "sphere", "square", "diagonals", "Fireball"],
+                                name: "Grid-Based Templates",
+                                hint: "New templates of the chosen types are measured with the scene's grid rules instead of as round shapes: on a 5/5/5 square grid a 20 ft sphere covers a square, on hex grids round shapes follow the hexes. Existing templates keep their shape. Applies to every player.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world"
+                            },
+                            {
+                                key: "gridBasedTemplatesCircle",
+                                introduced: "14.68.0",
+                                name: "Circles and Spheres",
+                                hint: "Circle, sphere and cylinder templates (and ellipses drawn with Foundry's template tools).",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
+                                key: "gridBasedTemplatesCone",
+                                introduced: "14.68.0",
+                                name: "Cones",
+                                hint: "Cone templates. On square grids, Rules-Accurate Cones takes precedence when it is on.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
+                                key: "gridBasedTemplatesRectangle",
+                                introduced: "14.68.0",
+                                name: "Cubes and Squares",
+                                hint: "Cube and square templates.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
+                                key: "gridBasedTemplatesLine",
+                                introduced: "14.68.0",
+                                name: "Lines",
+                                hint: "Line templates: the length is measured along the grid.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
+                                key: "gridBasedTemplatesRing",
+                                introduced: "14.68.0",
+                                name: "Rings",
+                                hint: "Ring templates.",
+                                type: "Boolean",
+                                default: false,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
+                                key: "gridBasedTemplatesEmanation",
+                                introduced: "14.68.0",
+                                name: "Emanations",
+                                hint: "Emanation templates around a creature.",
+                                type: "Boolean",
+                                default: true,
+                                scope: "world",
+                                parentKey: "enableGridBasedTemplates"
+                            },
+                            {
                                 key: "enableTemplateControlsHUD",
                                 introduced: "14.35.0",
                                 docs: "template-placement-controls-hud--scroll-rotation",
