@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.67.7] - 2026-11-06
+### Fixed
+- **Readable Text Size**: With Carolingian UI active, attack, damage, check and save text in item tooltips is now as large as the rest of the description. It used to stay at the small default size.
+- **Readable Text Size**: With Carolingian UI's chat styling active, chat card descriptions get the extra line spacing of the Chat Cards option everywhere, not only in paragraphs.
+
 ## [14.67.6] - 2026-11-05
 ### Fixed
 - **Prone Rules**: Standing up from Prone costs half the creature's Speed again. While moving after standing up, the ruler charged the cost twice, so it looked as if the creature's whole Speed was gone after one step.

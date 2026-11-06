@@ -6027,6 +6027,12 @@ body.nd5t-readable-text :is(#tooltip, .locked-tooltip).document-tooltip .descrip
     line-height: var(--nd5t-rt-line-height);
 }
 
+/* Carolingian UI pins every span in tooltip paragraphs to 12px with !important, which left enricher text (attack,
+   damage, check and save links) at the system size. Let it follow the paragraph again */
+body.nd5t-readable-text.crlngn-ui :is(#tooltip, .locked-tooltip).document-tooltip .description p span {
+    font-size: inherit !important;
+}
+
 /* Chat card descriptions (optional) */
 body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications) .message .card-content,
 body.nd5t-readable-text-chat .chat-message.message .card-content {
@@ -6034,7 +6040,7 @@ body.nd5t-readable-text-chat .chat-message.message .card-content {
     line-height: var(--nd5t-rt-line-height);
 }
 
-/* Paragraph-level line heights set elsewhere would otherwise win over the inherited value */
+/* Paragraph-level line heights set elsewhere (e.g. Carolingian UI's chat cards) would otherwise win over the inherited value */
 body.nd5t-readable-text :is(
     .journal-entry-page .journal-page-content,
     .dnd5e2.sheet.item .tab.description .editor-content,
@@ -6042,7 +6048,8 @@ body.nd5t-readable-text :is(
     .dnd5e2 .items-section .item .item-description .item-summary,
     :is(#tooltip, .locked-tooltip).document-tooltip .description
 ) :is(p, li, dd, dt, blockquote),
-body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .chat-message.message) .card-content :is(p, li, dd, dt, blockquote) {
+body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .chat-message.message) .card-content :is(p, li, dd, dt, blockquote),
+body.nd5t-readable-text-chat :is(.chat-log, .chat-popout, #chat-notifications, .chat-message.message) .card-content > .wrapper {
     line-height: var(--nd5t-rt-line-height);
 }
 
