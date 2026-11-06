@@ -12,7 +12,8 @@
  */
 import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
-import { parseListValue } from "../../settings-list-editor.js";
+import { parseListValue } from "../../utils/list-value.js";
+import { coreApi } from "../../core-integration.js";
 
 /**
  * How it works
@@ -213,7 +214,7 @@ function _onRenderTokenHUD(app, element, context) {
             config.addEventListener("click", (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                game.modules.get(MODULE_ID)?.api?.openSettings("hudHiddenStatuses");
+                coreApi()?.openSettings(`${MODULE_ID}.hudHiddenStatuses`);
             });
             hint.append(config);
         }

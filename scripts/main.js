@@ -1,26 +1,15 @@
 // UI & Visuals
-import { initSceneNavName } from "./features/ui-visuals/scene-nav-name.js";
 import { enableCursorHints, disableCursorHints } from "./features/ui-visuals/cursor-hints.js";
-import { initActorDispositionColors } from "./features/ui-visuals/actor-disposition-colors.js";
-import { enableSidebarNameWrap, disableSidebarNameWrap } from "./features/ui-visuals/sidebar-name-wrap.js";
-import { updateReadableTextSize } from "./features/ui-visuals/readable-text-size.js";
 import { initBloodDropIcon } from "./features/ui-visuals/blood-drop-icon.js";
-import { initCleanSheetTitles } from "./features/ui-visuals/clean-sheet-titles.js";
-import { initSheetPopoutButton, disableSheetPopoutButton } from "./features/ui-visuals/sheet-popout-button.js";
 import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./features/ui-visuals/item-sheet-attunement-tag.js";
 import { initSheetPlusCompendium } from "./features/ui-visuals/sheet-plus-compendium.js";
 import { initNpcHpScaler, disableNpcHpScaler } from "./features/ui-visuals/npc-hp-scaler.js";
-import { initToolbarLimitation, applyToolbarLimitation, resetToolbars } from "./features/ui-visuals/toolbar-limitation.js";
 import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
-import { initChatScrollFix, enableChatScrollFix, disableChatScrollFix } from "./features/ui-visuals/chat-scroll-fix.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/ui-visuals/chat-card-styling.js";
 import { initRollBreakdownDetails } from "./features/ui-visuals/roll-breakdown-details.js";
 import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
-import { initHidePrivateGMRolls } from "./features/ui-visuals/hide-private-gm-rolls.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
-import { initContextMenuStyling } from "./features/ui-visuals/context-menu-styling.js";
-import { initCarolingianHarmony, updateCarolingianThemeState } from "./features/ui-visuals/carolingian-harmony.js";
 
 // Canvas & Tokens
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
@@ -29,15 +18,10 @@ import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-sna
 import { initGridConeRules, refreshGridCones } from "./features/canvas-tokens/grid-cone-rules.js";
 import { initGridBasedTemplates } from "./features/canvas-tokens/grid-based-templates.js";
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
-import { initDisableUndergroundTokenHiding } from "./features/canvas-tokens/disable-underground-token-hiding.js";
-import { initAutoanimationsTeleportUI } from "./features/canvas-tokens/autoanimations-teleport-ui.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
 import { initSummonPlacementHUD } from "./features/canvas-tokens/summon-placement-hud.js";
-import { initClearTargets, onClearTargetsSocket, clearTargets } from "./features/canvas-tokens/clear-targets.js";
-export { clearTargets };
 
 // Combat & Automation
-import { initAutoAddTokensToCombat } from "./features/combat-automation/auto-add-tokens-to-combat.js";
 import { initAutoRollInitiative } from "./features/combat-automation/auto-roll-initiative.js";
 import { initLegendaryActionPlaceholders } from "./features/combat-automation/legendary-action-placeholders.js";
 import { initAutoRollSaveDamage } from "./features/combat-automation/auto-roll-save-damage.js";
@@ -65,23 +49,17 @@ import { initConditionalDamage } from "./features/combat-automation/conditional-
 import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
 
 // Utilities
-import { initAutoUnpauseOnLogin } from "./features/utilities/auto-unpause-on-login.js";
 import { initActorItemDragBehavior } from "./features/utilities/actor-item-drag-behavior.js";
 
 // Patches
 import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip-overlap.js";
 import { initFixPactSpellScaling, refreshAllPactSpellScaling } from "./features/patches/fix-pact-spell-scaling.js";
 import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray-grouping-key.js";
-import { initFixTokenBarRefresh } from "./features/patches/fix-token-bar-refresh.js";
 import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
 import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-spell-scaling.js";
-import { initFixPlaceablesSidebarTab } from "./features/patches/fix-placeables-sidebar-tab.js";
 
-// Settings Dashboard
-import { NiksTweaksSettingsApp, refreshSettingsMenuBadge } from "./settings-app.js";
-import { registerModule, registerSettings, registerUnavailableWith } from "./settings-registry.js";
-import { getSettingsSchema } from "./settings-schema.js";
-import { isAc5eActive, isMidiActive, isWm5eActive } from "./utils/module-compat.js";
+// Nik's Foundry Tweaks: dashboard registration and extensions
+import { coreApi, registerWithCore, warnIfCoreMissing } from "./core-integration.js";
 
 // Module context
 import { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache } from "./context.js";
@@ -108,68 +86,18 @@ function resetDamageTrayCollapse() {
     if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
 }
 
+// Register with Nik's Foundry Tweaks. Must run at the top level: core calls the hook during its own init.
+registerWithCore();
+
 Hooks.once("init", () => {
 
-    // ==========================================
-    // Unified ApplicationV2 Settings Dashboard
-    // ==========================================
-
-    game.settings.registerMenu(MODULE_ID, "settingsDashboard", {
-        name: "Nik's D&D 5e Tweaks Configuration",
-        label: "Configure Module",
-        hint: "Open the comprehensive settings dashboard with categorized tabs, search, and backup options.",
-        icon: "fa-solid fa-sliders",
-        type: NiksTweaksSettingsApp,
-        restricted: false
-    });
-
-    // Dashboard view state: the version this user last opened it in ("New" badges) and the description length.
-    game.settings.register(MODULE_ID, "dashboardLastSeenVersion", {
-        scope: "client",
-        config: false,
-        type: String,
-        default: ""
-    });
-
-    game.settings.register(MODULE_ID, "dashboardFullHints", {
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: false
-    });
-
-    // Version each module was last seen in, per module id ("New" badges). Replaces dashboardLastSeenVersion,
-    // which is still read as the fallback for this module.
-    game.settings.register(MODULE_ID, "dashboardLastSeen", {
-        scope: "client",
-        config: false,
-        type: Object,
-        default: {}
-    });
-
-    // What the dashboard shows: this module, its schema and the modules that take over some features.
-    registerModule({
-        id: MODULE_ID,
-        title: "Nik's DnD5e Tweaks",
-        docsUrl: "https://github.com/nschoenwald/niks-dnd5e-tweaks#"
-    });
-    registerUnavailableWith({
-        midi: { label: "midi-qol", isActive: isMidiActive },
-        wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive },
-        ac5e: { label: "Automated Conditions 5e", isActive: isAc5eActive }
-    });
-    registerSettings(MODULE_ID, getSettingsSchema());
-
-    // Public API: open the dashboard at a setting, e.g. from a macro or another module.
+    // Public API, kept for macros: opens the shared dashboard of Nik's Foundry Tweaks at a setting.
     const moduleData = game.modules.get(MODULE_ID);
     if (moduleData) {
         moduleData.api = {
-            openSettings: (key) => NiksTweaksSettingsApp.open({ key })
+            openSettings: (key) => coreApi()?.openSettings(key)
         };
     }
-
-    // "N new" on the dashboard button in Configure Settings
-    Hooks.on("renderSettingsConfig", (app, element) => refreshSettingsMenuBadge(element));
 
     // ==========================================
     // GROUP 0: Client & Personal Settings
@@ -328,31 +256,6 @@ Hooks.once("init", () => {
         default: true
     });
 
-    game.settings.register(MODULE_ID, "clientEnableSceneNavName", {
-        name: "Sync Browser Tab Title (Personal)",
-        hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: () => {
-            Hooks.callAll("nd5t.updateTabTitle");
-        }
-    });
-
-    game.settings.register(MODULE_ID, "clientEnableSheetPopoutButton", {
-        name: "Sheet Pop-out Button (Personal)",
-        hint: "Shows the ↗ pop-out button on character and item sheet headers (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: (value) => {
-            if (value && game.settings.get(MODULE_ID, "enableSheetPopoutButton")) initSheetPopoutButton();
-            else disableSheetPopoutButton();
-        }
-    });
-
     game.settings.register(MODULE_ID, "clientEnablePactSpellFormulaScaling", {
         name: "Fix Pact Magic Formula Scaling (Personal)",
         hint: "Displays scaled damage and healing formulas for Pact Magic spells in the Formula column and activity rows of character sheets based on your caster's pact slot level (if enabled by the GM).",
@@ -404,15 +307,6 @@ Hooks.once("init", () => {
         default: true
     });
 
-    game.settings.register(MODULE_ID, "clientEnableContextMenuStyling", {
-        name: "Context Menu Styling (Personal)",
-        hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) in right-click context menus (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true
-    });
-
     game.settings.register(MODULE_ID, "clientEnableTemplateTargeting", {
         name: "Auto-Target Tokens in Spell Templates (Personal)",
         hint: "Automatically targets tokens inside spell templates placed by you (if enabled by the GM).",
@@ -425,15 +319,6 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableTemplateGridSnap", {
         name: "Snap Templates to Grid Intersections (Personal)",
         hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true
-    });
-
-    game.settings.register(MODULE_ID, "clientEnableAutoanimationsTeleportUI", {
-        name: "Enhanced Teleport Targeting UI (Personal)",
-        hint: "Enables the floating destination HUD, ghost token preview, and ESC cancellation for Automated Animations teleport presets (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -477,100 +362,9 @@ Hooks.once("init", () => {
         onChange: () => refreshConditionHud()
     });
 
-    game.settings.register(MODULE_ID, "clientEnableClearTargetsButton", {
-        name: "Clear Targets Token Control Button (Personal)",
-        hint: "Shows the Clear Targets button in your Token Controls toolbar (if enabled by the GM).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: () => {
-            if (ui.controls) {
-                if (typeof ui.controls.initialize === "function") ui.controls.initialize();
-                else ui.controls.render({ reset: true });
-            }
-        }
-    });
-
-    game.settings.register(MODULE_ID, "clientReadableTextSize", {
-        name: "Readable Text Size (Personal)",
-        hint: "Overrides the GM's Readable Text Size on your screen.",
-        scope: "client",
-        config: false,
-        type: String,
-        default: "world",
-        choices: {
-            world: "Use World Setting",
-            off: "Off (D&D 5e Default)",
-            comfortable: "Comfortable",
-            large: "Large"
-        },
-        onChange: () => updateReadableTextSize()
-    });
-
-    game.settings.register(MODULE_ID, "clientReadableTextSizeChat", {
-        name: "Readable Text Size in Chat Cards (Personal)",
-        hint: "Overrides the GM's choice for enlarging descriptions in chat cards on your screen.",
-        scope: "client",
-        config: false,
-        type: String,
-        default: "world",
-        choices: {
-            world: "Use World Setting",
-            on: "On",
-            off: "Off"
-        },
-        onChange: () => updateReadableTextSize()
-    });
-
-    game.settings.register(MODULE_ID, "clientEnableCarolingianTheme", {
-        name: "Carolingian UI Theme Harmony (Personal)",
-        hint: "Adopts Carolingian UI's active color theme and styling on your client (if enabled by the GM and Carolingian UI is active).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: () => updateCarolingianThemeState()
-    });
-
     // ==========================================
     // GROUP 1: User Interface & Visuals
     // ==========================================
-
-    game.settings.register(MODULE_ID, "enableCarolingianTheme", {
-        name: "Carolingian UI Theme Harmony",
-        hint: "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => updateCarolingianThemeState()
-    });
-
-    game.settings.register(MODULE_ID, "enableContextMenuStyling", {
-        name: "Context Menu Styling",
-        hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) across right-click context menus in sheets, sidebars, and chat cards, with full light and dark mode support.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableSceneNavName", {
-        name: "Sync Browser Tab Title",
-        hint: "Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: (value) => {
-            if (value && game.settings.get(MODULE_ID, "clientEnableSceneNavName")) Hooks.callAll("nd5t.updateTabTitle");
-            else document.title = game.world.title;
-        }
-    });
 
     game.settings.register(MODULE_ID, "enableRollModeHighlight", {
         name: "Roll Mode Highlight",
@@ -619,20 +413,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableChatScrollFix", {
-        name: "Reliable Chat Log Auto-Scroll",
-        hint: "Keeps the chat log pinned to the bottom during asynchronous target list resolution, CSS transitions, collapsible tray toggles, and card updates.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: (value) => {
-            if (value) enableChatScrollFix();
-            else disableChatScrollFix();
-        }
-    });
-
     game.settings.register(MODULE_ID, "enableChatCardStyling", {
         name: "Chat Card Styling Improvements",
         hint: "Enhances DnD5e chat cards with improved visuals, such as making action buttons (Attack, Damage, Save, Check, Heal) larger, clearer, and color-coded with text labels in both light and dark themes.",
@@ -676,20 +456,6 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableHidePrivateGMRolls", {
-        name: "Hide Private GM Rolls from Players",
-        hint: "Completely hides whispered, private, and blind rolls made by the GM from players in the chat log, rather than displaying an empty placeholder card with hidden contents.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => {
-            ui.chat?.render(true);
-            if (ui.chat?.popout?.rendered) ui.chat.popout.render(true);
-        }
     });
 
     game.settings.register(MODULE_ID, "enableAutoCollapseHostileDamageTrays", {
@@ -739,19 +505,6 @@ Hooks.once("init", () => {
         }
     });
 
-    game.settings.register(MODULE_ID, "enableActorDispositionColors", {
-        name: "Actor Directory Disposition Dots",
-        hint: "Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => {
-            ui.actors.render();
-        }
-    });
-
     game.settings.register(MODULE_ID, "enableBloodDropIcon", {
         name: "Blood Drop Bloodied Icon",
         hint: "Replaces the default DnD5e \"bloodied\" condition icon with a red blood drop icon. Requires a reload to take effect.",
@@ -761,87 +514,6 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         requiresReload: true
-    });
-
-    game.settings.register(MODULE_ID, "readableTextSize", {
-        name: "Readable Text Size",
-        hint: "Default size for the body text of item descriptions, biographies, journal pages, expanded items on sheets and item tooltips, with more space between lines. The rest of the interface keeps its size. Players can override it under Personal Preferences.",
-        scope: "world",
-        config: false,
-        type: String,
-        default: "comfortable",
-        choices: {
-            off: "Off (D&D 5e Default)",
-            comfortable: "Comfortable",
-            large: "Large"
-        },
-        restricted: true,
-        onChange: () => updateReadableTextSize()
-    });
-
-    game.settings.register(MODULE_ID, "readableTextSizeChat", {
-        name: "Readable Text Size in Chat Cards",
-        hint: "Also enlarges item and spell descriptions inside chat cards. Cards become taller. Players can override it under Personal Preferences.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-        restricted: true,
-        onChange: () => updateReadableTextSize()
-    });
-
-    game.settings.register(MODULE_ID, "enableSidebarNameWrap", {
-        name: "Sidebar Multi-line Names",
-        hint: "Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: (value) => {
-            if (value) enableSidebarNameWrap();
-            else disableSidebarNameWrap();
-        }
-    });
-
-    game.settings.register(MODULE_ID, "enableCleanSheetTitles", {
-        name: "Clean Sheet Window Titles",
-        hint: "Removes the verbose type prefix (e.g. \"Non Player Character:\") from document sheet window titles, showing just the document name. Especially useful when detaching windows in V14, where the prefix otherwise consumes all visible space in the taskbar. Requires a reload to take effect.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        requiresReload: true
-    });
-
-    game.settings.register(MODULE_ID, "cleanSheetTitles_format", {
-        name: "↳ Sheet Title Format",
-        hint: "How to display document sheet window titles. \"Name Only\" shows just the name (e.g. \"Goblin\"). \"Type: Name\" adds a prefix (e.g. \"Non Player Character: Goblin\"). \"Name (Type)\" adds a suffix (e.g. \"Goblin (Non Player Character)\").",
-        scope: "world",
-        config: false,
-        type: String,
-        default: "name",
-        choices: {
-            name: "Name Only",
-            prefix: "Type: Name",
-            suffix: "Name (Type)"
-        },
-        restricted: true
-    });
-
-    game.settings.register(MODULE_ID, "enableSheetPopoutButton", {
-        name: "Sheet Pop-out Button",
-        hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets, allowing you to detach the window into a separate browser window using Foundry's native pop-out functionality — without going through the three-dot menu. When the sheet is already detached, the button flips to an attach-back icon (↙) to return it to the main workspace.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: (value) => {
-            if (isFeatureActive("enableSheetPopoutButton", "clientEnableSheetPopoutButton")) initSheetPopoutButton();
-            else disableSheetPopoutButton();
-        }
     });
 
     game.settings.register(MODULE_ID, "enablePactSpellFormulaScaling", {
@@ -919,33 +591,6 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (value) initNpcHpScaler();
             else disableNpcHpScaler();
-        }
-    });
-
-    game.settings.register(MODULE_ID, "enableToolbarLimitation", {
-        name: "Toolbar Limitation",
-        hint: "When the number of buttons in a given scene controls toolbar exceeds a configured limit, turns the toolbar scrollable and limits the visible height to display only that number of buttons at a time (does not apply to the macro hotbar).",
-        scope: "client",
-        config: false,
-        type: Boolean,
-        default: true,
-        onChange: (value) => {
-            if (value) applyToolbarLimitation();
-            else resetToolbars();
-            ui.controls?.render();
-        }
-    });
-
-    game.settings.register(MODULE_ID, "toolbarButtonLimit", {
-        name: "↳ Max Displayed Toolbar Buttons",
-        hint: "The maximum number of buttons to display in a toolbar before it becomes scrollable.",
-        scope: "client",
-        config: false,
-        type: Number,
-        default: 20,
-        onChange: () => {
-            applyToolbarLimitation();
-            ui.controls?.render();
         }
     });
 
@@ -1110,27 +755,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "disableUndergroundTokenHiding", {
-        name: "Disable Underground Token Hiding",
-        hint: "Prevents tokens with negative elevation from disappearing behind the scene background. By default, Foundry renders tokens below elevation 0 behind the background layer, making them invisible. This tweak keeps them visible while preserving the actual elevation value. Requires a reload to take effect.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-        restricted: true,
-        requiresReload: true
-    });
-
-    game.settings.register(MODULE_ID, "enableAutoanimationsTeleportUI", {
-        name: "Enhanced Teleport Targeting UI (Autoanimations)",
-        hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
     game.settings.register(MODULE_ID, "enableTemplateControlsHUD", {
         name: "Template Placement Controls HUD & Scroll Rotation",
         hint: "Displays a floating HUD banner with key controls whenever placing a spell or item template on the canvas, and inverts wheel scrolling so that scrolling rotates the template and Shift + scroll zooms the canvas.",
@@ -1161,37 +785,11 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "enableClearTargetsButton", {
-        name: "Clear Targets Token Control Button",
-        hint: "Adds a button to the Token Controls toolbar that removes targets. For players, it removes their own targets; for GMs, it removes targets for both themselves and all connected players.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true,
-        onChange: () => {
-            if (ui.controls) {
-                if (typeof ui.controls.initialize === "function") ui.controls.initialize();
-                else ui.controls.render({ reset: true });
-            }
-        }
-    });
-
     // ==========================================
     // GROUP 3: Automation & QOL Tasks
     // ==========================================
 
     // ── Phase 1: Combat Setup & Initiative ─────────────────────────────
-
-    game.settings.register(MODULE_ID, "enableAutoAddTokensToCombat", {
-        name: "Auto-Add Tokens to Combat",
-        hint: "Automatically adds new tokens to the active combat encounter when created or dragged to the canvas during combat.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
 
     game.settings.register(MODULE_ID, "promptForInitiative", {
         name: "Prompt for Initiative",
@@ -1927,33 +1525,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "autoUnpauseOnLogin", {
-        name: "Auto-Unpause When Logging In",
-        hint: "When you (the GM) log into a world that is paused, automatically unpause. \"Always\" unpauses regardless of connected players. \"When no players are connected\" only unpauses if no non-GM players are already in the session. \"Never\" disables this feature. Per-GM-user setting — each GM account configures this independently.",
-        scope: "user",
-        config: false,
-        type: String,
-        default: "never",
-        choices: {
-            always: "Always",
-            noPlayers: "When no players are connected",
-            never: "Never"
-        }
-    });
-
-    game.settings.register(MODULE_ID, "debugMode", {
-        name: "Debug Mode",
-        hint: "Enables verbose debug logging in the browser console for all module features. Useful for troubleshooting issues.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-        restricted: true,
-        onChange: (value) => {
-            log(`Debug mode ${value ? "enabled" : "disabled"}`);
-        }
-    });
-
     // Hidden setting to track migration version (not shown in config UI)
     game.settings.register(MODULE_ID, "migrationVersion", {
         scope: "world",
@@ -1965,8 +1536,6 @@ Hooks.once("init", () => {
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
     initRollBreakdownDetails();
-    initDisableUndergroundTokenHiding();
-    initToolbarLimitation();
     initFixPactSpellScaling();
 
     // Region / activity behavior types must be registered before data models are prepared
@@ -1976,12 +1545,8 @@ Hooks.once("init", () => {
 Hooks.once("setup", () => {
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initForceCompendiumBrowser();
-    initSceneNavName();
-    initActorDispositionColors();
-    initCleanSheetTitles();
 
     // Register settings for features that manage their own state
-    initAutoAddTokensToCombat();
     initAutoRollInitiative();
     initDeathSavePrompt();
     initAutoStatusZeroHP();
@@ -2006,7 +1571,6 @@ Hooks.once("setup", () => {
     initSelfEffectApplication();
     initSheetPlusCompendium();
     initNpcHpScaler();
-    initSheetPopoutButton();
     initItemSheetAttunementTag();
     initTemplateTargeting();
 
@@ -2016,29 +1580,20 @@ Hooks.once("setup", () => {
     // Bug fixes
     initFixSkillTooltipOverlap();
     initFixDamageTrayGroupingKey();
-    initFixTokenBarRefresh();
     initFixTokenHPBarAnimation();
     initFixFreeCastSpellScaling();
-    initFixPlaceablesSidebarTab();
 
     // Utilities
-    initAutoUnpauseOnLogin();
     initActorItemDragBehavior();
 
     // UI helpers
     initRollModeHighlight();
-    initContextMenuStyling();
-    initCarolingianHarmony();
-    initChatScrollFix();
     initChatCardStyling();
     initRetroactiveAdvantage();
-    initHidePrivateGMRolls();
     initAutoCollapseDamageTrays();
     initSuppressBloodiedDead();
-    initAutoanimationsTeleportUI();
     initTemplatePlacementHUD();
     initSummonPlacementHUD();
-    initClearTargets();
     initPreventGroupActorRolls();
     initWeaponMasteries();
     initProneRules();
@@ -2048,6 +1603,7 @@ Hooks.once("setup", () => {
 });
 
 Hooks.once("ready", async () => {
+    warnIfCoreMissing();
 
     // One-time migrations (active GM only, so two connected GMs never run them at once)
     if (game.user.isActiveGM) await runMigrations();
@@ -2055,8 +1611,6 @@ Hooks.once("ready", async () => {
     // Features that can run at ready or need the game to be fully loaded
     if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
-    if (game.settings.get(MODULE_ID, "enableSidebarNameWrap")) enableSidebarNameWrap();
-    updateReadableTextSize();
     if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
 
     // ── Central socket dispatcher ──────────────────────────────────────
@@ -2065,10 +1619,6 @@ Hooks.once("ready", async () => {
     // of each feature registering its own game.socket.on() listener,
     // which can't be cleanly de-registered if a feature is hot-toggled.
     game.socket.on(`module.${MODULE_ID}`, (data) => {
-        if (data?.action === "clearTargets") {
-            onClearTargetsSocket(data);
-            return;
-        }
         if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave" || data?.action === "openToppleSaveDialog") {
             weaponMasterySocketMessage(data);
             return;

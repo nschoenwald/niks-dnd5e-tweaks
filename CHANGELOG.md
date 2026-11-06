@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.70.0] - 2026-11-06
+### Changed
+- **Now requires Nik's Foundry Tweaks**: The tweaks that don't depend on D&D 5e moved to the new module [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks), so they work in any game system: Readable Text Size, Sheet Pop-out Button, Clean Sheet Window Titles, Context Menu Styling, Reliable Chat Log Auto-Scroll, Hide Private GM Rolls from Players, Actor Directory Disposition Dots, Sidebar Multi-line Names, Sync Browser Tab Title, Toolbar Limitation, Carolingian UI Theme Harmony, Clear Targets Token Control Button, Disable Underground Token Hiding, Enhanced Teleport Targeting UI, Auto-Add Tokens to Combat, Auto-Unpause When Logging In and Debug Mode. Foundry offers to install it with this update. Everything works as before, and your settings for these features are copied over automatically the first time the world loads.
+- **Settings Dashboard**: Now shared with Nik's Foundry Tweaks and called **Nik's Tweaks**. Settings from this module carry a small **5e** badge. Open it from *Configure Settings → Nik's Foundry Tweaks → Configure Module*; Nik's DnD5e Tweaks no longer has its own section in Configure Settings. Exports made with earlier versions can still be imported there.
+
 ## [14.69.0] - 2026-11-06
 ### Changed
 - **Settings Dashboard**: Rebuilt behind the scenes to prepare for Nik's Foundry Tweaks, an upcoming companion module for system-independent tweaks that will share this dashboard. Nothing changes in how the dashboard looks or works, and all settings stay as they are.

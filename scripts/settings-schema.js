@@ -1,8 +1,10 @@
 /**
  * Dashboard schema of Nik's DnD5e Tweaks: tabs → sections → settings.
  *
- * Registered with the settings registry in `main.js` (`registerSettings(MODULE_ID, …)`). Keys here are the
- * module's own setting keys; the registry qualifies them (and `parentKey` / `pairedWith`) with the module id.
+ * Registered with the shared dashboard of Nik's Foundry Tweaks (`core-integration.js`). Keys here are the module's
+ * own setting keys; the registry qualifies them (and `parentKey` / `pairedWith`) with the module id. Tabs and
+ * sections with the same id as core's are merged into core's (core's labels win); this module's own tabs set an
+ * `order` (core: 0, 10, 20, 30, Utilities & Debug 100).
  *
  * Besides the setting's own data, entries carry dashboard metadata:
  * - `introduced`: module version that added the setting ("New" badges, taken from the git history).
@@ -12,8 +14,9 @@
  * - `parentKey`, `unavailableWith`, `requiresModule`, `list`, `statusPicker`.
  *
  * @introduced v14.69.0 (moved out of settings-app.js)
+ * @updated v14.70.0 (system-independent entries moved to Nik's Foundry Tweaks; tab order, status picker condition check)
  */
-import { DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
+import { DEFAULT_HIDDEN_STATUSES, isSystemCondition } from "./features/canvas-tokens/condition-hud.js";
 
 /**
  * @returns {object[]} The tabs of this module's dashboard schema.
@@ -163,48 +166,6 @@ export function getSettingsSchema() {
                     icon: "fa-solid fa-wand-magic-sparkles",
                     settings: [
                         {
-                            key: "clientEnableCarolingianTheme",
-                            introduced: "14.37.0",
-                            pairedWith: "enableCarolingianTheme",
-                            name: "Carolingian UI Theme Harmony",
-                            hint: "Automatically adopts Carolingian UI's active color theme and styling across the dashboard, floating HUD banners, damage prompts, and combat placeholders (only active when Carolingian UI is enabled).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client",
-                            requiresModule: "crlngn-ui"
-                        },
-                        {
-                            key: "clientReadableTextSize",
-                            introduced: "14.56.0",
-                            pairedWith: "readableTextSize",
-                            name: "Readable Text Size",
-                            hint: "Overrides the GM's Readable Text Size on your screen: larger body text with more space between lines in item descriptions, biographies, journal pages, expanded items on sheets and item tooltips.",
-                            type: "Select",
-                            default: "world",
-                            choices: [
-                                { value: "world", label: "Use World Setting" },
-                                { value: "off", label: "Off (D&D 5e Default)" },
-                                { value: "comfortable", label: "Comfortable" },
-                                { value: "large", label: "Large" }
-                            ],
-                            scope: "client"
-                        },
-                        {
-                            key: "clientReadableTextSizeChat",
-                            introduced: "14.56.0",
-                            pairedWith: "readableTextSizeChat",
-                            name: "Readable Text Size in Chat Cards",
-                            hint: "Overrides the GM's choice for enlarging item and spell descriptions inside chat cards on your screen.",
-                            type: "Select",
-                            default: "world",
-                            choices: [
-                                { value: "world", label: "Use World Setting" },
-                                { value: "on", label: "On" },
-                                { value: "off", label: "Off" }
-                            ],
-                            scope: "client"
-                        },
-                        {
                             key: "clientEnableCursorHints",
                             introduced: "14.28.5",
                             pairedWith: "enableCursorHints",
@@ -250,26 +211,6 @@ export function getSettingsSchema() {
                             pairedWith: "enableRetroactiveAdvantage",
                             name: "Retroactive Advantage/Disadvantage",
                             hint: "Display retroactive advantage/disadvantage buttons on d20 rolls (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
-                        },
-                        {
-                            key: "clientEnableSceneNavName",
-                            introduced: "14.28.5",
-                            pairedWith: "enableSceneNavName",
-                            name: "Sync Browser Tab Title",
-                            hint: "Syncs your browser tab title with the viewed scene name (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
-                        },
-                        {
-                            key: "clientEnableSheetPopoutButton",
-                            introduced: "14.28.5",
-                            pairedWith: "enableSheetPopoutButton",
-                            name: "Sheet Pop-out Button",
-                            hint: "Shows the ↗ pop-out button on character and item sheet headers (if enabled by the GM).",
                             type: "Boolean",
                             default: true,
                             scope: "client"
@@ -322,37 +263,6 @@ export function getSettingsSchema() {
                             default: true,
                             scope: "client",
                             parentKey: "clientEnableItemSheetAttunementTag"
-                        },
-                        {
-                            key: "clientEnableContextMenuStyling",
-                            introduced: "14.34.2",
-                            pairedWith: "enableContextMenuStyling",
-                            name: "Context Menu Styling",
-                            hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) in right-click context menus (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
-                        },
-                        {
-                            key: "enableToolbarLimitation",
-                            introduced: "14.15.0",
-                            docs: "toolbar-limitation",
-                            keywords: ["scene controls", "scroll"],
-                            name: "Toolbar Limitation",
-                            hint: "When the number of buttons in a scene controls toolbar exceeds the limit, turns the toolbar scrollable.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
-                        },
-                        {
-                            key: "toolbarButtonLimit",
-                            introduced: "14.15.0",
-                            name: "Max Displayed Toolbar Buttons",
-                            hint: "The maximum number of buttons to display in a toolbar before scrolling.",
-                            type: "Number",
-                            default: 20,
-                            scope: "client",
-                            parentKey: "enableToolbarLimitation"
                         }
                     ]
                 },
@@ -379,16 +289,6 @@ export function getSettingsSchema() {
                             unavailableWith: "midi",
                             name: "Snap Templates to Grid Intersections",
                             hint: "Snaps circle and square spell templates to grid intersections when placed by you (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
-                        },
-                        {
-                            key: "clientEnableAutoanimationsTeleportUI",
-                            introduced: "14.32.0",
-                            pairedWith: "enableAutoanimationsTeleportUI",
-                            name: "Enhanced Teleport Targeting UI",
-                            hint: "Shows a floating HUD banner, ghost token preview, and allows pressing ESC to cancel when picking an Automated Animations teleport destination (if enabled by the GM).",
                             type: "Boolean",
                             default: true,
                             scope: "client"
@@ -432,16 +332,6 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "client"
-                        },
-                        {
-                            key: "clientEnableClearTargetsButton",
-                            introduced: "14.39.0",
-                            pairedWith: "enableClearTargetsButton",
-                            name: "Clear Targets Token Control Button",
-                            hint: "Shows the Clear Targets button in your Token Controls toolbar (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
-                            scope: "client"
                         }
                     ]
                 }
@@ -459,34 +349,12 @@ export function getSettingsSchema() {
                     icon: "fa-solid fa-desktop",
                     settings: [
                         {
-                            key: "enableSceneNavName",
-                            introduced: "14.0.0",
-                            docs: "sync-browser-tab-title",
-                            keywords: ["browser title"],
-                            name: "Sync Browser Tab Title",
-                            hint: "Keeps the browser tab title dynamically in sync with the name of the scene the client is currently viewing.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
                             key: "enableCursorHints",
                             introduced: "14.0.0",
                             docs: "cursor-keyboard-hints",
                             keywords: ["modifier keys", "Shift", "Alt", "Ctrl", "fast forward"],
                             name: "Cursor Keyboard Hints",
                             hint: "Displays small floating icons near the mouse cursor when modifier keys configured in the DnD5e system (such as Skip Dialog, Advantage, or Disadvantage) are held down.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
-                            key: "enableActorDispositionColors",
-                            introduced: "14.0.0",
-                            docs: "actor-directory-disposition-dots",
-                            keywords: ["friendly", "hostile", "neutral", "sidebar"],
-                            name: "Actor Directory Disposition Dots",
-                            hint: "Adds a colored dot next to each actor name in the Actors sidebar to indicate their default token disposition (Friendly, Neutral, Hostile, or Secret).",
                             type: "Boolean",
                             default: true,
                             scope: "world"
@@ -502,65 +370,6 @@ export function getSettingsSchema() {
                             default: true,
                             scope: "world",
                             requiresReload: true
-                        },
-                        {
-                            key: "readableTextSize",
-                            introduced: "14.56.0",
-                            docs: "readable-text-size",
-                            keywords: ["font size", "accessibility", "bigger text", "line height"],
-                            name: "Readable Text Size",
-                            hint: "Default size for the body text of item descriptions, biographies, journal pages, expanded items on sheets and item tooltips, with more space between lines. The rest of the interface keeps its size. Players can override it under Personal Preferences.",
-                            type: "Select",
-                            default: "comfortable",
-                            choices: [
-                                { value: "off", label: "Off (D&D 5e Default)" },
-                                { value: "comfortable", label: "Comfortable" },
-                                { value: "large", label: "Large" }
-                            ],
-                            scope: "world"
-                        },
-                        {
-                            key: "readableTextSizeChat",
-                            introduced: "14.56.0",
-                            docs: "readable-text-size",
-                            name: "Readable Text Size in Chat Cards",
-                            hint: "Also enlarges item and spell descriptions inside chat cards. Cards become taller. Players can override it under Personal Preferences.",
-                            type: "Boolean",
-                            default: false,
-                            scope: "world"
-                        },
-                        {
-                            key: "enableSidebarNameWrap",
-                            introduced: "14.1.0",
-                            docs: "sidebar-multi-line-names",
-                            keywords: ["long names", "sidebar"],
-                            name: "Sidebar Multi-line Names",
-                            hint: "Allows long document names in the right sidebar (Actors, Items, Scenes, etc.) to wrap onto multiple lines instead of being cut off.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
-                            key: "enableContextMenuStyling",
-                            introduced: "14.34.2",
-                            docs: "context-menu-styling",
-                            keywords: ["right-click", "delete"],
-                            name: "Context Menu Styling",
-                            hint: "Color-codes destructive (Delete in red), additive (Duplicate in green), and privacy actions (Make Private / Reveal in violet) across right-click context menus in sheets, sidebars, and chat cards, with full light and dark mode support.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
-                            key: "enableCarolingianTheme",
-                            introduced: "14.37.0",
-                            docs: "carolingian-ui-theme-harmony",
-                            name: "Carolingian UI Theme Harmony",
-                            hint: "Harmonizes Nik's Tweaks styling with Carolingian UI, automatically adopting its active color theme (Carolingian Teal, Royal Blood, Dark Sorcery, etc.) across the settings dashboard, floating HUD banners, damage prompts, and toggles, while adjusting HUD banner positioning for top scene navigation.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world",
-                            requiresModule: "crlngn-ui"
                         }
                     ]
                 },
@@ -569,33 +378,6 @@ export function getSettingsSchema() {
                     title: "Sheets & Items",
                     icon: "fa-solid fa-file-lines",
                     settings: [
-                        {
-                            key: "enableCleanSheetTitles",
-                            introduced: "14.9.0",
-                            docs: "clean-sheet-window-titles",
-                            keywords: ["window title"],
-                            name: "Clean Sheet Window Titles",
-                            hint: "Removes the verbose type prefix (e.g. \"Non Player Character:\") from document sheet window titles, showing just the document name.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world",
-                            requiresReload: true
-                        },
-                        {
-                            key: "cleanSheetTitles_format",
-                            introduced: "14.9.0",
-                            name: "Sheet Title Format",
-                            hint: "How to display document sheet window titles. \"Name Only\" shows just the name (e.g. \"Goblin\"). \"Type: Name\" adds a prefix (e.g. \"Non Player Character: Goblin\"). \"Name (Type)\" adds a suffix (e.g. \"Goblin (Non Player Character)\").",
-                            type: "Select",
-                            default: "name",
-                            choices: [
-                                { value: "name", label: "Name Only" },
-                                { value: "prefix", label: "Type: Name" },
-                                { value: "suffix", label: "Name (Type)" }
-                            ],
-                            scope: "world",
-                            parentKey: "enableCleanSheetTitles"
-                        },
                         {
                             key: "actorItemDragBehavior",
                             introduced: "14.53.0",
@@ -610,16 +392,6 @@ export function getSettingsSchema() {
                                 { value: "moveExceptNPC", label: "Move, but Copy from NPCs" },
                                 { value: "copy", label: "Always Copy (D&D 5e Default)" }
                             ],
-                            scope: "world"
-                        },
-                        {
-                            key: "enableSheetPopoutButton",
-                            introduced: "14.18.0",
-                            docs: "sheet-pop-out-button",
-                            name: "Sheet Pop-out Button",
-                            hint: "Adds a one-click pop-out button (↗) to the header of Actor and Item sheets to detach into a separate window without the 3-dot menu.",
-                            type: "Boolean",
-                            default: true,
                             scope: "world"
                         },
                         {
@@ -798,28 +570,6 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
-                            key: "enableChatScrollFix",
-                            introduced: "14.26.0",
-                            docs: "reliable-chat-log-auto-scroll",
-                            keywords: ["scroll", "chat log"],
-                            name: "Reliable Chat Log Auto-Scroll",
-                            hint: "Fixes the chat log failing to scroll completely to the bottom when new cards appear or expand. Keeps the chat log pinned during CSS transitions, asynchronous target resolution, collapsible tray toggles, and card updates.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
-                            key: "enableHidePrivateGMRolls",
-                            introduced: "14.30.0",
-                            docs: "hide-private-gm-rolls-from-players",
-                            keywords: ["whisper", "blind roll", "secret roll"],
-                            name: "Hide Private GM Rolls from Players",
-                            hint: "Completely hides whispered, private, and blind rolls made by the GM from players in the chat log, rather than displaying an empty placeholder card with hidden contents.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
                             key: "enableAutoCollapseHostileDamageTrays",
                             introduced: "14.31.0",
                             docs: "auto-collapse-hostile--unowned-damage--healing-trays",
@@ -911,35 +661,12 @@ export function getSettingsSchema() {
                             introduced: "14.63.0",
                             name: "Hidden Statuses",
                             list: true,
-                            statusPicker: true,
+                            statusPicker: { isCondition: isSystemCondition },
                             hint: "Statuses left out of the Token HUD palette for everyone. A hidden status still shows while a token has it, so it can be removed.",
                             type: "String",
                             default: DEFAULT_HIDDEN_STATUSES,
                             scope: "world",
                             parentKey: "enableConditionHud"
-                        },
-                        {
-                            key: "enableClearTargetsButton",
-                            introduced: "14.39.0",
-                            docs: "clear-targets-token-control-button",
-                            keywords: ["untarget", "deselect"],
-                            name: "Clear Targets Token Control Button",
-                            hint: "Adds a button to the Token Controls toolbar that removes targets. For players, it removes their own targets; for GMs, it removes targets for both themselves and all connected players.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
-                        {
-                            key: "disableUndergroundTokenHiding",
-                            introduced: "14.10.0",
-                            docs: "disable-underground-token-hiding",
-                            keywords: ["elevation", "burrow"],
-                            name: "Disable Underground Token Hiding",
-                            hint: "Prevents tokens with negative elevation from disappearing behind the scene background layer.",
-                            type: "Boolean",
-                            default: false,
-                            scope: "world",
-                            requiresReload: true
                         }
                     ]
                 },
@@ -1087,17 +814,6 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
-                        },
-                        {
-                            key: "enableAutoanimationsTeleportUI",
-                            introduced: "14.32.0",
-                            docs: "enhanced-teleport-targeting-ui-automated-animations",
-                            keywords: ["Misty Step", "Dimension Door", "teleport", "Automated Animations"],
-                            name: "Enhanced Teleport Targeting UI (Autoanimations)",
-                            hint: "When using an Automated Animations teleport preset (e.g. Misty Step, Dimension Door), adds a floating screen banner with live range/distance readout, a ghost token preview under the cursor showing valid/invalid placement, and allows pressing ESC to cancel.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
                         }
                     ]
                 }
@@ -1114,17 +830,6 @@ export function getSettingsSchema() {
                     title: "Combat Setup & Initiative",
                     icon: "fa-solid fa-flag-checkered",
                     settings: [
-                        {
-                            key: "enableAutoAddTokensToCombat",
-                            introduced: "14.16.1",
-                            docs: "auto-add-tokens-to-combat",
-                            keywords: ["combat tracker", "encounter", "reinforcements"],
-                            name: "Auto-Add Tokens to Combat",
-                            hint: "Automatically adds new tokens to the active combat encounter when created or dragged to the canvas during combat.",
-                            type: "Boolean",
-                            default: true,
-                            scope: "world"
-                        },
                         {
                             key: "promptForInitiative",
                             introduced: "14.18.0",
@@ -1346,6 +1051,7 @@ export function getSettingsSchema() {
         },
         {
             id: "rollsDamage",
+            order: 40,
             label: "Rolls & Damage",
             icon: "fa-solid fa-burst",
             description: "Attack and damage rolls, applying damage and healing, and weapon masteries.",
@@ -1598,6 +1304,7 @@ export function getSettingsSchema() {
         },
         {
             id: "conditionsEffects",
+            order: 50,
             label: "Conditions & Effects",
             icon: "fa-solid fa-person-falling-burst",
             description: "Conditions, concentration, spell areas and Active Effects.",
@@ -1915,54 +1622,6 @@ export function getSettingsSchema() {
                             keywords: ["duration", "expire", "expiration"],
                             name: "Disable Active Effect Expiry",
                             hint: "Completely disables and suppresses the automatic expiration and deletion of Active Effects introduced by DnD5e (out of combat, at combat end, on rest, and turn-based special expiries). Effects remain active until manually toggled or removed.",
-                            type: "Boolean",
-                            default: false,
-                            scope: "world"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: "utilities",
-            label: "Utilities & Debug",
-            icon: "fa-solid fa-wrench",
-            description: "GM conveniences and diagnostics.",
-            sections: [
-                {
-                    id: "gmConvenience",
-                    title: "GM Convenience",
-                    icon: "fa-solid fa-user-shield",
-                    settings: [
-                        {
-                            key: "autoUnpauseOnLogin",
-                            introduced: "14.23.0",
-                            docs: "auto-unpause-when-logging-in",
-                            keywords: ["pause", "game paused"],
-                            name: "Auto-Unpause When Logging In",
-                            hint: "When you (the GM) log into a paused world, automatically unpause. \"Always\" unpauses regardless of connected players. \"When no players are connected\" only unpauses if no non-GM players are already in the session.",
-                            type: "Select",
-                            default: "never",
-                            choices: [
-                                { value: "always", label: "Always" },
-                                { value: "noPlayers", label: "When no players are connected" },
-                                { value: "never", label: "Never" }
-                            ],
-                            scope: "user"
-                        }
-                    ]
-                },
-                {
-                    id: "debugSection",
-                    title: "Diagnostics",
-                    icon: "fa-solid fa-bug",
-                    settings: [
-                        {
-                            key: "debugMode",
-                            introduced: "14.0.0",
-                            docs: "debug-mode",
-                            name: "Debug Mode",
-                            hint: "Enables verbose debug logging in the browser console for all module features.",
                             type: "Boolean",
                             default: false,
                             scope: "world"

@@ -9,6 +9,9 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 
 ---
 
+> [!IMPORTANT]
+> **Requires [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)** (from 14.70.0). The system-independent tweaks (Readable Text Size, Sheet Pop-out Button, Context Menu Styling, Clear Targets, Toolbar Limitation, the teleport UI and more) and the settings dashboard moved there, so they work in any game system. Your settings for them are copied over automatically.
+
 > [!TIP]
 > **Modular by Design**: Every single tweak can be toggled independently. GMs configure global world defaults, while players have their own **Personal Preferences** tab to customize prompts, auto-rolls, and visuals for their own screen.
 
@@ -22,7 +25,6 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 - [🏁 Combat Flow](#-combat-flow)
 - [💥 Rolls & Damage](#-rolls--damage)
 - [🌀 Conditions & Effects](#-conditions--effects)
-- [🔧 Utilities](#-utilities)
 - [🛠️ Silent System Patches](#️-silent-system-patches)
 - [⚙️ Settings Dashboard & Personal Preferences](#️-settings-dashboard--personal-preferences)
 - [🤝 Module Compatibility](#-module-compatibility)
@@ -39,42 +41,27 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Detailed Roll Breakdown Overlay](#detailed-roll-breakdown-overlay)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Readable Text Size](#readable-text-size)** | UI & Visuals | ✅ Comfortable | Yes |
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Sheet Pop-out Button](#sheet-pop-out-button)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Dragging Items Between Actors](#dragging-items-between-actors)** | UI & Visuals | ✅ Always Move | No |
 | **[Pact Magic Formula Scaling Fix](#pact-magic-formula-scaling-fix)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Clean Sheet Window Titles](#clean-sheet-window-titles)** | UI & Visuals | ✅ Enabled | No |
-| **[Context Menu Styling](#context-menu-styling)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Reliable Chat Log Auto-Scroll](#reliable-chat-log-auto-scroll)** | UI & Visuals | ✅ Enabled | No |
-| **[Actor Directory Disposition Dots](#actor-directory-disposition-dots)** | UI & Visuals | ✅ Enabled | No |
 | **[Cursor Keyboard Hints](#cursor-keyboard-hints)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Sync Browser Tab Title](#sync-browser-tab-title)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Blood Drop Bloodied Icon](#blood-drop-bloodied-icon)** | UI & Visuals | ✅ Enabled | No |
-| **[Sidebar Multi-line Names](#sidebar-multi-line-names)** | UI & Visuals | ✅ Enabled | No |
 | **[NPC Hit Point Scaling Buttons](#npc-hit-point-scaling-buttons)** | UI & Visuals | ✅ Enabled | No |
-| **[Toolbar Limitation](#toolbar-limitation)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Carolingian UI Theme Harmony](#carolingian-ui-theme-harmony)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Force Compendium Browser](#force-compendium-browser)** | UI & Visuals | ✅ Enabled | No |
-| **[Hide Private GM Rolls from Players](#hide-private-gm-rolls-from-players)** | UI & Visuals | ✅ Enabled | No |
 | **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Enhanced Teleport Targeting UI](#enhanced-teleport-targeting-ui-automated-animations)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Grid-Based Templates](#grid-based-templates)** | Canvas & Tokens | ✅ Enabled | No |
-| **[Clear Targets Token Control Button](#clear-targets-token-control-button)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Disable Underground Token Hiding](#disable-underground-token-hiding)** | Canvas & Tokens | ❌ Disabled | No |
 | **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Prompt for Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ✅ Players | Yes |
 | **[Auto-Roll Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ❌ Disabled | Yes |
-| **[Auto-Add Tokens to Combat](#auto-add-tokens-to-combat)** | Combat Flow | ✅ Enabled | No |
 | **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat Flow | ✅ Enabled | Yes |
 | **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat Flow | ✅ Enabled | No |
 | **[Undead Fortitude Automation](#undead-fortitude-automation)** | Combat Flow | ✅ Enabled | No |
@@ -100,8 +87,6 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Conditions & Effects | ❌ Disabled | No |
-| **[Auto-Unpause When Logging In](#auto-unpause-when-logging-in)** | Utilities | ❌ Disabled | Yes (GM) |
-| **[Debug Mode](#debug-mode)** | Utilities | ❌ Disabled | No |
 ---
 
 ## 🎨 UI & Visuals
@@ -149,13 +134,6 @@ Transforms the native DnD5e roll breakdown popover (opened by clicking on the ro
 * **Vibrant Damage Type Icons**: Renders damage type icons with dedicated accent colors matching Nik's Action HUD (e.g. Slashing in red, Fire in orange-red, Cold in light blue, Radiant in gold) using CSS masking and subtle drop-shadows, ensuring clear visibility against parchment, white, or dark overlay backgrounds.
 * **Sidebar & Viewport Responsive**: Accurately anchors popovers to the roll trigger and expands inward/leftward to respect sidebar boundaries and scrollbars, preventing breakdown content and totals from overflowing or cutting off on high-resolution displays or narrow panels.
 
-### Readable Text Size
-D&D 5e shows descriptions in small text with tight line spacing (13px in item descriptions and biographies, 12px for a character's Ideals, Bonds, Flaws, Traits and Appearance, 11px for their Alignment, Eyes, Height etc. and for items expanded on a sheet, 12px in tooltips). This setting enlarges that text and adds space between lines, without making the rest of the interface bigger the way Foundry's **Font Size** setting does.
-* **Covers**: journal pages, item descriptions, NPC and character biographies including the fields at the top of a character's Biography tab, items, spells and features expanded on a sheet, and item tooltips. Applies while reading and while editing. Headings scale along; buttons, pills and the rest of the sheet keep their size. Attack, damage, check and save text inside descriptions scales along too, also with Carolingian UI.
-* **Levels**: **Comfortable** (default, e.g. descriptions 13px → 15px, journals 14px → 16px), **Large** (descriptions 17px, journals 18px), or **Off** for D&D 5e's own sizes. Both still follow Foundry's Font Size setting.
-* **Chat Cards**: Turn on **Readable Text Size in Chat Cards** to also enlarge descriptions inside chat cards (off by default, as it makes cards taller).
-* **World Default & Personal Override**: The GM picks the size (and the chat card option) for everyone. Each player can override both under Personal Preferences; their default is **Use World Setting**.
-
 ### Item Sheet Attunement Tag
 Adds a prominent **Attunement Required** or **No Attunement Required** badge to magic item sheets and rich item tooltips.
 * **Direct Toggle**: Clicking an attunement badge on an owned item directly toggles its attuned state without opening tabs.
@@ -175,9 +153,6 @@ Clicking the `+` button on character sheets (Items, Spells, or Features) present
 Persistently highlights the recommended roll mode button (Advantage or Disadvantage) in d20 roll dialogs based on system conditions and features.
 * *Sub-settings*: **Highlight Style** (Glow, Border, Badge, Fill), **Highlight Normal Mode Too**, **Highlight Color** (default gold `#c9a227`).
 
-### Sheet Pop-out Button
-Adds a dedicated **↗ pop-out button** to Actor and Item sheet window headers to detach them into separate browser windows with one click. Automatically hides when already detached.
-
 ### Dragging Items Between Actors
 Dragging an inventory item from one actor's sheet to another (for example from a player character to the party group, or onto a group member) now **moves** it instead of leaving a copy behind. Choose between:
 * **Always Move** (default)
@@ -193,42 +168,14 @@ Hold <kbd>Shift</kbd> to force a move or <kbd>Ctrl</kbd> to force a copy (D&D 5e
 ### Pact Magic Formula Scaling Fix
 Fixes an upstream DnD5e 6.x issue where Pact Magic spells on character and NPC sheets display unscaled base damage/healing formulas (e.g. 2d10 instead of 4d10 for a 1st-level *Hellish Rebuke* on a 5th-level Warlock) in the Formula column and activity rows. Formulas now dynamically scale to the caster's derived pact slot level.
 
-### Clean Sheet Window Titles
-Removes redundant type prefixes (e.g. *"Non Player Character:"*) from sheet headers, displaying clean titles like *"Goblin Archer"* or *"Potion of Healing"*.
-* *Sub-settings*: Title Format (**Name Only**, Type: Name, Name (Type)).
-
-### Context Menu Styling
-Color-codes right-click context menu options across sheets, compendiums, directories, and chat:
-* **Destructive Actions** (Delete, Remove): Crisp red text.
-* **Additive Actions** (Duplicate, Copy): Clear green text.
-* **Privacy Actions** (Make Private, Reveal): Luminous violet text.
-
-### Reliable Chat Log Auto-Scroll
-Fixes the native DnD5e chat log failing to auto-scroll when new cards appear or trays expand, while preserving scroll position when reading older history.
-
-### Hide Private GM Rolls from Players
-Whispered, private and blind rolls made by the GM no longer show up for players as empty placeholder cards in the chat log.
-
-### Actor Directory Disposition Dots
-Displays colored disposition dots (Friendly, Neutral, Hostile, Secret) next to actor names in the sidebar.
-
 ### Blood Drop Bloodied Icon
 Replaces the D&D 5e **Bloodied** condition icon with a red blood drop, so bloodied tokens are easier to spot. Takes effect after reloading.
-
-### Sidebar Multi-line Names
-Long names of actors, items, scenes and other documents in the right sidebar wrap onto several lines instead of being cut off.
 
 ### Cursor Keyboard Hints
 Displays subtle floating modifier icons near the mouse cursor when holding keys for Skip Dialog, Advantage, or Disadvantage.
 
-### Sync Browser Tab Title
-Dynamically updates the browser tab title with the name of the active scene being viewed.
-
 ### NPC Hit Point Scaling Buttons
 Adds `+` and `-` buttons to the NPC Hit Points configuration dialog to quickly scale hit dice up or down, automatically recalculating average maximum HP and health formulas. Hold <kbd>Shift</kbd> to scale by 5.
-
-### Toolbar Limitation
-Turns toolbars scrollable when button count exceeds a configured limit (default: 20), preventing overcrowded canvas controls. Layout is recalculated after the window has finished resizing.
 
 ### Auto-Collapse Hostile / Unowned Damage & Healing Trays
 * **For GM**: Auto-collapses the interactive damage/healing application tray on hostile monster attacks and abilities targeting player characters (delegating application to players).
@@ -245,9 +192,6 @@ Fixes chat log spam during short rests when characters roll multiple hit dice:
 ### Force Compendium Browser
 Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendium Browser instead of the raw pack directory. Hold <kbd>Shift</kbd> to access the default sidebar.
 
-### Carolingian UI Theme Harmony
-Seamlessly adapts the Settings Dashboard, floating canvas HUDs, and damage cards to **Carolingian UI** color palettes, typography, top scene navigation offsets, and Combat Carousel legendary action placeholders.
-
 ---
 
 ## 🎯 Canvas & Tokens
@@ -260,12 +204,6 @@ Replaces the Token HUD's grid of small status icons with a labelled list:
 * **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
 * **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
 * Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
-
-### Clear Targets Token Control Button
-Adds a dedicated crosshair button to the canvas Token Controls toolbar, positioned directly below the core Select Targets button. Players clear their own targets; GMs clear targets across the entire canvas simultaneously.
-
-### Disable Underground Token Hiding
-Prevents tokens with negative elevation from disappearing behind the scene background layer.
 
 ### Template Placement Controls HUD & Scroll Rotation
 A floating glassmorphic banner appears during spell and item template placement:
@@ -323,18 +261,9 @@ Appears during creature summoning activities (*Find Familiar*, *Summon Celestial
 * **Step Tracking**: Multi-creature summons display step progress (*Summon 1 of 4*).
 * **Token Art Preview**: Evaluates wildcard patterns and actor portraits so canvas previews show actual creature artwork instead of mystery tokens.
 
-### Enhanced Teleport Targeting UI (Automated Animations)
-Improves teleport preset destination picking (*Misty Step*, *Dimension Door*):
-* Snaps a translucent ghost token preview to the grid featuring the character's authentic dynamic token ring and rune colors.
-* Real-time status badges for valid range, out-of-range, and wall collision.
-* Uninterrupted right-click canvas panning and clean <kbd>ESC</kbd> / Cancel flow.
-
 ---
 
 ## 🏁 Combat Flow
-
-### Auto-Add Tokens to Combat
-Tokens created or dragged onto the scene while a combat is running are added to the combat automatically.
 
 ### Prompt / Auto-Roll Initiative
 * **Prompt for Initiative**: Prompts players with initiative dialogs when added to combat (with whispered cards for offline players).
@@ -487,16 +416,6 @@ Stops D&D 5e from ending and deleting Active Effects on its own (out of combat, 
 
 ---
 
-## 🔧 Utilities
-
-### Auto-Unpause When Logging In
-Per-user GM setting to automatically unpause the world upon login (**Always**, **When no players connected**, or **Never**).
-
-### Debug Mode
-Enables comprehensive diagnostic logging in the browser console.
-
----
-
 ## 🛠️ Silent System Patches
  
 Patches are zero-configuration, always-on fixes for confirmed upstream system or core bugs:
@@ -504,37 +423,18 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 * **Free Cast Spell Level Picker**: Spells that are never cast with a spell slot (e.g. *Mystic Arcanum*, feat or innate spells cast with item uses) no longer show the **Cast at Level** choice in the usage dialog and are cast at their base level. Follow-up activities of spells cast with a slot (e.g. *Moonbeam*'s damage) keep it, so you can pick the level the spell was cast at. On D&D 5e below 6.1.0, the misleading "no available spell slots" warning is also removed from any spell activity that doesn't use a slot (fixed upstream in 6.1.0).
 * **Pact Magic Formula Scaling**: Dynamically corrects damage and healing formulas for Pact Magic spells to reflect the caster's pact slot level in sheet inventory rows and activity tables.
 * **Damage Application Tray Grouping**: Prevents an upstream D&D 5e system TypeError (`token.getGroupingKey is not a function`) when rendering damage application trays for targets resolved via actor UUID or unplaced tokens.
-* **Token Resource Bar Refresh**: Fixes an upstream Foundry VTT V14 core issue where the first HP change of an unlinked token in a session (e.g. via the Token HUD) did not visually update its resource bar. Only applies to Foundry 14.369 and lower (fixed upstream in 14.370).
-* **Placeables Sidebar Recovery**: Fixes an upstream Foundry VTT V14 core issue where one failed render of the Placeables sidebar's token list (for example caused by another module) pushed the sidebar to the left and broke it until reload, with the console error `Cannot read properties of null (reading 'replaceWith')`. The sidebar now recovers on its next update.
 * **Animated HP Bars**: Foundry VTT V14 smoothly animates token resource bars when their values change, but the D&D 5e HP bar skipped the animation and jumped straight to the new value. HP bars (including temporary HP and temporary max HP) now slide to their new value and colour like every other bar.
 
 ---
 
 ## ⚙️ Settings Dashboard & Personal Preferences
 
-All features are managed in the **Settings Dashboard**, opened from *Configure Settings → Nik's DnD5e Tweaks → Configure Module*. When there are settings you haven't seen yet, that button shows how many.
+All features are managed in the shared **Settings Dashboard** of [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks#️-settings-dashboard--personal-preferences), opened from *Configure Settings → Nik's Foundry Tweaks → Configure Module*. Nik's DnD5e Tweaks has no section of its own in Configure Settings any more. The dashboard holds the settings of both modules in one window; settings from this module carry a small **5e** badge. Rolls & Damage and Conditions & Effects are tabs of their own; everything else joins the shared UI & Visuals, Canvas & Tokens, Combat Flow and Personal Preferences tabs.
 
-**Finding settings**
-* **Overview**: The first tab shows every feature as a card with a one-line summary, whether it is on, and a switch to turn it on or off. Click a feature's name to jump to all its options.
-* **Tabs**: The settings are grouped like this README: UI & Visuals, Canvas & Tokens, Combat Flow, Rolls & Damage, Conditions & Effects, Utilities & Debug, and Personal Preferences.
-* **Search**: Finds settings by name, description and related terms (e.g. *Topple* finds Weapon Mastery, *Misty Step* the teleport UI, *Sneak Attack* the conditional damage bonuses). Words can be in any order. Matches are highlighted and every tab with results shows how many it has. Press <kbd>Enter</kbd> to jump to the first one, <kbd>Esc</kbd> to clear the search.
-* **Quick filters**: Show only settings that are **Changed** from their default, **New** since you last opened the dashboard, **Turned Off**, that **Need a Reload**, or that are **Handled Elsewhere** by another module. Filters combine with each other and with the search.
-* **Short or full descriptions**: Descriptions take one line by default; click one to read it in full, or switch to full descriptions in the header.
-* **Docs**: The ⓘ next to a feature (and *Docs* on its card) opens its section of this README.
-
-**Discovering features**
-* **New since you last looked**: The Overview lists settings added since you last opened the dashboard, they carry a **New** badge, and each tab shows how many new settings it holds.
-* **World and personal settings are linked**: A world setting that players can change for themselves shows *Personal: …* with your own choice; the personal setting shows *World: …* and is dimmed when the world setting is off, since it has no effect then. Click either to jump to the other.
-* **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros and other modules can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
-
-**Changing settings**
-* **Changed from default**: A dot after the name marks a setting that differs from its default; the ↺ button next to it puts it back.
-* **Unsaved changes**: Edited settings get a colored bar, and *Save Changes* shows how many are pending. Closing the dashboard with unsaved changes asks first.
-* **World Settings (GMs & Authorized Users)**: Fully supports Foundry's **"Modify Configuration Settings" (`SETTINGS_MODIFY`)** permission, so Assistant GMs or trusted players with that permission can change world settings like a GM.
-* **Personal Preferences (All Players & GMs)**: Settings stored in your own browser (`scope: "client"`). Players turn prompts, auto-rolls and interface tweaks on or off for their own screen without changing anything for others. For GMs this tab is at the bottom.
-* **Players**: Players without settings permission see their Personal Preferences first and an **Active in This World** tab that lists the features the GM turned on, each linked to their own choice. "Reset Defaults" resets only their personal settings.
-* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
-* **Backup**: *Export JSON* saves all settings to a file; *Import JSON* loads them into a world. Files exported with earlier versions can still be imported.
+* **Search, filters, New badges, linked world and personal settings, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
+* **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
+* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
+* **Debug Mode**: One switch in Nik's Foundry Tweaks (Utilities & Debug) turns on diagnostic logging for both modules.
 
 ---
 
@@ -575,9 +475,8 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.
 * **Monk's Combat Details**: Seamless combat turn progression and target resolution compatibility.
 * **Tidy 5e Sheets**: Full support for Classic & Quadrone sheets (including Compendium choice dialogs).
-* **Carolingian UI**: Automatic color theme adoption, top nav clearance glide, and Combat Carousel styling.
+* **Carolingian UI**: With Nik's Foundry Tweaks' Carolingian UI Theme Harmony on, chat cards, the template and summoning HUDs and legendary action placeholders in the Combat Carousel follow the Carolingian theme too.
 * **Dice So Nice (DSN)**: Synchronized 3D dice rolling for retroactive advantage and damage prompts.
-* **Automated Animations**: Ghost token preview with dynamic token rings for teleport presets.
 
 ---
 
@@ -604,11 +503,15 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 
 ### Requirements
 * **Foundry VTT**: Version 14 (maximum 14)
+* **[Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)**: 14.0.0 or later (Foundry offers to install it along with this module)
 * **DnD5e System**: Version 6.0.0 to 6.1.x
 
 ---
 
 ## ❤️ Modules by Nik
+
+### 🧩 Nik's Tweaks
+* **[Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)** – System-independent quality-of-life tweaks and the shared settings dashboard of Nik's Tweaks modules.
 
 ### 🎲 D&D 5e Specific
 * **[Nik's DnD5e Tweaks](https://github.com/nschoenwald/niks-dnd5e-tweaks)** – Consolidated collection of quality-of-life enhancements and combat automation tweaks for DnD5e.
