@@ -7,7 +7,7 @@
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.60.2 (Re-enabled effects keep the conditions of their changes and of the effect)
  */
-import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
 
 /**

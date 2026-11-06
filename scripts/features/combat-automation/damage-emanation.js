@@ -8,7 +8,7 @@
  * @updated v14.58.0 (Placed areas: Moonbeam, Cloudkill, Doomtide; Cloudkill / Doomtide drift each caster turn)
  * @updated v14.59.0 (Length conversion uses the D&D 5e 6.1 signature where available)
  */
-import { MODULE_ID, getSetting, debug, log } from "../../main.js";
+import { MODULE_ID, getSetting, debug, log } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
 

@@ -5,7 +5,7 @@
  * @introduced v14.26.0
  * @updated v14.57.0 (Hooks are registered even when the feature starts disabled, so enabling it mid-session works)
  */
-import { getSetting, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../context.js";
 
 /**
  * Reliable Chat Log Auto-Scroll

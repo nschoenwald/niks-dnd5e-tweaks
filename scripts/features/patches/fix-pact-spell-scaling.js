@@ -5,7 +5,7 @@
  * @introduced v14.46.0
  * @updated v14.49.0 (Spellcasting and sheet wrappers skip work when the fix is disabled)
  */
-import { isFeatureActive, log } from "../../main.js";
+import { isFeatureActive, log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

@@ -5,7 +5,7 @@
  * @introduced v14.29.0
  * @updated v14.49.0 (Theme observer watches theme containers instead of the whole chat subtree)
  */
-import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isMidiMessage } from "../../utils/module-compat.js";
 

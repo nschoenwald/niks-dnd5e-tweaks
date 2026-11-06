@@ -4,7 +4,7 @@
  *
  * @introduced v14.23.0
  */
-import { getSetting, debug, log } from "../../main.js";
+import { getSetting, debug, log } from "../../context.js";
 
 /**
  * Auto-Unpause on Login

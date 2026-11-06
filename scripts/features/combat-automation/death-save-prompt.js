@@ -5,7 +5,7 @@
  * @introduced v13.0.1
  * @updated v14.57.0 (Active GM check uses the V14 API)
  */
-import { debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../context.js";
 
 /**
  * Initialize the Death Save Prompt feature.

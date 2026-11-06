@@ -5,7 +5,7 @@
  *
  * @introduced v14.50.0
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { getMidiSourceItem } from "../../utils/module-compat.js";
 
 /**

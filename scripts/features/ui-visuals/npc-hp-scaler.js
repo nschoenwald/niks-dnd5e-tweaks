@@ -5,7 +5,7 @@
  * @introduced v14.21.1
  * @updated v14.57.0 (Removed a duplicate render hook)
  */
-import { getSetting, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../context.js";
 
 /**
  * NPC Hit Point Scaler

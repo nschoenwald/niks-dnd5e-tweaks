@@ -10,7 +10,7 @@
  * @updated v14.63.2 (fixed equal-width columns; cut-off names show as tooltip)
  * @updated v14.64.0 (gear in the hint line opens the Hidden Statuses setting)
  */
-import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../main.js";
+import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { parseListValue } from "../../settings-list-editor.js";
 

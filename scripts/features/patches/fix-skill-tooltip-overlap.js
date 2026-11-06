@@ -4,7 +4,7 @@
  *
  * @introduced v14.22.0
  */
-import { log } from "../../main.js";
+import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

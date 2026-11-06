@@ -7,7 +7,7 @@
  * @updated v14.57.0 (Canvas target fallback only uses the GM's targets for the GM's own rolls)
  * @updated v14.59.0 (Applies and previews the damage card's "ignore resistance" options from D&D 5e 6.1; preview uses dnd5e's own calculation)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { midiAutoAppliesDamage, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 

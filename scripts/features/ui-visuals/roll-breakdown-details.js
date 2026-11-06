@@ -9,7 +9,7 @@
  * @updated v14.55.1 (midi-qol merged card sections; card summaries use their own message)
  * @updated v14.59.0 (Missing-actor fallback in the damage tray includes the D&D 5e 6.1 `potential` changes)
  */
-import { log, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

@@ -8,7 +8,7 @@
  * @updated v14.55.0 (midi-qol: card summary dice, obscured results, colored borders, merged card buttons; d20 centering & contrast)
  * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
  */
-import { log, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

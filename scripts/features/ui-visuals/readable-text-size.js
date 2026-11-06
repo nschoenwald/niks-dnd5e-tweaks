@@ -9,7 +9,7 @@
  * @introduced v14.56.0
  * @updated v14.67.7 (enricher text in tooltips keeps the readable size with Carolingian UI)
  */
-import { MODULE_ID, log } from "../../main.js";
+import { MODULE_ID, log } from "../../context.js";
 
 const LEVEL_CLASSES = {
     comfortable: "nd5t-readable-text-comfortable",

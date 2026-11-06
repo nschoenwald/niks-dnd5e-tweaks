@@ -8,7 +8,7 @@
  * @updated v14.67.4 (Badge and End Concentration button added after dnd5e renders the card, so they no longer get wiped)
  * @updated v14.67.5 (End Concentration buttons follow the actor's live concentration state on every client)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { midiHandlesConcentration, midiEndsConcentrationOnFailure } from "../../utils/module-compat.js";
 

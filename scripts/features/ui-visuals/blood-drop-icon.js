@@ -4,7 +4,7 @@
  *
  * @introduced v14.1.0
  */
-import { MODULE_ID, getSetting } from "../../main.js";
+import { MODULE_ID, getSetting } from "../../context.js";
 
 /**
  * Blood Drop Bloodied Icon

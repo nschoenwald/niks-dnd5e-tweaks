@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 
 export class CursorHints {
     constructor() {

@@ -4,7 +4,7 @@
  *
  * @introduced v14.10.0
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Combat Experience Tracker

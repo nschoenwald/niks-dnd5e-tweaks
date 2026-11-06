@@ -6,7 +6,7 @@
  * @introduced v14.66.0
  * @updated v14.67.0 (Fix load error: flag key no longer read from MODULE_ID at import time)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Death Ward

@@ -6,7 +6,7 @@
  * @updated v14.49.0 (Capped layout retries and debounced resize handling)
  * @updated v14.57.0 (One render hook instead of two, observer disconnected while disabled, dropped pre-V13 selectors)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 
 let observer = null;
 

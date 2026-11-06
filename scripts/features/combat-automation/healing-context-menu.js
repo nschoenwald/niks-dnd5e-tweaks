@@ -4,7 +4,7 @@
  *
  * @introduced v14.7.0
  */
-import { getSetting, log, debug } from "../../main.js";
+import { getSetting, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

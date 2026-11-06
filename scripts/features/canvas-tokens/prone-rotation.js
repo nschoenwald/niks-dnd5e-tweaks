@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 export class ProneRotation {
     constructor() {

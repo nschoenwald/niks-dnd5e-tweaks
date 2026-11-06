@@ -79,115 +79,15 @@ import { initFixPlaceablesSidebarTab } from "./features/patches/fix-placeables-s
 
 // Settings Dashboard
 import { NiksTweaksSettingsApp, refreshSettingsMenuBadge } from "./settings-app.js";
+import { registerModule, registerSettings, registerUnavailableWith } from "./settings-registry.js";
+import { getSettingsSchema } from "./settings-schema.js";
+import { isAc5eActive, isMidiActive, isWm5eActive } from "./utils/module-compat.js";
 
+// Module context
+import { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache } from "./context.js";
 
-
-export const MODULE_ID = "niks-dnd5e-tweaks";
-
-/**
- * Global logging helpers
- */
-export function log(message, ...args) {
-    console.log(`Nik's DnD5e Tweaks | ${message}`, ...args);
-}
-
-export function debug(message, ...args) {
-    let enabled = false;
-    try {
-        enabled = getSetting("debugMode");
-    } catch {
-        return;
-    }
-    if (enabled) {
-        console.debug(`Nik's DnD5e Tweaks DEBUG | ${message}`, ...args);
-    }
-}
-
-/**
- * Settings Cache
- * --------------
- * In Foundry V14, `game.settings.get` linearly scans every world Setting document
- * (or constructs a fresh `Setting` document for client settings and unset defaults)
- * on every call. Several features read settings inside hot getters that run for every
- * ActiveEffect during data preparation, so reads are cached here.
- *
- * Invalidation:
- *  - The setting config's `onChange` is wrapped on first read so the cache entry is
- *    dropped *before* any onChange handler runs (Foundry calls onChange before hooks).
- *  - `clientSettingChanged`, `createSetting`, `updateSetting` and `deleteSetting`
- *    hooks act as a fallback for any change path that bypasses onChange.
- *
- * Only primitive-valued settings should be read through this cache, since cached
- * values are returned by reference.
- */
-
-/** @type {Map<string, any>} Setting id ("namespace.key") -> cached value */
-const _settingsCache = new Map();
-
-/** @type {Set<string>} Setting ids whose config onChange has been wrapped for invalidation */
-const _settingsCacheWrapped = new Set();
-
-/**
- * Read a setting value through the module's settings cache.
- *
- * @param {string} key - The setting key.
- * @param {string} [namespace=MODULE_ID] - The setting namespace.
- * @returns {any} The setting value.
- */
-export function getSetting(key, namespace = MODULE_ID) {
-    const id = `${namespace}.${key}`;
-    if (_settingsCache.has(id)) return _settingsCache.get(id);
-
-    // Throws for unregistered settings, matching game.settings.get behavior; nothing is cached then.
-    const value = game.settings.get(namespace, key);
-
-    const config = game.settings.settings.get(id);
-    if (!config) return value;
-    if (!_settingsCacheWrapped.has(id)) {
-        _settingsCacheWrapped.add(id);
-        const originalOnChange = config.onChange;
-        config.onChange = function (...args) {
-            _settingsCache.delete(id);
-            if (typeof originalOnChange === "function") return originalOnChange.apply(this, args);
-        };
-    }
-    _settingsCache.set(id, value);
-    return value;
-}
-
-/**
- * Drop one cached setting value, or the entire cache when no id is given.
- * @param {string} [id] - Setting id in "namespace.key" form.
- */
-export function clearSettingsCache(id) {
-    if (id) _settingsCache.delete(id);
-    else _settingsCache.clear();
-}
-
-Hooks.on("clientSettingChanged", (key) => clearSettingsCache(key));
-Hooks.on("createSetting", (setting) => clearSettingsCache(setting.key));
-Hooks.on("updateSetting", (setting) => clearSettingsCache(setting.key));
-Hooks.on("deleteSetting", (setting) => clearSettingsCache(setting.key));
-
-/**
- * Checks whether a feature is active, taking into account both the GM's world-level
- * master setting and the player's personal client-level override setting.
- *
- * @param {string} worldKey - The world-scoped master setting key.
- * @param {string} [clientKey] - The optional client-scoped override setting key.
- * @returns {boolean} True if the feature is enabled by the GM and not disabled by the client.
- */
-export function isFeatureActive(worldKey, clientKey) {
-    try {
-        if (!getSetting(worldKey)) return false;
-        if (clientKey) {
-            if (!getSetting(clientKey)) return false;
-        }
-    } catch {
-        return false;
-    }
-    return true;
-}
+// Re-exported for backwards compatibility. Feature files import these from context.js.
+export { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache };
 
 /**
  * Drop the cached auto-collapse decisions on every message and re-render the chat log,
@@ -237,6 +137,28 @@ Hooks.once("init", () => {
         type: Boolean,
         default: false
     });
+
+    // Version each module was last seen in, per module id ("New" badges). Replaces dashboardLastSeenVersion,
+    // which is still read as the fallback for this module.
+    game.settings.register(MODULE_ID, "dashboardLastSeen", {
+        scope: "client",
+        config: false,
+        type: Object,
+        default: {}
+    });
+
+    // What the dashboard shows: this module, its schema and the modules that take over some features.
+    registerModule({
+        id: MODULE_ID,
+        title: "Nik's DnD5e Tweaks",
+        docsUrl: "https://github.com/nschoenwald/niks-dnd5e-tweaks#"
+    });
+    registerUnavailableWith({
+        midi: { label: "midi-qol", isActive: isMidiActive },
+        wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive },
+        ac5e: { label: "Automated Conditions 5e", isActive: isAc5eActive }
+    });
+    registerSettings(MODULE_ID, getSettingsSchema());
 
     // Public API: open the dashboard at a setting, e.g. from a macro or another module.
     const moduleData = game.modules.get(MODULE_ID);

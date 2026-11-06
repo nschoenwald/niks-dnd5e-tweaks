@@ -6,7 +6,7 @@
  * @updated v14.67.2 (Chat message names the condition that ended the feature, not the last effect added)
  * @updated v14.67.3 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { getBreakingConditionName } from "./auto-end-concentration.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([

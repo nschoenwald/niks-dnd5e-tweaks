@@ -5,7 +5,7 @@
  * @introduced v13.0.1
  * @updated v14.57.0 (Dots are added once per render instead of twice)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 
 /**
  * Build a color map from Foundry's disposition colors.

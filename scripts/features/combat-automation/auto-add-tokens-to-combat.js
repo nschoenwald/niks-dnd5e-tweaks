@@ -5,7 +5,7 @@
  * @introduced v14.16.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Auto-Add Tokens to Combat & Roll Initiative

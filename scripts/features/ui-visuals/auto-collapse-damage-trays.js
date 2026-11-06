@@ -8,7 +8,7 @@
  * @introduced v14.31.0
  * @updated v14.46.4
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

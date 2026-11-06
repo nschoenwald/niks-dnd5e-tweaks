@@ -8,7 +8,7 @@
  * @introduced v14.47.0
  * @updated v14.49.0 (Single-handler fast path for patched methods and getters)
  */
-import { MODULE_ID, debug } from "../main.js";
+import { MODULE_ID, debug } from "../context.js";
 
 /** Map of target string -> Array<Function> of wrapper callbacks registered by our module. */
 const _wrapperChains = new Map();

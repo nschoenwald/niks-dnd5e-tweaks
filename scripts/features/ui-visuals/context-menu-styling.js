@@ -4,7 +4,7 @@
  *
  * @introduced v14.34.0
  */
-import { debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

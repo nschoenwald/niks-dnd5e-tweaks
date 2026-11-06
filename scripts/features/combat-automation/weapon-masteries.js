@@ -30,7 +30,7 @@
  * @updated v14.60.0 (Topple)
  * @updated v14.60.1 (Legendary Resistance on the Topple save removes Prone)
  */
-import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../main.js";
+import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";

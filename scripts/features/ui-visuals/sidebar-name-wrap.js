@@ -4,7 +4,7 @@
  *
  * @introduced v14.1.0
  */
-import { log } from "../../main.js";
+import { log } from "../../context.js";
 
 export function enableSidebarNameWrap() {
     document.body.classList.add("nd5t-sidebar-name-wrap");

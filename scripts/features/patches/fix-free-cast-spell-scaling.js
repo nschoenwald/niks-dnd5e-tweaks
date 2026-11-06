@@ -6,7 +6,7 @@
  * @introduced v14.55.2
  * @updated v14.56.3 (Picker kept on follow-up activities of slot-cast spells; warning removal only below D&D 5e 6.1.0)
  */
-import { log } from "../../main.js";
+import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

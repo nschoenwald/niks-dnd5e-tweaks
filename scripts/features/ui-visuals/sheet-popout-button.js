@@ -5,7 +5,7 @@
  * @introduced v14.17.0
  * @updated v14.57.0 (Render hook registered only once when settings change)
  */
-import { log, debug, isFeatureActive } from "../../main.js";
+import { log, debug, isFeatureActive } from "../../context.js";
 
 /**
  * Sheet Pop-out Button

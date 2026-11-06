@@ -5,7 +5,7 @@
  *
  * @introduced v14.65.0
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Undead Fortitude

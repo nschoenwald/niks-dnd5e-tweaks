@@ -4,7 +4,7 @@
  *
  * @introduced v14.25.0
  */
-import { getSetting, debug, isFeatureActive } from "../../main.js";
+import { getSetting, debug, isFeatureActive } from "../../context.js";
 import { isAc5eActive } from "../../utils/module-compat.js";
 
 /**

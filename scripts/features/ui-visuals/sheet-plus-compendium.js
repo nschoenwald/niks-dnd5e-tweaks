@@ -5,7 +5,7 @@
  * @introduced v14.14.1
  * @updated v14.57.0 (Listens to actor sheet renders only instead of every window render)
  */
-import { debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../context.js";
 
 /**
  * Item, Spell & Feature Add: Choice Dialog & Compendium Filter

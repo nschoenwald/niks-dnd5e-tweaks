@@ -4,7 +4,7 @@
  *
  * @introduced v13.0.1
  */
-import { debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../context.js";
 
 let baseTitle = document.title;
 let initialized = false;

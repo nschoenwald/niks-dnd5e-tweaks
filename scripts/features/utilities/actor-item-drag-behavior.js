@@ -7,7 +7,7 @@
  * @updated v14.56.1 (Open container windows follow the same move rules and quantity prompt)
  * @updated v14.59.0 (Quantity prompt works with the options object `_onDropCreateItems` takes in D&D 5e 6.1)
  */
-import { debug, getSetting } from "../../main.js";
+import { debug, getSetting } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

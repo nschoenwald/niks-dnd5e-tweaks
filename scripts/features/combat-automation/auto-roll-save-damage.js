@@ -5,7 +5,7 @@
  * @introduced v14.7.0
  * @updated v14.58.1 (Damage roll uses the targets of the placed area template, not the ones recorded before placement)
  */
-import { getSetting, debug, log, isFeatureActive } from "../../main.js";
+import { getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 

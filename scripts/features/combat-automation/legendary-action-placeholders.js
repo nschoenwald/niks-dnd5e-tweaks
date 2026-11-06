@@ -7,7 +7,7 @@
  * @updated v14.48.0 (Native core combat turn marker displayed on legendary creatures during placeholder turns)
  * @updated v14.57.0 (Active GM check uses the V14 API)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 const DEFAULT_ICON = "icons/svg/combat.svg";

@@ -6,7 +6,7 @@
  *
  * @introduced v14.41.0
  */
-import { MODULE_ID, log, debug, isFeatureActive } from "../../main.js";
+import { MODULE_ID, log, debug, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

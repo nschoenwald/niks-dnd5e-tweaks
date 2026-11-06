@@ -12,7 +12,7 @@
  * Remembers choices per actor (except one-offs and once-per-turn bonuses).
  */
 
-import { MODULE_ID, isFeatureActive, log, debug } from "../../main.js";
+import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isWm5eActive } from "../../utils/module-compat.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";

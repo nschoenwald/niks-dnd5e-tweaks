@@ -4,7 +4,7 @@
  *
  * @introduced v14.48.0
  */
-import { log } from "../../main.js";
+import { log } from "../../context.js";
 
 /**
  * Fix: Damage Tray Target Grouping Key — Targets Lacking TokenDocument5e

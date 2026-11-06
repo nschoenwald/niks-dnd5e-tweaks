@@ -534,7 +534,7 @@ All features are managed in the **Settings Dashboard**, opened from *Configure S
 * **Personal Preferences (All Players & GMs)**: Settings stored in your own browser (`scope: "client"`). Players turn prompts, auto-rolls and interface tweaks on or off for their own screen without changing anything for others. For GMs this tab is at the bottom.
 * **Players**: Players without settings permission see their Personal Preferences first and an **Active in This World** tab that lists the features the GM turned on, each linked to their own choice. "Reset Defaults" resets only their personal settings.
 * **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out, crossed out and locked, with a badge naming that module (hover it for details). This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
-* **Backup**: *Export JSON* saves all settings to a file; *Import JSON* loads them into a world.
+* **Backup**: *Export JSON* saves all settings to a file; *Import JSON* loads them into a world. Files exported with earlier versions can still be imported.
 
 ---
 

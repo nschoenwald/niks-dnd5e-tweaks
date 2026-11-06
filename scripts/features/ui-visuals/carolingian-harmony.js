@@ -5,7 +5,7 @@
  *
  * @introduced v14.37.0
  */
-import { MODULE_ID, log, isFeatureActive } from "../../main.js";
+import { MODULE_ID, log, isFeatureActive } from "../../context.js";
 
 const CRLNGN_MODULE_ID = "crlngn-ui";
 const HARMONY_BODY_CLASS = "nd5t-crlngn-theme-active";

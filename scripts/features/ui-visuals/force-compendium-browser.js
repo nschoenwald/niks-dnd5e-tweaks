@@ -5,7 +5,7 @@
  * @introduced v13.0.1
  * @updated v14.57.0 (Removed a duplicate render hook)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 
 export function initForceCompendiumBrowser() {
     // Optimization: Don't attach a hook at all if the current user is a GM.

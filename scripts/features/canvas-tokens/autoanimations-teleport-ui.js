@@ -4,7 +4,7 @@
  *
  * @introduced v14.32.0
  */
-import { debug, isFeatureActive } from "../../main.js";
+import { debug, isFeatureActive } from "../../context.js";
 import { attachHudPositioning } from "./hud-position-helper.js";
 
 /**

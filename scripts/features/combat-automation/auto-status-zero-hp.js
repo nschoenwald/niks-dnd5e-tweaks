@@ -5,7 +5,7 @@
  * @introduced v14.7.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { removeBloodiedEffect } from "./suppress-bloodied-dead.js";
 import { midiAppliesZeroHPStatus, midiMarksDefeated } from "../../utils/module-compat.js";

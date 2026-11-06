@@ -5,7 +5,7 @@
  * @introduced v14.31.0
  * @updated v14.49.0 (isSuppressed checks for bloodied effects before reading settings)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

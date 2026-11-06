@@ -7,7 +7,7 @@
  * @introduced v14.40.0
  */
 
-import { log, isFeatureActive } from "../../main.js";
+import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**

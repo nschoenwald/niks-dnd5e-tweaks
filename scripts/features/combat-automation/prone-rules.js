@@ -12,7 +12,7 @@
  * @introduced v14.63.0
  * @updated v14.67.6 (Standing up no longer charged twice in the drag ruler)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { getMidiWorkflow, isAc5eActive } from "../../utils/module-compat.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";

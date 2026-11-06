@@ -5,7 +5,7 @@
  * @introduced v14.17.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Auto-Prompt & Auto-Roll Initiative on Combat Add

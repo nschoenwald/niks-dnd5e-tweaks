@@ -15,7 +15,7 @@
  * @introduced v14.39.0
  * @updated v14.41.1
  */
-import { MODULE_ID, debug, log, isFeatureActive } from "../../main.js";
+import { MODULE_ID, debug, log, isFeatureActive } from "../../context.js";
 
 /**
  * Helper to identify core target selection tool ("target" / "CONTROLS.TargetSelect").

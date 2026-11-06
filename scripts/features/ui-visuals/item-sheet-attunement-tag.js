@@ -4,7 +4,7 @@
  *
  * @introduced v14.33.0
  */
-import { getSetting, log, isFeatureActive } from "../../main.js";
+import { getSetting, log, isFeatureActive } from "../../context.js";
 import { patchMethod, unpatchMethod } from "../../utils/patch-helper.js";
 
 /**

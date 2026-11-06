@@ -4,7 +4,7 @@
  *
  * @introduced v14.19.0
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 
 /**

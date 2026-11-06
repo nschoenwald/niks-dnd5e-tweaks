@@ -7,7 +7,7 @@
  * @introduced v14.67.0
  * @updated v14.67.5 (Enabled by default)
  */
-import { log, getSetting } from "../../main.js";
+import { log, getSetting } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 

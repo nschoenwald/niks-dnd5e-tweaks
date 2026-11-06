@@ -5,7 +5,7 @@
  * @introduced v14.12.1
  * @updated v14.67.1 (Pending disadvantage is cleared on every client after the save; entries expire after 2 minutes)
  */
-import { MODULE_ID, getSetting, debug } from "../../main.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
 
 /**
  * Mage Slayer — Concentration Breaker

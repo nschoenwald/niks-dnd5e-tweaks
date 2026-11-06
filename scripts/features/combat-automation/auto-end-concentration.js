@@ -6,7 +6,7 @@
  * @updated v14.67.1 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
  * @updated v14.67.2 (Chat message names the condition that broke concentration, not the last effect added)
  */
-import { getSetting, debug } from "../../main.js";
+import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { hasBoonOfTheIronMind } from "./auto-roll-concentration.js";
 

@@ -7,7 +7,7 @@
  * @updated v14.48.4 (Heal activities target allies only, "Choose Targets" damage activities target opponents only)
  * @updated v14.62.0 (Respect the activity's Affects type, skip dead, non-creature and GM-hidden tokens, Secret tokens always targeted, "Choose Targets" saves target opponents, GM selection no longer treated as caster, per-placement caching, no duplicate final targeting)
  */
-import { debug, log, isFeatureActive } from "../../main.js";
+import { debug, log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 
