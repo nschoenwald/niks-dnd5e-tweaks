@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.71.1] - 2026-11-07
+### Fixed
+- **Player Damage Prompt**: No more libWrapper warning that Nik's DnD5e Tweaks and Nik's Foundry Tweaks "modify the same FoundryVTT functionality" when chat messages are shown, for example after a damage roll or when the world loads. Damage prompts are shown and hidden exactly as before.
+- **Healing Context Menu**, **Disable Active Effect Expiry** and **Fix Pact Magic Formula Scaling**: Work more smoothly alongside other modules that change the same parts of Foundry or D&D 5e, so libWrapper no longer warns about a possible conflict. Nothing changes in how these features behave.
+
 ## [14.71.0] - 2026-11-07
 ### Added
 - **French translation**: The module is now available in French, reviewed by Kameleau. Thank you!

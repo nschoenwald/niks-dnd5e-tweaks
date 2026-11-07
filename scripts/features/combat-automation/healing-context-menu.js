@@ -3,6 +3,7 @@
  * Description: Adds right-click context menu options (Apply Damage, Apply Healing, Apply Temp HP) to healing roll chat cards.
  *
  * @introduced v14.7.0
+ * @updated v14.71.1 (Wrappers always call the original first, avoiding libWrapper conflict warnings with other modules)
  */
 import { getSetting, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -27,9 +28,10 @@ export function initHealingContextMenu() {
     patchMethod(
         "CONFIG.ChatMessage.documentClass.prototype.canApplyDamage#get",
         function(wrapped) {
-            if (!getSetting("enableHealingContextMenu")) {
-                return wrapped();
-            }
+            // Always chain first so other modules wrapping this getter still run (libWrapper reports a
+            // conflict otherwise). This wrapper only ever allows more, never less.
+            const allowed = wrapped();
+            if (allowed || !getSetting("enableHealingContextMenu")) return allowed;
 
             const type = this.type ?? this.flags?.dnd5e?.roll?.type;
             const isHealing = type === "healing" || this.system?.isHealing;
@@ -42,10 +44,10 @@ export function initHealingContextMenu() {
                 return this.isRoll && this.isContentVisible && !!canvas.tokens?.controlled.length;
             }
 
-            // For all other types, fall through to the original behavior
-            return wrapped();
+            // For all other types, keep the original result
+            return allowed;
         },
-        "MIXED"
+        "WRAPPER"
     );
 
     log("Healing context menu patch applied — healing rolls now show Apply Damage/Healing/Temp HP options.");

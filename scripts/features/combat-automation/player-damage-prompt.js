@@ -6,6 +6,7 @@
  * @updated v14.56.4 (Attack damage prompt no longer skipped when the damage roll isn't linked to the usage message)
  * @updated v14.57.0 (Canvas target fallback only uses the GM's targets for the GM's own rolls)
  * @updated v14.59.0 (Applies and previews the damage card's "ignore resistance" options from D&D 5e 6.1; preview uses dnd5e's own calculation)
+ * @updated v14.71.1 (Visibility wrapper always chains, fixing the libWrapper conflict warning with Nik's Foundry Tweaks)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -64,23 +65,27 @@ function _patchChatMessageVisibility() {
     patchMethod(
         "CONFIG.ChatMessage.documentClass.prototype.visible#get",
         function(wrapped) {
-            if (this.flags?.[MODULE_ID]?.damagePrompt) {
-                // If a non-GM player has suppressed damage prompts, hide completely
-                if (!game.user?.isGM && Boolean(getSetting("suppressDamagePrompt"))) {
-                    return false;
-                }
+            // Always chain first: Nik's Foundry Tweaks wraps the same getter (Hide Private GM Rolls), and
+            // returning without calling `wrapped` made libWrapper report a conflict between the two modules.
+            // This wrapper only ever hides messages, so the result is the same.
+            const visible = wrapped();
+            if (!visible || !this.flags?.[MODULE_ID]?.damagePrompt) return visible;
 
-                // If whisper recipients are defined, enforce that the user must be in the whisper list.
-                // This prevents the author GM from seeing "Player Only" prompts via Foundry's `this.isAuthor` fallback.
-                const whisperRecipients = Array.isArray(this.whisper) ? this.whisper : (this.whisper ? Array.from(this.whisper) : []);
-                if (whisperRecipients.length > 0 && !whisperRecipients.includes(game.user?.id)) {
-                    return false;
-                }
+            // If a non-GM player has suppressed damage prompts, hide completely
+            if (!game.user?.isGM && Boolean(getSetting("suppressDamagePrompt"))) {
+                return false;
             }
 
-            return wrapped();
+            // If whisper recipients are defined, enforce that the user must be in the whisper list.
+            // This prevents the author GM from seeing "Player Only" prompts via Foundry's `this.isAuthor` fallback.
+            const whisperRecipients = Array.isArray(this.whisper) ? this.whisper : (this.whisper ? Array.from(this.whisper) : []);
+            if (whisperRecipients.length > 0 && !whisperRecipients.includes(game.user?.id)) {
+                return false;
+            }
+
+            return visible;
         },
-        "MIXED"
+        "WRAPPER"
     );
 }
 

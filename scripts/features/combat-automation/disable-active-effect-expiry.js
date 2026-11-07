@@ -3,6 +3,7 @@
  * Description: Suppresses automatic duration-based expiration and deletion of Active Effects out of combat, at combat end, or on rest.
  *
  * @introduced v14.27.0
+ * @updated v14.71.1 (Wrappers always call the original first, avoiding libWrapper conflict warnings with other modules)
  */
 import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -131,12 +132,11 @@ function _patchIsExpiryEvent() {
     patchMethod(
         "CONFIG.ActiveEffect.documentClass.prototype.isExpiryEvent",
         function(wrapped, event, context = {}) {
-            if (getSetting("disableActiveEffectExpiry")) {
-                return false;
-            }
-            return wrapped(event, context);
+            // Chain first so other modules' wrappers still run; the result is only overridden to false
+            const result = wrapped(event, context);
+            return getSetting("disableActiveEffectExpiry") ? false : result;
         },
-        "MIXED"
+        "WRAPPER"
     );
 }
 
@@ -148,12 +148,11 @@ function _patchIsExpiryTrackable() {
     patchMethod(
         "CONFIG.ActiveEffect.documentClass.prototype.isExpiryTrackable#get",
         function(wrapped) {
-            if (getSetting("disableActiveEffectExpiry")) {
-                return false;
-            }
-            return wrapped();
+            // Chain first so other modules' wrappers still run; the result is only overridden to false
+            const result = wrapped();
+            return getSetting("disableActiveEffectExpiry") ? false : result;
         },
-        "MIXED"
+        "WRAPPER"
     );
 }
 

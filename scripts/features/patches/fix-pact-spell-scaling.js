@@ -4,6 +4,7 @@
  *
  * @introduced v14.46.0
  * @updated v14.49.0 (Spellcasting and sheet wrappers skip work when the fix is disabled)
+ * @updated v14.71.1 (Wrappers always call the original first, avoiding libWrapper conflict warnings with other modules)
  */
 import { isFeatureActive, log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -47,17 +48,19 @@ function patchSpellDataScalingIncrease() {
     patchMethod(
         target,
         function (wrapped) {
+            // Original getter (handles cantrips and linkedActivity). Always called first so other modules
+            // wrapping this getter still run (libWrapper reports a conflict otherwise).
+            const base = wrapped();
+
             // If the feature is inactive, use upstream behavior
             if ( !isFeatureActive("enablePactSpellFormulaScaling", "clientEnablePactSpellFormulaScaling") ) {
-                return wrapped();
+                return base;
             }
 
             // If explicit flag scaling is set (e.g. during activity use), respect it
             const flagScaling = this.parent?.getFlag?.("dnd5e", "scaling");
             if ( flagScaling !== undefined && flagScaling !== null ) return flagScaling;
 
-            // Check original getter (handles cantrips and linkedActivity)
-            const base = wrapped();
             if ( base !== null && base !== undefined ) return base;
 
             // Handle Pact Magic / single-level spellcasting on an actor
@@ -87,7 +90,7 @@ function patchSpellDataScalingIncrease() {
 
             return null;
         },
-        "MIXED"
+        "WRAPPER"
     );
 }
 
