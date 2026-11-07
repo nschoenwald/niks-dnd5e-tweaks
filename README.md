@@ -482,7 +482,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 
 ## 🌐 Languages
 
-🇬🇧 English · 🇩🇪 Deutsch
+🇬🇧 English · 🇩🇪 Deutsch · 🇫🇷 Français (thanks Kameleau)
 
 Translations into other languages by native speakers are welcome as an issue or pull request.
 
