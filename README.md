@@ -207,7 +207,7 @@ Replaces the Token HUD's grid of small status icons with a labelled list:
 
 ### Template Placement Controls HUD & Scroll Rotation
 A floating glassmorphic banner appears during spell and item template placement:
-* **Mouse-Wheel Rotation**: Cones, rays, and lines rotate directly in 5° steps using mouse wheel scrolling. Shift+scroll zooms the camera.
+* **Mouse-Wheel Rotation**: Cones, rays, and lines rotate directly in 5° steps using mouse wheel scrolling (rules-accurate cones step one 45° wedge at a time). Every notch counts, also with smooth-scrolling mice and any Windows scroll speed; touchpads are dampened so a swipe doesn't spin the template. Shift+scroll zooms the camera.
 * **Live Readout**: Dynamic rotation angle readout badge (`0°`, `45°`, `90°`).
 * **Emanation Guidance**: Displays target token attachment guidance with visual feedback.
 * **Auto-Attach Self Emanations**: Automatically binds self-targeted emanations (*Spirit Guardians*, *Holy Aura*, etc.) directly to the caster token without manual placement.

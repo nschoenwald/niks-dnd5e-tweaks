@@ -3,10 +3,12 @@
  * Description: Displays a floating HUD banner with key controls (Scroll to rotate, Shift+Scroll to zoom, Left-Click to place, Right-Click / ESC to cancel, and Shift for free snap) and inverts wheel scrolling during template placement.
  *
  * @introduced v14.35.0
+ * @updated v14.71.2 (Scroll stepping: first event of a scroll always rotates once; rule cones at most one wedge per event)
  */
 import { debug, log, isFeatureActive } from "../../context.js";
 import { attachHudPositioning } from "../../core-integration.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { isRuleConeShape } from "./grid-cone-rules.js";
 
 /**
  * State tracking for the active template HUD session
@@ -253,21 +255,33 @@ function _onWindowWheelCapture(event) {
 let _touchpadRotationAccumulator = 0;
 let _lastTouchpadRotationTime = 0;
 
+/** Scroll distance (px) per rotation step while a scroll continues. */
+const TOUCHPAD_ROTATION_THRESHOLD = 40;
+
+/** A pause longer than this (ms) starts a new scroll. */
+const SCROLL_IDLE_MS = 250;
+
 /**
- * Rotate the active template with intelligent touchpad / trackpad sensitivity dampening.
- * In touchpad mode (or when pixel-scroll deltas are emitted), accumulates scroll distance
- * before triggering a 5° rotation step, preventing wild spinning.
+ * Rotate the active template, dampening pixel-based scrolling (touchpads, and mouse wheels that report
+ * fractional or small deltas, such as Windows at 1 line per notch: ~33 px).
+ * - The first event of a new scroll always rotates one step, so slow notch-by-notch scrolling never gets lost
+ *   below the threshold.
+ * - While the scroll continues, scroll distance accumulates and every 40 px rotates one step.
+ * - At most one step per event for rule cones, where a step is a whole 45° wedge (two steps would skip one),
+ *   and at most two for other shapes (5° steps).
  * @param {WheelEvent} event
  * @param {number} dy
  */
 function _rotateTemplate(event, dy) {
-    if (!canvas.regions?._placementContext) return;
+    const context = canvas.regions?._placementContext;
+    if (!context) return;
 
     // Detect touchpad mode via niks-zoom-pan-options setting or pixel-scroll deltas
     const zpoTouchpad = game.modules.get("niks-zoom-pan-options")?.active
         && game.settings.get("niks-zoom-pan-options", "pan-zoom-mode") === "Touchpad";
     const isPixelScroll = event.deltaMode === 0 && (Math.abs(dy) < 50 || !Number.isInteger(dy));
     const isTouchpad = zpoTouchpad || isPixelScroll;
+    debug(`Template scroll: deltaY=${event.deltaY} deltaX=${event.deltaX} deltaMode=${event.deltaMode} touchpad=${isTouchpad}`);
 
     if (!isTouchpad) {
         // Standard physical mouse wheel notch: direct 1:1 rotation per notch
@@ -275,29 +289,30 @@ function _rotateTemplate(event, dy) {
         return;
     }
 
-    const now = Date.now();
-    if (now - _lastTouchpadRotationTime > 250) {
-        _touchpadRotationAccumulator = 0;
-    }
-    _lastTouchpadRotationTime = now;
+    const rotateOnce = sign => canvas.regions._onMouseWheel({ delta: sign, shiftKey: event.shiftKey });
 
+    const now = Date.now();
+    const isNewScroll = (now - _lastTouchpadRotationTime) > SCROLL_IDLE_MS;
+    _lastTouchpadRotationTime = now;
+    if (isNewScroll) {
+        _touchpadRotationAccumulator = 0;
+        rotateOnce(Math.sign(dy));
+        return;
+    }
+
+    // Reversing direction drops what was gathered the other way
+    if (Math.sign(_touchpadRotationAccumulator) === -Math.sign(dy)) _touchpadRotationAccumulator = 0;
     _touchpadRotationAccumulator += dy;
 
-    // ~40px of trackpad stroke per 5° rotation step gives tactile, fine-grained control
-    const TOUCHPAD_ROTATION_THRESHOLD = 40;
-    if (Math.abs(_touchpadRotationAccumulator) >= TOUCHPAD_ROTATION_THRESHOLD) {
-        const steps = Math.trunc(_touchpadRotationAccumulator / TOUCHPAD_ROTATION_THRESHOLD);
-        _touchpadRotationAccumulator -= steps * TOUCHPAD_ROTATION_THRESHOLD;
+    const steps = Math.trunc(_touchpadRotationAccumulator / TOUCHPAD_ROTATION_THRESHOLD);
+    if (!steps) return;
+    _touchpadRotationAccumulator -= steps * TOUCHPAD_ROTATION_THRESHOLD;
 
-        const maxSteps = Math.min(Math.abs(steps), 2);
-        const sign = Math.sign(steps);
-        for (let i = 0; i < maxSteps; i++) {
-            canvas.regions._onMouseWheel({
-                delta: sign,
-                shiftKey: event.shiftKey
-            });
-        }
-    }
+    const maxPerEvent = isRuleConeShape(context.shape) ? 1 : 2;
+    const count = Math.min(Math.abs(steps), maxPerEvent);
+    // Steps beyond the cap are dropped rather than carried over, so a fast flick can't queue up spins
+    if (Math.abs(steps) > count) _touchpadRotationAccumulator = 0;
+    for (let i = 0; i < count; i++) rotateOnce(Math.sign(steps));
 }
 
 /**

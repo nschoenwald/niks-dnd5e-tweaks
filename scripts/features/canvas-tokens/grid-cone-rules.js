@@ -6,6 +6,7 @@
  *
  * @introduced v14.67.0
  * @updated v14.67.5 (Enabled by default)
+ * @updated v14.71.2 (isRuleConeShape export for the placement HUD's scroll stepping)
  */
 import { log, getSetting } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -69,6 +70,16 @@ function _isRuleCone(shape) {
     const flags = region.flags ?? {};
     return !!(flags.core?.MeasuredTemplate || flags.dnd5e?.activity || flags.dnd5e?.item
         || (region.highlightMode === "coverage"));
+}
+
+/**
+ * Whether a shape is a cone that steps through grid wedges (used by the placement HUD's scroll rotation,
+ * where one rotation step is a whole wedge rather than 5°).
+ * @param {foundry.data.BaseShapeData} shape
+ * @returns {boolean}
+ */
+export function isRuleConeShape(shape) {
+    return (shape?.type === "cone") && _isRuleCone(shape);
 }
 
 /**

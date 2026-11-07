@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.71.2] - 2026-11-07
+### Fixed
+- **Rules-Accurate Cones on Square Grids**: Scrolling during placement reaches all 8 cone directions again. With some mice and scroll settings (for example Windows set to 3 lines per notch) a notch could skip a direction, so only 4 were reachable.
+- **Template Placement Controls HUD**: Slow, notch-by-notch scrolling now rotates templates on every notch. With some mice (for example Windows set to 1 line per notch) several notches were needed before anything turned.
+
 ## [14.71.1] - 2026-11-07
 ### Fixed
 - **Player Damage Prompt**: No more libWrapper warning that Nik's DnD5e Tweaks and Nik's Foundry Tweaks "modify the same FoundryVTT functionality" when chat messages are shown, for example after a damage roll or when the world loads. Damage prompts are shown and hidden exactly as before.
