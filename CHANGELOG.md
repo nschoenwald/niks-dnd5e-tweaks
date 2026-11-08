@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.71.3] - 2026-11-08
+### Fixed
+- **Token HUD Condition Palette**: Works alongside Monk's Little Details. While the palette is on, Monk's "Alter Token HUD Status" changes (its own labels, colours, column layout and the Clear All button) are no longer applied on top of it, so the palette no longer looks broken. With the palette off (for the world or just for you), Monk's version shows as before.
+- **Token HUD Condition Palette**: Conditions and other effects are now each sorted strictly A–Z by name, in your language. Dead and the Cover statuses no longer sit at the top of Other Effects, and statuses added by other modules no longer jump to the top.
+
 ## [14.71.2] - 2026-11-07
 ### Fixed
 - **Rules-Accurate Cones on Square Grids**: Scrolling during placement reaches all 8 cone directions again. With some mice and scroll settings (for example Windows set to 3 lines per notch) a notch could skip a direction, so only 4 were reachable.

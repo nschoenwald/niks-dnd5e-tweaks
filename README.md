@@ -199,11 +199,12 @@ Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendi
 ### Token HUD Condition Palette
 Replaces the Token HUD's grid of small status icons with a labelled list:
 * **Names next to icons**: Every status shows its name, so you no longer have to hover icons to find the right one. The three columns have a fixed width; very long names (some modules add these) are shortened and show in full on hover.
-* **Grouped**: The system's conditions (Blinded to Unconscious) come first, other effects (Concentrating, Bleeding, Flying, …) below them.
+* **Grouped and sorted**: The system's conditions (Blinded to Unconscious) come first, other effects (Bleeding, Concentrating, Dead, Flying, …) below them. Both groups are sorted A–Z by name in your language, including statuses added by other modules.
 * **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
 * **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
 * **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
 * Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
+* **Monk's Little Details**: While the palette is on, Monk's "Alter Token HUD Status" layout (labels, colours, columns, Clear All) and its sorting are switched off so the two don't overlap. With the palette off, Monk's version shows as usual.
 
 ### Template Placement Controls HUD & Scroll Rotation
 A floating glassmorphic banner appears during spell and item template placement:
@@ -474,6 +475,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 ### Other Supported Modules
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.
 * **Monk's Combat Details**: Seamless combat turn progression and target resolution compatibility.
+* **Monk's Little Details**: Its "Alter Token HUD Status" changes are switched off while the **Token HUD Condition Palette** is on, so they don't clash.
 * **Tidy 5e Sheets**: Full support for Classic & Quadrone sheets (including Compendium choice dialogs).
 * **Carolingian UI**: With Nik's Foundry Tweaks' Carolingian UI Theme Harmony on, chat cards, the template and summoning HUDs and legendary action placeholders in the Combat Carousel follow the Carolingian theme too.
 * **Dice So Nice (DSN)**: Synchronized 3D dice rolling for retroactive advantage and damage prompts.

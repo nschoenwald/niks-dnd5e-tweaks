@@ -3,12 +3,13 @@
  * Description: Turns the Token HUD's grid of status icons into a labelled list: every condition shows its name,
  *              conditions and other effects are grouped, active ones are highlighted (with their level for
  *              leveled conditions such as Exhaustion, and a mark for overlays), and the palette button shows how
- *              many are active. Statuses the GM hides in the settings are left out of the palette unless the
+ *              many are active. Each group is sorted A–Z by name. Statuses the GM hides in the settings are left out of the palette unless the
  *              token currently has them.
  *
  * @introduced v14.63.0
  * @updated v14.63.2 (fixed equal-width columns; cut-off names show as tooltip)
  * @updated v14.64.0 (gear in the hint line opens the Hidden Statuses setting)
+ * @updated v14.71.3 (suppresses Monk's Little Details' Token HUD status changes while active; groups sorted A–Z)
  */
 import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -28,6 +29,14 @@ import { coreApi } from "../../core-integration.js";
  *   entry row that takes over `data-action="effect"` and `data-status-id`; the HUD's action handler finds the
  *   closest `[data-action]`, so clicks and right-clicks on the icon or the label both reach dnd5e's handler.
  *   The img keeps `data-status-id` for anything that looks it up.
+ *
+ * Monk's Little Details ("Alter Token HUD Status", setting `alter-hud`) also rebuilds this palette: it wraps each
+ * img in `.effect-container` with an `.effect-name`, appends a `.clear-all` row, sets inline grid styles on the
+ * palette and adds `monks-little-details` / `highlight-image` to `#token-hud`, which all of its CSS is scoped to.
+ * It registers its renderTokenHUD hook in `init` and its handler runs synchronously, so it has always finished
+ * before ours (registered in `setup`). `_suppressMonksHud` undoes it; its containers and Clear All row go away when
+ * the palette's children are replaced. Its sorting wrapper on `_getStatusEffectChoices` (by status ID, since the
+ * choices have no `name` / `label`) has no effect: each group is sorted by the shown name here.
  */
 
 const BODY_CLASS = "nd5t-condition-hud";
@@ -171,6 +180,18 @@ function _onPointerOverEntry(event) {
 }
 
 /**
+ * Undo Monk's Little Details' Token HUD changes that clash with the palette (see "How it works").
+ * @param {HTMLElement} element  The Token HUD element (`#token-hud`).
+ * @param {HTMLElement} palette  The status palette.
+ */
+function _suppressMonksHud(element, palette) {
+    element.classList.remove("monks-little-details", "highlight-image");
+    palette.style.removeProperty("grid-template-rows");
+    palette.style.removeProperty("grid-auto-flow");
+    palette.style.removeProperty("--effect-padding");
+}
+
+/**
  * renderTokenHUD: rebuild the status palette as a labelled, grouped list.
  * @param {TokenHUD} app
  * @param {HTMLElement} element
@@ -181,6 +202,7 @@ function _onRenderTokenHUD(app, element, context) {
         if (!_isActive()) return;
         const palette = element?.querySelector?.(".palette.status-effects");
         if (!palette || palette.classList.contains("nd5t-status-palette")) return;
+        if (game.modules.get("monks-little-details")?.active) _suppressMonksHud(element, palette);
 
         const choices = context?.statusEffects ?? {};
         const levels = _conditionLevels(app.actor);
@@ -194,6 +216,13 @@ function _onRenderTokenHUD(app, element, context) {
             const entry = _buildEntry(img, choice, choice?.isActive ? levels.get(id) : undefined);
             (isSystemCondition(id) ? conditions : others).push(entry);
         }
+
+        // Each group strictly A–Z by the shown name. Core sorts by `order` first (dnd5e pins Dead and Cover; statuses
+        // other modules add without an order come first), and Monk's Little Details re-sorts by status ID.
+        const byName = (a, b) => a.querySelector(".nd5t-status-label").textContent
+            .localeCompare(b.querySelector(".nd5t-status-label").textContent, game.i18n.lang);
+        conditions.sort(byName);
+        others.sort(byName);
 
         const doc = element.ownerDocument;
         const groups = [];
