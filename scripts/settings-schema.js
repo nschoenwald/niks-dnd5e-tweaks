@@ -17,6 +17,7 @@
  * @updated v14.70.0 (system-independent entries moved to Nik's Foundry Tweaks; tab order, status picker condition check)
  */
 import { DEFAULT_HIDDEN_STATUSES, isSystemCondition } from "./features/canvas-tokens/condition-hud.js";
+import { overrideSchemaChoices } from "./utils/personal-override.js";
 
 /**
  * @returns {object[]} The tabs of this module's dashboard schema.
@@ -35,13 +36,15 @@ export function getSettingsSchema() {
                     icon: "fa-solid fa-bolt",
                     settings: [
                         {
-                            key: "clientEnableSheetPlusCompendium",
+                            key: "clientSheetPlusCompendium",
                             introduced: "14.28.5",
                             pairedWith: "enableSheetPlusCompendium",
                             name: "Item/Spell Add: Choice Dialog",
-                            hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser (if enabled by the GM). Turn off to always create items directly.",
-                            type: "Boolean",
-                            default: true,
+                            hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser. Turn off to always create items directly. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
@@ -166,33 +169,39 @@ export function getSettingsSchema() {
                     icon: "fa-solid fa-wand-magic-sparkles",
                     settings: [
                         {
-                            key: "clientEnableCursorHints",
+                            key: "clientCursorHints",
                             introduced: "14.28.5",
                             pairedWith: "enableCursorHints",
                             name: "Cursor Keyboard Hints",
-                            hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
-                            key: "clientEnableRollModeHighlight",
+                            key: "clientRollModeHighlight",
                             introduced: "14.28.5",
                             pairedWith: "enableRollModeHighlight",
                             name: "Roll Mode Highlight",
-                            hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
-                            key: "clientEnableChatCardStyling",
+                            key: "clientChatCardStyling",
                             introduced: "14.28.5",
                             pairedWith: "enableChatCardStyling",
                             name: "Chat Card Styling Improvements",
-                            hint: "Applies enhanced action buttons with text labels and ability shorthand (e.g. CON Save), roll badges, multi-die indicators, and color coding to chat cards on your screen (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Applies enhanced action buttons with text labels and ability shorthand (e.g. CON Save), roll badges, multi-die indicators, and color coding to chat cards on your screen. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
@@ -226,13 +235,15 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
-                            key: "clientEnableItemSheetAttunementTag",
+                            key: "clientItemSheetAttunementTag",
                             introduced: "14.33.0",
                             pairedWith: "enableItemSheetAttunementTag",
                             name: "Item Sheet Attunement Tag",
-                            hint: "Shows the attunement tag on magic item sheets (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Shows the attunement tag on magic item sheets. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
@@ -251,18 +262,20 @@ export function getSettingsSchema() {
                                 { value: "subtitle", label: "Header Subtitle Only" }
                             ],
                             scope: "client",
-                            parentKey: "clientEnableItemSheetAttunementTag"
+                            parentKey: "clientItemSheetAttunementTag"
                         },
                         {
-                            key: "clientItemSheetAttunementTag_tooltip",
+                            key: "clientItemSheetAttunementTagTooltip",
                             introduced: "14.33.0",
                             pairedWith: "itemSheetAttunementTag_tooltip",
                             name: "Show in Item Tooltips",
-                            hint: "Display the attunement pill in rich item tooltips on your screen (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Display the attunement pill in rich item tooltips on your screen. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client",
-                            parentKey: "clientEnableItemSheetAttunementTag"
+                            parentKey: "clientItemSheetAttunementTag"
                         }
                     ]
                 },
@@ -294,13 +307,15 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
-                            key: "clientEnableTemplateControlsHUD",
+                            key: "clientTemplateControlsHUD",
                             introduced: "14.35.0",
                             pairedWith: "enableTemplateControlsHUD",
                             name: "Template Placement Controls HUD & Scroll Rotation",
-                            hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
@@ -314,23 +329,27 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
-                            key: "clientEnableSummonControlsHUD",
+                            key: "clientSummonControlsHUD",
                             introduced: "14.36.0",
                             pairedWith: "enableSummonControlsHUD",
                             name: "Summoning Placement Controls HUD",
-                            hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         },
                         {
-                            key: "clientEnableConditionHud",
+                            key: "clientConditionHud",
                             introduced: "14.63.0",
                             pairedWith: "enableConditionHud",
                             name: "Token HUD Condition Palette",
-                            hint: "Shows the Token HUD's status palette as a labelled, grouped list (if enabled by the GM). Turn off for the original icon grid.",
-                            type: "Boolean",
-                            default: true,
+                            hint: "Shows the Token HUD's status palette as a labelled, grouped list. Turn off for the original icon grid. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
                             scope: "client"
                         }
                     ]

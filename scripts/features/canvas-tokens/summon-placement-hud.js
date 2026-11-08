@@ -3,8 +3,10 @@
  * Description: Displays a floating HUD banner with key controls, live distance vs. max range badge, dynamic rotation readout, canvas range boundary ring, and inverted wheel scrolling during summoning placement.
  *
  * @introduced v14.36.0
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { debug, log, isFeatureActive } from "../../context.js";
+import { debug, log } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { attachHudPositioning } from "../../core-integration.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
@@ -155,7 +157,7 @@ function _getTokenCenter(token) {
  */
 function _wrapTokenLayerPlaceTokens() {
     patchMethod("foundry.canvas.layers.TokenLayer.prototype.placeTokens", async function patchedSummonPlaceTokens(wrapped, data, options = {}) {
-        if (!isFeatureActive("enableSummonControlsHUD", "clientEnableSummonControlsHUD")) {
+        if (!isFeatureOnForUser("enableSummonControlsHUD", "clientSummonControlsHUD")) {
             return wrapped(data, options);
         }
 

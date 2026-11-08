@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.71.4] - 2026-11-08
+### Changed
+- **Personal settings**: Eight features that only change what you see or how you work on your own screen can now also be turned on for yourself when the GM left them off: Chat Card Styling Improvements, Item Sheet Attunement Tag (and its item tooltip option), Item / Spell Add: Choice Dialog, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette. Their personal setting now offers **Use World Setting** (the default, follows the GM), **On** and **Off**. Anyone who had turned one of them off keeps it off.
+- Requires Nik's Foundry Tweaks 14.2.2 or later.
+
 ## [14.71.3] - 2026-11-08
 ### Fixed
 - **Token HUD Condition Palette**: Works alongside Monk's Little Details. While the palette is on, Monk's "Alter Token HUD Status" changes (its own labels, colours, column layout and the Clear All button) are no longer applied on top of it, so the palette no longer looks broken. With the palette off (for the world or just for you), Monk's version shows as before.

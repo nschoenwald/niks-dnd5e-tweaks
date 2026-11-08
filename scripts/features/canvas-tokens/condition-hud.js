@@ -10,8 +10,10 @@
  * @updated v14.63.2 (fixed equal-width columns; cut-off names show as tooltip)
  * @updated v14.64.0 (gear in the hint line opens the Hidden Statuses setting)
  * @updated v14.71.3 (suppresses Monk's Little Details' Token HUD status changes while active; groups sorted A–Z)
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { MODULE_ID, getSetting, isFeatureActive, debug } from "../../context.js";
+import { MODULE_ID, getSetting, debug } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { parseListValue } from "../../utils/list-value.js";
 import { coreApi } from "../../core-integration.js";
@@ -45,7 +47,7 @@ const BODY_CLASS = "nd5t-condition-hud";
 export const DEFAULT_HIDDEN_STATUSES = "dehydration, malnutrition, suffocation";
 
 function _isActive() {
-    return isFeatureActive("enableConditionHud", "clientEnableConditionHud");
+    return isFeatureOnForUser("enableConditionHud", "clientConditionHud");
 }
 
 /**

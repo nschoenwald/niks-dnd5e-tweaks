@@ -3,8 +3,10 @@
  * Description: Adds a prominent, theme-adaptive Attunement Required or No Attunement Required badge and quick-toggle state to magic item sheets and rich item tooltips.
  *
  * @introduced v14.33.0
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { getSetting, log, isFeatureActive } from "../../context.js";
+import { getSetting, log } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { patchMethod, unpatchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -30,7 +32,7 @@ let _tooltipObserver = null;
 let _cachedMatchLabels = null;
 
 export function initItemSheetAttunementTag() {
-    if (!isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) {
+    if (!isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag")) {
         disableItemSheetAttunementTag();
         return;
     }
@@ -68,8 +70,8 @@ export function disableItemSheetAttunementTag() {
  * @returns {boolean}
  */
 function _isTooltipTaggingActive() {
-    if (!isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) return false;
-    return isFeatureActive("itemSheetAttunementTag_tooltip", "clientItemSheetAttunementTag_tooltip");
+    if (!isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag")) return false;
+    return isFeatureOnForUser("itemSheetAttunementTag_tooltip", "clientItemSheetAttunementTagTooltip");
 }
 
 /**
@@ -307,7 +309,7 @@ function _isItemSheet(app) {
  */
 function _onRenderApplication(app, element) {
     if (!_isItemSheet(app)) return;
-    if (!isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) return;
+    if (!isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag")) return;
     _injectAttunementTag(app, element);
 }
 

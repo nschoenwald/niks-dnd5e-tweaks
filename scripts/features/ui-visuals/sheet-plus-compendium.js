@@ -4,8 +4,10 @@
  *
  * @introduced v14.14.1
  * @updated v14.57.0 (Listens to actor sheet renders only instead of every window render)
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { debug, isFeatureActive } from "../../context.js";
+import { debug } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 
 /**
  * Item, Spell & Feature Add: Choice Dialog & Compendium Filter
@@ -75,7 +77,7 @@ function _attachPlusButtonInterceptor(app, html) {
     debug(`Attaching plus button interceptor to Actor Sheet: "${actor.name}" (${actor.id})`);
 
     rootElement.addEventListener("click", async (event) => {
-        if (!isFeatureActive("enableSheetPlusCompendium", "clientEnableSheetPlusCompendium")) return;
+        if (!isFeatureOnForUser("enableSheetPlusCompendium", "clientSheetPlusCompendium")) return;
 
         // Bypass if event was dispatched internally to execute standard creation
         if (event.nd5tBypass) return;

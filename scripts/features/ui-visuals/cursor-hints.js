@@ -3,6 +3,7 @@
  * Description: Renders floating keyboard modifier badges (Alt, Shift, Ctrl) near the cursor when modifier keys configured in DnD5e are held down.
  *
  * @introduced v13.0.1
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
 import { getSetting, debug } from "../../context.js";
 

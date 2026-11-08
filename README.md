@@ -39,23 +39,23 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 |---|---|:---:|:---:|
 | **[Retroactive Advantage / Disadvantage](#retroactive-advantage--disadvantage)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Detailed Roll Breakdown Overlay](#detailed-roll-breakdown-overlay)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Chat Card Styling Improvements](#chat-card-styling-improvements)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
+| **[Item Sheet Attunement Tag](#item-sheet-attunement-tag)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
+| **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
+| **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Dragging Items Between Actors](#dragging-items-between-actors)** | UI & Visuals | ✅ Always Move | No |
 | **[Pact Magic Formula Scaling Fix](#pact-magic-formula-scaling-fix)** | UI & Visuals | ✅ Enabled | Yes |
-| **[Cursor Keyboard Hints](#cursor-keyboard-hints)** | UI & Visuals | ✅ Enabled | Yes |
+| **[Cursor Keyboard Hints](#cursor-keyboard-hints)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Blood Drop Bloodied Icon](#blood-drop-bloodied-icon)** | UI & Visuals | ✅ Enabled | No |
 | **[NPC Hit Point Scaling Buttons](#npc-hit-point-scaling-buttons)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Force Compendium Browser](#force-compendium-browser)** | UI & Visuals | ✅ Enabled | No |
-| **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes |
-| **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
+| **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Grid-Based Templates](#grid-based-templates)** | Canvas & Tokens | ✅ Enabled | No |
@@ -88,6 +88,8 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Conditions & Effects | ❌ Disabled | No |
 ---
+
+¹ *Yes*: players can turn the feature off for themselves when the GM has it on. *Yes, on or off*: these only change what a player sees or how they work on their own screen, so each player can also turn them on when the GM left them off (**Use World Setting** / **On** / **Off**).
 
 ## 🎨 UI & Visuals
 
@@ -203,7 +205,7 @@ Replaces the Token HUD's grid of small status icons with a labelled list:
 * **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
 * **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
 * **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
-* Players can turn the labelled list off for themselves under Personal Preferences; hidden statuses then stay visible for them too.
+* Players can choose the labelled list or the original icon grid for themselves under Personal Preferences (**Use World Setting** / **On** / **Off**); with the icon grid, hidden statuses stay visible for them too.
 * **Monk's Little Details**: While the palette is on, Monk's "Alter Token HUD Status" layout (labels, colours, columns, Clear All) and its sorting are switched off so the two don't overlap. With the palette off, Monk's version shows as usual.
 
 ### Template Placement Controls HUD & Scroll Rotation
@@ -432,6 +434,7 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 
 All features are managed in the shared **Settings Dashboard** of [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks#️-settings-dashboard--personal-preferences), opened from *Configure Settings → Nik's Foundry Tweaks → Configure Module*. Nik's DnD5e Tweaks has no section of its own in Configure Settings any more. The dashboard holds the settings of both modules in one window; settings from this module carry a small **5e** badge. Rolls & Damage and Conditions & Effects are tabs of their own; everything else joins the shared UI & Visuals, Canvas & Tokens, Combat Flow and Personal Preferences tabs.
 
+* **Personal settings that override the GM's**: For Chat Card Styling Improvements, Item Sheet Attunement Tag (and its tooltip option), Item / Spell Add: Choice Dialog, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette, each player chooses **Use World Setting** (default), **On** or **Off**, so they can also turn these on when the GM left them off. All other personal settings only turn a feature off for that player, because the GM's choice matters for the whole table (rules, automation, shared templates, or what players learn about NPCs).
 * **Search, filters, New badges, linked world and personal settings, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
 * **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
 * **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.

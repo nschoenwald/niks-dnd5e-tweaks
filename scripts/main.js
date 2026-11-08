@@ -63,6 +63,7 @@ import { coreApi, registerWithCore, warnIfCoreMissing } from "./core-integration
 
 // Module context
 import { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache } from "./context.js";
+import { OVERRIDE_CHOICES, isFeatureOnForUser, migratePersonalOptOuts } from "./utils/personal-override.js";
 
 // Re-exported for backwards compatibility. Feature files import these from context.js.
 export { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache };
@@ -89,6 +90,22 @@ function resetDamageTrayCollapse() {
 // Register with Nik's Foundry Tweaks. Must run at the top level: core calls the hook during its own init.
 registerWithCore();
 
+/**
+ * Personal opt-outs (Boolean) replaced by personal overrides ("world" / "on" / "off") in 14.71.4.
+ * Old key → new key. See `utils/personal-override.js`.
+ */
+const PERSONAL_OVERRIDE_MIGRATIONS = Object.freeze({
+    clientEnableSheetPlusCompendium: "clientSheetPlusCompendium",
+    clientEnableCursorHints: "clientCursorHints",
+    clientEnableRollModeHighlight: "clientRollModeHighlight",
+    clientEnableChatCardStyling: "clientChatCardStyling",
+    clientEnableItemSheetAttunementTag: "clientItemSheetAttunementTag",
+    clientItemSheetAttunementTag_tooltip: "clientItemSheetAttunementTagTooltip",
+    clientEnableTemplateControlsHUD: "clientTemplateControlsHUD",
+    clientEnableSummonControlsHUD: "clientSummonControlsHUD",
+    clientEnableConditionHud: "clientConditionHud"
+});
+
 Hooks.once("init", () => {
 
     // Public API, kept for macros: opens the shared dashboard of Nik's Foundry Tweaks at a setting.
@@ -103,13 +120,14 @@ Hooks.once("init", () => {
     // GROUP 0: Client & Personal Settings
     // ==========================================
 
-    game.settings.register(MODULE_ID, "clientEnableSheetPlusCompendium", {
+    game.settings.register(MODULE_ID, "clientSheetPlusCompendium", {
         name: "Item/Spell Add: Choice Dialog (Personal)",
-        hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser (if enabled by the GM). Turn off to always create items directly.",
+        hint: "When clicking '+' on character sheets, prompts to choose between creating an item or opening the Compendium Browser. Use World Setting follows the GM; Off always creates items directly.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES
     });
 
     game.settings.register(MODULE_ID, "clientEnableAttackDamagePrompt", {
@@ -193,37 +211,40 @@ Hooks.once("init", () => {
         default: true
     });
 
-    game.settings.register(MODULE_ID, "clientEnableCursorHints", {
+    game.settings.register(MODULE_ID, "clientCursorHints", {
         name: "Cursor Keyboard Hints (Personal)",
-        hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor (if enabled by the GM).",
+        hint: "Displays floating Alt/Shift/Ctrl modifier badges near your cursor. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true,
-        onChange: (value) => {
-            if (value && game.settings.get(MODULE_ID, "enableCursorHints")) enableCursorHints();
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
+        onChange: () => {
+            if (isFeatureOnForUser("enableCursorHints", "clientCursorHints", { refresh: true })) enableCursorHints();
             else disableCursorHints();
         }
     });
 
-    game.settings.register(MODULE_ID, "clientEnableRollModeHighlight", {
+    game.settings.register(MODULE_ID, "clientRollModeHighlight", {
         name: "Roll Mode Highlight (Personal)",
-        hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs (if enabled by the GM).",
+        hint: "Highlights the recommended Advantage/Disadvantage button in d20 roll dialogs. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES
     });
 
-    game.settings.register(MODULE_ID, "clientEnableChatCardStyling", {
+    game.settings.register(MODULE_ID, "clientChatCardStyling", {
         name: "Chat Card Styling Improvements (Personal)",
-        hint: "Applies enhanced action buttons, badges, and color coding to chat cards on your screen (if enabled by the GM).",
+        hint: "Applies enhanced action buttons, badges, and color coding to chat cards on your screen. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true,
-        onChange: (value) => {
-            if (value && game.settings.get(MODULE_ID, "enableChatCardStyling")) enableChatCardStyling();
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
+        onChange: () => {
+            if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling", { refresh: true })) enableChatCardStyling();
             else disableChatCardStyling();
         }
     });
@@ -266,15 +287,16 @@ Hooks.once("init", () => {
         onChange: () => refreshAllPactSpellScaling()
     });
 
-    game.settings.register(MODULE_ID, "clientEnableItemSheetAttunementTag", {
+    game.settings.register(MODULE_ID, "clientItemSheetAttunementTag", {
         name: "Item Sheet Attunement Tag (Personal)",
-        hint: "Shows a clear 'Attunement Required' / 'No Attunement Required' tag on magic item sheets (if enabled by the GM).",
+        hint: "Shows a clear 'Attunement Required' / 'No Attunement Required' tag on magic item sheets. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true,
-        onChange: (value) => {
-            if (value && game.settings.get(MODULE_ID, "enableItemSheetAttunementTag")) initItemSheetAttunementTag();
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
+        onChange: () => {
+            if (isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag", { refresh: true })) initItemSheetAttunementTag();
             else disableItemSheetAttunementTag();
         }
     });
@@ -294,17 +316,18 @@ Hooks.once("init", () => {
             subtitle: "Header Subtitle Only"
         },
         onChange: () => {
-            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+            if (isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag", { refresh: true })) initItemSheetAttunementTag();
         }
     });
 
-    game.settings.register(MODULE_ID, "clientItemSheetAttunementTag_tooltip", {
+    game.settings.register(MODULE_ID, "clientItemSheetAttunementTagTooltip", {
         name: "Show in Item Tooltips (Personal)",
-        hint: "Display the attunement pill in rich item tooltips on your screen (if enabled by the GM).",
+        hint: "Display the attunement pill in rich item tooltips on your screen. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES
     });
 
     game.settings.register(MODULE_ID, "clientEnableTemplateTargeting", {
@@ -325,13 +348,14 @@ Hooks.once("init", () => {
         default: true
     });
 
-    game.settings.register(MODULE_ID, "clientEnableTemplateControlsHUD", {
+    game.settings.register(MODULE_ID, "clientTemplateControlsHUD", {
         name: "Template Placement Controls HUD & Scroll Rotation (Personal)",
-        hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas (if enabled by the GM).",
+        hint: "Shows a floating HUD banner with key controls and inverts wheel scrolling during template placement so scrolling rotates the template and Shift + scroll zooms the canvas. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES
     });
 
     game.settings.register(MODULE_ID, "clientEnableAutoAttachSelfEmanations", {
@@ -343,22 +367,24 @@ Hooks.once("init", () => {
         default: true
     });
 
-    game.settings.register(MODULE_ID, "clientEnableSummonControlsHUD", {
+    game.settings.register(MODULE_ID, "clientSummonControlsHUD", {
         name: "Summoning Placement Controls HUD (Personal)",
-        hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement (if enabled by the GM).",
+        hint: "Shows a floating HUD banner with key controls, live distance vs. max range badge, and canvas range ring during summoning placement. Use World Setting follows the GM.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES
     });
 
-    game.settings.register(MODULE_ID, "clientEnableConditionHud", {
+    game.settings.register(MODULE_ID, "clientConditionHud", {
         name: "Token HUD Condition Palette (Personal)",
-        hint: "Shows the Token HUD's status palette as a labelled, grouped list (if enabled by the GM). Turn off for the original icon grid.",
+        hint: "Shows the Token HUD's status palette as a labelled, grouped list. Use World Setting follows the GM; Off shows the original icon grid.",
         scope: "client",
         config: false,
-        type: Boolean,
-        default: true,
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
         onChange: () => refreshConditionHud()
     });
 
@@ -422,7 +448,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
+            if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling", { refresh: true })) enableChatCardStyling();
             else disableChatCardStyling();
         }
     });
@@ -500,7 +526,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
+            if (isFeatureOnForUser("enableCursorHints", "clientCursorHints", { refresh: true })) enableCursorHints();
             else disableCursorHints();
         }
     });
@@ -536,7 +562,7 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: (value) => {
-            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+            if (isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag", { refresh: true })) initItemSheetAttunementTag();
             else disableItemSheetAttunementTag();
         }
     });
@@ -556,7 +582,7 @@ Hooks.once("init", () => {
         },
         restricted: true,
         onChange: () => {
-            if (isFeatureActive("enableItemSheetAttunementTag", "clientEnableItemSheetAttunementTag")) initItemSheetAttunementTag();
+            if (isFeatureOnForUser("enableItemSheetAttunementTag", "clientItemSheetAttunementTag", { refresh: true })) initItemSheetAttunementTag();
         }
     });
 
@@ -1533,6 +1559,9 @@ Hooks.once("init", () => {
         default: 0
     });
 
+    // Personal opt-outs that became Use World Setting / On / Off in 14.71.4, before any feature reads them
+    migratePersonalOptOuts(PERSONAL_OVERRIDE_MIGRATIONS);
+
     // Initialize features that need to catch early hooks (like controls or sidebar renders)
     initBloodDropIcon();
     initRollBreakdownDetails();
@@ -1609,9 +1638,9 @@ Hooks.once("ready", async () => {
     if (game.user.isActiveGM) await runMigrations();
 
     // Features that can run at ready or need the game to be fully loaded
-    if (isFeatureActive("enableCursorHints", "clientEnableCursorHints")) enableCursorHints();
+    if (isFeatureOnForUser("enableCursorHints", "clientCursorHints", { refresh: true })) enableCursorHints();
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
-    if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) enableChatCardStyling();
+    if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling", { refresh: true })) enableChatCardStyling();
 
     // ── Central socket dispatcher ──────────────────────────────────────
     // A single listener routes incoming socket messages to the correct

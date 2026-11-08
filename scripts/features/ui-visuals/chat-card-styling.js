@@ -7,8 +7,10 @@
  * @updated v14.54.0 (Descriptive Apply button labels in damage / effects trays)
  * @updated v14.55.0 (midi-qol: card summary dice, obscured results, colored borders, merged card buttons; d20 centering & contrast)
  * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { log, isFeatureActive } from "../../context.js";
+import { log } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 
 /**
@@ -84,7 +86,7 @@ function _queueDamageApplyLabel(element) {
         element._nd5tLabelQueued = false;
         const span = element.querySelector(".apply-button > span");
         if (!span) return;
-        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
+        if (!isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) {
             span.textContent = game.i18n.localize("DND5E.Apply");
             return;
         }
@@ -102,7 +104,7 @@ function _queueDamageApplyLabel(element) {
 function _setApplyButtonLabel(element, key, defaultKey) {
     const span = element.querySelector(".apply-button > span");
     if (!span) return;
-    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling");
+    const active = isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling");
     span.textContent = game.i18n.localize(active ? key : defaultKey);
 }
 
@@ -744,7 +746,7 @@ function _tagExistingMessages() {
  * Always active whenever chat card styling is enabled.
  */
 export function updateChatCardSaveAbilityShorthand() {
-    const active = isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling");
+    const active = isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling");
     if (active) {
         document.body.classList.add("nd5t-save-shorthand");
         for (const popout of foundry.applications?.detached?.querySelectorAll?.(".chat-popout") ?? []) {
@@ -854,7 +856,7 @@ export function disableChatCardStyling() {
  * Initialize Chat Card Styling Improvements feature.
  */
 export function initChatCardStyling() {
-    if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
+    if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) {
         enableChatCardStyling();
     }
 
@@ -863,7 +865,7 @@ export function initChatCardStyling() {
     // Tag and format messages as they are rendered in HTML.
     // Both hooks call _tagMessageElement; the dataset guards inside make double-runs safe.
     Hooks.on("renderChatMessageHTML", (message, html) => {
-        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
+        if (!isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) return;
         const root = html instanceof HTMLElement ? html : html?.[0];
         _tagMessageElement(message, root);
     });
@@ -871,7 +873,7 @@ export function initChatCardStyling() {
     // dnd5e.renderChatMessage fires after system card templates (damage-card.hbs, etc.)
     // have rendered, ensuring the subtitle element exists when we try to format it.
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
-        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
+        if (!isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) return;
         const root = html instanceof HTMLElement ? html : html?.[0];
         _tagMessageElement(message, root);
         // Expand multi-die displays (advantage / disadvantage / Elven Accuracy)
@@ -884,14 +886,14 @@ export function initChatCardStyling() {
     // but the ready hook is needed for the case where the chat log finishes rendering
     // after initChatCardStyling runs (e.g., late-loading or deferred chat population).
     Hooks.once("ready", () => {
-        if (isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) {
+        if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) {
             _tagExistingMessages();
         }
     });
 
     // Ensure popouts in detached windows also receive the styling class.
     Hooks.on("renderChatPopout", (app, element) => {
-        if (!isFeatureActive("enableChatCardStyling", "clientEnableChatCardStyling")) return;
+        if (!isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) return;
         const el = element instanceof HTMLElement ? element : element?.[0];
         const doc = el?.ownerDocument;
         if (doc && !doc.body.classList.contains("nd5t-chat-card-styling")) {

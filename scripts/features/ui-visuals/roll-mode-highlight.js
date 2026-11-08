@@ -3,8 +3,10 @@
  * Description: Persistently highlights the calculated advantage, disadvantage, or normal roll button in d20 roll dialogs (glow, border, badge, or fill) even after interacting with other dialog fields.
  *
  * @introduced v14.25.0
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
-import { getSetting, debug, isFeatureActive } from "../../context.js";
+import { getSetting, debug } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { isAc5eActive } from "../../utils/module-compat.js";
 
 /**
@@ -76,7 +78,7 @@ function _getCalculatedAction(app) {
  * @param {HTMLElement} element
  */
 function _onRenderDialog(app, element) {
-    const enabled = isFeatureActive("enableRollModeHighlight", "clientEnableRollModeHighlight");
+    const enabled = isFeatureOnForUser("enableRollModeHighlight", "clientRollModeHighlight");
     if (!enabled) return;
 
     // Let Automated Conditions 5e's render hook mark its recommended button first

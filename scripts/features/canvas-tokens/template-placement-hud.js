@@ -4,8 +4,10 @@
  *
  * @introduced v14.35.0
  * @updated v14.71.2 (Scroll stepping: first event of a scroll always rotates once; rule cones at most one wedge per event)
+ * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  */
 import { debug, log, isFeatureActive } from "../../context.js";
+import { isFeatureOnForUser } from "../../utils/personal-override.js";
 import { attachHudPositioning } from "../../core-integration.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isRuleConeShape } from "./grid-cone-rules.js";
@@ -92,7 +94,7 @@ function _wrapRegionLayerPlaceRegion() {
             }
         }
 
-        if (!isFeatureActive("enableTemplateControlsHUD", "clientEnableTemplateControlsHUD")) {
+        if (!isFeatureOnForUser("enableTemplateControlsHUD", "clientTemplateControlsHUD")) {
             return wrapped(data, options);
         }
 
@@ -214,7 +216,7 @@ function _onRegionPlacementRotate(args) {
  */
 function _onWindowWheelCapture(event) {
     if (!canvas?.ready) return;
-    if (!isFeatureActive("enableTemplateControlsHUD", "clientEnableTemplateControlsHUD")) return;
+    if (!isFeatureOnForUser("enableTemplateControlsHUD", "clientTemplateControlsHUD")) return;
 
     // Only intervene if a template placement session is actively running in Foundry V14
     if (!canvas.regions?._placementContext) return;
