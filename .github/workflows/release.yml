@@ -41,6 +41,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # GitHub can briefly answer 504 for a release asset uploaded seconds earlier; the publish step downloads module.json from the release.
+      - name: Wait for release assets
+        run: sleep 15
+
       - name: Publish to Foundry VTT
         uses: cs96and/FoundryVTT-release-package@v1
         with:
