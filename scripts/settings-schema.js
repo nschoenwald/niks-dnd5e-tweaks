@@ -48,6 +48,18 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientSpellSlotsLeftToRight",
+                            introduced: "14.72.0",
+                            pairedWith: "enableSpellSlotsLeftToRight",
+                            name: "Spell Slots Expend Left to Right",
+                            hint: "Expended spell slots fill up from the left, and clicking a slot expends it and every slot to its left. Use World Setting follows the GM.",
+                            type: "Select",
+                            default: "world",
+                            choices: overrideSchemaChoices(),
+                            overridesWorld: true,
+                            scope: "client"
+                        },
+                        {
                             key: "clientEnableAttackDamagePrompt",
                             introduced: "14.28.5",
                             pairedWith: "promptForAttackDamage",
@@ -468,6 +480,17 @@ export function getSettingsSchema() {
                             keywords: ["add item", "plus button", "compendium browser"],
                             name: "Item/Spell/Feature Add: Choice Dialog",
                             hint: "When clicking the '+' button on character sheets, prompts to choose between creating a new document or opening the pre-filtered Compendium Browser.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "enableSpellSlotsLeftToRight",
+                            introduced: "14.72.0",
+                            docs: "spell-slots-expend-left-to-right",
+                            keywords: ["spell slot", "pips", "expend", "spellbook", "left to right"],
+                            name: "Spell Slots Expend Left to Right",
+                            hint: "On actor sheets, expended spell slots fill up from the left, and clicking a slot expends it and every slot to its left. Clicking the right-most expended slot restores it. D&D 5e itself expends from the right, so clicking the 1st slot expends all the others. Temporary slots keep the D&D 5e behaviour.",
                             type: "Boolean",
                             default: true,
                             scope: "world"

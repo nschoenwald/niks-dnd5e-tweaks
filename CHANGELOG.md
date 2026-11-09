@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.72.0] - 2026-11-09
+### Added
+- **Spell Slots Expend Left to Right**: Spell slots on character and NPC sheets are now expended from the left. Clicking the 1st slot expends just that slot instead of all the others, clicking the 3rd expends slots 1 to 3, and clicking the right-most expended slot gives it back. On by default; players can turn it on or off for themselves. Temporary slots work as before.
+
 ## [14.71.4] - 2026-11-08
 ### Changed
 - **Personal settings**: Eight features that only change what you see or how you work on your own screen can now also be turned on for yourself when the GM left them off: Chat Card Styling Improvements, Item Sheet Attunement Tag (and its item tooltip option), Item / Spell Add: Choice Dialog, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette. Their personal setting now offers **Use World Setting** (the default, follows the GM), **On** and **Off**. Anyone who had turned one of them off keeps it off.

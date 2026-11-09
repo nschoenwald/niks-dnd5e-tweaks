@@ -3,6 +3,7 @@ import { enableCursorHints, disableCursorHints } from "./features/ui-visuals/cur
 import { initBloodDropIcon } from "./features/ui-visuals/blood-drop-icon.js";
 import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./features/ui-visuals/item-sheet-attunement-tag.js";
 import { initSheetPlusCompendium } from "./features/ui-visuals/sheet-plus-compendium.js";
+import { initSpellSlotsLeftToRight, refreshSpellSlotSheets } from "./features/ui-visuals/spell-slots-left-to-right.js";
 import { initNpcHpScaler, disableNpcHpScaler } from "./features/ui-visuals/npc-hp-scaler.js";
 import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
@@ -128,6 +129,20 @@ Hooks.once("init", () => {
         type: String,
         default: "world",
         choices: OVERRIDE_CHOICES
+    });
+
+    game.settings.register(MODULE_ID, "clientSpellSlotsLeftToRight", {
+        name: "Spell Slots Expend Left to Right (Personal)",
+        hint: "Expended spell slots fill up from the left, and clicking a slot expends it and every slot to its left. Use World Setting follows the GM.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
+        onChange: () => {
+            isFeatureOnForUser("enableSpellSlotsLeftToRight", "clientSpellSlotsLeftToRight", { refresh: true });
+            refreshSpellSlotSheets();
+        }
     });
 
     game.settings.register(MODULE_ID, "clientEnableAttackDamagePrompt", {
@@ -604,6 +619,20 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSpellSlotsLeftToRight", {
+        name: "Spell Slots Expend Left to Right",
+        hint: "On actor sheets, expended spell slots fill up from the left, and clicking a slot expends it and every slot to its left (D&D 5e expends from the right).",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            isFeatureOnForUser("enableSpellSlotsLeftToRight", "clientSpellSlotsLeftToRight", { refresh: true });
+            refreshSpellSlotSheets();
+        }
     });
 
     game.settings.register(MODULE_ID, "enableNpcHpScaling", {
@@ -1599,6 +1628,7 @@ Hooks.once("setup", () => {
     initUndeadFortitude();
     initSelfEffectApplication();
     initSheetPlusCompendium();
+    initSpellSlotsLeftToRight();
     initNpcHpScaler();
     initItemSheetAttunementTag();
     initTemplateTargeting();
