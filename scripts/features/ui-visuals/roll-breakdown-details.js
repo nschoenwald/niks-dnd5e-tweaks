@@ -8,6 +8,7 @@
  * @updated v14.49.0 (Reuses actor roll data, lazy breakdowns for older messages, gated document listeners)
  * @updated v14.55.1 (midi-qol merged card sections; card summaries use their own message)
  * @updated v14.59.0 (Missing-actor fallback in the damage tray includes the D&D 5e 6.1 `potential` changes)
+ * @updated v14.72.1 (Short labels for midi-qol's long flavor tags in the breakdown and midi-qol's formula; ammunition bonus labelled AMMO)
  */
 import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -24,6 +25,59 @@ const ABILITY_SHORTHANDS = {
     wis: "WIS",
     cha: "CHA"
 };
+
+/**
+ * Shorten a long modifier label to the tag our own formula tagging uses: "Strength" → "STR",
+ * "Proficiency" → "PB", "Magical Bonus" → "MGC", "Ammunition" → "AMMO". midi-qol (14.6.7,
+ * `labelAttackParts` on `dnd5e.postBuildAttackRollConfig`) tags attack parts with these localized
+ * labels before our `dnd5e.postBuildRollConfig` tagging runs, so ours skips them. Matches the English names and the labels of the current language. Anything else is
+ * returned unchanged.
+ * @param {string} label
+ * @returns {string}
+ */
+export function normalizeModifierLabel(label) {
+    if (typeof label !== "string") return label;
+    const clean = label.trim();
+    if (!clean) return label;
+    const lower = clean.toLowerCase();
+    const loc = key => (game.i18n?.has?.(key) ? game.i18n.localize(key).toLowerCase() : null);
+
+    const abilityMatch = clean.match(/^(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)(?:\s+(?:bonus|penalty|modifier))?$/i);
+    if (abilityMatch) {
+        const key = abilityMatch[1].slice(0, 3).toLowerCase();
+        return ABILITY_SHORTHANDS[key] ?? key.toUpperCase();
+    }
+    for (const [key, short] of Object.entries(ABILITY_SHORTHANDS)) {
+        const cfg = CONFIG.DND5E?.abilities?.[key];
+        const names = [cfg?.label, cfg?.abbreviation].filter(Boolean).map(n => game.i18n.localize(n).toLowerCase());
+        if (names.includes(lower)) return short;
+    }
+
+    const profNames = ["proficiency", "proficiency bonus", loc("DND5E.Proficiency"), loc("DND5E.ProficiencyBonus")];
+    if (profNames.includes(lower)) return "PB";
+
+    const magicNames = ["magic weapon", "magic weapon bonus", "magical bonus", loc("DND5E.MagicalBonus")];
+    if (magicNames.includes(lower)) return "MGC";
+
+    const ammoNames = ["ammunition", "magic ammo", loc("DND5E.ConsumeAmmunition")];
+    if (ammoNames.includes(lower)) return "AMMO";
+
+    return label;
+}
+
+/**
+ * Replace long modifier labels in a formula's flavor tags with their short tags
+ * (`3[Strength] + 3[Proficiency]` → `3[STR] + 3[PB]`).
+ * @param {string} formula
+ * @returns {string}
+ */
+export function normalizeFormulaLabels(formula) {
+    if (typeof formula !== "string") return formula;
+    return formula.replace(/\[([^\]]+)\]/g, (match, flavor) => {
+        const short = normalizeModifierLabel(flavor);
+        return short === flavor ? match : `[${short}]`;
+    });
+}
 
 /**
  * Tuned accent colors for DnD5e damage types sourced from Nik's Action HUD.
@@ -448,7 +502,7 @@ function tagRollConfigParts(processConfig, rollConfig, index = 0, hookOptions = 
         }
 
         if (clean === "@ammoMagic" || clean === "@ammoBonus") {
-            clean = `${clean}[Magic Ammo]`;
+            clean = `${clean}[AMMO]`;
             modified = true;
         }
 
@@ -677,7 +731,7 @@ export function isStandardDamageOrAttributeTag(tag) {
         "str", "dex", "con", "int", "wis", "cha", "mod",
         "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma",
         "pb", "pb (expertise)", "pb (half)", "proficiency", "proficiency bonus",
-        "mgc", "magic weapon", "magic ammo",
+        "mgc", "magic weapon", "magic ammo", "ammo", "ammunition",
         "situational", "item bonus", "bonus", "attack bonus",
         "cover", "half cover", "three-quarters cover"
     ]);
@@ -1567,15 +1621,7 @@ export function processModifierChunk(chunk, roll, { actor = null, claimedEffectI
         }
     }
 
-    if (label) {
-        const abilityMatch = label.match(/^(STR|DEX|CON|INT|WIS|CHA|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)(?:\s+(?:bonus|penalty))?$/i);
-        if (abilityMatch) {
-            const key = abilityMatch[1].slice(0, 3).toLowerCase();
-            label = ABILITY_SHORTHANDS[key] ?? key.toUpperCase();
-        } else if (/^Magic Weapon(?:\s+bonus)?$/i.test(label)) {
-            label = "MGC";
-        }
-    }
+    if (label) label = normalizeModifierLabel(label);
 
     if (/^PB(?:\s*\(.*\))?$/i.test(label) || /^Proficiency(?:\s+Bonus)?$/i.test(label)) {
         if (formula.includes("× 2") || formula.includes("2 ×") || expr.includes("* 2") || expr.includes("2 *")) {
@@ -2331,6 +2377,13 @@ async function enhanceMidiSectionBreakdowns(message, html) {
     const root = html instanceof HTMLElement ? html : html?.[0];
     const results = root?.querySelector?.(".midi-results");
     if (!results || !message?.rolls?.length) return;
+
+    // midi-qol prints `roll.formula` with its long labels (3[Strength] + 3[Proficiency]); show our short tags.
+    for (const formulaEl of results.querySelectorAll(".dice-roll .dice-formula")) {
+        const text = formulaEl.textContent;
+        const short = normalizeFormulaLabels(text);
+        if (short !== text) formulaEl.textContent = short;
+    }
 
     message._nd5tMidiBreakdowns ??= new Map();
     for (const { selector, rollType, isDamage } of MIDI_SECTIONS) {
