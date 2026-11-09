@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.72.1] - 2026-11-09
+### Fixed
+- **Detailed Roll Breakdown Overlay**: With midi-qol, the roll formula on midi-qol's card now shows the short labels like without midi-qol (`3[STR] + 3[PB] + 1[MGC]` instead of `3[Strength] + 3[Proficiency] + 1[Magical Bonus]`). The breakdown also lists these bonuses as PB and MGC instead of "Proficiency" and "Magical Bonus".
+- **Detailed Roll Breakdown Overlay**: Ammunition bonuses are labelled AMMO (was "Magic Ammo", or "Ammunition" with midi-qol) and attack bonuses ATK (was "Attack Bonus"), also in older messages.
+
 ## [14.72.0] - 2026-11-09
 ### Added
 - **Spell Slots Expend Left to Right**: Spell slots on character and NPC sheets are now expended from the left. Clicking the 1st slot expends just that slot instead of all the others, clicking the 3rd expends slots 1 to 3, and clicking the right-most expended slot gives it back. On by default; players can turn it on or off for themselves. Temporary slots work as before.
