@@ -8,7 +8,8 @@
  * @updated v14.49.0 (Reuses actor roll data, lazy breakdowns for older messages, gated document listeners)
  * @updated v14.55.1 (midi-qol merged card sections; card summaries use their own message)
  * @updated v14.59.0 (Missing-actor fallback in the damage tray includes the D&D 5e 6.1 `potential` changes)
- * @updated v14.72.1 (Short labels for midi-qol's long flavor tags in the breakdown and midi-qol's formula; ammunition and attack bonuses labelled AMMO and ATK)
+ * @updated v14.72.1 (Short labels for midi-qol's long flavor tags in the breakdown and midi-qol's formula; ammunition bonus labelled AMMO)
+ * @updated v14.72.2 (Attack bonus labelled ATK)
  */
 import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
