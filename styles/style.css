@@ -1706,9 +1706,9 @@ body.nd5t-chat-card-styling .chat-message.message.nd5t-damage-card button.dice-r
     --button-hover-border-color: var(--nd5t-damage-btn-border);
 }
 
-/* Prepended ATK and DMG Micro-Labels */
+/* Prepended ATTACK and DAMAGE Micro-Labels */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-attack-card button.dice-roll .result::before {
-    content: "ATK ";
+    content: "ATTACK ";
     font-family: var(--dnd5e-font-roboto-condensed);
     font-size: var(--font-size-11, 11px);
     font-weight: bold;
@@ -1719,7 +1719,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-attack-ca
 }
 
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-damage-card button.dice-roll .result::before {
-    content: "DMG ";
+    content: "DAMAGE ";
     font-family: var(--dnd5e-font-roboto-condensed);
     font-size: var(--font-size-11, 11px);
     font-weight: bold;
@@ -1958,7 +1958,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-save-card
 }
 
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-check-card button.dice-roll .result::before {
-    content: "CHK ";
+    content: "CHECK ";
     font-family: var(--dnd5e-font-roboto-condensed);
     font-size: var(--font-size-11, 11px);
     font-weight: bold;
@@ -1991,7 +1991,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-hitdie-ca
 }
 
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-recharge-card button.dice-roll .result::before {
-    content: "RCH ";
+    content: "CHARGE ";
     font-family: var(--dnd5e-font-roboto-condensed);
     font-size: var(--font-size-11, 11px);
     font-weight: bold;
@@ -2043,7 +2043,7 @@ body.nd5t-chat-card-styling .chat-message.message.nd5t-save-card[data-nd5t-abili
     content: "CHA SAVE ";
 }
 
-/* Initiative Roll — overrides "CHK " on initiative sub-type check cards */
+/* Initiative Roll — overrides "CHECK " on initiative sub-type check cards */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) .message.nd5t-check-card[data-nd5t-card-subtype="initiative"] button.dice-roll .result::before {
     content: "INIT ";
 }

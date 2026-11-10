@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.72.3] - 2026-11-10
+### Changed
+- **Chat Card Styling Improvements**: The labels in front of roll results are spelled out: ATTACK (was ATK), DAMAGE (was DMG), CHECK (was CHK) and CHARGE (was RCH, for monster recharge rolls).
+
 ## [14.72.2] - 2026-11-09
 ### Changed
 - **Detailed Roll Breakdown Overlay**: Attack bonuses are labelled ATK (was "Attack Bonus"), with and without midi-qol, also in older messages.
