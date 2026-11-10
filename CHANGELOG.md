@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.73.0] - 2026-11-10
+### Added
+- **Self-Targeted Activities Target Self**: Abilities that only affect their user, like *Second Wind* or *Rage*, now target the user's own token on their chat cards, even if an enemy is still targeted from the last attack. The damage, healing and effect trays then apply to the right creature. Your own targets stay as they are. A short notification says when targets were replaced. On by default; players can turn it off for themselves. Disabled while midi-qol is active, which already does this.
+
 ## [14.72.3] - 2026-11-10
 ### Changed
 - **Chat Card Styling Improvements**: The labels in front of roll results are spelled out: ATTACK (was ATK), DAMAGE (was DMG), CHECK (was CHK) and CHARGE (was RCH, for monster recharge rolls).

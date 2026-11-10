@@ -30,6 +30,7 @@ import { initAutoRollAttackDamage } from "./features/combat-automation/auto-roll
 import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } from "./features/combat-automation/player-damage-prompt.js";
 import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
+import { initSelfTargetCorrection } from "./features/combat-automation/self-target-correction.js";
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
@@ -211,6 +212,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableSelfEffectApplication", {
         name: "Self Effect Application Prompt (Personal)",
         hint: "Whispers an Apply button when you use an ability that grants Active Effects to yourself (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableSelfTargetCorrection", {
+        name: "Self-Targeted Activities Target Self (Personal)",
+        hint: "When you use an ability that only affects yourself, its chat card targets your own token instead of the tokens you still have targeted (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1223,6 +1233,26 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableSelfTargetCorrection", {
+        name: "Self-Targeted Activities Target Self",
+        hint: "When an activity that affects \"Self\" is used (e.g. Second Wind, Rage), its chat cards target the user's own token instead of the tokens the user still has targeted, so the damage, healing and effect trays apply to the right creature. The user's own targets are not changed. Bypassed while midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "selfTargetCorrectionNotify", {
+        name: "↳ Show Notification",
+        hint: "Shows a notification to the user when their targets were replaced with their own token.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     // ── Phase 3: Concentration & Ongoing Effects ────────────────────────
 
     game.settings.register(MODULE_ID, "enableAutoRollConcentration", {
@@ -1627,6 +1657,7 @@ Hooks.once("setup", () => {
     initDeathWard();
     initUndeadFortitude();
     initSelfEffectApplication();
+    initSelfTargetCorrection();
     initSheetPlusCompendium();
     initSpellSlotsLeftToRight();
     initNpcHpScaler();

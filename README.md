@@ -87,6 +87,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Damage Emanation Automation](#damage-emanation-automation)** | Conditions & Effects | ✅ Prompt Caster | No |
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Conditions & Effects | ✅ Enabled | Yes |
+| **[Self-Targeted Activities Target Self](#self-targeted-activities-target-self)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Conditions & Effects | ❌ Disabled | No |
 ---
 
@@ -419,6 +420,14 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Patient Defense (Focus Point)`, `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
 * Both name lists are edited in the settings dashboard with an **Edit List** button that opens a pop-out editor: search the list, add entries (Enter, or paste several separated by commas), remove them individually, or reset to the defaults. Lists are kept sorted alphabetically without duplicates.
 
+### Self-Targeted Activities Target Self
+Players often still have an enemy targeted from their last attack when they use an ability that only affects themselves (*Second Wind*, *Rage*, *Bladesong*). D&D 5e then lists that enemy on the chat card, and the **Targeted** mode of the damage, healing and effect trays points at it. With this feature on, abilities whose target is **Self** list the user's own token instead, on the usage card and on their damage, healing and formula rolls.
+* The user's own targets are not changed, so they can go straight back to attacking the same enemy.
+* If the user's token isn't on the viewed scene, the cards list no targets.
+* Bypassed while midi-qol is active (midi-qol already targets the user's own token for these abilities).
+* *Sub-setting*: **Show Notification** (default on): tells the user when their targets were replaced.
+* Players can turn it off for themselves in **Personal Preferences**.
+
 ### Disable Active Effect Expiry
 Stops D&D 5e from ending and deleting Active Effects on its own (out of combat, at the end of combat, on a rest, and at turn-based expiry). Effects stay until you turn them off or remove them. Off by default.
 
@@ -460,6 +469,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
 | **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
 | **Self Effect Application** | **Bypassed** if midi-qol auto-applies item effects. |
+| **Self-Targeted Activities Target Self** | **Disabled** (midi-qol already uses the actor's own token for self-targeted activities). |
 | **Player Damage Prompt** | **Bypassed** if midi-qol auto-applies damage, and for damage rolled inside a midi-qol workflow. |
 | **Auto-Apply Status at 0 HP** | When midi-qol's *Add Dead/Unconscious* is on, midi-qol picks the 0 HP status (and marks defeated if its settings say so). This feature still escalates to Dead after three failed death saves, cleans up on healing and removes tokens from combat. |
 | **Snap Templates to Grid Intersections** | **Disabled** (use midi-qol's *Template Grid Snapping*). |

@@ -144,6 +144,17 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnableSelfTargetCorrection",
+                            introduced: "14.73.0",
+                            pairedWith: "enableSelfTargetCorrection",
+                            unavailableWith: "midi",
+                            name: "Self-Targeted Activities Target Self",
+                            hint: "When you use an ability that only affects yourself, its chat card targets your own token instead of the tokens you still have targeted (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
                             key: "clientEnableDeathSavePrompt",
                             introduced: "14.28.5",
                             pairedWith: "enableDeathSavePrompt",
@@ -1656,6 +1667,28 @@ export function getSettingsSchema() {
                             default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
                             scope: "world",
                             parentKey: "enableSelfEffectApplication"
+                        },
+                        {
+                            key: "enableSelfTargetCorrection",
+                            introduced: "14.73.0",
+                            docs: "self-targeted-activities-target-self",
+                            keywords: ["Second Wind", "target", "self", "wrong target"],
+                            unavailableWith: "midi",
+                            name: "Self-Targeted Activities Target Self",
+                            hint: "Abilities that only affect their user (e.g. Second Wind, Rage) target the user's own token on their chat cards, even if an enemy is still targeted. The user's own targets stay as they are. Disabled while midi-qol is active (midi-qol already does this).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "selfTargetCorrectionNotify",
+                            introduced: "14.73.0",
+                            name: "Show Notification",
+                            hint: "Tells the user when their targets were replaced with their own token.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableSelfTargetCorrection"
                         },
                         {
                             key: "disableActiveEffectExpiry",
