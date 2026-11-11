@@ -61,6 +61,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Grid-Based Templates](#grid-based-templates)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Auto-Attach Self Emanation Templates](#auto-attach-self-emanation-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
+| **[Remove Instantaneous Templates on Turn Change](#remove-instantaneous-templates-on-turn-change)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Prompt for Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ✅ Players | Yes |
 | **[Auto-Roll Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ❌ Disabled | Yes |
 | **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat Flow | ✅ Enabled | Yes |
@@ -261,6 +262,13 @@ Templates are measured with the scene's grid rules instead of being drawn as rou
 
 ### Auto-Attach Self Emanation Templates
 When a creature uses something with an emanation area centered on itself (e.g. *Spirit Guardians*, Paladin auras), the template is attached to its token right away, without placing it on the canvas. Players can turn this off for themselves.
+
+### Remove Instantaneous Templates on Turn Change
+Templates of spells and abilities with an instantaneous duration (e.g. *Fireball*, *Burning Hands*, breath weapons) are deleted automatically in combat, so they don't pile up on the scene.
+* **When**: Whenever the turn changes, and when a combat ends. Templates placed during a turn stay until that turn is over, also ones placed as a reaction on someone else's turn. Starting combat doesn't remove anything, so a template that opened the fight stays for the first turn.
+* **What stays**: Templates of spells and abilities with any other duration (e.g. concentration spells), templates drawn by hand, and templates whose item was deleted.
+* Uses each activity's own duration, or the item's duration if the activity doesn't set its own.
+* Applies to everyone in the world (no personal opt-out). Turned on by default. Works with midi-qol: midi-qol's *Auto remove instantaneous templates* removes them right after the roll instead; this feature catches the rest when the turn changes.
 
 ### Enhanced Summoning Placement HUD & Range Preview
 Appears during creature summoning activities (*Find Familiar*, *Summon Celestial*, etc.):
@@ -476,6 +484,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Auto-Target Tokens in Spell Templates** | **Disabled** (midi-qol targets templates itself). |
 | **Rules-Accurate Cones on Square Grids** | **Disabled** (midi-qol targets cones from its own cone shape, which would not match the squares). |
 | **Grid-Based Templates** | **Works**: midi-qol targets the grid-based template shape. |
+| **Remove Instantaneous Templates on Turn Change** | **Works**. With midi-qol's *Auto remove instantaneous templates* on, midi-qol already deletes them right after the roll. |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |

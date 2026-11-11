@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.74.0] - 2026-11-11
+### Added
+- **Remove Instantaneous Templates on Turn Change**: In combat, templates of spells and abilities with an instantaneous duration, like *Fireball*, *Burning Hands* or breath weapons, are now deleted when the turn changes and when the combat ends. Templates of lasting spells and templates drawn by hand stay. On by default; the GM can turn it off in the settings dashboard under Templates & Placement.
+
 ## [14.73.0] - 2026-11-10
 ### Added
 - **Self-Targeted Activities Target Self**: Abilities that only affect their user, like *Second Wind* or *Rage*, now target the user's own token on their chat cards, even if an enemy is still targeted from the last attack. The damage, healing and effect trays then apply to the right creature. Your own targets stay as they are. A short notification says when targets were replaced. On by default; players can turn it off for themselves. Disabled while midi-qol is active, which already does this.

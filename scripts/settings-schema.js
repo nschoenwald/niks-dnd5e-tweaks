@@ -836,6 +836,17 @@ export function getSettingsSchema() {
                             parentKey: "enableGridBasedTemplates"
                         },
                         {
+                            key: "enableRemoveInstantaneousTemplates",
+                            introduced: "14.74.0",
+                            docs: "remove-instantaneous-templates-on-turn-change",
+                            keywords: ["AoE", "area of effect", "measured template", "delete", "cleanup", "Fireball", "combat", "turn"],
+                            name: "Remove Instantaneous Templates on Turn Change",
+                            hint: "In combat, deletes the templates of spells and abilities with an instantaneous duration (e.g. Fireball, Burning Hands, breath weapons) when the turn changes, and when the combat ends. Templates of lasting spells and hand-drawn templates stay.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableTemplateControlsHUD",
                             introduced: "14.35.0",
                             docs: "template-placement-controls-hud--scroll-rotation",

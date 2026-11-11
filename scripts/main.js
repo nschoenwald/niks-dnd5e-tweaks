@@ -31,6 +31,7 @@ import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } 
 import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
 import { initSelfTargetCorrection } from "./features/combat-automation/self-target-correction.js";
+import { initRemoveInstantaneousTemplates } from "./features/combat-automation/remove-instantaneous-templates.js";
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
@@ -738,6 +739,16 @@ Hooks.once("init", () => {
         default: true,
         restricted: true,
         onChange: () => refreshGridCones()
+    });
+
+    game.settings.register(MODULE_ID, "enableRemoveInstantaneousTemplates", {
+        name: "Remove Instantaneous Templates on Turn Change",
+        hint: "In combat, deletes the templates of spells and abilities with an instantaneous duration (e.g. Fireball, Burning Hands, breath weapons) when the turn changes, and when the combat ends. Templates of lasting spells and hand-drawn templates stay.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
     game.settings.register(MODULE_ID, "enableGridBasedTemplates", {
@@ -1658,6 +1669,7 @@ Hooks.once("setup", () => {
     initUndeadFortitude();
     initSelfEffectApplication();
     initSelfTargetCorrection();
+    initRemoveInstantaneousTemplates();
     initSheetPlusCompendium();
     initSpellSlotsLeftToRight();
     initNpcHpScaler();
