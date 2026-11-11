@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.75.0] - 2026-11-11
+### Changed
+- **Conditional Damage Bonuses**: Sneak Attack now checks whether the attack qualifies. The toggle starts on when the attack had Advantage, or when an ally who isn't Incapacitated is within 5 ft of the target and the attack didn't have Disadvantage. Swashbucklers with *Rakish Audacity* also qualify when no other creature is near them. Otherwise it starts off, so quick damage rolls no longer add Sneak Attack to hits that don't qualify. Hover the toggle to see why. You can still turn it on yourself. Also works with midi-qol.
+
 ## [14.74.0] - 2026-11-11
 ### Added
 - **Remove Instantaneous Templates on Turn Change**: In combat, templates of spells and abilities with an instantaneous duration, like *Fireball*, *Burning Hands* or breath weapons, are now deleted when the turn changes and when the combat ends. Templates of lasting spells and templates drawn by hand stay. On by default; the GM can turn it off in the settings dashboard under Templates & Placement.

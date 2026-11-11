@@ -10,11 +10,16 @@
  * attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative),
  * or scores a natural 20 attack roll with Boon of Irresistible Offense (+Ability Score bonus).
  * Remembers choices per actor (except one-offs and once-per-turn bonuses).
+ * Sneak Attack starts on only when the attack qualifies: Advantage, an ally who isn't Incapacitated within
+ * 5 ft of the target (without Disadvantage), or Rakish Audacity.
+ *
+ * @updated v14.75.0 (Sneak Attack detects Advantage, Disadvantage, allies next to the target and Rakish Audacity)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
-import { isWm5eActive } from "../../utils/module-compat.js";
+import { isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
+import { areTokensWithin } from "../../utils/token-distance.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
 
 /**
@@ -222,6 +227,132 @@ export function isEligibleSneakAttackWeapon(item, activity = null, config = null
     if (actionType === "rwak") return true;
 
     return false;
+}
+
+/**
+ * Whether an actor has the Swashbuckler's Rakish Audacity feature (Sneak Attack without Advantage when alone
+ * with the target).
+ *
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+export function actorHasRakishAudacity(actor) {
+    if (!actor) return false;
+    const feats = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "feat");
+    return feats.some(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        const name = (i.name || "").toLowerCase();
+        return id === "rakish-audacity" || id === "rakish_audacity" || name.includes("rakish audacity");
+    });
+}
+
+/**
+ * Side used to decide whether two tokens are allies. Player characters and player-owned actors always count
+ * as friendly, regardless of token disposition (same rule as Template Targeting).
+ *
+ * @param {TokenDocument} tokenDoc
+ * @returns {number|null}
+ */
+function _sneakAttackSide(tokenDoc) {
+    const actor = tokenDoc?.actor;
+    if (actor?.type === "character" || actor?.hasPlayerOwner) return CONST.TOKEN_DISPOSITIONS.FRIENDLY;
+    return tokenDoc?.disposition ?? null;
+}
+
+/**
+ * Whether a token stands for a creature that counts for Sneak Attack positioning: a character or NPC that is
+ * visible on the scene and not dead.
+ *
+ * @param {TokenDocument} tokenDoc
+ * @returns {boolean}
+ */
+function _isPresentCreature(tokenDoc) {
+    const actor = tokenDoc?.actor;
+    if (!actor || tokenDoc.hidden) return false;
+    if (actor.type !== "character" && actor.type !== "npc") return false;
+    return !actor.statuses?.has("dead");
+}
+
+/**
+ * Whether a creature can't help with Sneak Attack: Incapacitated (dnd5e adds that status for Unconscious,
+ * Paralyzed, Petrified and Stunned too), defeated, or at 0 hit points.
+ *
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+function _isIncapacitated(actor) {
+    if (actor.statuses?.has("incapacitated") || actor.statuses?.has(CONFIG.specialStatusEffects?.DEFEATED)) return true;
+    const hp = actor.system?.attributes?.hp;
+    return Boolean(hp?.max > 0 && hp.value <= 0);
+}
+
+/**
+ * Work out whether the current attack qualifies for Sneak Attack, beyond the weapon check:
+ * the attack had Advantage, or an ally who isn't Incapacitated is within 5 feet of the target and the attack
+ * didn't have Disadvantage. Swashbucklers with Rakish Audacity also qualify when they are within 5 feet of the
+ * target, no other creature is within 5 feet of them, and the attack didn't have Disadvantage.
+ *
+ * The result only sets the toggle's starting state: "unknown" leaves it to the usual default.
+ *
+ * @param {Actor5e} actor
+ * @param {Token|TokenDocument|null} attackerToken
+ * @param {object} [context={}]
+ * @returns {{ state: "eligible"|"ineligible"|"unknown", reason: string }}
+ */
+export function getSneakAttackEligibility(actor, attackerToken, { config, dialog, message, activity } = {}) {
+    const attack = resolveAttackForDamage(actor, { config, dialog, message, activity });
+    const ADV = CONFIG.Dice?.D20Roll?.ADV_MODE ?? { NORMAL: 0, ADVANTAGE: 1, DISADVANTAGE: -1 };
+    const mode = attack?.advantageMode;
+    if (mode === null || mode === undefined) return { state: "unknown", reason: "NoAttack" };
+    if (mode === ADV.ADVANTAGE) return { state: "eligible", reason: "Advantage" };
+    if (mode === ADV.DISADVANTAGE) return { state: "ineligible", reason: "Disadvantage" };
+
+    // Positioning needs the canvas, the attacker's token and the target(s) on the viewed scene
+    if (!canvas?.ready || !canvas.scene) return { state: "unknown", reason: "NoTarget" };
+    let targetUuids = attack.targets ?? [];
+    if (!targetUuids.length) {
+        targetUuids = (message?.data?.system?.targets ?? message?.system?.targets ?? []).map(t => t?.token).filter(Boolean);
+    }
+    if (!targetUuids.length) targetUuids = Array.from(game.user?.targets ?? [], t => t.document?.uuid).filter(Boolean);
+    const targets = targetUuids
+        .map(uuid => fromUuidSync(uuid, { strict: false }))
+        .filter(doc => doc?.parent === canvas.scene && doc.object)
+        .map(doc => doc.object);
+    if (!targets.length) return { state: "unknown", reason: "NoTarget" };
+
+    const workflowToken = getMidiWorkflow(config)?.token;
+    const attacker = [workflowToken?.object ?? workflowToken, attackerToken?.object ?? attackerToken]
+        .find(t => t?.document) ?? null;
+    const sceneTokens = canvas.tokens?.placeables ?? [];
+
+    // Rakish Audacity: within 5 ft of the target and no other creature within 5 ft of the attacker
+    if (attacker?.document?.parent === canvas.scene && actorHasRakishAudacity(actor)) {
+        const alone = target => sceneTokens.every(t => t === attacker || t === target
+            || !_isPresentCreature(t.document) || !areTokensWithin(attacker, t, 5));
+        if (targets.some(target => areTokensWithin(attacker, target, 5) && alone(target))) {
+            return { state: "eligible", reason: "RakishAudacity" };
+        }
+    }
+
+    // Ally within 5 ft of the target. Without the attacker's token, its actor's side still tells who its allies are.
+    const side = attacker?.document
+        ? _sneakAttackSide(attacker.document)
+        : ((actor.type === "character" || actor.hasPlayerOwner) ? CONST.TOKEN_DISPOSITIONS.FRIENDLY : (actor.prototypeToken?.disposition ?? null));
+    if (side === null || side === CONST.TOKEN_DISPOSITIONS.SECRET) return { state: "unknown", reason: "NoAlly" };
+
+    const targetSet = new Set(targets);
+    const isAlly = t => t !== attacker
+        && !targetSet.has(t)
+        && t.actor !== actor
+        && _isPresentCreature(t.document)
+        && t.document.disposition !== CONST.TOKEN_DISPOSITIONS.SECRET
+        && _sneakAttackSide(t.document) === side
+        && !_isIncapacitated(t.actor);
+    const allies = sceneTokens.filter(isAlly);
+    if (targets.some(target => allies.some(ally => areTokensWithin(ally, target, 5)))) {
+        return { state: "eligible", reason: "Ally" };
+    }
+    return { state: "ineligible", reason: "NoAlly" };
 }
 
 /**
@@ -1014,7 +1145,7 @@ export function getCombatTurnKey(combat, actor = null, token = null) {
  * used to correlate damage rolls with attack d20 results (e.g. for Boon of Irresistible Offense).
  * Stores lightweight primitive flags rather than retaining full Roll instances in memory.
  * Keyed by actor UUID or ID.
- * @type {Map<string, { isNatural20: boolean, time: number, turnKey: string|null, combatId: string|null, activityId?: string, itemId?: string, messageId?: string, damageRolled?: boolean }>}
+ * @type {Map<string, { isNatural20: boolean, advantageMode: number|null, targets: string[], time: number, turnKey: string|null, combatId: string|null, activityId?: string, itemId?: string, messageId?: string, damageRolled?: boolean }>}
  */
 const _lastAttackRollsByActor = new Map();
 
@@ -1043,8 +1174,9 @@ function _pruneStaleAttackRolls() {
  * @param {string} [options.activityId]
  * @param {string} [options.itemId]
  * @param {string} [options.messageId]
+ * @param {string[]} [options.targets]  Token UUIDs of the attack's targets.
  */
-function _recordAttackRoll(actor, roll, { activityId, itemId, messageId } = {}) {
+function _recordAttackRoll(actor, roll, { activityId, itemId, messageId, targets } = {}) {
     if (!actor || !roll) return;
     _pruneStaleAttackRolls();
 
@@ -1054,6 +1186,8 @@ function _recordAttackRoll(actor, roll, { activityId, itemId, messageId } = {}) 
 
     _lastAttackRollsByActor.set(actorKey, {
         isNatural20: isRollD20Natural20(roll),
+        advantageMode: roll.options?.advantageMode ?? null,
+        targets: Array.isArray(targets) ? targets.filter(Boolean) : [],
         time: Date.now(),
         turnKey,
         combatId: combat?.id ?? null,
@@ -1104,44 +1238,116 @@ export function isRollD20Natural20(roll) {
 }
 
 /**
- * Check whether the attack roll triggering the current damage roll rolled a 20 on the d20.
+ * Whether a chat message is a damage message.
  *
- * @param {Actor5e} actor
- * @param {object} [context={}]
+ * @param {ChatMessage5e} msg
  * @returns {boolean}
  */
-export function didAttackRollNatural20(actor, { config, dialog, message, activity } = {}) {
-    _pruneStaleAttackRolls();
+function _isDamageMessage(msg) {
+    return msg?.type === "damage"
+        || msg?.system?.constructor?.name === "DamageMessageData"
+        || Boolean(CONFIG.ChatMessage?.dataModels?.damage && msg?.system instanceof CONFIG.ChatMessage.dataModels.damage);
+}
 
+/**
+ * Find the attack message (one with a d20 roll) that belongs to a chat message: its latest associated attack
+ * roll, or the message itself when it holds the attack roll.
+ *
+ * @param {ChatMessage5e|null} msg
+ * @returns {ChatMessage5e|null}
+ */
+function _attackMessageFor(msg) {
+    if (!msg) return null;
+    let candidate = null;
+    if (typeof msg.getAssociatedRolls === "function") {
+        candidate = msg.getAssociatedRolls("attack")?.at?.(-1) ?? null;
+    }
+    if (!candidate && !_isDamageMessage(msg)) candidate = msg;
+    const hasD20 = (candidate?.rolls ?? []).some(r => (r.dice ?? []).some(d => d.faces === 20));
+    return hasD20 ? candidate : null;
+}
+
+/**
+ * Get the actor's cached attack roll if it can belong to the current damage roll: same combat turn (or both
+ * out of combat), not yet followed by a damage roll, fresh, and made with the same activity and item.
+ *
+ * @param {Actor5e|null} actor
+ * @param {object} [context={}]
+ * @returns {object|null}
+ */
+function _getCachedAttack(actor, { config, activity } = {}) {
+    if (!actor) return null;
+    _pruneStaleAttackRolls();
+    const cached = _lastAttackRollsByActor.get(actor.uuid || actor.id);
+    if (!cached || cached.damageRolled) return null;
+
+    const combat = getActiveCombat(actor);
+    const inCombat = Boolean(combat?.active && combat.started);
+    const currentTurnKey = getCombatTurnKey(combat, actor);
+
+    // Out-of-combat attack rolls must never leak across the boundary into a started combat
+    const isValidTurn = inCombat
+        ? Boolean(cached.combatId && cached.turnKey && cached.turnKey === currentTurnKey)
+        : !cached.combatId;
+    const ttl = cached.combatId ? ATTACK_ROLL_COMBAT_TTL_MS : ATTACK_ROLL_OUT_OF_COMBAT_TTL_MS;
+    const isFresh = (Date.now() - (cached.time ?? 0)) < ttl;
+    if (!isValidTurn || !isFresh) return null;
+
+    const activityMatches = !activity || !cached.activityId || cached.activityId === activity.id;
+    const itemId = activity?.item?.id ?? config?.subject?.item?.id;
+    const itemMatches = !itemId || !cached.itemId || cached.itemId === itemId;
+    return (activityMatches && itemMatches) ? cached : null;
+}
+
+/**
+ * Resolve the attack roll behind the current damage roll, from the most to the least reliable source:
+ * the roll on the config, midi-qol's workflow, the originating chat message, the clicked chat card, and
+ * finally the actor's cached attack roll.
+ *
+ * @param {Actor5e|null} actor
+ * @param {object} [context={}]
+ * @returns {{ roll: Roll|null, advantageMode: number|null, isNatural20: boolean, targets: string[], source: string }|null}
+ */
+export function resolveAttackForDamage(actor, { config, dialog, message, activity } = {}) {
     // 1. Direct roll on config (authoritative if provided)
     const directRoll = config?.attackRoll ?? config?.rolls?.[0]?.options?.attackRoll;
-    if (directRoll) return isRollD20Natural20(directRoll);
+    if (directRoll) {
+        return {
+            roll: directRoll,
+            advantageMode: directRoll.options?.advantageMode ?? null,
+            isNatural20: isRollD20Natural20(directRoll),
+            targets: [],
+            source: "config"
+        };
+    }
 
-    // Inspect a chat message for attack d20 results.
-    // Returns true/false when the message (or its associated attack messages) contains d20 rolls, null when it has none.
-    const inspectMessage = (msg) => {
-        if (!msg) return null;
-        let rolls = [];
-        if (typeof msg.getAssociatedRolls === "function") {
-            const attackMessages = msg.getAssociatedRolls("attack");
-            if (attackMessages?.length) {
-                const latest = attackMessages[attackMessages.length - 1];
-                rolls = latest?.rolls ?? [];
-            }
-        }
-        if (!rolls.length) {
-            const isDamage = msg.type === "damage"
-                || msg.system?.constructor?.name === "DamageMessageData"
-                || (CONFIG.ChatMessage?.dataModels?.damage && msg.system instanceof CONFIG.ChatMessage.dataModels.damage);
-            if (isDamage) return null;
-            rolls = [...(msg.rolls ?? [])];
-        }
-        const hasD20 = rolls.some(r => (r.dice ?? []).some(d => d.faces === 20));
-        if (!hasD20) return null;
-        return rolls.some(r => isRollD20Natural20(r));
+    // 2. midi-qol workflow: its attack roll carries midi's own advantage result, and hitTargets only the hits
+    const workflow = getMidiWorkflow(config) ?? config?.workflow ?? null;
+    if (workflow?.attackRoll) {
+        const source = workflow.hitTargets?.size ? workflow.hitTargets : workflow.targets;
+        return {
+            roll: workflow.attackRoll,
+            advantageMode: workflow.attackRoll.options?.advantageMode ?? null,
+            isNatural20: isRollD20Natural20(workflow.attackRoll),
+            targets: Array.from(source ?? [], t => t?.document?.uuid ?? t?.uuid).filter(Boolean),
+            source: "midi"
+        };
+    }
+
+    const fromMessage = (msg, source) => {
+        const attackMessage = _attackMessageFor(msg);
+        if (!attackMessage) return null;
+        const roll = attackMessage.rolls?.find(r => (r.dice ?? []).some(d => d.faces === 20)) ?? null;
+        return {
+            roll,
+            advantageMode: roll?.options?.advantageMode ?? null,
+            isNatural20: (attackMessage.rolls ?? []).some(r => isRollD20Natural20(r)),
+            targets: (attackMessage.system?.targets ?? []).map(t => t?.token).filter(Boolean),
+            source
+        };
     };
 
-    // 2. Direct message origin (authoritative: a found origin attack must not fall through to the time-based cache)
+    // 3. Direct message origin (authoritative: a found origin attack must not fall through to the cache)
     const rawOrigin = message?.system?.origin
         ?? message?.data?.system?.origin
         ?? (typeof message?.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
@@ -1152,53 +1358,40 @@ export function didAttackRollNatural20(actor, { config, dialog, message, activit
         ? rawOrigin
         : (typeof rawOrigin === "string" ? game.messages?.get(rawOrigin) : null);
 
-    if (originMessage) {
-        const result = inspectMessage(originMessage);
-        if (result !== null) return result;
+    const fromOrigin = fromMessage(originMessage, "origin");
+    if (fromOrigin) return fromOrigin;
+
+    // 4. Event target chat message element
+    const msgId = config?.event?.target?.closest?.(".chat-message")?.dataset?.messageId;
+    if (msgId && msgId !== originMessage?.id) {
+        const fromCard = fromMessage(game.messages?.get(msgId), "card");
+        if (fromCard) return fromCard;
     }
 
-    // 3. Event target chat message element
-    if (config?.event?.target) {
-        const chatCard = config.event.target.closest?.(".chat-message");
-        const msgId = chatCard?.dataset?.messageId;
-        if (msgId && msgId !== originMessage?.id) {
-            const result = inspectMessage(game.messages?.get(msgId));
-            if (result !== null) return result;
-        }
+    // 5. In-memory cached attack roll for this actor
+    const cached = _getCachedAttack(actor, { config, activity });
+    if (cached) {
+        return {
+            roll: null,
+            advantageMode: cached.advantageMode ?? null,
+            isNatural20: Boolean(cached.isNatural20),
+            targets: cached.targets ?? [],
+            source: "cache"
+        };
     }
 
-    // 4. In-memory cached attack roll for this actor
-    if (actor) {
-        const actorKey = actor.uuid || actor.id;
-        const cached = _lastAttackRollsByActor.get(actorKey);
-        if (cached && !cached.damageRolled) {
-            const combat = getActiveCombat(actor);
-            const inCombat = Boolean(combat?.active && combat.started);
-            const currentTurnKey = getCombatTurnKey(combat, actor);
-            const now = Date.now();
+    return null;
+}
 
-            // Out-of-combat attack rolls must never leak across the boundary into a started combat
-            const isValidTurn = inCombat
-                ? Boolean(cached.combatId && cached.turnKey && cached.turnKey === currentTurnKey)
-                : !cached.combatId;
-            const ttl = cached.combatId ? ATTACK_ROLL_COMBAT_TTL_MS : ATTACK_ROLL_OUT_OF_COMBAT_TTL_MS;
-            const isFresh = (now - (cached.time ?? 0)) < ttl;
-
-            if (isValidTurn && isFresh) {
-                const activityMatches = !activity || !cached.activityId || cached.activityId === activity.id;
-                const itemId = activity?.item?.id ?? config?.subject?.item?.id;
-                const itemMatches = !itemId || !cached.itemId || cached.itemId === itemId;
-                if (activityMatches && itemMatches) {
-                    if (cached.isNatural20) return true;
-                }
-            }
-        }
-    }
-
-    // 5. midi-qol workflow fallback
-    if (config?.workflow?.attackRoll && isRollD20Natural20(config.workflow.attackRoll)) return true;
-
-    return false;
+/**
+ * Check whether the attack roll triggering the current damage roll rolled a 20 on the d20.
+ *
+ * @param {Actor5e} actor
+ * @param {object} [context={}]
+ * @returns {boolean}
+ */
+export function didAttackRollNatural20(actor, context = {}) {
+    return Boolean(resolveAttackForDamage(actor, context)?.isNatural20);
 }
 
 /**
@@ -1458,7 +1651,17 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     // --- 2. Sneak Attack (Rogue class scale value on ranged or finesse weapon; once per turn) ---
     const rogueData = getRogueData(actor);
     if (rogueData && isEligibleSneakAttackWeapon(item, activity, config)) {
-        // In combat, Sneak Attack defaults off once it has been used this turn (and is not remembered across turns)
+        // Starts on only when the attack qualifies (Advantage, an ally next to the target, or Rakish Audacity)
+        // and Sneak Attack hasn't been used this combat turn. If that can't be worked out, the old default applies:
+        // on until used this turn in combat, the remembered choice outside combat.
+        let eligibility = { state: "unknown", reason: "NoAttack" };
+        try {
+            eligibility = getSneakAttackEligibility(actor, token, { config, dialog, message, activity });
+        } catch (err) {
+            debug("Conditional Damage | Sneak Attack eligibility check failed:", err);
+        }
+        const usedThisTurn = hasUsedBonusThisTurn(actor, "sneakAttack", turnKey);
+        debug(`Conditional Damage | Sneak Attack for ${actor.name}: ${eligibility.state} (${eligibility.reason})`);
         activeBonuses.push({
             id: "sneakAttack",
             spellName: "Sneak Attack",
@@ -1469,7 +1672,8 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
             labelKey: "ND5T.ConditionalDamage.SneakAttack.Label",
             defaultLabel: `Sneak Attack (+${rogueData.formula})`,
             turnKey,
-            defaultActive: !hasUsedBonusThisTurn(actor, "sneakAttack", turnKey)
+            eligibility,
+            defaultActive: eligibility.state === "unknown" ? !usedThisTurn : (eligibility.state === "eligible" && !usedThisTurn)
         });
     }
 
@@ -1731,7 +1935,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
             || def.id === "charger"
             || def.id === "boonOfIrresistibleOffense"
             || def.id === "savageAttacker"
-            || (def.id === "sneakAttack" && def.turnKey);
+            || (def.id === "sneakAttack" && (def.turnKey || def.eligibility?.state !== "unknown"));
         const lastChoice = isOneOffOrTurnTracked
             ? def.defaultActive
             : getActorConditionalPreference(actor, def.id, def.defaultActive);
@@ -1873,6 +2077,36 @@ function _updateFormulaRowStates(app) {
             }
         });
     });
+}
+
+/**
+ * Fallback texts for the Sneak Attack eligibility tooltip, used when a key is missing from the language file.
+ */
+const SNEAK_ATTACK_REASON_FALLBACKS = {
+    Advantage: "The attack had Advantage.",
+    Ally: "An ally is within 5 ft of the target.",
+    RakishAudacity: "Rakish Audacity: no other creature is within 5 ft of you.",
+    Disadvantage: "The attack had Disadvantage.",
+    NoAlly: "No Advantage, and no ally within 5 ft of the target.",
+    NoAttack: "The attack roll wasn't found. Check the conditions yourself.",
+    NoTarget: "No target on this scene. Check the conditions yourself."
+};
+
+/**
+ * Show why Sneak Attack starts on or off as a tooltip on its toggle.
+ *
+ * @param {DamageRollConfigurationDialog} app
+ */
+function _applySneakAttackTooltip(app) {
+    const bonus = app?.config?._nd5tConditionalBonuses?.find(b => b.id === "sneakAttack");
+    const reason = bonus?.eligibility?.reason;
+    if (!reason || !app.element) return;
+    const input = app.element.querySelector('input[name="nd5t.conditional.sneakAttack"]');
+    const group = input?.closest(".form-group") ?? input?.parentElement;
+    if (!group) return;
+    const key = `ND5T.ConditionalDamage.SneakAttack.Reason.${reason}`;
+    group.dataset.tooltip = game.i18n?.has(key) ? game.i18n.localize(key) : (SNEAK_ATTACK_REASON_FALLBACKS[reason] ?? "");
+    group.dataset.tooltipDirection = "UP";
 }
 
 let _isDialogPatched = false;
@@ -2064,6 +2298,7 @@ function _patchDamageRollConfigurationDialog() {
             if (this.constructor.rollType && this.constructor.rollType !== CONFIG.Dice.DamageRoll) return;
 
             _updateFormulaRowStates(this);
+            _applySneakAttackTooltip(this);
         },
         "WRAPPER"
     );
@@ -2250,8 +2485,11 @@ function _patchDamageRollConfigurationDialog() {
                             markBonusUsedThisTurn(bonus.actor, bonus.id, bonus.turnKey);
                         }
 
-                        // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses)
-                        const isTurnTracked = Boolean(bonus.turnKey);
+                        // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses).
+                        // A Sneak Attack choice made against a detected result is a one-off too: the remembered
+                        // choice is only the fallback for when eligibility can't be worked out.
+                        const isTurnTracked = Boolean(bonus.turnKey)
+                            || (bonus.id === "sneakAttack" && Boolean(bonus.eligibility) && bonus.eligibility.state !== "unknown");
                         if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense") {
                             if (bonus.id === "greatWeaponMaster" && !isChecked) {
                                 // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
@@ -2307,7 +2545,8 @@ export function initConditionalDamage() {
         if (!actor) return;
         _recordAttackRoll(actor, roll, {
             activityId: subject?.id,
-            itemId: subject?.item?.id
+            itemId: subject?.item?.id,
+            targets: Array.from(game.user?.targets ?? [], t => t.document?.uuid)
         });
     });
 
@@ -2329,10 +2568,12 @@ export function initConditionalDamage() {
                 const itemId = message.getAssociatedItem?.()?.id
                     ?? message.getFlag?.("dnd5e", "item.id")
                     ?? existing?.itemId;
+                const targets = (message.system?.targets ?? []).map(t => t?.token).filter(Boolean);
                 _recordAttackRoll(actor, message.rolls[0], {
                     activityId,
                     itemId,
-                    messageId: message.id
+                    messageId: message.id,
+                    targets: targets.length ? targets : existing?.targets
                 });
             }
         }

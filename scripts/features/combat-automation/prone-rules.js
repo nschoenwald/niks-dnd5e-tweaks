@@ -11,11 +11,13 @@
  *
  * @introduced v14.63.0
  * @updated v14.67.6 (Standing up no longer charged twice in the drag ruler)
+ * @updated v14.75.0 (Token distance moved to utils/token-distance.js, shared with Sneak Attack)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { getMidiWorkflow, isAc5eActive } from "../../utils/module-compat.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
+import { tokenDistance, feetToSceneUnits } from "../../utils/token-distance.js";
 
 /**
  * How it works
@@ -427,50 +429,6 @@ async function _onDeleteActiveEffect(effect, _options, userId) {
 // ── Attacks ───────────────────────────────────────────────────────────
 
 /**
- * Distance between two tokens in scene units: closest grid spaces, including the vertical gap.
- * @param {Token} a
- * @param {Token} b
- * @returns {number}
- */
-function _tokenDistance(a, b) {
-    const grid = canvas.grid;
-    const docA = a.document;
-    const docB = b.document;
-    const height = doc => (doc.depth ?? Math.min(doc.width, doc.height)) * grid.distance;
-    const gap = Math.max(0, docB.elevation - (docA.elevation + height(docA)), docA.elevation - (docB.elevation + height(docB)));
-
-    if (grid.isGridless) {
-        const ca = a.center;
-        const cb = b.center;
-        const radii = ((Math.max(docA.width, docA.height) + Math.max(docB.width, docB.height)) / 2) * grid.distance;
-        // Measured like the grid case: between the centers of the closest spaces, so adjacent tokens are 5 ft apart.
-        const flat = Math.max(0, (Math.hypot(ca.x - cb.x, ca.y - cb.y) / grid.size * grid.distance) - radii + grid.distance);
-        return Math.hypot(flat, gap);
-    }
-
-    const spacesA = docA.getOccupiedGridSpaceOffsets();
-    const spacesB = docB.getOccupiedGridSpaceOffsets();
-    if (!spacesA.length || !spacesB.length) return Infinity;
-    let best = Infinity;
-    for (const oa of spacesA) {
-        const pa = grid.getCenterPoint(oa);
-        for (const ob of spacesB) {
-            const pb = grid.getCenterPoint(ob);
-            const { distance } = grid.measurePath([{ x: pa.x, y: pa.y, elevation: 0 }, { x: pb.x, y: pb.y, elevation: gap }]);
-            if (distance < best) best = distance;
-        }
-    }
-    return best;
-}
-
-/** The 5 ft reach of the Prone rule in the scene's units. */
-function _advantageRange() {
-    const units = canvas.scene?.grid?.units;
-    if (!units || units === "ft" || !(units in (CONFIG.DND5E.movementUnits ?? {}))) return PRONE_ADVANTAGE_RANGE_FT;
-    return convertLength(PRONE_ADVANTAGE_RANGE_FT, "ft", units) ?? PRONE_ADVANTAGE_RANGE_FT;
-}
-
-/**
  * The attacker's token on the viewed scene.
  * @param {Actor5e} actor
  * @param {object|null} workflow  midi-qol workflow, if any.
@@ -519,8 +477,8 @@ function _onPreRollAttack(config) {
         if (target && _isProne(target.actor)) {
             const attacker = _attackerToken(actor, workflow);
             if (attacker && (attacker !== target) && (attacker.document.parent === target.document.parent)) {
-                const distance = _tokenDistance(attacker, target);
-                if (distance <= _advantageRange() + 1e-6) advantage = true;
+                const distance = tokenDistance(attacker, target);
+                if (distance <= feetToSceneUnits(PRONE_ADVANTAGE_RANGE_FT) + 1e-6) advantage = true;
                 else disadvantage = true;
                 debug(`Prone Rules | ${target.name} is Prone, attacker ${distance} away: ${advantage ? "Advantage" : "Disadvantage"}`);
             }
