@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.76.0] - 2026-11-11
+### Added
+- **Conditional Damage Bonuses**: Genie warlocks get a *Genie's Wrath* toggle when they hit with an attack on their own turn, adding their proficiency bonus as extra damage once per turn. Pick your patron's damage type (bludgeoning, thunder, fire or cold) in the damage dialog once, and it's remembered for later rolls.
+
 ## [14.75.0] - 2026-11-11
 ### Changed
 - **Conditional Damage Bonuses**: Sneak Attack now checks whether the attack qualifies. The toggle starts on when the attack had Advantage, or when an ally who isn't Incapacitated is within 5 ft of the target and the attack didn't have Disadvantage. Swashbucklers with *Rakish Audacity* also qualify when no other creature is near them. Otherwise it starts off, so quick damage rolls no longer add Sneak Attack to hits that don't qualify. Hover the toggle to see why. You can still turn it on yourself. Also works with midi-qol.

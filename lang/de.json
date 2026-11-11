@@ -95,6 +95,8 @@
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoAlly": "Kein Vorteil und kein Verbündeter im Umkreis von 1,5 m um das Ziel.",
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoAttack": "Der Angriffswurf wurde nicht gefunden. Prüfe die Bedingungen selbst.",
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoTarget": "Kein Ziel in dieser Szene. Prüfe die Bedingungen selbst.",
+  "ND5T.ConditionalDamage.GeniesWrath.Label": "Zorn des Dschinns (+{formula})",
+  "ND5T.ConditionalDamage.GeniesWrath.PickType": "Wähle in der Zeile „Zorn des Dschinns“ die Schadensart deines Patrons. Deine Wahl wird gespeichert.",
   "ND5T.ConditionalDamage.GreatWeaponMaster.Label": "Meister schwerer Waffen (+{formula})",
   "ND5T.ConditionalDamage.BrutalStrike.Label": "Brutaler Schlag (+{formula})",
   "ND5T.ConditionalDamage.Charger.Label": "Stürmer (+{formula})",

@@ -1,5 +1,5 @@
 /**
- * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Cleave, & Boon of Irresistible Offense)
+ * Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Cleave, Boon of Irresistible Offense & Genie's Wrath)
  *
  * Offers toggles in damage roll configuration dialogs when an actor is actively
  * concentrating on Hex or Hunter's Mark, attacks with a ranged or finesse weapon (Sneak Attack),
@@ -8,12 +8,14 @@
  * attacks after moving 10+ ft with Charger (+1d8 bonus, once per turn),
  * attacks with Savage Attacker (rolling weapon damage dice twice and keeping higher, once per turn),
  * attacks with a Cleave mastery weapon (damage malus removing ability score modifier unless negative),
- * or scores a natural 20 attack roll with Boon of Irresistible Offense (+Ability Score bonus).
+ * scores a natural 20 attack roll with Boon of Irresistible Offense (+Ability Score bonus),
+ * or hits with an attack roll on their turn with Genie's Wrath (+PB of the patron's damage type, once per turn).
  * Remembers choices per actor (except one-offs and once-per-turn bonuses).
  * Sneak Attack starts on only when the attack qualifies: Advantage, an ally who isn't Incapacitated within
  * 5 ft of the target (without Disadvantage), or Rakish Audacity.
  *
  * @updated v14.75.0 (Sneak Attack detects Advantage, Disadvantage, allies next to the target and Rakish Audacity)
+ * @updated v14.76.0 (Genie's Wrath: +PB on your turn, once per turn, with a remembered damage type dropdown)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -353,6 +355,65 @@ export function getSneakAttackEligibility(actor, attackerToken, { config, dialog
         return { state: "eligible", reason: "Ally" };
     }
     return { state: "ineligible", reason: "NoAlly" };
+}
+
+/**
+ * Damage types of Genie's Wrath, in the order of the Genie Kind table: Dao, Djinni, Efreeti, Marid.
+ * @type {string[]}
+ */
+export const GENIES_WRATH_DAMAGE_TYPES = ["bludgeoning", "thunder", "fire", "cold"];
+
+/**
+ * Whether an actor has the Genie warlock's Genie's Wrath, or the Genie's Vessel feature that includes it.
+ *
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+export function actorHasGeniesWrath(actor) {
+    if (!actor) return false;
+    const feats = actor.itemTypes?.feat ?? Array.from(actor.items?.values() ?? []).filter(i => i.type === "feat");
+    return feats.some(i => {
+        const id = (i.identifier || i.system?.identifier || "").toLowerCase();
+        const name = (i.name || "").toLowerCase().replace(/[‘’`]/g, "'");
+        return /^genie-?s[-_](wrath|vessel)$/.test(id)
+            || /\bgenie'?s (wrath|vessel)\b/.test(name);
+    });
+}
+
+/**
+ * The Genie's Wrath damage type the actor picked last, or null if none was picked yet.
+ *
+ * @param {Actor5e|null} actor
+ * @returns {string|null}
+ */
+export function getActorGeniesWrathType(actor) {
+    if (!actor) return null;
+    const memType = _actorChoiceMemory.get(actor.uuid || actor.id)?.geniesWrathType;
+    if (GENIES_WRATH_DAMAGE_TYPES.includes(memType)) return memType;
+    const flagType = actor.getFlag?.(MODULE_ID, "conditionalDamage.geniesWrathType");
+    return GENIES_WRATH_DAMAGE_TYPES.includes(flagType) ? flagType : null;
+}
+
+/**
+ * Remember the actor's Genie's Wrath damage type (the patron's kind doesn't change, so one pick is enough).
+ *
+ * @param {Actor5e|null} actor
+ * @param {string} type
+ */
+export async function setActorGeniesWrathType(actor, type) {
+    if (!actor || !GENIES_WRATH_DAMAGE_TYPES.includes(type)) return;
+    const key = actor.uuid || actor.id;
+    const existingMem = _actorChoiceMemory.get(key) ?? {};
+    existingMem.geniesWrathType = type;
+    _actorChoiceMemory.set(key, existingMem);
+    try {
+        if (actor.getFlag?.(MODULE_ID, "conditionalDamage.geniesWrathType") === type) return;
+        if (actor.isOwner && !actor.inCompendium && actor.setFlag) {
+            await actor.setFlag(MODULE_ID, "conditionalDamage.geniesWrathType", type);
+        }
+    } catch (err) {
+        debug(`Conditional Damage | Could not persist Genie's Wrath type on actor "${actor.name}":`, err);
+    }
 }
 
 /**
@@ -1779,7 +1840,33 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         }
     }
 
-    // --- 8. Boon of Irresistible Offense (2024 Modern Rules: +Ability Score when rolling a 20 on the d20 for an attack roll) ---
+    // --- 8. Genie's Wrath (Genie warlock: +PB on a hit with an attack roll, once during each of your turns) ---
+    // The type depends on the patron's kind, which items don't reliably record: the roll offers the four types
+    // in a dropdown and remembers the last pick.
+    if (isMyTurn && actorHasGeniesWrath(actor)) {
+        const isAttack = activity?.type === "attack"
+            || ["mwak", "rwak", "msak", "rsak"].includes(activity?.actionType ?? "");
+        if (isAttack) {
+            const pb = Number(actor.system?.attributes?.prof ?? 2);
+            const rememberedType = getActorGeniesWrathType(actor);
+            activeBonuses.push({
+                id: "geniesWrath",
+                spellName: "Genie's Wrath",
+                formula: "@prof[Genie's Wrath]",
+                formulaDisplay: String(pb),
+                damageType: rememberedType ?? GENIES_WRATH_DAMAGE_TYPES[0],
+                damageTypes: [...GENIES_WRATH_DAMAGE_TYPES],
+                typeRemembered: Boolean(rememberedType),
+                flavor: "Genie's Wrath",
+                labelKey: "ND5T.ConditionalDamage.GeniesWrath.Label",
+                defaultLabel: `Genie's Wrath (+${pb})`,
+                turnKey,
+                defaultActive: !(inCombat && hasUsedBonusThisTurn(actor, "geniesWrath", turnKey))
+            });
+        }
+    }
+
+    // --- 9. Boon of Irresistible Offense (2024 Modern Rules: +Ability Score when rolling a 20 on the d20 for an attack roll) ---
     if (isModernRules() && actorHasBoonOfIrresistibleOffense(actor)) {
         const isAttack = activity?.type === "attack"
             || ["mwak", "rwak", "msak", "rsak"].includes(activity?.actionType ?? "");
@@ -1840,7 +1927,7 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
         }
     }
 
-    const isFlatBonus = def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense";
+    const isFlatBonus = def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense" || def.id === "geniesWrath";
     const rollOptions = {
         type: damageType,
         flavor: def.flavor,
@@ -1851,7 +1938,10 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
         }
     };
 
-    if (damageType) {
+    if (Array.isArray(def.damageTypes) && def.damageTypes.length > 1) {
+        // Several types: dnd5e's damage dialog shows a type dropdown for this row
+        rollOptions.types = [...def.damageTypes];
+    } else if (damageType) {
         rollOptions.types = [damageType];
     }
 
@@ -1935,6 +2025,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
             || def.id === "charger"
             || def.id === "boonOfIrresistibleOffense"
             || def.id === "savageAttacker"
+            || def.id === "geniesWrath"
             || (def.id === "sneakAttack" && (def.turnKey || def.eligibility?.state !== "unknown"));
         const lastChoice = isOneOffOrTurnTracked
             ? def.defaultActive
@@ -2106,6 +2197,39 @@ function _applySneakAttackTooltip(app) {
     if (!group) return;
     const key = `ND5T.ConditionalDamage.SneakAttack.Reason.${reason}`;
     group.dataset.tooltip = game.i18n?.has(key) ? game.i18n.localize(key) : (SNEAK_ATTACK_REASON_FALLBACKS[reason] ?? "");
+    group.dataset.tooltipDirection = "UP";
+}
+
+/**
+ * Read the damage type picked in a conditional roll's dropdown.
+ *
+ * @param {DamageRollConfigurationDialog} app
+ * @param {FormDataExtended} formData
+ * @param {object} roll  The roll configuration inside `app.config.rolls`.
+ * @returns {string|null}
+ */
+function _getPickedRollType(app, formData, roll) {
+    const index = (app.config?.rolls ?? []).indexOf(roll);
+    if (index < 0) return null;
+    const picked = formData?.get?.(`roll.${index}.damageType`);
+    return (typeof picked === "string" && roll.options?.types?.includes(picked)) ? picked : null;
+}
+
+/**
+ * Until a Genie's Wrath type has been picked once, remind the player on the toggle to pick the patron's type.
+ *
+ * @param {DamageRollConfigurationDialog} app
+ */
+function _applyGeniesWrathTooltip(app) {
+    const bonus = app?.config?._nd5tConditionalBonuses?.find(b => b.id === "geniesWrath");
+    if (!bonus || bonus.typeRemembered || !app.element) return;
+    const input = app.element.querySelector('input[name="nd5t.conditional.geniesWrath"]');
+    const group = input?.closest(".form-group") ?? input?.parentElement;
+    if (!group) return;
+    const key = "ND5T.ConditionalDamage.GeniesWrath.PickType";
+    group.dataset.tooltip = game.i18n?.has(key)
+        ? game.i18n.localize(key)
+        : "Pick your patron's damage type in the Genie's Wrath row. Your pick is remembered.";
     group.dataset.tooltipDirection = "UP";
 }
 
@@ -2299,6 +2423,7 @@ function _patchDamageRollConfigurationDialog() {
 
             _updateFormulaRowStates(this);
             _applySneakAttackTooltip(this);
+            _applyGeniesWrathTooltip(this);
         },
         "WRAPPER"
     );
@@ -2368,6 +2493,16 @@ function _patchDamageRollConfigurationDialog() {
                                 delete roll.options._nd5tInactive;
                             } else {
                                 roll.options._nd5tInactive = true;
+                            }
+
+                            // Genie's Wrath: keep the picked type, since a disabled (unticked) row's dropdown isn't in the form data
+                            if (bonus.id === "geniesWrath") {
+                                const pickedType = _getPickedRollType(this, formData, roll);
+                                if (pickedType) {
+                                    bonus.damageType = pickedType;
+                                    roll.options.type = pickedType;
+                                    if (roll.data?.roll) roll.data.roll.damageType = pickedType;
+                                }
                             }
 
                             // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
@@ -2478,6 +2613,17 @@ function _patchDamageRollConfigurationDialog() {
                                 }
                                 roll.options.properties = [...baseProperties];
                             }
+
+                            // Genie's Wrath: apply and remember the picked type (only when it's used)
+                            if (bonus.id === "geniesWrath") {
+                                const pickedType = _getPickedRollType(this, formData, roll);
+                                if (pickedType) {
+                                    bonus.damageType = pickedType;
+                                    roll.options.type = pickedType;
+                                    if (roll.data?.roll) roll.data.roll.damageType = pickedType;
+                                    if (isChecked) setActorGeniesWrathType(bonus.actor, pickedType);
+                                }
+                            }
                         }
 
                         // Record once-per-turn usage
@@ -2490,7 +2636,7 @@ function _patchDamageRollConfigurationDialog() {
                         // choice is only the fallback for when eligibility can't be worked out.
                         const isTurnTracked = Boolean(bonus.turnKey)
                             || (bonus.id === "sneakAttack" && Boolean(bonus.eligibility) && bonus.eligibility.state !== "unknown");
-                        if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense") {
+                        if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense" && bonus.id !== "geniesWrath") {
                             if (bonus.id === "greatWeaponMaster" && !isChecked) {
                                 // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
                                 // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.

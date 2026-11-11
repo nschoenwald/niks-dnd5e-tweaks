@@ -107,6 +107,8 @@
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoAlly": "No Advantage, and no ally within 5 ft of the target.",
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoAttack": "The attack roll wasn't found. Check the conditions yourself.",
   "ND5T.ConditionalDamage.SneakAttack.Reason.NoTarget": "No target on this scene. Check the conditions yourself.",
+  "ND5T.ConditionalDamage.GeniesWrath.Label": "Genie's Wrath (+{formula})",
+  "ND5T.ConditionalDamage.GeniesWrath.PickType": "Pick your patron's damage type in the Genie's Wrath row. Your pick is remembered.",
   "ND5T.ConditionalDamage.GreatWeaponMaster.Label": "Great Weapon Master (+{formula})",
   "ND5T.ConditionalDamage.BrutalStrike.Label": "Brutal Strike (+{formula})",
   "ND5T.ConditionalDamage.Charger.Label": "Charger (+{formula})",
