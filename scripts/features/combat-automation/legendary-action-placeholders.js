@@ -6,6 +6,16 @@
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
  * @updated v14.48.0 (Native core combat turn marker displayed on legendary creatures during placeholder turns)
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.77.0 (Creatures without a Legendary Actions count, e.g. player characters, count as legendary when they
+ *   have a feature with a Legendary Action activation; their remaining uses come from that feature)
+ *
+ * Who counts as legendary:
+ *  - Actors whose data has `system.resources.legact` (NPCs): only that count, as before. dnd5e spends Legendary Action
+ *    activations from it automatically, so an NPC with a count of 0 can't use its legendary features anyway.
+ *  - Actors without it (characters, vehicles…): any item with an activity whose activation type is in
+ *    LEGENDARY_ACTIVATION_TYPES. dnd5e doesn't auto-consume anything for these, so remaining uses are read from the
+ *    activity's consumption targets (item uses, activity uses, attributes), or its own / its item's limited uses.
+ *    A feature without any limit counts as always available.
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -13,6 +23,9 @@ import { patchMethod } from "../../utils/patch-helper.js";
 const DEFAULT_ICON = "icons/svg/combat.svg";
 const PLACEHOLDER_OFFSET = 0.0001;
 const TIE_BREAKER_STEP = 0.0002;
+
+/** Activation types that mark a feature as a legendary action (dnd5e CONFIG.DND5E.activityActivationTypes keys). */
+const LEGENDARY_ACTIVATION_TYPES = new Set(["legendary", "mythic"]);
 
 /** Cache of legendary creature combatant IDs for active combats. Keyed by Combat document. */
 const _legendaryCombatantsCache = new WeakMap();
@@ -42,11 +55,7 @@ export function hasRemainingLegendaryActions(combat) {
     if (!cache || cache.size !== combat.combatants.size) {
         const ids = [];
         for (const c of combat.combatants) {
-            if (c.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
-            const max = c.actor?.system?.resources?.legact?.max;
-            if (Number(max) > 0) {
-                ids.push(c.id);
-            }
+            if (isLegendaryCombatant(c)) ids.push(c.id);
         }
         cache = { size: combat.combatants.size, ids };
         _legendaryCombatantsCache.set(combat, cache);
@@ -247,6 +256,64 @@ export function isLegendaryPlaceholderTurn(combat) {
 }
 
 /**
+ * Activities with a legendary activation on an actor that has no Legendary Actions count of its own.
+ * NPCs (which have `system.resources.legact`) return none: their count decides.
+ * @param {Actor} actor
+ * @returns {object[]} dnd5e Activity instances
+ */
+function _getLegendaryActivities(actor) {
+    if (!actor || actor.system?.resources?.legact) return [];
+    const activities = [];
+    for (const item of actor.items ?? []) {
+        for (const activity of item.system?.activities ?? []) {
+            if (LEGENDARY_ACTIVATION_TYPES.has(activity?.activation?.type)) activities.push(activity);
+        }
+    }
+    return activities;
+}
+
+/**
+ * Remaining uses of a legendary activity on an actor without a Legendary Actions count.
+ * Uses the smallest value among its consumption targets; without numeric targets, its own or its item's limited
+ * uses; without any limit, Infinity.
+ * @param {object} activity dnd5e Activity
+ * @returns {number}
+ */
+function _getActivityRemainingUses(activity) {
+    const item = activity.item;
+    const actor = activity.actor ?? item?.actor;
+    const values = [];
+    for (const target of activity.consumption?.targets ?? []) {
+        let value;
+        if (target.type === "activityUses") value = activity.uses?.value;
+        else if (target.type === "itemUses") value = (target.target ? actor?.items?.get(target.target) : item)?.system?.uses?.value;
+        else if ((target.type === "attribute") && target.target) value = foundry.utils.getProperty(actor?.system ?? {}, target.target);
+        if ((value !== null) && (value !== undefined) && (value !== "") && Number.isFinite(Number(value))) values.push(Number(value));
+    }
+    if (!values.length) {
+        if (Number(activity.uses?.max) > 0) values.push(Number(activity.uses.value) || 0);
+        if (Number(item?.system?.uses?.max) > 0) values.push(Number(item.system.uses.value) || 0);
+    }
+    if (!values.length) return Infinity;
+    return Math.max(0, Math.min(...values));
+}
+
+/**
+ * Whether a combatant is a legendary creature: a Legendary Actions count above 0, or (for actors without that count,
+ * e.g. player characters) a feature with a Legendary Action activation.
+ * @param {Combatant} combatant
+ * @returns {boolean}
+ */
+export function isLegendaryCombatant(combatant) {
+    if (!combatant || combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) return false;
+    const actor = combatant.actor;
+    if (!actor) return false;
+    const legact = actor.system?.resources?.legact;
+    if (legact) return Number(legact.max) > 0;
+    return _getLegendaryActivities(actor).length > 0;
+}
+
+/**
  * Determine remaining legendary action uses for a given combatant.
  * Returns 0 if the combatant is defeated, dead, has 0 HP, or has no uses remaining.
  * @param {Combatant} combatant
@@ -259,7 +326,14 @@ function _getCombatantRemainingLegendaryActions(combatant) {
     if (actor.statuses?.has("dead") || (actor.system?.attributes?.hp?.value ?? 1) <= 0) return 0;
 
     const legact = actor.system?.resources?.legact;
-    if (!legact) return 0;
+    if (!legact) {
+        let remaining = 0;
+        for (const activity of _getLegendaryActivities(actor)) {
+            remaining = Math.max(remaining, _getActivityRemainingUses(activity));
+            if (remaining === Infinity) break;
+        }
+        return remaining;
+    }
 
     const max = Number(legact.max) || 0;
     if (max <= 0) return 0;
@@ -597,6 +671,26 @@ export function initLegendaryActionPlaceholders() {
         }
     });
 
+    // Legendary features of actors without a Legendary Actions count (e.g. player characters): adding, removing or
+    // changing one can make its actor legendary; spending or recovering its uses changes who gets a turn marker
+    const handleItemChange = (item, changed = null) => {
+        const actor = item?.parent;
+        if (!(actor instanceof Actor) || actor.system?.resources?.legact) return;
+        const structural = !changed || ("type" in changed) || (changed.system?.activities !== undefined)
+            || Object.keys(changed).some(k => k.startsWith("system.activities"));
+        const usesChanged = !changed || (changed.system?.uses !== undefined) || (changed.system?.activities !== undefined)
+            || Object.keys(changed).some(k => k.startsWith("system.uses") || k.startsWith("system.activities"));
+        if (!structural && !usesChanged) return;
+        for (const combat of game.combats ?? []) {
+            if (!combat.combatants?.some(c => c.actorId === actor.id || c.actor === actor)) continue;
+            if (structural) _invalidateLegendaryCache(combat);
+            if (combat.isView && isLegendaryPlaceholderTurn(combat)) combat._updateTurnMarkers();
+        }
+    };
+    Hooks.on("createItem", item => handleItemChange(item));
+    Hooks.on("deleteItem", item => handleItemChange(item));
+    Hooks.on("updateItem", (item, changed) => handleItemChange(item, changed));
+
     // Synchronize turn markers when ActiveEffects (e.g. dead status) are created, updated, or deleted
     Hooks.on("createActiveEffect", (effect) => _handleActiveEffectChange(effect));
     Hooks.on("deleteActiveEffect", (effect) => _handleActiveEffectChange(effect));
@@ -631,7 +725,7 @@ export function initLegendaryActionPlaceholders() {
             if (!getSetting("enableLegendaryActionPlaceholders")) return;
 
             // Check if there is at least one combatant with legendary actions
-            const hasLegendary = combat.combatants.some(c => c.actor?.system?.resources?.legact?.max > 0);
+            const hasLegendary = combat.combatants.some(c => isLegendaryCombatant(c));
 
             if (!hasLegendary) {
                 debug(`No actors with legendary actions found in combat ${combat.id}.`);

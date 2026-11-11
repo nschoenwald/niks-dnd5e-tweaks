@@ -287,7 +287,7 @@ Appears during creature summoning activities (*Find Familiar*, *Summon Celestial
 * **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
 
 ### Legendary Action Placeholders
-Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases, featuring automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
+Inserts placeholder turns after player characters in the initiative tracker to help track legendary action phases. Placeholders are added when a combat starts with at least one legendary creature: a creature with a Legendary Actions count, or a creature without one (such as a player character) that has a feature whose activation is set to Legendary Action. For those features, remaining uses are read from their limited uses or what they consume; a feature without limited uses counts as always available. Also includes automatic tie-breaking, dynamic display of native Foundry core combat turn markers on active legendary creatures with remaining uses during placeholder turns, and intelligent auto-skipping when no creature in the encounter has legendary action uses remaining.
 * *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
 
 ### Auto-Apply Status at 0 HP

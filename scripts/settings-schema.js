@@ -934,7 +934,7 @@ export function getSettingsSchema() {
                             docs: "legendary-action-placeholders",
                             keywords: ["boss", "legendary actions", "combat tracker"],
                             name: "Legendary Action Placeholders",
-                            hint: "Inserts placeholder turns in the combat tracker after each player turn when legendary creatures are present.",
+                            hint: "Inserts placeholder turns in the combat tracker after each player turn when legendary creatures are present. Player characters count too if they have a feature with a Legendary Action activation.",
                             type: "Boolean",
                             default: true,
                             scope: "world"

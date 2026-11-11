@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.77.0] - 2026-11-11
+### Changed
+- **Legendary Action Placeholders**: Player characters and other creatures can now have legendary actions too. A creature counts as legendary if it has a Legendary Actions count (as before) or a feature whose activation is set to **Legendary Action**, for example legendary actions you gave your players. Placeholders then appear even when no hostile legendary creature is in the fight. Turn markers on placeholder turns and *Auto-Skip When No Uses Left* also count these features' remaining uses. A feature without limited uses counts as always available.
+
 ## [14.76.0] - 2026-11-11
 ### Added
 - **Conditional Damage Bonuses**: Genie warlocks get a *Genie's Wrath* toggle when they hit with an attack on their own turn, adding their proficiency bonus as extra damage once per turn. Pick your patron's damage type (bludgeoning, thunder, fire or cold) in the damage dialog once, and it's remembered for later rolls.

@@ -918,7 +918,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
         name: "Legendary Action Placeholders",
-        hint: "When a combat begins that includes a creature with legendary actions, inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
+        hint: "When a combat begins that includes a creature with legendary actions (a Legendary Actions count, or a feature with a Legendary Action activation, e.g. on a player character), inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
         scope: "world",
         config: false,
         type: Boolean,
