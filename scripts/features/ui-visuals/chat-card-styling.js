@@ -8,6 +8,7 @@
  * @updated v14.55.0 (midi-qol: card summary dice, obscured results, colored borders, merged card buttons; d20 centering & contrast)
  * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
+ * @updated v14.77.1 (Action button styling also covers D&D 5e 6.1's labelled buttons)
  */
 import { log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";

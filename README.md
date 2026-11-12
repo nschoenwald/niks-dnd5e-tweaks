@@ -106,7 +106,7 @@ Injects a sleek `[ ADV ] [ NORMAL ] [ DISADV ]` segmented button group directly 
 
 ### Chat Card Styling Improvements
 Modernizes DnD5e chat cards to make actions and roll results readable at a glance:
-* **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates.
+* **Color-Coded Action Buttons**: Enlarges card buttons with clear labels and colors: Royal Violet for Attack, Flame Orange for Damage, Cobalt Blue for Saves, Warm Bronze for Checks, Forest Green for Healing, Azure Blue for Temp HP, Jade for Transform, Orchid for Summon, Indigo for Teleport, Cyan for Use, and Ruby for Templates. Buttons are labelled with D&D 5e's own words (**Attack**, **Damage**, **Roll**, **Area**, …); on D&D 5e 6.1 those labels come from the system and follow your Foundry language. Save buttons add the ability (see Saving Throw Shorthand).
 * **Enlarged Targeted / Selected Button**: Expands the target mode toggle button in usage cards and damage/effects trays into an easy-to-click, full-height button displaying both icon and dynamic label (**Targeted** / **Selected**), paired with clean, vertically stacked target pills. Target names and damage values always stay on one line: with a larger core **Font Size** or a narrow chat popout, the button stacks its icon above the label to make room, and names that still don't fit end in "…".
 * **Prominent Apply Buttons**: The **Apply** buttons in damage and effects trays are taller, bolder, color-coded (Crimson for damage and healing, Gold for effects) and say what they do: **Apply Damage**, **Apply Healing**, **Apply Temp HP** or **Apply Effect**. When every target would get exactly the same amount (no resistances, vulnerabilities or different multipliers), the amount is shown too, e.g. **Apply 17 Damage** or **Apply 6 Temp HP**. The tray's bottom spacing is trimmed, so cards barely grow.
 * **Multi-Die d20 Indicators**: Displays all individual dice rolled on advantage or disadvantage side-by-side (bold kept die, dimmed discarded die) with collision avoidance. The number is centered in each die and switches between black and white so it stays readable on light, dark, critical (green) and fumble (red) dice.
@@ -535,7 +535,7 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 ### Requirements
 * **Foundry VTT**: Version 14 (maximum 14)
 * **[Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)**: 14.0.0 or later (Foundry offers to install it along with this module)
-* **DnD5e System**: Version 6.0.0 to 6.1.x
+* **DnD5e System**: Version 6.0.0 to 6.1.x (verified with 6.1.0, 6.0.x still supported)
 
 ---
 

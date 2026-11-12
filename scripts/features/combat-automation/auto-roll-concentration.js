@@ -7,6 +7,7 @@
  * @updated v14.67.1 (Damage detected via updateActor so dnd5e's concentrationCheck option is honoured; removed the roll hook that flagged the wrong chat message)
  * @updated v14.67.4 (Badge and End Concentration button added after dnd5e renders the card, so they no longer get wiped)
  * @updated v14.67.5 (End Concentration buttons follow the actor's live concentration state on every client)
+ * @updated v14.77.1 (Removes D&D 5e 6.1's labelled Break button from save cards too)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -684,7 +685,8 @@ function _onRenderChatMessage(message, html) {
 
     // 2. Remove native DnD5e "Break" concentration button from save cards (so we don't have duplicate buttons)
     if (!isPromptCard) {
-        const nativeBreakBtn = html.querySelector("button.icon:is([data-action='breakConcentration'], [data-forward-action='breakConcentration'])");
+        // D&D 5e 6.0 renders it as `button.icon`, 6.1 as `button.labelled` (with a short text label)
+        const nativeBreakBtn = html.querySelector("button:is(.icon, .labelled):is([data-action='breakConcentration'], [data-forward-action='breakConcentration'])");
         if (nativeBreakBtn) {
             const li = nativeBreakBtn.closest("li");
             const ul = li?.parentElement;

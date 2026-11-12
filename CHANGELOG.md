@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.77.1] - 2026-11-12
+### Changed
+- **Chat Card Styling Improvements**: Card buttons now use the same words as D&D 5e: **Attack** (was Atk), **Damage** (was Dmg), **Roll** (was Use, for formula rolls) and **Area** (was Template). On D&D 5e 6.1 these come from the system itself, so they appear in your Foundry language. Save buttons still show the ability, e.g. **DEX Save**.
+- **Compatibility**: Verified with D&D 5e 6.1.0. 6.0.x is still supported.
+
+### Fixed
+- **Chat Card Styling Improvements**: Works with the final D&D 5e 6.1 release, which gives Attack, Damage, Save and other card buttons their own text labels. The buttons keep their colors and short labels (such as **DEX Save**) instead of falling back to the plain system look, and labels are no longer shown twice.
+- **Auto-Roll Concentration Saves**: On D&D 5e 6.1, the system's own **Break** button is removed from concentration save cards again, so only the **End Concentration** button is shown.
+
 ## [14.77.0] - 2026-11-11
 ### Changed
 - **Legendary Action Placeholders**: Player characters and other creatures can now have legendary actions too. A creature counts as legendary if it has a Legendary Actions count (as before) or a feature whose activation is set to **Legendary Action**, for example legendary actions you gave your players. Placeholders then appear even when no hostile legendary creature is in the fight. Turn markers on placeholder turns and *Auto-Skip When No Uses Left* also count these features' remaining uses. A feature without limited uses counts as always available.
