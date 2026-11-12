@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.79.1] - 2026-11-12
+### Changed
+- **Auto-Apply Status at 0 HP**: It also works the other way round: giving a dead creature Unconscious removes Dead. Other effects that make a creature unconscious, like *Sleep*, don't.
+
 ## [14.79.0] - 2026-11-12
 ### Changed
 - **Auto-Apply Status at 0 HP**: A creature that becomes Dead loses Unconscious, also when you set Dead by hand from the token HUD or another module adds it. Before, only Dead applied by this feature did that.

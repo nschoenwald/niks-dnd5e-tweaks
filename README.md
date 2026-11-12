@@ -291,7 +291,7 @@ Inserts placeholder turns after player characters in the initiative tracker to h
 * *Sub-settings*: **Auto-Skip When No Uses Left**, **Show to Players**, **Custom Icon**.
 
 ### Auto-Apply Status at 0 HP
-Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat. When a creature becomes Dead, Unconscious is removed, also when Dead is set by hand from the token HUD or by another module.
+Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat. Dead and Unconscious replace each other: when a creature gets one, the other is removed, also when it is set by hand from the token HUD or by another module.
 
 ### Prompt for Death Saves
 Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.

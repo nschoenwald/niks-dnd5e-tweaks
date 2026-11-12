@@ -5,6 +5,7 @@
  * @introduced v14.7.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.79.0 (Unconscious removed whenever Dead is added, also by hand or by other modules)
+ * @updated v14.79.1 (And Dead removed whenever the Unconscious condition is added)
  */
 import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -29,8 +30,8 @@ import { midiAppliesZeroHPStatus, midiMarksDefeated } from "../../utils/module-c
  * Dead escalation after three failed death saves, clean-up on healing and removing
  * a token from combat are still handled here.
  *
- * Whenever Dead is added to a creature by anyone (token HUD, effects tab, midi-qol, a macro),
- * its Unconscious condition is removed, so a dead creature doesn't show both.
+ * Dead and Unconscious exclude each other: whenever one is added by anyone (token HUD, effects
+ * tab, midi-qol, a macro), the other condition is removed, so a creature never shows both.
  */
 
 /**
@@ -393,30 +394,38 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
 }
 
 /**
- * When Dead is added to an actor, remove its Unconscious condition. Runs on the active GM's client,
- * or on the creating user's client when no GM is online. Only the Unconscious condition itself is
- * removed; other effects that grant the unconscious status (e.g. a Sleep spell effect) are left alone.
+ * Dead and Unconscious exclude each other: when one is added to an actor, remove the other condition.
+ * - Dead from any effect that grants the status removes the Unconscious condition.
+ * - Only the Unconscious condition itself removes Dead. Other effects that grant the unconscious
+ *   status (e.g. a Sleep spell effect) don't revive a dead creature.
+ * Only the opposite condition (its static _id, the same lookup as Actor#toggleStatusEffect) is
+ * deleted, never other effects granting its status. Runs on the active GM's client, or on the
+ * creating user's client when no GM is online.
  * @param {ActiveEffect} effect
  * @param {object} options
  * @param {string} userId
  */
-async function _onCreateDeadEffect(effect, options, userId) {
-    if (!getSetting("enableAutoStatusZeroHP")) return;
-    if (!effect.statuses?.has("dead") || effect.disabled) return;
+async function _onCreateZeroHPCondition(effect, options, userId) {
+    if (!getSetting("enableAutoStatusZeroHP") || effect.disabled) return;
     const actor = effect.parent;
     if (actor?.documentName !== "Actor") return;
+
+    let opposite;
+    if (effect.statuses?.has("dead")) opposite = "unconscious";
+    else if (effect.id && (effect.id === CONFIG.statusEffects?.unconscious?._id)) opposite = "dead";
+    else return;
+
     const activeGM = game.users.activeGM;
     if (activeGM ? !activeGM.isSelf : (userId !== game.user.id)) return;
 
-    // Same lookup as Actor#toggleStatusEffect: the condition's static _id
-    const unconsciousId = CONFIG.statusEffects?.unconscious?._id;
-    const unconscious = unconsciousId ? actor.effects.get(unconsciousId) : null;
-    if (!unconscious) return;
-    debug(`Auto-Status | ${actor.name} is dead — removing "unconscious"`);
+    const oppositeId = CONFIG.statusEffects?.[opposite]?._id;
+    const existing = oppositeId ? actor.effects.get(oppositeId) : null;
+    if (!existing) return;
+    debug(`Auto-Status | ${actor.name} gained "${opposite === "dead" ? "unconscious" : "dead"}" — removing "${opposite}"`);
     try {
-        await unconscious.delete();
+        await existing.delete();
     } catch (e) {
-        debug(`Auto-Status | Could not remove "unconscious" from ${actor.name}: ${e.message}`);
+        debug(`Auto-Status | Could not remove "${opposite}" from ${actor.name}: ${e.message}`);
     }
 }
 
@@ -428,6 +437,6 @@ export function initAutoStatusZeroHP() {
     _patchUpdateDowned();
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("updateActor", _onUpdateActor);
-    Hooks.on("createActiveEffect", _onCreateDeadEffect);
+    Hooks.on("createActiveEffect", _onCreateZeroHPCondition);
 }
 
