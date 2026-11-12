@@ -2,7 +2,7 @@
  * Feature: Untyped Healing Patch
  * Description: Heal activities whose healing part has no type selected heal instead of dealing damage.
  *
- * @introduced v14.79.0
+ * @introduced v14.78.0
  */
 import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";

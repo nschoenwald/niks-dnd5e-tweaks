@@ -9,8 +9,7 @@
  * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  * @updated v14.77.1 (Action button styling also covers D&D 5e 6.1's labelled buttons)
- * @updated v14.78.0 (Apply Healing / Apply Temp HP buttons coloured like their roll results)
- * @updated v14.79.0 (Untyped parts of healing rolls count as healing for the Apply label)
+ * @updated v14.78.0 (Apply Healing / Apply Temp HP buttons coloured like their roll results; untyped parts of healing rolls count as healing)
  */
 import { log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
