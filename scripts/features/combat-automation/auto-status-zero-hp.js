@@ -4,6 +4,7 @@
  *
  * @introduced v14.7.0
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.79.0 (Unconscious removed whenever Dead is added, also by hand or by other modules)
  */
 import { getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -27,6 +28,9 @@ import { midiAppliesZeroHPStatus, midiMarksDefeated } from "../../utils/module-c
  * those parts to midi so the two don't fight over which status a token gets; the
  * Dead escalation after three failed death saves, clean-up on healing and removing
  * a token from combat are still handled here.
+ *
+ * Whenever Dead is added to a creature by anyone (token HUD, effects tab, midi-qol, a macro),
+ * its Unconscious condition is removed, so a dead creature doesn't show both.
  */
 
 /**
@@ -389,6 +393,34 @@ async function _processHPChange(actor, newHP, type, wasZeroHP) {
 }
 
 /**
+ * When Dead is added to an actor, remove its Unconscious condition. Runs on the active GM's client,
+ * or on the creating user's client when no GM is online. Only the Unconscious condition itself is
+ * removed; other effects that grant the unconscious status (e.g. a Sleep spell effect) are left alone.
+ * @param {ActiveEffect} effect
+ * @param {object} options
+ * @param {string} userId
+ */
+async function _onCreateDeadEffect(effect, options, userId) {
+    if (!getSetting("enableAutoStatusZeroHP")) return;
+    if (!effect.statuses?.has("dead") || effect.disabled) return;
+    const actor = effect.parent;
+    if (actor?.documentName !== "Actor") return;
+    const activeGM = game.users.activeGM;
+    if (activeGM ? !activeGM.isSelf : (userId !== game.user.id)) return;
+
+    // Same lookup as Actor#toggleStatusEffect: the condition's static _id
+    const unconsciousId = CONFIG.statusEffects?.unconscious?._id;
+    const unconscious = unconsciousId ? actor.effects.get(unconsciousId) : null;
+    if (!unconscious) return;
+    debug(`Auto-Status | ${actor.name} is dead — removing "unconscious"`);
+    try {
+        await unconscious.delete();
+    } catch (e) {
+        debug(`Auto-Status | Could not remove "unconscious" from ${actor.name}: ${e.message}`);
+    }
+}
+
+/**
  * Initialize the feature by registering the updateActor hook.
  * Called once during the "setup" phase from main.js.
  */
@@ -396,5 +428,6 @@ export function initAutoStatusZeroHP() {
     _patchUpdateDowned();
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     Hooks.on("updateActor", _onUpdateActor);
+    Hooks.on("createActiveEffect", _onCreateDeadEffect);
 }
 
