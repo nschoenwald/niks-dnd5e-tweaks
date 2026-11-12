@@ -9,6 +9,8 @@
  * @updated v14.67.5 (Closed damage / effects trays no longer show the top of their buttons)
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  * @updated v14.77.1 (Action button styling also covers D&D 5e 6.1's labelled buttons)
+ * @updated v14.78.0 (Apply Healing / Apply Temp HP buttons coloured like their roll results)
+ * @updated v14.79.0 (Untyped parts of healing rolls count as healing for the Apply label)
  */
 import { log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -23,27 +25,35 @@ import { patchMethod } from "../../utils/patch-helper.js";
 const STYLED_ROLL_TYPES = new Set(["attack", "damage", "check", "save", "healing", "hitdie", "recharge"]);
 
 /**
- * Pick the Apply button label for a damage tray from the damage it applies:
- * only temp HP → "Apply Temp HP", only healing (or healing + temp HP) → "Apply Healing",
- * anything else → "Apply Damage".
+ * Pick the kind of Apply button for a damage tray from the damage types it applies:
+ * only temp HP → "temphp", only healing (or healing + temp HP) → "healing", anything else → "damage".
+ * Untyped parts of a healing roll count as healing (see fix-untyped-healing.js).
  * @param {{type: string}[]} damages  DamageApplicationElement#damages
- * @returns {string} Localization key.
+ * @param {boolean} [isHealing]       Whether the tray's message is a healing roll.
+ * @returns {"damage"|"healing"|"temphp"}
  */
-function _getDamageApplyLabel(damages) {
-    const types = (damages ?? []).map(d => d.type).filter(Boolean);
+function _getDamageApplyKind(damages, isHealing = false) {
+    const types = (damages ?? []).map(d => d.type || (isHealing ? "healing" : null)).filter(Boolean);
     const healingTypes = CONFIG.DND5E?.healingTypes ?? {};
     if (types.length && types.every(t => t in healingTypes)) {
-        return types.every(t => t === "temphp") ? "ND5T.ChatCardStyling.ApplyTempHP" : "ND5T.ChatCardStyling.ApplyHealing";
+        return types.every(t => t === "temphp") ? "temphp" : "healing";
     }
-    return "ND5T.ChatCardStyling.ApplyDamage";
+    return "damage";
 }
+
+/** Localization keys of the Apply button labels without an amount, by kind. */
+const APPLY_LABEL_KEYS = {
+    damage: "ND5T.ChatCardStyling.ApplyDamage",
+    healing: "ND5T.ChatCardStyling.ApplyHealing",
+    temphp: "ND5T.ChatCardStyling.ApplyTempHP"
+};
 
 /**
  * When every target of a damage tray would receive exactly the same amount, the label including
- * that amount ("Apply 17 Damage", "Apply 6 Healing", "Apply 6 Temp HP"), otherwise null.
+ * that amount ("Apply 17 Damage", "Apply 6 Healing", "Apply 6 Temp HP") and its kind, otherwise null.
  * Only targets the user owns are calculated, so players don't learn about other creatures' traits.
  * @param {HTMLElement} element  The damage-application element.
- * @returns {string|null}
+ * @returns {{label: string, kind: "damage"|"healing"|"temphp"}|null}
  */
 function _getDamageApplyAmountLabel(element) {
     const uuids = Array.from(element.targetList?.targets ?? []);
@@ -69,11 +79,13 @@ function _getDamageApplyAmountLabel(element) {
     if (tempMax) return null;
     let key;
     let amount;
-    if ((total > 0) && !temp) [key, amount] = ["ND5T.ChatCardStyling.ApplyDamageAmount", total];
-    else if ((total < 0) && !temp) [key, amount] = ["ND5T.ChatCardStyling.ApplyHealingAmount", -total];
-    else if (!total && (temp > 0)) [key, amount] = ["ND5T.ChatCardStyling.ApplyTempHPAmount", temp];
+    let kind;
+    if ((total > 0) && !temp) [key, amount, kind] = ["ND5T.ChatCardStyling.ApplyDamageAmount", total, "damage"];
+    else if ((total < 0) && !temp) [key, amount, kind] = ["ND5T.ChatCardStyling.ApplyHealingAmount", -total, "healing"];
+    else if (!total && (temp > 0)) [key, amount, kind] = ["ND5T.ChatCardStyling.ApplyTempHPAmount", temp, "temphp"];
     else return null;
-    return game.i18n.format(key, { amount: Math.floor(amount).toLocaleString(game.i18n.lang) });
+    const label = game.i18n.format(key, { amount: Math.floor(amount).toLocaleString(game.i18n.lang) });
+    return { label, kind };
 }
 
 /**
@@ -85,14 +97,19 @@ function _queueDamageApplyLabel(element) {
     element._nd5tLabelQueued = true;
     queueMicrotask(() => {
         element._nd5tLabelQueued = false;
-        const span = element.querySelector(".apply-button > span");
+        const button = element.querySelector(".apply-button");
+        const span = button?.querySelector(":scope > span");
         if (!span) return;
         if (!isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling")) {
             span.textContent = game.i18n.localize("DND5E.Apply");
+            delete button.dataset.nd5tApply;
             return;
         }
-        span.textContent = _getDamageApplyAmountLabel(element)
-            ?? game.i18n.localize(_getDamageApplyLabel(element.damages));
+        const withAmount = _getDamageApplyAmountLabel(element);
+        const kind = withAmount?.kind ?? _getDamageApplyKind(element.damages, !!element.chatMessage?.system?.isHealing);
+        span.textContent = withAmount?.label ?? game.i18n.localize(APPLY_LABEL_KEYS[kind]);
+        // Colours the button: crimson for damage, green for healing, blue for temp HP (style.css)
+        button.dataset.nd5tApply = kind;
     });
 }
 

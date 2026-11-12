@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.79.0] - 2026-11-12
+### Fixed
+- **Untyped Healing**: Healing from abilities whose heal activity has no healing type selected (common on imported or hand-made items) no longer gets applied as damage. It now rolls as Healing, and healing rolls already in chat apply as healing too.
+
+## [14.78.0] - 2026-11-12
+### Changed
+- **Chat Card Styling Improvements**: **Apply Healing** buttons are now green and **Apply Temp HP** buttons blue, matching the healing and temp HP roll results. **Apply Damage** stays crimson.
+
 ## [14.77.1] - 2026-11-12
 ### Changed
 - **Chat Card Styling Improvements**: Card buttons now use the same words as D&D 5e: **Attack** (was Atk), **Damage** (was Dmg), **Roll** (was Use, for formula rolls) and **Area** (was Template). On D&D 5e 6.1 these come from the system itself, so they appear in your Foundry language. Save buttons still show the ability, e.g. **DEX Save**.

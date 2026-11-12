@@ -2461,7 +2461,7 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .card-tr
     filter: brightness(0.94);
 }
 
-/* Damage / healing tray: crimson */
+/* Damage tray: crimson (healing and temp HP below) */
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .damage-tray .apply-button {
     --button-background-color: oklch(95% 0.025 25);
     --button-border-color: oklch(50% 0.17 25);
@@ -2490,6 +2490,33 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     background: oklch(24% 0.06 25) !important;
     border-color: oklch(52% 0.17 25) !important;
     color: oklch(82% 0.1 25) !important;
+}
+
+/* Healing / temp HP tray: green / blue like the healing roll result. The colours come from the
+   message's --nd5t-healing-* / --nd5t-temphp-* variables, which switch with the theme; each selector
+   repeats a crimson one plus the attribute so it outranks it in both themes. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .damage-tray .apply-button[data-nd5t-apply="healing"],
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .damage-tray .apply-button[data-nd5t-apply="healing"],
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .damage-tray .apply-button[data-nd5t-apply="healing"],
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .damage-tray .apply-button[data-nd5t-apply="healing"] {
+    --button-background-color: var(--nd5t-healing-btn-bg);
+    --button-border-color: var(--nd5t-healing-border-color);
+    --button-hover-border-color: var(--nd5t-healing-border-color);
+    background: var(--nd5t-healing-btn-bg) !important;
+    border-color: var(--nd5t-healing-border-color) !important;
+    color: var(--nd5t-healing-label-color) !important;
+}
+
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout, .chat-message) .damage-tray .apply-button[data-nd5t-apply="temphp"],
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .damage-tray .apply-button[data-nd5t-apply="temphp"],
+body.nd5t-chat-card-styling :is(.chat-message, .message).theme-dark .damage-tray .apply-button[data-nd5t-apply="temphp"],
+body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-light, .theme-light *) .message:not(.theme-light) .damage-tray .apply-button[data-nd5t-apply="temphp"] {
+    --button-background-color: var(--nd5t-temphp-btn-bg);
+    --button-border-color: var(--nd5t-temphp-border-color);
+    --button-hover-border-color: var(--nd5t-temphp-border-color);
+    background: var(--nd5t-temphp-btn-bg) !important;
+    border-color: var(--nd5t-temphp-border-color) !important;
+    color: var(--nd5t-temphp-label-color) !important;
 }
 
 body.nd5t-chat-card-styling :is(.chat-log, .chat-popout).theme-dark .message .effects-tray .apply-button,
