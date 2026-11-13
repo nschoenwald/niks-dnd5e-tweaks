@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.81.1] - 2026-11-13
+### Fixed
+- **Auto-End Class Features**: Starry Form from the updated Player's Handbook content (3.0) now ends again when the druid becomes incapacitated, including its light and constellation benefits.
+
+### Changed
+- **Self Effect Application**: The default *Auto-Apply Effects* list now includes Dodging and Dashing, so Patient Defense and Step of the Wind from the updated Player's Handbook content apply their effects directly again. Worlds that have already edited the list keep their own version: add "Dodging" and "Dashing" there by hand.
+
 ## [14.81.0] - 2026-11-13
 ### Changed
 - **Legendary Action Placeholders**: Placeholders now follow the rules for legendary actions: a legendary creature can act after any other creature's turn, ally or enemy. A placeholder now follows every creature's turn. With only one legendary creature in the fight, there's none after its own turn; with several, there's one after every turn, since another legendary creature can act then.

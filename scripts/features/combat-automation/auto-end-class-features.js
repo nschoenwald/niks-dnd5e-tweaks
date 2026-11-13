@@ -5,6 +5,7 @@
  * @introduced v14.13.3
  * @updated v14.67.2 (Chat message names the condition that ended the feature, not the last effect added)
  * @updated v14.67.3 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
+ * @updated v14.81.1 (Starry Form from PHB content 3.0: ends the form by deleting its self-enchantment)
  */
 import { getSetting, debug } from "../../context.js";
 import { getBreakingConditionName } from "./auto-end-concentration.js";
@@ -195,13 +196,22 @@ async function _checkAndEndClassFeatures(actor, effectName) {
         if (!feature.shouldEnd(actor)) continue;
 
         const matchingEffects = _findFeatureEffects(actor, feature);
-        if (!matchingEffects.length) continue;
+        const enchantments = _findFeatureEnchantments(actor, feature);
+        if (!matchingEffects.length && !enchantments.length) continue;
 
-        debug(`Auto-End Class Features | ${actor.name} gained a status that ends ${feature.id}. Ending ${matchingEffects.length} effect(s).`);
+        debug(`Auto-End Class Features | ${actor.name} gained a status that ends ${feature.id}. Ending ${matchingEffects.length} effect(s) and ${enchantments.length} enchantment(s).`);
 
-        // Disable rather than delete so the effect stays on the actor and can be re-enabled on next use
         try {
-            await actor.updateEmbeddedDocuments("ActiveEffect", matchingEffects.map(e => ({ _id: e.id, disabled: true })));
+            // Disable rather than delete so the effect stays on the actor and can be re-enabled on next use
+            if (matchingEffects.length) {
+                await actor.updateEmbeddedDocuments("ActiveEffect", matchingEffects.map(e => ({ _id: e.id, disabled: true })));
+            }
+            // Self-enchantments are deleted, as using the activity again would do: dnd5e then deletes the rider
+            // effects that depend on them. A disabled enchantment would only be removed (not reapplied) by the
+            // next use of the activity with the same profile.
+            for (const [item, effects] of enchantments) {
+                await item.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
+            }
         } catch (e) {
             console.error(`Nik's DnD5e Tweaks | Failed to end ${feature.id} for ${actor.name}:`, e);
             continue;
@@ -260,4 +270,23 @@ function _findFeatureEffects(actor, feature) {
         }
     }
     return matchingEffects;
+}
+
+/**
+ * Find active enchantments a feature applied to its own item (an Enchant activity with "self" set), grouped by
+ * item. Starry Form (PHB content 3.0) works this way: the enchantment's rider effects live on the Starry Form
+ * item and reach the actor as transferred effects, so they are not in `actor.effects`.
+ *
+ * @param {Actor} actor
+ * @param {object} feature
+ * @returns {Array<[Item, ActiveEffect[]]>}
+ */
+function _findFeatureEnchantments(actor, feature) {
+    const result = [];
+    for (const item of actor.items) {
+        if (item.system?.identifier !== feature.identifier) continue;
+        const effects = item.effects.filter(e => e.isAppliedEnchantment && !e.disabled);
+        if (effects.length) result.push([item, effects]);
+    }
+    return result;
 }

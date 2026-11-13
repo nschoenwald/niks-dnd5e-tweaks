@@ -1377,7 +1377,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: String,
-        default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
+        default: "Ambusher's Leap, Avenging Angel, Bestial Communication, Bladesong, Cloak of Shadows, Comprehension, Dashing, Defensive Duelist, Disappearing Step, Disengaged, Disguised, Divine Favor, Dodging, Draconic Flight, Duplicate A, Duplicate B, Duplicate C, Endless Ammunition, Ethereal, Evasive AC, Glib, Heavenly Wings, Imperceptible Barrier, Innate Sorcery, Large Form, Living Legend: Charismatic, Majestic Presence, Merged with Shadows, Patient Defense (Focus Point), Peerless Athlete, Psi-Powered Leap, Rage, Rage of the Gods, See Invisibility, Stonecunning, Superior Defense, Trance of Order, Unearthly Appearance, Veiled, Winged, Wreathed in Light",
         restricted: true
     });
 
@@ -1496,7 +1496,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoEndRage", {
         name: "Auto-End Class Features",
-        hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers: Barbarian Rage (and Wrath of the Sea for level 15+ Barbarians), and Druid Wild Shape Starry Form. Identifies each feature by item identifier or effect name.",
+        hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers: Barbarian Rage (respecting Persistent Rage at level 15+), Circle of the Sea's Wrath of the Sea, and Circle of the Stars' Starry Form. Identifies each feature by item identifier or effect name.",
         scope: "world",
         config: false,
         type: Boolean,

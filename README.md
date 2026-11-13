@@ -417,7 +417,7 @@ Deals damage to a concentrating creature from an attacker with the Mage Slayer f
 
 ### Auto-End Concentration & Class Features
 * **Auto-End Concentration**: Ends concentration when gaining Incapacitated, Unconscious, Dead, Paralyzed, Petrified, or Stunned (respecting Boon of the Iron Mind rules). Works for each unlinked token separately, even when several fall at once.
-* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted. Works for each unlinked token separately, even when several fall at once.
+* **Auto-End Class Features**: Automatically ends Barbarian Rage, Wrath of the Sea, and Starry Form on incapacitating conditions (respecting Lv15+ Persistent Rage). Effects are disabled rather than deleted. Starry Form from the Player's Handbook content 3.0 (where you pick the constellation when assuming the form) is ended the same way as dismissing it, so the next use starts the form again. Wrath of the Sea only puts an effect on the druid from level 10 (Stormborn); below that there is nothing on the druid to end. Works for each unlinked token separately, even when several fall at once.
 
 ### Magic Resistance Automation
 Creatures with **Magic Resistance** automatically roll saving throws against spells and magical effects with Advantage. Works when the save is rolled from a spell's or feature's chat card (including inline save links in chat). The roll dialog opens with Advantage pre-selected, and Disadvantage still cancels it out as usual.
@@ -456,7 +456,7 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
 * Seamless compatibility with **Automated Conditions 5e (AC5e)** dynamic condition flags.
 * *Sub-setting*: **Always Prompt Features** (names like `Mage Armor`).
-* *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Patient Defense (Focus Point)`, `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
+* *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Dodging` and `Dashing` (Patient Defense, Step of the Wind), `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
 * Both name lists are edited in the settings dashboard with an **Edit List** button that opens a pop-out editor: search the list, add entries (Enter, or paste several separated by commas), remove them individually, or reset to the defaults. Lists are kept sorted alphabetically without duplicates.
 
 ### Self-Targeted Activities Target Self
