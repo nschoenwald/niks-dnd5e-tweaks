@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.80.1] - 2026-11-13
+### Changed
+- **Weapon Mastery Automation**: Sap and Slow now use the system's own "until the start of the source's next turn" duration, which the effect shows. Out of combat they end as soon as game time moves on instead of staying until removed.
+- **Reckless Attack Automation**: Attacking recklessly out of combat now also makes the creature Reckless. The effect uses the system's own "until the start of your next turn" duration, so out of combat it ends as soon as game time moves on.
+
+### Fixed
+- **Roll Dialogs Off-Screen**: Attack and other roll dialogs opened near the bottom of the screen no longer cut off their roll buttons. A dialog that grows after it opens moves back up so it stays fully visible.
+
 ## [14.80.0] - 2026-11-13
 ### Added
 - **Condition Advantage & Disadvantage**: Conditions now affect attack rolls, as Prone already did. Blinded and Invisible creatures (with exceptions for Blindsight, Truesight and See Invisibility), Restrained, Paralyzed, Petrified, Stunned, Unconscious, Poisoned, Frightened, Grappled (2024 rules) and Dodging creatures give the attacker Advantage or Disadvantage, so the roll dialog opens with the right mode selected. Frightened creatures also have Disadvantage on ability checks. Hits against Paralyzed or Unconscious creatures from within 5 feet are critical hits, and Paralyzed, Petrified, Stunned and Unconscious creatures fail Strength and Dexterity saves automatically. Each rule can be turned off on its own. Off while Automated Conditions 5e or midi-qol's optional Condition Rules are active.

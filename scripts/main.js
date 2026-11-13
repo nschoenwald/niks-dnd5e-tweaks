@@ -63,6 +63,7 @@ import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray
 import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
 import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-spell-scaling.js";
 import { initFixUntypedHealing } from "./features/patches/fix-untyped-healing.js";
+import { initFixRollDialogOffscreen } from "./features/patches/fix-roll-dialog-offscreen.js";
 
 // Nik's Foundry Tweaks: dashboard registration and extensions
 import { coreApi, registerWithCore, warnIfCoreMissing } from "./core-integration.js";
@@ -1807,6 +1808,7 @@ Hooks.once("setup", () => {
     initFixTokenHPBarAnimation();
     initFixFreeCastSpellScaling();
     initFixUntypedHealing();
+    initFixRollDialogOffscreen();
 
     // Utilities
     initActorItemDragBehavior();

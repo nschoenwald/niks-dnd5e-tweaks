@@ -327,13 +327,13 @@ Automatically opens the damage roll dialog when using Save-type activities that 
 A creature with the **Reckless Attack** feature decides on its first attack roll of its turn without using the feature from its sheet:
 * **In the attack roll dialog**, a **Reckless Attack** checkbox appears. Ticking it selects **Advantage** as the default button. The checkbox is greyed out while the chosen ability or attack mode doesn't qualify (see below).
 * **When the dialog is skipped** (fast-forward keys, or midi-qol's fast-forwarded attacks), a short Yes / No prompt asks first.
-* The choice is only offered on the creature's own turn and on its first attack roll that turn. If it declines, it isn't asked again until its next turn. Out of combat the checkbox is offered on every attack and only affects that roll.
+* The choice is only offered on the creature's own turn and on its first attack roll that turn. If it declines, it isn't asked again until its next turn. Out of combat the checkbox is offered whenever the creature isn't Reckless yet; skipped dialogs don't ask there.
 
 Attacking recklessly makes the creature **Reckless** until the start of its next turn, shown as an effect with the feature's icon:
 * **Attacks against it** have Advantage (single target only).
 * **Its own attacks**: under the **2014 rules**, melee weapon attacks using Strength have Advantage for the rest of that turn (thrown weapons count as ranged). Under the **2024 rules**, all attack rolls using Strength have Advantage until the start of its next turn, so opportunity attacks count too.
 * The rules come from the feature item's own source (2014 or 2024), and from the world's rules setting if it has none. A 2014 Barbarian in a 2024 world follows the 2014 text.
-* If the feature applies an effect of its own (for example when you still use it from the sheet), that effect counts as Reckless as well, so nothing is doubled. The effect ends at the start of the creature's next turn, or when combat ends.
+* If the feature applies an effect of its own (for example when you still use it from the sheet), that effect counts as Reckless as well, so nothing is doubled. The effect uses the system's own **until the start of your next turn** duration: it ends at the start of the creature's next turn, when combat ends, or, out of combat, as soon as game time moves on. Under the 2014 rules, out of combat its own attacks keep Advantage while the effect lasts.
 
 Players can turn the choice off for themselves in their personal settings. The Advantage from Reckless creatures stays on.
 
@@ -374,7 +374,7 @@ Automatically handles weapon masteries when player characters deal damage with m
 * **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
 * **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
 * **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
-* **Combat Lifecycle Management**: Lingering mastery effects are automatically cleaned up when combat ends.
+* **Durations**: Sap and Slow use the system's own **until the start of the source's next turn** duration, so the effect shows how long it lasts. Out of combat they end as soon as game time moves on, and lingering effects are cleaned up when combat ends.
 * *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
 
 ---
@@ -481,6 +481,7 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 * **Damage Application Tray Grouping**: Prevents an upstream D&D 5e system TypeError (`token.getGroupingKey is not a function`) when rendering damage application trays for targets resolved via actor UUID or unplaced tokens.
 * **Animated HP Bars**: Foundry VTT V14 smoothly animates token resource bars when their values change, but the D&D 5e HP bar skipped the animation and jumped straight to the new value. HP bars (including temporary HP and temporary max HP) now slide to their new value and colour like every other bar.
 * **Untyped Healing**: A heal activity whose healing part has no type selected (common on imported or hand-made items) was rolled as untyped, and D&D 5e treated it as damage: the tray offered **Apply Damage** and hurt the target. Such healing now rolls as Healing. Healing rolls already in chat are fixed too and apply as healing.
+* **Roll Dialogs Off-Screen**: Roll dialogs open where you click. When a dialog grew after opening (for example once its dice images loaded), its buttons could end up below the bottom of the screen until you dragged it up. Dialogs that grow are now moved back up so they stay fully visible. A dialog you dragged somewhere stays where you put it.
 
 ---
 

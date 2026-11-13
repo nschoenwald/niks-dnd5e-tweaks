@@ -9,6 +9,7 @@
  *              - Both: attack rolls against it have Advantage.
  *
  * @introduced v14.80.0
+ * @updated v14.80.1 (dnd5e's "start of next turn" effect expiry; the effect is also added out of combat)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -23,8 +24,8 @@ import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/att
  *
  * Offering the choice: the attacker has the feature, isn't Reckless yet, the personal setting is on and, in
  * combat, it is the attacker's own turn and its first attack roll this turn (attack rolls are counted on this
- * client in dnd5e.rollAttack). Out of combat there are no turns: the dialog offers the choice on every attack and
- * it only affects that roll (no effect, and no prompt for skipped dialogs).
+ * client in dnd5e.rollAttack). Out of combat there are no turns: the dialog offers the choice whenever the
+ * creature isn't Reckless yet, but skipped dialogs don't prompt (a "No" would be asked again on every attack).
  *  - The attack must use Strength (2014: also be a melee weapon attack, so thrown counts as ranged).
  *  - Dialog: dnd5e.preRollAttack sets `config.nd5tRecklessOffer`; `AttackRollConfigurationDialog
  *    #_prepareConfigurationContext` is wrapped to add a checkbox to its configuration fields. Every rebuild runs
@@ -37,13 +38,17 @@ import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/att
  *    `config.nd5tReckless`, which dnd5e merges into the roll process config, and dnd5e.preRollAttack adds
  *    Advantage and the roll mark.
  *
- * After the roll: dnd5e.rollAttack creates the Reckless effect on the attacker when the roll is marked and the
- * attacker is in combat. It expires through core V14's `turnStart` expiry (at the start of its next turn); a
- * deleteCombat hook removes leftovers. An active effect from the Reckless Attack feature itself counts as Reckless
+ * After the roll: dnd5e.rollAttack creates the Reckless effect on the attacker when the roll is marked. It uses
+ * dnd5e's own pseudo expiry `targetStart` ("until the start of your next turn", `ActiveEffect5e#isExpiryEvent`,
+ * dnd5e 6.0 and 6.1): it ends on the start of the affected actor's next turn (skipping the turn it was made on),
+ * out of combat when game time advances, and an effect made out of combat at the first turn start of a combat.
+ * `targetStart` reads the turn from the actor the effect is on (the attacker), where `sourceStart` would have to
+ * find it through the origin first. A deleteCombat hook removes effects left over from a combat that ended. An active effect from the Reckless Attack feature itself counts as Reckless
  * too, so using the feature by hand doesn't double anything.
  *
  * Advantage while Reckless (dnd5e.preRollAttack): the Reckless creature's qualifying attacks (2014: only during
- * the turn it attacked recklessly, from the effect's start), and attacks against a Reckless single target.
+ * the turn it attacked recklessly, from the effect's start; out of combat while the effect lasts), and attacks
+ * against a Reckless single target.
  */
 
 const IDENTIFIER = "reckless-attack";
@@ -190,8 +195,10 @@ function _recklessState(actor) {
 function _startedThisTurn(effect) {
     const combat = game.combat;
     const start = effect.start;
-    if (!combat?.started || !start) return false;
-    const startCombat = start.combat?.id ?? start.combat;
+    const startCombat = start?.combat?.id ?? start?.combat ?? null;
+    // Made out of combat and still out of combat: there are no turns, so it lasts as long as the effect
+    if (!startCombat) return !_combatOf(effect.actor);
+    if (!combat?.started) return false;
     return (startCombat === combat.id) && (start.round === combat.round) && (start.turn === combat.turn);
 }
 
@@ -441,7 +448,7 @@ async function _onRollAttack(rolls, { subject } = {}) {
         const combat = _combatOf(actor);
         if (combat && _isOwnTurn(combat, actor)) _lastAttackTurn.set(actor.uuid, _turnKey(combat));
 
-        if (!_worldActive() || !rolls?.[0]?.options?.[FIELD] || !combat) return;
+        if (!_worldActive() || !rolls?.[0]?.options?.[FIELD]) return;
         if (_recklessState(actor) || !actor.isOwner) return;
         const feature = _feature(actor);
         const rules = _itemRules(feature);
@@ -450,9 +457,9 @@ async function _onRollAttack(rolls, { subject } = {}) {
             img: feature?.img || "icons/svg/combat.svg",
             origin: feature?.uuid ?? null,
             description: `<p>${game.i18n.localize(`ND5T.RecklessAttack.Description${rules}`)}</p>`,
-            duration: { expiry: "turnStart" },
+            duration: { expiry: "targetStart" },
             showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
-            flags: { [MODULE_ID]: { [FLAG]: { rules, combatId: combat.id } } }
+            flags: { [MODULE_ID]: { [FLAG]: { rules, combatId: combat?.id ?? null } } }
         }]);
         debug(`Reckless Attack | ${actor.name} is Reckless until the start of its next turn (${rules} rules)`);
     } catch (err) {

@@ -13,7 +13,9 @@
  *                        automatically (setting "masteryToppleSaveMode"). Spending a Legendary Resistance
  *                        on the failed save (dnd5e's Resist button) removes the Prone condition again.
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
- *              - Clean lifecycle: Lingering effects are automatically cleaned up when combat is terminated.
+ *              - Expiry: dnd5e's own `sourceStart` expiry ends Sap and Slow at the start of the attacker's
+ *                next turn (out of combat: when game time advances). Expired effects that core only marks
+ *                as expired don't count as present, and lingering ones are removed when combat is deleted.
  *
  * midi-qol: midi rolls attacks and damage inside its workflow card without creating separate
  * attack / damage roll messages, so Sap and Slow are applied from midi's DamageRollComplete hook
@@ -29,6 +31,7 @@
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.60.0 (Topple)
  * @updated v14.60.1 (Legendary Resistance on the Topple save removes Prone)
+ * @updated v14.80.1 (Sap and Slow end through dnd5e's own "start of the source's next turn" expiry)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
@@ -133,7 +136,9 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
     if (!targetActor || !attackerActor) return;
 
     // Check if target actor already has an active effect for this mastery (prevent duplicates)
+    // Expired effects stay on the actor (marked expired, inactive) until dnd5e cleans them up, so skip them
     const existing = targetActor.effects.find(e => {
+        if (!e.active || e.duration?.expired) return false;
         if (e.flags?.[MODULE_ID]?.mastery === mastery) return true;
         if (e.flags?.dnd5e?.rules === mastery) return true;
         const nameLower = (e.name || "").toLowerCase();
@@ -160,53 +165,36 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
 
     const label = mastery === "sap" ? "Sapped (Weapon Mastery)" : "Slowed (Weapon Mastery)";
 
-    const combat = game.combat;
-    const isCombatStarted = Boolean(combat?.started);
-    const attackerCombatant = isCombatStarted
-        ? (combat.getCombatantsByActor?.(attackerActor)?.[0]
-            ?? combat.combatants.find(c => c.actor?.uuid === attackerActor.uuid || c.tokenId === attackerActor.token?.id || (c.actor?.id === attackerActor.id && !c.token?.actorLink)))
-        : null;
-
-    // Foundry V14 BaseActiveEffect schema strictly requires time and initiative in start SchemaField
-    const effectStart = isCombatStarted ? {
-        time: game.time.worldTime,
-        combat: combat.id,
-        combatant: attackerCombatant?.id ?? combat.combatant?.id ?? null,
-        initiative: attackerCombatant?.initiative ?? combat.combatant?.initiative ?? 0,
-        round: combat.round,
-        turn: combat.turn
-    } : null;
-
     const effectData = {
         name: label,
         img: icon,
         origin: weapon?.uuid ?? attackerActor.uuid,
+        // dnd5e's getSourceActor() reads system.origin first: the attacker, whose next turn start ends the effect
+        system: {
+            origin: { actor: attackerActor.uuid, ...(weapon?.uuid ? { item: weapon.uuid } : {}) }
+        },
         flags: {
             [MODULE_ID]: {
                 mastery,
-                sourceActorUuid: attackerActor.uuid,
-                sourceCombatantId: attackerCombatant?.id ?? null,
-                sourceRound: isCombatStarted ? combat.round : null,
-                sourceTurn: isCombatStarted ? combat.turn : null
+                sourceActorUuid: attackerActor.uuid
             },
             dnd5e: {
-                rules: mastery,
-                isTemporary: true
+                rules: mastery
             }
         },
+        // dnd5e pseudo expiry: start of the source's next turn (skipping the turn it was applied on). Core fills
+        // `start` with the current combat, round and turn on creation.
         duration: {
-            value: 1,
-            units: "rounds",
             expiry: "sourceStart"
         },
-        start: effectStart
+        showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS
     };
 
     if (mastery === "sap") {
-        effectData.changes = [
+        effectData.system.changes = [
             {
                 key: "system.rolls.attack.mode",
-                mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+                type: "add",
                 value: "-1",
                 priority: 20
             }
@@ -214,10 +202,10 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
         effectData.description = "<p>The creature has Disadvantage on its next attack roll before the start of the attacker's next turn.</p>";
     } else if (mastery === "slow") {
         // Native DnD5e 6.x movement bonus applies to all speeds > 0 without negative speeds on inactive modes
-        effectData.changes = [
+        effectData.system.changes = [
             {
                 key: "system.attributes.movement.bonus",
-                mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+                type: "add",
                 value: "-10",
                 priority: 20
             }
@@ -807,62 +795,6 @@ async function _onRollSavingThrow(rolls, { ability, subject } = {}) {
 }
 
 /**
- * Hook updateCombat to expire Sap and Slow at the start of the source attacker's next turn.
- * @param {Combat} combat
- * @param {object} changed
- * @param {object} options
- * @param {string} userId
- */
-async function _onUpdateCombat(combat, changed, options, userId) {
-    if (!game.user.isActiveGM) return;
-    if (!getSetting("enableWeaponMasteries")) return;
-    if (changed.turn === undefined && changed.round === undefined) return;
-
-    try {
-        const currentCombatant = combat.combatant;
-        const currentActor = currentCombatant?.actor;
-        if (!currentActor) return;
-
-        for (const combatant of combat.combatants) {
-            const targetActor = combatant.actor;
-            if (!targetActor) continue;
-
-            // Expire Sap & Slow effects at the start of the source's turn
-            const masteryEffects = targetActor.effects.filter(e => {
-                const mastery = e.flags?.[MODULE_ID]?.mastery;
-                let m = mastery;
-                if (!m) {
-                    const nameLower = (e.name || "").toLowerCase();
-                    if (nameLower.includes("sap")) m = "sap";
-                    else if (nameLower.includes("slow")) m = "slow";
-                }
-                if (m !== "sap" && m !== "slow") return false;
-
-                const sourceCombatantId = e.flags?.[MODULE_ID]?.sourceCombatantId;
-                const sourceUuid = e.flags?.[MODULE_ID]?.sourceActorUuid;
-                const isSourceMatch = (sourceCombatantId && sourceCombatantId === currentCombatant.id)
-                    || (sourceUuid && (sourceUuid === currentActor.uuid || sourceUuid === currentActor.id));
-                if (!isSourceMatch) return false;
-
-                // Don't expire on the exact turn it was applied
-                const sRound = e.flags?.[MODULE_ID]?.sourceRound;
-                const sTurn = e.flags?.[MODULE_ID]?.sourceTurn;
-                if (combat.round === sRound && combat.turn === sTurn) return false;
-                return true;
-            });
-
-            for (const effect of masteryEffects) {
-                const mName = effect.flags?.[MODULE_ID]?.mastery?.toUpperCase() ?? "MASTERY";
-                debug(`Weapon Mastery | Expiring ${mName} on ${targetActor.name} at start of source ${currentActor.name}'s turn`);
-                await _safeDeleteEffect(effect, targetActor);
-            }
-        }
-    } catch (err) {
-        console.error("Weapon Mastery | Error in updateCombat handler:", err);
-    }
-}
-
-/**
  * Hook deleteCombat to clean up any remaining mastery effects when combat is ended.
  * Prevents orphaned effects from persisting indefinitely.
  * @param {Combat} combat
@@ -883,11 +815,7 @@ async function _onDeleteCombat(combat) {
                     const nameLower = (e.name || "").toLowerCase();
                     isMatch = nameLower.includes("sap") || nameLower.includes("slow");
                 }
-                return isMatch && (
-                    e.flags?.[MODULE_ID]?.sourceCombatantId === combatant.id
-                    || e.start?.combat?.id === combat.id
-                    || e.start?.combat === combat.id
-                );
+                return isMatch && ((e.start?.combat?.id ?? e.start?.combat) === combat.id);
             });
 
             for (const effect of masteryEffects) {
@@ -970,7 +898,6 @@ export function initWeaponMasteries() {
     }
     Hooks.on("createChatMessage", _onCreateChatMessage);
     Hooks.on("dnd5e.rollAttack", _onRollAttack);
-    Hooks.on("updateCombat", _onUpdateCombat);
     Hooks.on("deleteCombat", _onDeleteCombat);
     if (isMidiActive()) Hooks.on("midi-qol.DamageRollComplete", _onMidiDamageRollComplete);
     Hooks.on("dnd5e.applyDamage", _onApplyDamage);
