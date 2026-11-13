@@ -1517,7 +1517,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableDamageEmanation", {
         name: "Damage Emanation Automation",
-        hint: "Emanation and area spells such as Spirit Guardians, Conjure Woodland Beings, Cacophonic Shield, Dirge, Moonbeam, Cloudkill and Doomtide make their saving throw and damage happen automatically when a creature enters the area, the area moves into a creature's space, or a creature ends its turn inside it. Each creature saves only once per turn, and creatures inside the area when it is cast are left to the casting activity. The area is removed when the caster stops concentrating.",
+        hint: "Emanation and area spells such as Spirit Guardians, Moonbeam, Cloudkill, Web, Stinking Cloud and Wall of Fire make their saving throw and/or damage happen automatically when a creature enters the area, the area moves into a creature's space, or a creature starts or ends its turn inside it, as the spell describes. Each creature is affected only once per turn, and creatures inside the area when it is cast are left to the casting activity. The area is removed when the caster stops concentrating.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1542,11 +1542,11 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "damageEmanationSpells", {
         name: "↳ Emanation Spells",
-        hint: "A comma-separated list of spell identifiers (or names) that get Damage Emanation Automation. Other spells can use it through the \"Damage Emanation\" entry in an activity's Behaviors tab.",
+        hint: "A comma-separated list of spell identifiers (or names) that get Damage Emanation Automation. Other spells can use it through the \"Damage Emanation\" entry in an activity's Behaviors tab, or a \"Damage Emanation\" behavior added to a region by hand.",
         scope: "world",
         config: false,
         type: String,
-        default: "cacophonic-shield, cloudkill, conjure-woodland-beings, dirge, doomtide, moonbeam, spirit-guardians, yolandes-regal-presence",
+        default: "black-tentacles, blade-barrier, cacophonic-shield, cloud-of-daggers, cloudkill, conjure-woodland-beings, control-water, dirge, doomtide, forbiddance, grease, gust-of-wind, incendiary-cloud, insect-plague, moonbeam, sleet-storm, spirit-guardians, stinking-cloud, storm-of-radiance, wall-of-fire, wall-of-thorns, web, yolandes-regal-presence",
         restricted: true
     });
 
@@ -1582,7 +1582,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "damageEmanationDrift", {
         name: "↳ Move Drifting Areas",
-        hint: "Cloudkill and Doomtide move 10 feet straight away from the caster at the start of each of the caster's turns.",
+        hint: "Cloudkill, Doomtide and Incendiary Cloud move 10 feet straight away from the caster at the start of each of the caster's turns.",
         scope: "world",
         config: false,
         type: Boolean,

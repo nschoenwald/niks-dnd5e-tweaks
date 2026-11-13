@@ -1,12 +1,15 @@
 /**
  * Feature: Damage Emanation Automation
- * Description: Triggers the saving throw and damage of emanation and area spells such as Spirit Guardians,
- * Conjure Woodland Beings, Cacophonic Shield, Dirge, Moonbeam, Cloudkill and Doomtide whenever a creature
- * enters the area, the area moves into a creature's space, or a creature ends its turn inside it.
+ * Description: Triggers the saving throw and/or damage of emanation and area spells such as Spirit Guardians,
+ * Conjure Woodland Beings, Cacophonic Shield, Dirge, Moonbeam, Cloudkill, Doomtide, Web and Wall of Fire
+ * whenever a creature enters the area, the area moves into a creature's space, or a creature starts or ends
+ * its turn inside it (which of these apply depends on the spell).
  *
  * @introduced v14.54.0
  * @updated v14.58.0 (Placed areas: Moonbeam, Cloudkill, Doomtide; Cloudkill / Doomtide drift each caster turn)
  * @updated v14.59.0 (Length conversion uses the D&D 5e 6.1 signature where available)
+ * @updated v14.82.0 (Per-spell triggers incl. turn start, damage-only and save-only activities, creature type
+ *   filter, Spell field for hand-drawn regions; more PHB 2024 spells in the default list)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -39,11 +42,50 @@ import { convertLength } from "../../utils/dnd5e-compat.js";
 const DAMAGE_EMANATION_BEHAVIOR_TYPE = "niks-dnd5e-tweaks.damageEmanation";
 const ACTIVITY_BEHAVIOR_TYPE = "niksDamageEmanation";
 
-/** Spells (by identifier) that only affect creatures the caster can see. */
-const SIGHT_REQUIRED_SPELLS = new Set(["conjure-woodland-beings", "yolandes-regal-presence"]);
+/**
+ * Region events a Damage Emanation can react to, in display order.
+ *  - enter:          a creature enters the area.
+ *  - emanationEnter: the area moves into a creature's space.
+ *  - turnStart:      a creature starts its turn inside the area.
+ *  - turnEnd:        a creature ends its turn inside the area.
+ */
+const TRIGGER_TYPES = ["enter", "emanationEnter", "turnStart", "turnEnd"];
 
-/** Spells (by identifier) whose area moves this many feet away from the caster at the start of each of the caster's turns. */
-const DRIFTING_SPELLS = new Map([["cloudkill", 10], ["doomtide", 10]]);
+/** Triggers of spells without their own profile ("enters the area or ends its turn there"). */
+const DEFAULT_TRIGGERS = new Set(["enter", "emanationEnter", "turnEnd"]);
+
+/**
+ * Spell-specific rules, by item identifier.
+ * @typedef {object} SpellProfile
+ * @property {string[]} [triggers]                 Events that trigger the spell (default: DEFAULT_TRIGGERS).
+ * @property {boolean} [requiresSight]             Only creatures the caster can see are affected.
+ * @property {number} [drift]                      Feet the area moves away from the caster at the start of each of the caster's turns.
+ * @property {boolean} [excludeCaster]             The caster is never affected, even by a placed area.
+ * @property {boolean} [requirePlacingActivity]    Only the activity that applies the trigger may place the area
+ *                                                 (Control Water: only the Whirlpool option, not the other options' area).
+ * @type {Map<string, SpellProfile>}
+ */
+const SPELL_PROFILES = new Map([
+    ["conjure-woodland-beings", { requiresSight: true }],
+    ["yolandes-regal-presence", { requiresSight: true }],
+    ["cloudkill", { drift: 10 }],
+    ["doomtide", { drift: 10 }],
+    ["incendiary-cloud", { drift: 10 }],
+    ["control-water", { requirePlacingActivity: true }],
+    ["web", { triggers: ["enter", "emanationEnter", "turnStart"] }],
+    ["sleet-storm", { triggers: ["enter", "emanationEnter", "turnStart"] }],
+    ["stinking-cloud", { triggers: ["turnStart"] }],
+    ["gust-of-wind", { triggers: ["turnEnd"], excludeCaster: true }]
+]);
+
+/**
+ * The profile of a spell.
+ * @param {Item5e} item
+ * @returns {SpellProfile}
+ */
+function _getProfile(item) {
+    return SPELL_PROFILES.get(item?.system?.identifier) ?? {};
+}
 
 /** Actor types that count as creatures. */
 const CREATURE_ACTOR_TYPES = new Set(["character", "npc"]);
@@ -86,6 +128,13 @@ const _claimedPrompts = new Set();
 /** @type {Map<string, Function>} Claim request ID -> callback receiving whether the claim was granted */
 const _pendingClaims = new Map();
 
+/**
+ * Activity UUID -> target descriptors for the damage roll a damage activity makes right after its use.
+ * dnd5e builds that roll's targets from the user's targets, not from the usage message.
+ * @type {Map<string, object[]>}
+ */
+const _pendingDamageTargets = new Map();
+
 // ── Registration (init) ──────────────────────────────────────────────
 
 /**
@@ -114,7 +163,7 @@ export function registerDamageEmanationTypes() {
  * @returns {typeof foundry.data.regionBehaviors.RegionBehaviorType}
  */
 function _createRegionBehaviorType() {
-    const { NumberField, ObjectField, StringField } = foundry.data.fields;
+    const { DocumentUUIDField, NumberField, ObjectField, SetField, StringField } = foundry.data.fields;
 
     return class DamageEmanationRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
 
@@ -125,6 +174,9 @@ function _createRegionBehaviorType() {
         static defineSchema() {
             return {
                 activity: new StringField({ required: true, blank: true, initial: "" }),
+                spell: new DocumentUUIDField({ type: "Item", required: false, nullable: true, initial: null }),
+                triggers: _createTriggersField(),
+                creatureTypes: new SetField(new StringField({ blank: false, choices: _getCreatureTypeChoices })),
                 scaling: new NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null }),
                 damageType: new StringField({ required: false, blank: true, initial: "" }),
                 drift: new NumberField({ required: false, nullable: false, min: 0, initial: 0 }),
@@ -135,9 +187,30 @@ function _createRegionBehaviorType() {
         /** @override */
         static events = {
             [CONST.REGION_EVENTS.TOKEN_ENTER]: _onTokenEnter,
+            [CONST.REGION_EVENTS.TOKEN_TURN_START]: _onTokenTurnStart,
             [CONST.REGION_EVENTS.TOKEN_TURN_END]: _onTokenTurnEnd
         };
     };
+}
+
+/**
+ * The "Triggers" field: which events trigger the emanation. Empty uses the spell's defaults.
+ * @returns {foundry.data.fields.SetField}
+ */
+function _createTriggersField() {
+    const { SetField, StringField } = foundry.data.fields;
+    const choices = () => Object.fromEntries(TRIGGER_TYPES.map(type =>
+        [type, game.i18n.localize(`ND5T.DamageEmanation.Triggers.${type}`)]));
+    return new SetField(new StringField({ blank: false, choices }));
+}
+
+/**
+ * Creature type choices for the creature type filter.
+ * @returns {Record<string, string>}
+ */
+function _getCreatureTypeChoices() {
+    return Object.fromEntries(Object.entries(CONFIG.DND5E?.creatureTypes ?? {}).map(([key, config]) =>
+        [key, game.i18n.localize((typeof config === "string") ? config : (config?.label ?? key))]));
 }
 
 /**
@@ -157,6 +230,7 @@ function _createActivityBehaviorType(BaseActivityBehavior) {
         static defineSchema() {
             return {
                 damageActivity: new StringField({ required: true, blank: true, initial: "" }),
+                triggers: _createTriggersField(),
                 drift: new NumberField({ required: false, nullable: false, min: 0, initial: 0 })
             };
         }
@@ -169,7 +243,12 @@ function _createActivityBehaviorType(BaseActivityBehavior) {
             if (!damageActivity) return false;
             return {
                 type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
-                system: { activity: damageActivity.uuid, scaling: null, drift: this.drift ?? 0 }
+                system: {
+                    activity: damageActivity.uuid,
+                    scaling: null,
+                    drift: this.drift ?? 0,
+                    triggers: Array.from(this.triggers ?? [])
+                }
             };
         }
 
@@ -178,7 +257,7 @@ function _createActivityBehaviorType(BaseActivityBehavior) {
             if (field.name !== "damageActivity") return;
             const item = _findParentItem(this);
             const choices = Array.from(item?.system.activities ?? [])
-                .filter(a => a.type === "save" && a.damage?.parts?.length)
+                .filter(_isTriggerActivity)
                 .map(a => ({ value: a.id, label: a.name }));
             data.options = [
                 { value: "", label: game.i18n.localize("ND5T.DamageEmanation.ActivityBehavior.Automatic") },
@@ -231,20 +310,65 @@ export function initDamageEmanation() {
 // ── Damage activity resolution ───────────────────────────────────────
 
 /**
- * Find the activity whose saving throw and damage the emanation applies.
- * Prefers a separate save activity with damage that uses no spell slot (e.g. "Emanation Save"),
- * then the activity that placed the template (e.g. "Cast and Save"), then any save with damage.
+ * Whether an activity can be used when the emanation triggers: a save (with or without damage,
+ * e.g. Grease) or a damage roll without a save (e.g. Cloud of Daggers).
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _isTriggerActivity(activity) {
+    if (activity?.type === "save") return true;
+    return (activity?.type === "damage") && !!activity.damage?.parts?.length;
+}
+
+/**
+ * Find the activity the emanation uses when it triggers. In this order:
+ *  1. a separate save with damage that uses no spell slot ("Emanation Save", "Per Turn Save"),
+ *  2. a separate damage roll that uses no spell slot (Wall of Fire, Forbiddance),
+ *  3. the activity that placed the area ("Cast and Save", Moonbeam, Grease, Cloud of Daggers),
+ *  4. a separate save without damage that uses no spell slot (Stinking Cloud's "Start of Turn Save"),
+ *  5. any other save or damage activity.
  * @param {Item5e} item
  * @param {Activity} [placingActivity]
  * @returns {Activity|null}
  */
 function _resolveDamageActivity(item, placingActivity) {
-    const candidates = Array.from(item?.system.activities ?? [])
-        .filter(a => a.type === "save" && a.damage?.parts?.length);
+    const candidates = Array.from(item?.system.activities ?? []).filter(_isTriggerActivity);
     if (!candidates.length) return null;
-    return candidates.find(a => (a.id !== placingActivity?.id) && !a.consumption?.spellSlot)
+    const separate = candidates.filter(a => (a.id !== placingActivity?.id) && !a.consumption?.spellSlot);
+    const hasDamage = a => !!a.damage?.parts?.length;
+    return separate.find(a => (a.type === "save") && hasDamage(a))
+        ?? separate.find(a => a.type === "damage")
         ?? candidates.find(a => a.id === placingActivity?.id)
+        ?? separate[0]
         ?? candidates[0];
+}
+
+/**
+ * The activity an emanation behavior uses: its Damage Activity, otherwise the one resolved from
+ * its Spell field (regions drawn by hand, e.g. Forbiddance).
+ * @param {RegionBehavior} behavior
+ * @returns {Activity|null}
+ */
+function _getBehaviorActivity(behavior) {
+    const system = behavior?.system;
+    if (!system) return null;
+    if (system.activity) return fromUuidSync(system.activity, { strict: false }) ?? null;
+    if (!system.spell) return null;
+    const item = fromUuidSync(system.spell, { strict: false });
+    return item?.system?.activities ? _resolveDamageActivity(item) : null;
+}
+
+/**
+ * The events that trigger an emanation: the behavior's own Triggers, otherwise the spell's.
+ * @param {RegionBehavior} behavior
+ * @param {Item5e} item
+ * @returns {Set<string>}
+ */
+function _getTriggers(behavior, item) {
+    const own = behavior.system.triggers;
+    if (own?.size) return own;
+    const triggers = _getProfile(item).triggers;
+    return triggers ? new Set(triggers) : DEFAULT_TRIGGERS;
 }
 
 /**
@@ -304,12 +428,17 @@ function _onCreateMeasuredTemplate(activity, regionData) {
 
     const damageActivity = _resolveDamageActivity(item, activity);
     if (!damageActivity) {
-        debug(`Damage Emanation | "${item.name}" is listed but has no save activity with damage`);
+        debug(`Damage Emanation | "${item.name}" is listed but has no save or damage activity`);
+        return;
+    }
+    const profile = _getProfile(item);
+    if (profile.requirePlacingActivity && (damageActivity.id !== activity.id)) {
+        debug(`Damage Emanation | "${item.name}" (${activity.name}) places an area without the trigger`);
         return;
     }
 
     const scaling = _getUsageScaling(activity);
-    const drift = DRIFTING_SPELLS.get(item.system?.identifier) ?? 0;
+    const drift = profile.drift ?? 0;
     for (const data of regionData) {
         data.behaviors = [
             ...(data.behaviors ?? []),
@@ -501,6 +630,20 @@ function _onTokenEnter(event) {
 }
 
 /**
+ * A creature started its turn inside the emanation (Web, Sleet Storm, Stinking Cloud).
+ * @this {foundry.data.regionBehaviors.RegionBehaviorType}
+ * @param {RegionTokenTurnStartEvent} event
+ */
+function _onTokenTurnStart(event) {
+    const { token, combat, combatant, round, turn, skipped } = event.data;
+    if (!token || !combat || skipped) return;
+    // Same key as entering during this turn, so a creature that starts its turn inside and then
+    // moves out and back in makes the save only once.
+    const turnKey = `${combat.id}.${round}.${turn}`;
+    _enqueueTrigger(this.behavior, token, "turnStart", turnKey, _getMergeKey(combat, round, combatant, turnKey));
+}
+
+/**
  * A creature ended its turn inside the emanation.
  * @this {foundry.data.regionBehaviors.RegionBehaviorType}
  * @param {RegionTokenTurnEndEvent} event
@@ -585,53 +728,71 @@ function _isSpellStillActive(activity) {
  * @param {TokenDocument} token
  * @param {TokenDocument|null} casterToken
  * @param {Activity} activity
- * @param {RegionDocument} region
+ * @param {RegionBehavior} behavior
  * @returns {boolean}
  */
-function _isAffected(token, casterToken, activity, region) {
+function _isAffected(token, casterToken, activity, behavior) {
     const actor = token.actor;
     if (!actor || !CREATURE_ACTOR_TYPES.has(actor.type)) return false;
+    const region = behavior.region;
+    const profile = _getProfile(activity.item);
+    const isCaster = (token.id === casterToken?.id) || (actor === activity.actor);
     const centeredOnCaster = !!region?.attachment?.token
         && ((region.attachment.token === casterToken) || (region.attachment.token.actor === activity.actor));
-    if (centeredOnCaster && ((token.id === casterToken?.id) || (actor === activity.actor))) return false;
+    if ((centeredOnCaster || profile.excludeCaster) && isCaster) return false;
     if (token.disposition === CONST.TOKEN_DISPOSITIONS.SECRET) return false;
     if (actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) || actor.statuses?.has("dead")) return false;
+
+    const creatureTypes = behavior.system.creatureTypes;
+    if (creatureTypes?.size && !creatureTypes.has(_getCreatureType(actor))) return false;
 
     const choosesTargets = centeredOnCaster || !!activity.item?.system.target?.affects?.choice;
     if (getSetting("damageEmanationExcludeAllies") && choosesTargets && casterToken
         && (token.disposition === casterToken.disposition)) return false;
 
-    if (getSetting("damageEmanationRequireSight") && SIGHT_REQUIRED_SPELLS.has(activity.item?.system.identifier)) {
+    if (getSetting("damageEmanationRequireSight") && profile.requiresSight) {
         if (token.hidden || actor.statuses?.has("invisible")) return false;
     }
     return true;
 }
 
 /**
+ * A creature's type (e.g. "fiend"). Characters take it from their species, humanoid otherwise.
+ * @param {Actor5e} actor
+ * @returns {string}
+ */
+function _getCreatureType(actor) {
+    const details = actor.system?.details;
+    const type = details?.type?.value || details?.race?.system?.type?.value;
+    return type || ((actor.type === "character") ? "humanoid" : "");
+}
+
+/**
  * Check a trigger and queue it for the batched activity use.
  * @param {RegionBehavior} behavior
  * @param {TokenDocument} token
- * @param {"enter"|"emanationEnter"|"turnEnd"} reason
+ * @param {"enter"|"emanationEnter"|"turnStart"|"turnEnd"} reason
  * @param {string|null} turnKey   Combat turn used for the once-per-turn rule.
  * @param {string|null} mergeKey  Groups prompt cards (same initiative count in a round).
  */
 function _enqueueTrigger(behavior, token, reason, turnKey, mergeKey) {
     if (!getSetting("enableDamageEmanation")) return;
-    if (!behavior?.uuid || behavior.disabled || !behavior.system.activity) return;
+    if (!behavior?.uuid || behavior.disabled) return;
     if (getSetting("damageEmanationCombatOnly") && !turnKey) return;
 
-    const activity = fromUuidSync(behavior.system.activity, { strict: false });
+    const activity = _getBehaviorActivity(behavior);
     if (!activity?.item) {
-        debug(`Damage Emanation | Activity ${behavior.system.activity} not found for behavior ${behavior.uuid}`);
+        debug(`Damage Emanation | No activity found for behavior ${behavior.uuid}`);
         return;
     }
+    if (!_getTriggers(behavior, activity.item).has(reason)) return;
     if (!_isExecutor(activity.actor)) return;
     if (!_isSpellStillActive(activity)) return;
 
     const region = behavior.region;
     const casterToken = region?.attachment?.token
         ?? fromUuidSync(region?.getFlag("dnd5e", "origin"), { strict: false });
-    if (!_isAffected(token, casterToken, activity, region)) return;
+    if (!_isAffected(token, casterToken, activity, behavior)) return;
 
     let queue = _queues.get(behavior.uuid);
     if (turnKey) {
@@ -721,7 +882,7 @@ async function _markTriggered(behavior, entries) {
  * @param {TokenDocument[]} tokens
  */
 async function _executeDamageEmanation(behavior, tokens) {
-    const activity = behavior.system.activity ? await fromUuid(behavior.system.activity) : null;
+    const activity = _getBehaviorActivity(behavior);
     if (!activity?.item) {
         ui.notifications.warn(game.i18n.localize("ND5T.DamageEmanation.ActivityMissing"));
         return;
@@ -754,6 +915,8 @@ async function _executeDamageEmanation(behavior, tokens) {
     if (concentration) messageSystem.concentration = concentration.id;
 
     const restoreTargets = isMidiActive() ? _setUserTargets(tokens) : null;
+    // A damage activity rolls its damage straight after the use; give that roll the same targets.
+    if (activity.type === "damage") _pendingDamageTargets.set(activity.uuid, messageSystem.targets);
     try {
         await activity.use(usage, { configure: false }, {
             data: {
@@ -762,6 +925,7 @@ async function _executeDamageEmanation(behavior, tokens) {
             }
         });
     } finally {
+        _pendingDamageTargets.delete(activity.uuid);
         restoreTargets?.();
     }
 }
@@ -852,9 +1016,10 @@ async function _postPromptGroups(behavior, entries, mode) {
         });
     }
 
-    const activity = behavior.system.activity ? fromUuidSync(behavior.system.activity, { strict: false }) : null;
+    const activity = _getBehaviorActivity(behavior);
     const actor = activity?.actor;
     const itemName = activity?.item?.name ?? "";
+    const kind = _getPromptKind(activity);
 
     for (const [mergeKey, groupEntries] of groups) {
         const existing = mergeKey ? _findOpenPrompt(behavior.uuid, mergeKey) : null;
@@ -870,7 +1035,7 @@ async function _postPromptGroups(behavior, entries, mode) {
             }
             const merged = Array.from(byToken.values());
             await existing.update({
-                content: _buildPromptContent(itemName, merged),
+                content: _buildPromptContent(itemName, merged, prompt.kind ?? "save"),
                 [`flags.${MODULE_ID}.damageEmanationPrompt.entries`]: merged
             });
             debug(`Damage Emanation | Added ${groupEntries.length} creature(s) to open prompt ${existing.id}`);
@@ -878,7 +1043,7 @@ async function _postPromptGroups(behavior, entries, mode) {
         }
 
         await ChatMessage.create({
-            content: _buildPromptContent(itemName, groupEntries),
+            content: _buildPromptContent(itemName, groupEntries, kind),
             speaker: ChatMessage.getSpeaker({ actor }),
             whisper: _getPromptRecipients(actor, mode),
             flags: {
@@ -887,6 +1052,7 @@ async function _postPromptGroups(behavior, entries, mode) {
                         behaviorUuid: behavior.uuid,
                         mergeKey,
                         entries: groupEntries,
+                        kind,
                         state: "pending"
                     }
                 }
@@ -915,12 +1081,23 @@ function _findOpenPrompt(behaviorUuid, mergeKey) {
 }
 
 /**
+ * Whether the prompt asks for saving throws or for damage (activities without a save).
+ * @param {Activity|null} activity
+ * @returns {"save"|"damage"}
+ */
+function _getPromptKind(activity) {
+    return activity?.type === "damage" ? "damage" : "save";
+}
+
+/**
  * Build the prompt card's HTML.
  * @param {string} itemName
  * @param {{tokenUuid: string, reason: string, name: string, img: string}[]} entries
+ * @param {"save"|"damage"} kind
  * @returns {string}
  */
-function _buildPromptContent(itemName, entries) {
+function _buildPromptContent(itemName, entries, kind) {
+    const suffix = kind === "damage" ? "Damage" : "";
     const rows = entries.map(({ tokenUuid, reason, name, img }) => {
         const reasonLabel = game.i18n.localize(`ND5T.DamageEmanation.Reason.${reason}`);
         return `
@@ -937,12 +1114,12 @@ function _buildPromptContent(itemName, entries) {
     return `
         <div class="dnd5e chat-card nd5t-emanation-prompt">
             <div class="card-content">
-                <p>${game.i18n.format("ND5T.DamageEmanation.PromptDescription", { itemName: foundry.utils.escapeHTML(itemName) })}</p>
+                <p>${game.i18n.format(`ND5T.DamageEmanation.PromptDescription${suffix}`, { itemName: foundry.utils.escapeHTML(itemName) })}</p>
                 <ul class="nd5t-emanation-targets">${rows}</ul>
             </div>
             <div class="card-buttons nd5t-emanation-buttons">
                 <button type="button" data-action="nd5t-emanation-trigger">
-                    <i class="fa-solid fa-burst" inert></i> ${game.i18n.localize("ND5T.DamageEmanation.Trigger")}
+                    <i class="fa-solid fa-burst" inert></i> ${game.i18n.localize(`ND5T.DamageEmanation.Trigger${suffix}`)}
                 </button>
                 <button type="button" data-action="nd5t-emanation-skip">
                     <i class="fa-solid fa-xmark" inert></i> ${game.i18n.localize("ND5T.DamageEmanation.Skip")}
@@ -969,7 +1146,7 @@ function _onRenderChatMessage(message, html) {
     }
 
     const behavior = fromUuidSync(prompt.behaviorUuid, { strict: false });
-    const actor = behavior?.system.activity ? fromUuidSync(behavior.system.activity, { strict: false })?.actor : null;
+    const actor = _getBehaviorActivity(behavior)?.actor;
     const canAct = game.user.isGM || !!actor?.isOwner;
     for (const button of card.querySelectorAll(".nd5t-emanation-buttons button")) {
         if (!canAct) button.disabled = true;
@@ -1001,7 +1178,8 @@ function _renderResolvedState(card, prompt) {
     });
     const buttons = card.querySelector(".nd5t-emanation-buttons");
     if (!buttons) return;
-    const key = prompt.state === "triggered" ? "ND5T.DamageEmanation.Triggered" : "ND5T.DamageEmanation.Skipped";
+    const triggeredKey = prompt.kind === "damage" ? "ND5T.DamageEmanation.TriggeredDamage" : "ND5T.DamageEmanation.Triggered";
+    const key = prompt.state === "triggered" ? triggeredKey : "ND5T.DamageEmanation.Skipped";
     const status = document.createElement("p");
     status.classList.add("nd5t-emanation-status");
     status.textContent = game.i18n.format(key, { user: prompt.resolvedBy ?? "" });
@@ -1192,7 +1370,7 @@ async function _onCombatTurnChange(combat, previous, current) {
         if (region.attachment?.token) continue;
         const behavior = _getEmanationBehaviors(region).find(b => !b.disabled && (b.system.drift > 0));
         if (!behavior) continue;
-        const activity = behavior.system.activity ? fromUuidSync(behavior.system.activity, { strict: false }) : null;
+        const activity = _getBehaviorActivity(behavior);
         if (!activity || (activity.actor !== actor) || !_isExecutor(actor) || !_isSpellStillActive(activity)) continue;
         try {
             await _driftRegion(region, behavior.system.drift, scene);
@@ -1272,16 +1450,26 @@ async function _onDeleteActiveEffect(effect) {
 function _getBehaviorsForActivity(activityUuid) {
     if (!activityUuid || !canvas.scene) return [];
     return canvas.scene.regions.contents.flatMap(r => r.behaviors.filter(b =>
-        (b.type === DAMAGE_EMANATION_BEHAVIOR_TYPE) && (b.system.activity === activityUuid)));
+        (b.type === DAMAGE_EMANATION_BEHAVIOR_TYPE) && (_getBehaviorActivity(b)?.uuid === activityUuid)));
 }
 
 /**
- * Preselect the damage type chosen earlier for this emanation (e.g. Radiant or Necrotic).
- * @param {object} config  Damage roll process configuration.
+ * Point the damage roll of a triggered damage activity at the triggered creatures, and preselect
+ * the damage type chosen earlier for this emanation (e.g. Radiant or Necrotic).
+ * @param {object} config    Damage roll process configuration.
+ * @param {object} [dialog]  Roll dialog configuration.
+ * @param {object} [message] Roll message configuration.
  */
-function _onPreRollDamage(config) {
-    if (!getSetting("enableDamageEmanation") || !getSetting("damageEmanationRememberDamageType")) return;
+function _onPreRollDamage(config, dialog, message) {
+    if (!getSetting("enableDamageEmanation")) return;
     const activityUuid = config?.subject?.uuid;
+    const targets = _pendingDamageTargets.get(activityUuid);
+    if (targets && message?.data) {
+        foundry.utils.setProperty(message.data, "system.targets", targets);
+        _pendingDamageTargets.delete(activityUuid);
+    }
+
+    if (!getSetting("damageEmanationRememberDamageType")) return;
     const behaviors = _getBehaviorsForActivity(activityUuid);
     if (!behaviors.length) return;
     const type = behaviors.find(b => b.system.damageType)?.system.damageType

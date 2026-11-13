@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.82.0] - 2026-11-14
+### Added
+- **Damage Emanation Automation**: Fifteen more spells from the Player's Handbook work out of the box: *Blade Barrier*, *Cloud of Daggers*, *Control Water* (Whirlpool), *Evard's Black Tentacles*, *Forbiddance*, *Grease*, *Gust of Wind*, *Incendiary Cloud*, *Insect Plague*, *Jallarzi's Storm of Radiance*, *Sleet Storm*, *Stinking Cloud*, *Wall of Fire*, *Wall of Thorns* and *Web*. Worlds that have already edited the *Emanation Spells* list keep their own version: add the new spells there by hand.
+- **Damage Emanation Automation**: Each spell triggers as written. *Web* and *Sleet Storm* trigger when a creature enters or starts its turn inside, *Stinking Cloud* at the start of a turn and *Gust of Wind* at the end of a turn.
+- **Damage Emanation Automation**: Spells that deal damage without a save (*Cloud of Daggers*, *Wall of Fire*, *Forbiddance*) roll their damage against the triggered creatures, and spells with a save but no damage (*Grease*, *Web*, *Stinking Cloud*) show their save card. The prompt card offers **Roll Damage** for spells without a save.
+- **Damage Emanation Automation**: Areas without a template, such as *Forbiddance*, can be drawn as a region by hand. Add the **Damage Emanation** behavior and drop the spell onto its new **Spell** field. The new **Creature Types** field limits the area to the creature types you choose, and **Triggers** changes what sets it off. Both are also available for every other emanation.
+- **Damage Emanation Automation**: *Incendiary Cloud* moves 10 ft each turn with **Move Drifting Areas**, like *Cloudkill*.
+
 ## [14.81.1] - 2026-11-13
 ### Fixed
 - **Auto-End Class Features**: Starry Form from the updated Player's Handbook content (3.0) now ends again when the druid becomes incapacitated, including its light and constellation benefits.
