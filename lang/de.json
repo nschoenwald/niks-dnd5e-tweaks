@@ -143,5 +143,13 @@
   "ND5T.UndeadFortitude.SkippedRadiant": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen gleißenden Schaden.",
   "ND5T.UndeadFortitude.SkippedCritical": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen einen kritischen Treffer.",
 
-  "ND5T.DeathWard.Triggered": "Todesschutz: {name} fällt auf 1 TP statt auf 0, und der Zauber endet."
+  "ND5T.DeathWard.Triggered": "Todesschutz: {name} fällt auf 1 TP statt auf 0, und der Zauber endet.",
+
+  "ND5T.ConditionRollModes.AutoFail": "automatisch misslungen: {condition}",
+
+  "ND5T.RecklessAttack.Label": "Rücksichtsloser Angriff",
+  "ND5T.RecklessAttack.Prompt2014": "Soll {name} rücksichtslos angreifen? Nahkampf-Waffenangriffe mit Stärke sind in diesem Zug im Vorteil, aber Angriffswürfe gegen {name} sind bis zum Beginn des nächsten Zugs im Vorteil.",
+  "ND5T.RecklessAttack.Prompt2024": "Soll {name} rücksichtslos angreifen? Angriffswürfe mit Stärke sind bis zum Beginn des nächsten Zugs im Vorteil, Angriffswürfe gegen {name} aber auch.",
+  "ND5T.RecklessAttack.Description2014": "Nahkampf-Waffenangriffe mit Stärke sind während dieses Zugs im Vorteil. Angriffswürfe gegen diese Kreatur sind bis zum Beginn ihres nächsten Zugs im Vorteil.",
+  "ND5T.RecklessAttack.Description2024": "Angriffswürfe mit Stärke sind im Vorteil, und Angriffswürfe gegen diese Kreatur sind im Vorteil, bis zum Beginn ihres nächsten Zugs."
 }

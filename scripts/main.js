@@ -38,6 +38,8 @@ import { initMagicResistance } from "./features/combat-automation/magic-resistan
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
+import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
+import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
 import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/combat-automation/disable-active-effect-expiry.js";
@@ -187,6 +189,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
         name: "Conditional Damage Bonuses (Personal)",
         hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableRecklessAttack", {
+        name: "Reckless Attack Choice (Personal)",
+        hint: "Offers the Reckless Attack choice (dialog checkbox or prompt) on your first attack of the turn (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1107,6 +1118,116 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableConditionRollModes", {
+        name: "Condition Advantage & Disadvantage",
+        hint: "Applies the Advantage and Disadvantage of conditions to attack rolls and ability checks where the system leaves them to the table.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsBlindedInvisible", {
+        name: "Condition Rolls: Blinded & Invisible",
+        hint: "A creature that can't see its target attacks with Disadvantage; attacks against a creature that can't see the attacker have Advantage.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsRestrained", {
+        name: "Condition Rolls: Restrained",
+        hint: "Restrained creatures attack with Disadvantage, and attacks against them have Advantage.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsHelpless", {
+        name: "Condition Rolls: Paralyzed, Petrified, Stunned & Unconscious",
+        hint: "Attacks against Paralyzed, Petrified, Stunned or Unconscious creatures have Advantage.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsPoisoned", {
+        name: "Condition Rolls: Poisoned, Exhaustion & Encumbrance",
+        hint: "Poisoned creatures (and the system's other attack Disadvantage conditions) attack with Disadvantage.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsFrightened", {
+        name: "Condition Rolls: Frightened",
+        hint: "Frightened creatures have Disadvantage on attack rolls and ability checks.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsGrappled", {
+        name: "Condition Rolls: Grappled",
+        hint: "Grappled creatures (2024 rules) have Disadvantage on attacks against anyone but the grappler.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsDodging", {
+        name: "Condition Rolls: Dodging",
+        hint: "Attacks against a Dodging creature that can see the attacker have Disadvantage.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsAutoCrit", {
+        name: "Condition Rolls: Critical Hits Within 5 Feet",
+        hint: "A hit against a Paralyzed or Unconscious creature from within 5 feet is a critical hit.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "condRollsAutoFailSaves", {
+        name: "Condition Rolls: Failed Strength & Dexterity Saves",
+        hint: "Paralyzed, Petrified, Stunned and Unconscious creatures fail Strength and Dexterity saving throws automatically.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableRecklessAttack", {
+        name: "Reckless Attack Automation",
+        hint: "A creature with Reckless Attack decides on its first attack roll of its turn, without using the feature: a checkbox in the attack roll dialog, or a Yes / No prompt when the dialog is skipped (e.g. midi-qol fast-forward). Attacking recklessly gives Advantage and makes the creature Reckless until the start of its next turn: attacks against it have Advantage, and its Strength attacks keep Advantage (2014 rules: melee weapon attacks, this turn only; 2024 rules: until its next turn). Follows the feature's 2014 / 2024 rules.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
         hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
@@ -1701,6 +1822,8 @@ Hooks.once("setup", () => {
     initPreventGroupActorRolls();
     initWeaponMasteries();
     initProneRules();
+    initConditionRollModes();
+    initRecklessAttack();
     initConditionHud();
     initConditionalDamage();
     initDamageEmanation();

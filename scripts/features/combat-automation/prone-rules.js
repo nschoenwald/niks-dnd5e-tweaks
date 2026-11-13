@@ -12,12 +12,14 @@
  * @introduced v14.63.0
  * @updated v14.67.6 (Standing up no longer charged twice in the drag ruler)
  * @updated v14.75.0 (Token distance moved to utils/token-distance.js, shared with Sneak Attack)
+ * @updated v14.80.0 (Steps aside for midi-qol's Condition Rules; attacker / target lookup moved to utils/attack-context.js, shared with Condition Advantage & Disadvantage)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
-import { getMidiWorkflow, isAc5eActive } from "../../utils/module-compat.js";
+import { getMidiWorkflow, isAc5eActive, midiHandlesConditionRules } from "../../utils/module-compat.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
 import { tokenDistance, feetToSceneUnits } from "../../utils/token-distance.js";
+import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
 
 /**
  * How it works
@@ -54,7 +56,8 @@ import { tokenDistance, feetToSceneUnits } from "../../utils/token-distance.js";
  *    Magic Resistance does for saves. dnd5e cancels the two out when both apply.
  *  - midi-qol calls dnd5e's rollAttack, so the hook runs for its workflows too. Its own once-hook runs after
  *    this one and only clears a side when a midi flag denies it (e.g. "no advantage").
- *  - Automated Conditions 5e handles Prone attack rolls itself, so this part steps aside while it is active.
+ *  - Automated Conditions 5e and midi-qol's optional Condition Rules handle Prone attack rolls themselves, so this
+ *    part steps aside while either is active.
  */
 
 const PRONE = "prone";
@@ -85,7 +88,7 @@ function _movementAutomationOn() {
 
 const _crawlActive = () => _ruleActive("proneCrawlMovement") && _movementAutomationOn();
 const _standUpActive = () => _ruleActive("proneStandUpCost") && _movementAutomationOn();
-const _attacksActive = () => _ruleActive("proneAttackRolls") && !isAc5eActive();
+const _attacksActive = () => _ruleActive("proneAttackRolls") && !isAc5eActive() && !midiHandlesConditionRules();
 
 // ── Actor / effect helpers ────────────────────────────────────────────
 
@@ -429,30 +432,6 @@ async function _onDeleteActiveEffect(effect, _options, userId) {
 // ── Attacks ───────────────────────────────────────────────────────────
 
 /**
- * The attacker's token on the viewed scene.
- * @param {Actor5e} actor
- * @param {object|null} workflow  midi-qol workflow, if any.
- * @returns {Token|null}
- */
-function _attackerToken(actor, workflow) {
-    const fromWorkflow = workflow?.token?.object ?? workflow?.token;
-    if (fromWorkflow?.document) return fromWorkflow;
-    if (actor.isToken) return actor.token?.object ?? null;
-    const tokens = actor.getActiveTokens();
-    return tokens.find(t => t.controlled) ?? tokens[0] ?? null;
-}
-
-/**
- * The attack's targets as Token placeables.
- * @param {object|null} workflow  midi-qol workflow, if any.
- * @returns {Token[]}
- */
-function _attackTargets(workflow) {
-    const source = workflow?.targets?.size ? workflow.targets : game.user.targets;
-    return Array.from(source ?? [], t => t?.object ?? t).filter(t => t?.document);
-}
-
-/**
  * dnd5e.preRollAttack: Prone attackers have Disadvantage; attacks against a Prone target have Advantage from
  * within 5 feet and Disadvantage from farther away.
  * @param {object} config  Attack roll process configuration.
@@ -472,10 +451,9 @@ function _onPreRollAttack(config) {
 
         // Only a single target: with several, one roll can't carry a different mode for each of them.
         const workflow = getMidiWorkflow(config);
-        const targets = canvas?.ready ? _attackTargets(workflow) : [];
-        const target = targets.length === 1 ? targets[0] : null;
+        const target = singleAttackTarget(workflow);
         if (target && _isProne(target.actor)) {
-            const attacker = _attackerToken(actor, workflow);
+            const attacker = attackerToken(actor, workflow);
             if (attacker && (attacker !== target) && (attacker.document.parent === target.document.parent)) {
                 const distance = tokenDistance(attacker, target);
                 if (distance <= feetToSceneUnits(PRONE_ADVANTAGE_RANGE_FT) + 1e-6) advantage = true;
@@ -484,14 +462,7 @@ function _onPreRollAttack(config) {
             }
         }
 
-        if (!advantage && !disadvantage) return;
-        if (advantage) config.advantage = true;
-        if (disadvantage) config.disadvantage = true;
-        for (const roll of config.rolls ?? []) {
-            roll.options ??= {};
-            if (advantage) roll.options.advantage = true;
-            if (disadvantage) roll.options.disadvantage = true;
-        }
+        addRollModes(config, { advantage, disadvantage });
     } catch (err) {
         console.error(`${MODULE_ID} | Prone Rules: preRollAttack failed`, err);
     }

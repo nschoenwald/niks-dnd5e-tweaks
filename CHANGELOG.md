@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.80.0] - 2026-11-13
+### Added
+- **Condition Advantage & Disadvantage**: Conditions now affect attack rolls, as Prone already did. Blinded and Invisible creatures (with exceptions for Blindsight, Truesight and See Invisibility), Restrained, Paralyzed, Petrified, Stunned, Unconscious, Poisoned, Frightened, Grappled (2024 rules) and Dodging creatures give the attacker Advantage or Disadvantage, so the roll dialog opens with the right mode selected. Frightened creatures also have Disadvantage on ability checks. Hits against Paralyzed or Unconscious creatures from within 5 feet are critical hits, and Paralyzed, Petrified, Stunned and Unconscious creatures fail Strength and Dexterity saves automatically. Each rule can be turned off on its own. Off while Automated Conditions 5e or midi-qol's optional Condition Rules are active.
+
+- **Reckless Attack Automation**: Barbarians decide on Reckless Attack right when they attack, without clicking the feature: a checkbox in the attack roll dialog, or a quick Yes / No prompt when the dialog is skipped (e.g. midi-qol fast-forward). It is offered on the first attack of their turn. Attacking recklessly gives Advantage, and attacks against them have Advantage until the start of their next turn. Follows the 2014 rules (melee Strength attacks, this turn only) or the 2024 rules (all Strength attacks until their next turn), depending on the feature. Players can turn the choice off in their personal settings.
+
+### Changed
+- **Prone Rules**: **Prone Attack Rolls** is also switched off while midi-qol's optional Condition Rules are on, as they handle Prone themselves.
+
 ## [14.79.1] - 2026-11-12
 ### Changed
 - **Auto-Apply Status at 0 HP**: It also works the other way round: giving a dead creature Unconscious removes Dead. Other effects that make a creature unconscious, like *Sleep*, don't.

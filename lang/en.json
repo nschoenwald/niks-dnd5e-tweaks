@@ -157,5 +157,13 @@
   "ND5T.UndeadFortitude.SkippedRadiant": "{name} drops to 0 HP. {feature} doesn't apply against Radiant damage.",
   "ND5T.UndeadFortitude.SkippedCritical": "{name} drops to 0 HP. {feature} doesn't apply against a critical hit.",
 
-  "ND5T.DeathWard.Triggered": "Death Ward: {name} drops to 1 HP instead of 0, and the spell ends."
+  "ND5T.DeathWard.Triggered": "Death Ward: {name} drops to 1 HP instead of 0, and the spell ends.",
+
+  "ND5T.ConditionRollModes.AutoFail": "fails automatically: {condition}",
+
+  "ND5T.RecklessAttack.Label": "Reckless Attack",
+  "ND5T.RecklessAttack.Prompt2014": "Should {name} attack recklessly? Melee weapon attacks using Strength have Advantage this turn, but attack rolls against {name} have Advantage until the start of its next turn.",
+  "ND5T.RecklessAttack.Prompt2024": "Should {name} attack recklessly? Attack rolls using Strength have Advantage until the start of its next turn, but so do attack rolls against {name}.",
+  "ND5T.RecklessAttack.Description2014": "Melee weapon attack rolls using Strength have Advantage during this turn. Attack rolls against this creature have Advantage until the start of its next turn.",
+  "ND5T.RecklessAttack.Description2024": "Attack rolls using Strength have Advantage, and attack rolls against this creature have Advantage, until the start of its next turn."
 }

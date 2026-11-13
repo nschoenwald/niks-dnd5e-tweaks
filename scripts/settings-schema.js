@@ -114,6 +114,16 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnableRecklessAttack",
+                            introduced: "14.80.0",
+                            pairedWith: "enableRecklessAttack",
+                            name: "Reckless Attack Choice",
+                            hint: "Offers the Reckless Attack choice (dialog checkbox or prompt) on your first attack of the turn (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
                             key: "clientEnableInitiativePrompt",
                             introduced: "14.28.5",
                             pairedWith: "promptForInitiative",
@@ -1184,6 +1194,17 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableRecklessAttack",
+                            introduced: "14.80.0",
+                            docs: "reckless-attack-automation",
+                            keywords: ["Reckless Attack", "Barbarian", "advantage", "reckless"],
+                            name: "Reckless Attack Automation",
+                            hint: "A creature with Reckless Attack decides on its first attack roll of its turn, without using the feature: a checkbox in the attack roll dialog, or a Yes / No prompt when the dialog is skipped (e.g. midi-qol fast-forward). Attacking recklessly gives Advantage and makes the creature Reckless until the start of its next turn: attacks against it have Advantage, and its Strength attacks keep Advantage (2014 rules: melee weapon attacks, this turn only; 2024 rules: until its next turn). Follows the feature's 2014 / 2024 rules.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableConditionalDamage",
                             introduced: "14.45.0",
                             docs: "conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave",
@@ -1412,13 +1433,124 @@ export function getSettingsSchema() {
                         {
                             key: "proneAttackRolls",
                             introduced: "14.63.0",
-                            unavailableWith: "ac5e",
+                            unavailableWith: "conditionRolls",
                             name: "Prone Attack Rolls",
-                            hint: "A Prone attacker has Disadvantage. An attack against a Prone creature has Advantage if the attacker is within 5 feet, and Disadvantage otherwise (single target only). Works with midi-qol. Disabled while Automated Conditions 5e is active.",
+                            hint: "A Prone attacker has Disadvantage. An attack against a Prone creature has Advantage if the attacker is within 5 feet, and Disadvantage otherwise (single target only). Works with midi-qol. Disabled while Automated Conditions 5e or midi-qol's optional Condition Rules are active.",
                             type: "Boolean",
                             default: true,
                             scope: "world",
                             parentKey: "enableProneRules"
+                        },
+                        {
+                            key: "enableConditionRollModes",
+                            introduced: "14.80.0",
+                            docs: "condition-advantage--disadvantage",
+                            keywords: ["blinded", "invisible", "restrained", "paralyzed", "petrified", "stunned", "unconscious", "poisoned", "frightened", "grappled", "dodging", "dodge", "advantage", "disadvantage", "attack rolls", "conditions", "critical hit", "crit", "auto-fail", "saving throws"],
+                            unavailableWith: "conditionRolls",
+                            name: "Condition Advantage & Disadvantage",
+                            hint: "Applies the Advantage and Disadvantage that conditions give to attack rolls (and Frightened to ability checks), plus critical hits against Paralyzed or Unconscious creatures and failed Strength / Dexterity saves, which the system leaves to the table. Rules that depend on the target need a single target. Choose the conditions below; Prone is under Prone Rules. Works with midi-qol. Disabled while Automated Conditions 5e or midi-qol's optional Condition Rules are active.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "condRollsBlindedInvisible",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionVision",
+                            name: "Blinded & Invisible",
+                            hint: "A creature that can't see its target attacks with Disadvantage, and attacks against a creature that can't see the attacker have Advantage. Blindsight, Truesight and See Invisibility let a creature see through Blinded or Invisible within their range. Walls and light aren't checked. Disabled while midi-qol's Invisible Advantage rule is on, which handles this.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsRestrained",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Restrained",
+                            hint: "A Restrained creature attacks with Disadvantage, and attacks against it have Advantage.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsHelpless",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Paralyzed, Petrified, Stunned & Unconscious",
+                            hint: "Attacks against a Paralyzed, Petrified, Stunned or Unconscious creature have Advantage.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsPoisoned",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Poisoned, Exhaustion & Encumbrance",
+                            hint: "A Poisoned creature attacks with Disadvantage. The system lists this (with 2014 exhaustion level 3, and Heavily Encumbered for Strength, Dexterity and Constitution attacks) but only applies it to ability checks.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsFrightened",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Frightened",
+                            hint: "A Frightened creature has Disadvantage on attack rolls and ability checks, including skills, tools and initiative. Applies whether or not the source of its fear is in sight.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsGrappled",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Grappled (2024)",
+                            hint: "With the 2024 rules, a Grappled creature has Disadvantage on attacks against anyone but its grappler. The grappler is the creature whose item or effect applied Grappled; a Grappled status set by hand is skipped.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsDodging",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Dodging",
+                            hint: "Attacks against a Dodging creature have Disadvantage if it can see the attacker. Dodging ends while it is Incapacitated or can't move, as in the system.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsAutoCrit",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Critical Hits Within 5 Feet",
+                            hint: "A hit against a Paralyzed or Unconscious creature is a critical hit if the attacker is within 5 feet of it. A miss stays a miss. Single target only. With midi-qol, the workflow's hit check decides.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
+                        },
+                        {
+                            key: "condRollsAutoFailSaves",
+                            introduced: "14.80.0",
+                            unavailableWith: "conditionRolls",
+                            name: "Failed Strength & Dexterity Saves",
+                            hint: "Paralyzed, Petrified, Stunned and Unconscious creatures fail Strength and Dexterity saving throws automatically: the dice are still rolled, but the total counts as 0 and the chat card says why.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableConditionRollModes"
                         },
                         {
                             key: "enableProneRotation",

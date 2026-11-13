@@ -15,7 +15,7 @@
  */
 import { MODULE_ID } from "./context.js";
 import { getSettingsSchema } from "./settings-schema.js";
-import { isAc5eActive, isMidiActive, isWm5eActive } from "./utils/module-compat.js";
+import { isAc5eActive, isMidiActive, isWm5eActive, midiHandlesCantSee, midiHandlesConditionRules } from "./utils/module-compat.js";
 
 /** Package id of Nik's Foundry Tweaks. */
 export const CORE_ID = "niks-foundry-tweaks";
@@ -67,7 +67,20 @@ export function registerWithCore() {
         api.registerUnavailableWith({
             midi: { label: "midi-qol", isActive: isMidiActive },
             wm5e: { label: "Automated Masteries 5e", isActive: isWm5eActive },
-            ac5e: { label: "Automated Conditions 5e", isActive: isAc5eActive }
+            ac5e: { label: "Automated Conditions 5e", isActive: isAc5eActive },
+            // Condition Advantage & Disadvantage: AC5e, or midi-qol's optional Condition Rules
+            conditionRolls: {
+                get label() { return isAc5eActive() ? "Automated Conditions 5e" : "midi-qol (Condition Rules)"; },
+                isActive: () => isAc5eActive() || midiHandlesConditionRules()
+            },
+            // Blinded & Invisible: also midi-qol's optional "Invisible / can't see" rule
+            conditionVision: {
+                get label() {
+                    if (isAc5eActive()) return "Automated Conditions 5e";
+                    return midiHandlesConditionRules() ? "midi-qol (Condition Rules)" : "midi-qol (Invisible Advantage)";
+                },
+                isActive: () => isAc5eActive() || midiHandlesConditionRules() || midiHandlesCantSee()
+            }
         });
         api.registerSettings(MODULE_ID, getSettingsSchema());
 

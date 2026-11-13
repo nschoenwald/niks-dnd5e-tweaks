@@ -52,6 +52,46 @@ export function getMidiSettings() {
 }
 
 /**
+ * Value of one of midi-qol's optional rules for this user (false while optional rules are off). Uses midi's own
+ * `checkRule`, which also honours the GM's "toggle optional rules" switch, and mirrors it when the API is missing.
+ * @param {string} rule  Key in midi's `optionalRules`.
+ * @returns {*}
+ */
+export function midiCheckRule(rule) {
+    if (!isMidiActive()) return false;
+    try {
+        const checkRule = globalThis.MidiQOL?.checkRule;
+        if (typeof checkRule === "function") return checkRule(rule);
+    } catch {
+        // Fall back to the stored settings below
+    }
+    const settings = getMidiSettings();
+    if (!settings) return false;
+    let enabled = Boolean(settings.optionalRulesEnabled);
+    if (game.user?.isGM && settings.toggleOptionalRules) enabled = !enabled;
+    return enabled ? settings.optionalRules?.[rule] : false;
+}
+
+/**
+ * Whether midi-qol's optional "Condition Rules" add the attack, check and save effects of the conditions
+ * (midi-qol 14.6.7 and later).
+ * @returns {boolean}
+ */
+export function midiHandlesConditionRules() {
+    return Boolean(midiCheckRule("conditionRules"));
+}
+
+/**
+ * Whether midi-qol's optional "Invisible / can't see" rule gives attacks Advantage or Disadvantage when one side
+ * can't see the other, which also covers Blinded and Invisible creatures.
+ * @returns {boolean}
+ */
+export function midiHandlesCantSee() {
+    const value = midiCheckRule("invisAdvantage");
+    return Boolean(value) && (value !== "none");
+}
+
+/**
  * Whether midi-qol automatically applies damage to targets ("Yes", "Yes + damage card", ...).
  * @returns {boolean}
  */

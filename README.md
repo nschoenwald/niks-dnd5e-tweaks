@@ -74,12 +74,14 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Roll Attack Damage](#prompt--auto-roll-attack-damage)** | Rolls & Damage | ❌ Disabled | Yes |
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense, Genie's Wrath & Cleave)](#conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Reckless Attack Automation](#reckless-attack-automation)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Rolls & Damage | ✅ Enabled | No |
 | **[Player Damage Prompt](#player-damage-prompt)** | Rolls & Damage | ❌ Disabled | Yes |
 | **[Healing Roll Context Menu](#healing-roll-context-menu)** | Rolls & Damage | ✅ Enabled | No |
 | **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Conditions & Effects | ✅ Enabled | No |
 | **[Prone Rules (Crawling, Standing Up & Attacks)](#prone-rules)** | Conditions & Effects | ✅ Enabled | Yes |
+| **[Condition Advantage & Disadvantage](#condition-advantage--disadvantage)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll--prompt-concentration-saves)** | Conditions & Effects | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Conditions & Effects | ✅ Enabled | No |
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
@@ -321,6 +323,20 @@ Tallies hostile NPC XP at the end of combat with a one-click button for the GM t
 ### Auto-Open Damage Dialog for Saves
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
 
+### Reckless Attack Automation
+A creature with the **Reckless Attack** feature decides on its first attack roll of its turn without using the feature from its sheet:
+* **In the attack roll dialog**, a **Reckless Attack** checkbox appears. Ticking it selects **Advantage** as the default button. The checkbox is greyed out while the chosen ability or attack mode doesn't qualify (see below).
+* **When the dialog is skipped** (fast-forward keys, or midi-qol's fast-forwarded attacks), a short Yes / No prompt asks first.
+* The choice is only offered on the creature's own turn and on its first attack roll that turn. If it declines, it isn't asked again until its next turn. Out of combat the checkbox is offered on every attack and only affects that roll.
+
+Attacking recklessly makes the creature **Reckless** until the start of its next turn, shown as an effect with the feature's icon:
+* **Attacks against it** have Advantage (single target only).
+* **Its own attacks**: under the **2014 rules**, melee weapon attacks using Strength have Advantage for the rest of that turn (thrown weapons count as ranged). Under the **2024 rules**, all attack rolls using Strength have Advantage until the start of its next turn, so opportunity attacks count too.
+* The rules come from the feature item's own source (2014 or 2024), and from the world's rules setting if it has none. A 2014 Barbarian in a 2024 world follows the 2014 text.
+* If the feature applies an effect of its own (for example when you still use it from the sheet), that effect counts as Reckless as well, so nothing is doubled. The effect ends at the start of the creature's next turn, or when combat ends.
+
+Players can turn the choice off for themselves in their personal settings. The Advantage from Reckless creatures stays on.
+
 ### Conditional Damage Bonuses (Sneak Attack, Hex, Hunter's Mark, Great Weapon Master, Brutal Strike, Charger, Savage Attacker, Boon of Irresistible Offense & Cleave)
 
 <img width="394" height="595" alt="image" src="https://github.com/user-attachments/assets/5a754d05-167a-472c-943e-440fb347fd5f" />
@@ -369,7 +385,21 @@ Automatically handles weapon masteries when player characters deal damage with m
 The system only stops Prone creatures from flying, climbing or swimming. This feature adds the rest of the Prone rules. Each rule can be turned off on its own:
 * **Crawl While Prone**: A Prone token switches to the **Crawl** movement action, and back to what it used before once it stands up. Walking while Prone costs 1 extra foot per foot, just like crawling, so a creature with 30 ft of Speed can crawl 15 ft. Follows the system's *Movement Automation* setting: with automation off, movement costs are left alone.
 * **Standing Up Costs Half Speed**: Removing Prone on the creature's own turn in combat costs half its Speed (rounded down). The cost is added to the first step the creature takes after standing up, so the ruler shows it and the system's speed limit counts it. Undoing that move gives the movement back, and the next move pays it again. A player can't remove Prone without enough movement left this turn (or with a Speed of 0) and gets a message instead; the GM gets a warning but can still remove it. Outside combat, or on another creature's turn, standing up is free.
-* **Prone Attack Rolls**: A Prone attacker has Disadvantage on attack rolls. An attack roll against a Prone creature has Advantage if the attacker is within 5 feet of it (measured between the closest spaces, including height), and Disadvantage otherwise. Both apply together, so a Prone creature attacking a Prone creature next to it rolls normally. The roll dialog opens with the right mode already selected. Only applied when the attack has a single target. Switched off while Automated Conditions 5e is active, which handles this itself.
+* **Prone Attack Rolls**: A Prone attacker has Disadvantage on attack rolls. An attack roll against a Prone creature has Advantage if the attacker is within 5 feet of it (measured between the closest spaces, including height), and Disadvantage otherwise. Both apply together, so a Prone creature attacking a Prone creature next to it rolls normally. The roll dialog opens with the right mode already selected. Only applied when the attack has a single target. Switched off while Automated Conditions 5e or midi-qol's optional *Condition Rules* are active, which handle this themselves.
+
+### Condition Advantage & Disadvantage
+The system applies the movement, check and save parts of conditions, but not what they do to attack rolls, critical hits or Strength and Dexterity saves. This feature adds the Advantage and Disadvantage, so the roll dialog opens with the right mode already selected. When both apply, they cancel out as usual. Rules that depend on the target are only applied when the attack has a single target. Each condition can be turned off on its own:
+* **Blinded & Invisible**: A creature that can't see its target attacks with Disadvantage. An attack against a creature that can't see the attacker has Advantage. Blinded creatures can't see anyone, and Invisible creatures can't be seen. *Blindsight* sees through both, and *Truesight* and *See Invisibility* see Invisible creatures, each only within its range. Walls and light aren't checked. Without a single target, a Blinded attacker still has Disadvantage and an Invisible one Advantage.
+* **Restrained**: A Restrained creature attacks with Disadvantage, and attacks against it have Advantage.
+* **Paralyzed, Petrified, Stunned & Unconscious**: Attacks against these creatures have Advantage. (An Unconscious creature is also Prone, so **Prone Attack Rolls** adds Disadvantage from more than 5 feet away, and the two cancel out, as the rules say.)
+* **Poisoned, Exhaustion & Encumbrance**: A Poisoned creature attacks with Disadvantage. The same goes for 2014 exhaustion level 3, and for Heavily Encumbered (variant encumbrance) on Strength, Dexterity and Constitution attacks. The system lists these but only applies the ability check part.
+* **Frightened**: A Frightened creature has Disadvantage on attack rolls and ability checks, including skills, tools and initiative. This applies whether or not the source of its fear is in sight.
+* **Grappled (2024)**: With the 2024 rules, a Grappled creature attacks anyone but its grappler with Disadvantage. The grappler is the creature whose item or effect applied Grappled. If you set Grappled by hand from the token HUD, the grappler is unknown and nothing is applied.
+* **Dodging**: Attacks against a Dodging creature have Disadvantage if it can see the attacker. As in the system, Dodging ends while the creature is Incapacitated or can't move.
+* **Critical Hits Within 5 Feet**: A hit against a Paralyzed or Unconscious creature is a critical hit if the attacker is within 5 feet of it. A miss stays a miss, and a natural 1 still misses. The attack card shows the hit as critical and the damage dialog opens with **Critical** selected. Only applied when the attack has a single target. With midi-qol, the workflow's own hit check decides, and its damage is rolled as critical.
+* **Failed Strength & Dexterity Saves**: Paralyzed, Petrified, Stunned and Unconscious creatures fail Strength and Dexterity saving throws automatically. The dice are still rolled, but the total counts as 0, a natural 20 isn't critical, and the chat card adds the reason (e.g. *fails automatically: Paralyzed*). Works for saves rolled from chat cards, the sheet and midi-qol.
+
+Prone is under [Prone Rules](#prone-rules). Immunity to a condition is respected. The whole feature is switched off while Automated Conditions 5e or midi-qol's optional *Condition Rules* are active. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on, which handles both through token vision.
 
 ### Auto-Rotate Prone / Unconscious / Dead Tokens
 Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
@@ -461,7 +491,7 @@ All features are managed in the shared **Settings Dashboard** of [Nik's Foundry 
 * **Personal settings that override the GM's**: For Chat Card Styling Improvements, Item Sheet Attunement Tag (and its tooltip option), Item / Spell Add: Choice Dialog, Spell Slots Expend Left to Right, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette, each player chooses **Use World Setting** (default), **On** or **Off**, so they can also turn these on when the GM left them off. All other personal settings only turn a feature off for that player, because the GM's choice matters for the whole table (rules, automation, shared templates, or what players learn about NPCs).
 * **Search, filters, New badges, linked world and personal settings, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
 * **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
-* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation) and Automated Conditions 5e (Prone Attack Rolls). Your stored choice is kept for when that module is turned off.
+* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation), and Automated Conditions 5e or midi-qol's Condition Rules (Prone Attack Rolls, Condition Advantage & Disadvantage). Your stored choice is kept for when that module is turned off.
 * **Debug Mode**: One switch in Nik's Foundry Tweaks (Utilities & Debug) turns on diagnostic logging for both modules.
 
 ---
@@ -488,8 +518,10 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Grid-Based Templates** | **Works**: midi-qol targets the grid-based template shape. |
 | **Remove Instantaneous Templates on Turn Change** | **Works**. With midi-qol's *Auto remove instantaneous templates* on, midi-qol already deletes them right after the roll. |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
+| **Reckless Attack Automation** | **Works** with midi-qol workflows. When midi-qol skips the attack dialog, the Yes / No prompt asks instead; when it shows the dialog (e.g. for thrown weapons), the checkbox is there. Advantage against a Reckless creature uses the workflow's target. A premade Reckless Attack item with its own effect counts as Reckless too. |
 | **Conditional Damage Bonuses** | **Works** with midi-qol workflows. Sneak Attack reads Advantage from midi-qol's attack roll (including its optional flanking rule) and checks only the targets midi-qol says were hit. Genie's Wrath works the same way as without midi-qol. midi-qol has no Sneak Attack automation of its own, but a premade Sneak Attack item from another module would add the damage a second time: turn one of them off. |
-| **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. |
+| **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. **Prone Attack Rolls** is switched off while midi-qol's optional *Condition Rules* are on. |
+| **Condition Advantage & Disadvantage** | **Works** with midi-qol workflows, using the workflow's targets. Critical hits within 5 feet follow midi-qol's hit check and make the workflow critical; failed saves count as 0 in midi-qol's save check. Switched off while midi-qol's optional *Condition Rules* are on, which apply the same rules. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on (its default), which checks token vision instead. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
 | **Undead Fortitude Automation** | **Works** with midi-qol damage application, which has no Undead Fortitude handling of its own. Critical hits come from the midi-qol workflow. midi-qol's damage card may still show 0 HP for the creature while it is held at 1 HP. |
 | **Death Ward Automation** | **Works** with midi-qol damage application, which has no Death Ward handling of its own. midi-qol's damage card may still show 0 HP for the creature. |
@@ -499,7 +531,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Detailed Roll Breakdown Overlay** | **Works** on midi-qol's combined card: the attack and damage totals show the detailed breakdown, with midi-qol's advantage and bonus notes kept at the top, and the formula shows the short labels (STR, PB, MGC). Rolls midi-qol hides from players stay hidden. |
 
 ### Automated Conditions 5e & Automated Masteries 5e
-* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone itself, so **Prone Attack Rolls** is switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
+* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone and the other conditions itself, so **Prone Attack Rolls** and **Condition Advantage & Disadvantage** are switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
 * **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow & Topple) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules
