@@ -944,7 +944,7 @@ export function getSettingsSchema() {
                             docs: "legendary-action-placeholders",
                             keywords: ["boss", "legendary actions", "combat tracker"],
                             name: "Legendary Action Placeholders",
-                            hint: "Inserts placeholder turns in the combat tracker after each player turn when legendary creatures are present. Player characters count too if they have a feature with a Legendary Action activation.",
+                            hint: "Inserts placeholder turns in the combat tracker after creatures' turns when legendary creatures are present, so legendary actions can be tracked. Player characters count as legendary too if they have a feature with a Legendary Action activation.",
                             type: "Boolean",
                             default: true,
                             scope: "world"
@@ -971,10 +971,24 @@ export function getSettingsSchema() {
                             parentKey: "enableLegendaryActionPlaceholders"
                         },
                         {
+                            key: "legendaryActionPlaceholderPlacement",
+                            introduced: "14.81.0",
+                            name: "Placeholder Placement",
+                            hint: "After Every Creature's Turn: a placeholder follows every creature, except the turn of a legendary creature that is the only one in the fight. After Opposing Creatures' Turns: friendly legendary creatures only get placeholders after hostile creatures and hostile ones after friendly creatures (by token disposition); neutral and secret legendary creatures still get them after every creature. Applies to combats started afterwards.",
+                            type: "Select",
+                            default: "all",
+                            choices: [
+                                { value: "all", label: "After Every Creature's Turn" },
+                                { value: "opposing", label: "After Opposing Creatures' Turns Only" }
+                            ],
+                            scope: "world",
+                            parentKey: "enableLegendaryActionPlaceholders"
+                        },
+                        {
                             key: "autoSkipEmptyLegendaryPlaceholders",
                             introduced: "14.46.6",
                             name: "Auto-Skip When No Uses Left",
-                            hint: "Automatically skip legendary action placeholder turns in the combat tracker when no creature in the encounter has legendary action uses remaining.",
+                            hint: "Automatically skip legendary action placeholder turns in the combat tracker when none of the legendary creatures that could act at that point has uses remaining, or the creature before it is defeated.",
                             type: "Boolean",
                             default: true,
                             scope: "world",

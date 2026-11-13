@@ -931,7 +931,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableLegendaryActionPlaceholders", {
         name: "Legendary Action Placeholders",
-        hint: "When a combat begins that includes a creature with legendary actions (a Legendary Actions count, or a feature with a Legendary Action activation, e.g. on a player character), inserts placeholder turns in the initiative tracker after each player character and friendly creature to help track legendary action usage.",
+        hint: "When a combat begins that includes a creature with legendary actions (a Legendary Actions count, or a feature with a Legendary Action activation, e.g. on a player character), inserts placeholder turns in the initiative tracker after the other creatures' turns to help track legendary action usage.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -960,9 +960,23 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "legendaryActionPlaceholderPlacement", {
+        name: "↳ Placeholder Placement",
+        hint: "Where placeholders go when a combat starts: after every creature's turn (except a lone legendary creature's own), or only after creatures with the opposite disposition of the friendly or hostile legendary creatures.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "all",
+        choices: {
+            all: "After Every Creature's Turn",
+            opposing: "After Opposing Creatures' Turns Only"
+        },
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "autoSkipEmptyLegendaryPlaceholders", {
         name: "↳ Auto-Skip When No Uses Left",
-        hint: "Automatically skips legendary action placeholder turns in the combat tracker when no creature in the encounter has legendary action uses remaining.",
+        hint: "Automatically skips legendary action placeholder turns in the combat tracker when none of the legendary creatures that could act at that point has uses remaining, or the creature before it is defeated.",
         scope: "world",
         config: false,
         type: Boolean,

@@ -1,6 +1,6 @@
 /**
  * Feature: Legendary Action Placeholders
- * Description: Inserts placeholder turns in the combat tracker after player turns to track legendary action usage when legendary creatures are present.
+ * Description: Inserts placeholder turns in the combat tracker after creatures' turns to track legendary action usage when legendary creatures are present.
  *
  * @introduced v14.3.1
  * @updated v14.46.6 (Auto-skip placeholders when no combatant has legendary action uses remaining)
@@ -16,6 +16,16 @@
  *    LEGENDARY_ACTIVATION_TYPES. dnd5e doesn't auto-consume anything for these, so remaining uses are read from the
  *    activity's consumption targets (item uses, activity uses, attributes), or its own / its item's limited uses.
  *    A feature without any limit counts as always available.
+ * @updated v14.81.0 (Placeholders after every creature's turn except a lone legendary creature's own, with an
+ *   "after opposing creatures only" placement setting; auto-skip and turn markers are per placeholder)
+ *
+ * Placement (at combat start, setting `legendaryActionPlaceholderPlacement`): a placeholder follows each creature after
+ * whose turn at least one *other* legendary creature may act (`_canActAfter`). "all": every creature, so with a single
+ * legendary creature there is none after its own turn. "opposing": Friendly legendary creatures only after Hostile
+ * creatures and vice versa; Neutral / Secret legendary creatures after everyone. Each placeholder stores the creature
+ * it follows (`flags.niks-dnd5e-tweaks.afterCombatantId`); auto-skip and the placeholder-turn markers only consider the
+ * legendary creatures that may act after that creature (re-evaluated live, so later disposition changes count).
+ * Placeholders without that flag (made before 14.81.0) consider every legendary creature, as before.
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -39,18 +49,13 @@ function _invalidateLegendaryCache(combat) {
 }
 
 /**
- * Check if any alive combatant in the combat encounter currently has legendary action uses remaining.
- * Performance-optimized:
- * 1. Uses a WeakMap to cache IDs of combatants with max legendary actions > 0.
- * 2. Only checks the current value/spent of those specific combatants.
- * 3. Short-circuits immediately on the first creature found with remaining uses.
- *
+ * Legendary combatants of a combat (see isLegendaryCombatant), cached per combat until its combatant count changes
+ * or the cache is invalidated.
  * @param {Combat} combat
- * @returns {boolean}
+ * @returns {Combatant[]}
  */
-export function hasRemainingLegendaryActions(combat) {
-    if (!combat?.combatants?.size) return false;
-
+function _getLegendaryCombatants(combat) {
+    if (!combat?.combatants?.size) return [];
     let cache = _legendaryCombatantsCache.get(combat);
     if (!cache || cache.size !== combat.combatants.size) {
         const ids = [];
@@ -60,15 +65,92 @@ export function hasRemainingLegendaryActions(combat) {
         cache = { size: combat.combatants.size, ids };
         _legendaryCombatantsCache.set(combat, cache);
     }
+    return cache.ids.map(id => combat.combatants.get(id)).filter(Boolean);
+}
 
-    if (!cache.ids.length) return false;
+/**
+ * Whether a combatant is a legendary action placeholder.
+ * @param {Combatant} [combatant]
+ * @returns {boolean}
+ */
+function _isPlaceholder(combatant) {
+    return Boolean(combatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder);
+}
 
-    for (let i = 0; i < cache.ids.length; i++) {
-        const c = combat.combatants.get(cache.ids[i]);
-        if (_getCombatantRemainingLegendaryActions(c) > 0) return true;
+/**
+ * The placement setting: "all" (after every creature's turn) or "opposing" (friendly and hostile legendary creatures
+ * only after the turns of creatures with the opposite disposition).
+ * @returns {"all"|"opposing"}
+ */
+function _getPlacementMode() {
+    return getSetting("legendaryActionPlaceholderPlacement") === "opposing" ? "opposing" : "all";
+}
+
+/**
+ * Whether a legendary creature may take a legendary action after another creature's turn.
+ * Never after its own turn. In "opposing" mode, a Friendly legendary creature only acts after Hostile creatures and a
+ * Hostile one only after Friendly creatures; Neutral and Secret legendary creatures act after everyone.
+ * @param {Combatant} legendary
+ * @param {Combatant} after
+ * @param {"all"|"opposing"} mode
+ * @returns {boolean}
+ */
+function _canActAfter(legendary, after, mode) {
+    if (!legendary || !after || (legendary.id === after.id)) return false;
+    if (mode !== "opposing") return true;
+    const { FRIENDLY, HOSTILE } = CONST.TOKEN_DISPOSITIONS;
+    const own = legendary.token?.disposition;
+    const other = after.token?.disposition;
+    if (own === FRIENDLY) return other === HOSTILE;
+    if (own === HOSTILE) return other === FRIENDLY;
+    return true;
+}
+
+/**
+ * The legendary creatures that may act during a placeholder turn: those that can act after the creature the
+ * placeholder follows. Placeholders made before 14.81.0 don't know that creature and count every legendary creature.
+ * @param {Combat} combat
+ * @param {Combatant} placeholder
+ * @returns {Combatant[]}
+ */
+function _getPlaceholderLegendaryCombatants(combat, placeholder) {
+    const legendary = _getLegendaryCombatants(combat);
+    const afterId = placeholder?.flags?.[MODULE_ID]?.afterCombatantId;
+    const after = afterId ? combat.combatants.get(afterId) : null;
+    if (!after) return legendary;
+    const mode = _getPlacementMode();
+    return legendary.filter(l => _canActAfter(l, after, mode));
+}
+
+/**
+ * Check whether legendary action uses remain: for a placeholder, among the legendary creatures that may act during
+ * it (none if the creature it follows is defeated, since that creature had no turn); otherwise among all legendary
+ * creatures of the combat.
+ * @param {Combat} combat
+ * @param {Combatant} [placeholder]
+ * @returns {boolean}
+ */
+export function hasRemainingLegendaryActions(combat, placeholder = null) {
+    if (!combat?.combatants?.size) return false;
+    let candidates;
+    if (placeholder) {
+        const afterId = placeholder.flags?.[MODULE_ID]?.afterCombatantId;
+        if (afterId && combat.combatants.get(afterId)?.isDefeated) return false;
+        candidates = _getPlaceholderLegendaryCombatants(combat, placeholder);
+    } else {
+        candidates = _getLegendaryCombatants(combat);
     }
+    return candidates.some(c => _getCombatantRemainingLegendaryActions(c) > 0);
+}
 
-    return false;
+/**
+ * Whether auto-skip passes over this combatant: a placeholder without remaining uses for it.
+ * @param {Combat} combat
+ * @param {Combatant} combatant
+ * @returns {boolean}
+ */
+function _isSkippablePlaceholder(combat, combatant) {
+    return _isPlaceholder(combatant) && !hasRemainingLegendaryActions(combat, combatant);
 }
 
 /**
@@ -113,7 +195,7 @@ async function _handleNextTurn(wrapped, ...args) {
     }
 
     // Normal next turn IS a placeholder. Now check if any actor has legendary action uses left:
-    if (hasRemainingLegendaryActions(this)) {
+    if (hasRemainingLegendaryActions(this, candidateCombatant)) {
         // Actions remaining: do not skip, advance to placeholder normally
         return wrapped.apply(this, args);
     }
@@ -125,7 +207,7 @@ async function _handleNextTurn(wrapped, ...args) {
     for (let i = normalNextTurn + 1; i < this.turns.length; i++) {
         const combatant = this.turns[i];
         if (this.settings.skipDefeated && combatant.isDefeated) continue;
-        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        if (_isSkippablePlaceholder(this, combatant)) continue;
         targetTurn = i;
         break;
     }
@@ -166,7 +248,7 @@ async function _handlePreviousTurn(wrapped, ...args) {
         if (!candidateCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) {
             return wrapped.apply(this, args);
         }
-        if (hasRemainingLegendaryActions(this)) {
+        if (hasRemainingLegendaryActions(this, candidateCombatant)) {
             return wrapped.apply(this, args);
         }
 
@@ -177,7 +259,7 @@ async function _handlePreviousTurn(wrapped, ...args) {
         for (let i = this.turns.length - 2; i >= 0; i--) {
             const combatant = this.turns[i];
             if (this.settings.skipDefeated && combatant.isDefeated) continue;
-            if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+            if (_isSkippablePlaceholder(this, combatant)) continue;
             targetTurn = i;
             break;
         }
@@ -215,7 +297,7 @@ async function _handlePreviousTurn(wrapped, ...args) {
         return wrapped.apply(this, args);
     }
 
-    if (hasRemainingLegendaryActions(this)) {
+    if (hasRemainingLegendaryActions(this, candidateCombatant)) {
         return wrapped.apply(this, args);
     }
 
@@ -226,7 +308,7 @@ async function _handlePreviousTurn(wrapped, ...args) {
     for (let i = normalPrevTurn - 1; i >= 0; i--) {
         const combatant = this.turns[i];
         if (this.settings.skipDefeated && combatant.isDefeated) continue;
-        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+        if (_isSkippablePlaceholder(this, combatant)) continue;
         targetTurn = i;
         break;
     }
@@ -354,8 +436,7 @@ function _getLegendaryTokensWithRemainingActions(combat) {
     const tokens = new Set();
     if (!combat?.combatants?.size) return tokens;
 
-    for (const combatant of combat.combatants) {
-        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+    for (const combatant of _getPlaceholderLegendaryCombatants(combat, combat.combatant)) {
         if (combatant.sceneId && canvas.scene?.id && combatant.sceneId !== canvas.scene.id) continue;
         if ((combatant.hidden || combatant.token?.hidden) && !game.user.isGM) continue;
         if (_getCombatantRemainingLegendaryActions(combatant) > 0) {
@@ -376,8 +457,7 @@ function _getLegendaryTokensWithRemainingActions(combat) {
 function _isTokenEligibleForPlaceholderTurnMarker(token, combat) {
     if (!token || !combat?.combatants?.size) return false;
     const sceneId = canvas.scene?.id ?? token.document?.parent?.id;
-    for (const combatant of combat.combatants) {
-        if (combatant.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+    for (const combatant of _getPlaceholderLegendaryCombatants(combat, combat.combatant)) {
         if (combatant.sceneId && sceneId && combatant.sceneId !== sceneId) continue;
         if ((combatant.hidden || combatant.token?.hidden) && !game.user.isGM) continue;
         if (combatant.tokenId === token.id) {
@@ -546,7 +626,7 @@ export function initLegendaryActionPlaceholders() {
             const targetCombatant = combat.turns?.[changed.turn];
             if (!targetCombatant?.flags?.[MODULE_ID]?.isLegendaryPlaceholder) return;
 
-            if (hasRemainingLegendaryActions(combat)) return;
+            if (hasRemainingLegendaryActions(combat, targetCombatant)) return;
 
             debug(`Legendary Action Placeholders | Direct turn update to placeholder intercepted at turn ${changed.turn}. Redirecting.`);
 
@@ -564,7 +644,7 @@ export function initLegendaryActionPlaceholders() {
                 for (let i = changed.turn + 1; i < combat.turns.length; i++) {
                     const c = combat.turns[i];
                     if (combat.settings.skipDefeated && c.isDefeated) continue;
-                    if (c.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+                    if (_isSkippablePlaceholder(combat, c)) continue;
                     nextTurn = i;
                     break;
                 }
@@ -576,7 +656,7 @@ export function initLegendaryActionPlaceholders() {
                     for (let i = 0; i < combat.turns.length; i++) {
                         const c = combat.turns[i];
                         if (combat.settings.skipDefeated && c.isDefeated) continue;
-                        if (c.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+                        if (_isSkippablePlaceholder(combat, c)) continue;
                         firstTurn = i;
                         break;
                     }
@@ -587,7 +667,7 @@ export function initLegendaryActionPlaceholders() {
                 for (let i = changed.turn - 1; i >= 0; i--) {
                     const c = combat.turns[i];
                     if (combat.settings.skipDefeated && c.isDefeated) continue;
-                    if (c.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+                    if (_isSkippablePlaceholder(combat, c)) continue;
                     prevTurn = i;
                     break;
                 }
@@ -599,7 +679,7 @@ export function initLegendaryActionPlaceholders() {
                     for (let i = combat.turns.length - 1; i >= 0; i--) {
                         const c = combat.turns[i];
                         if (combat.settings.skipDefeated && c.isDefeated) continue;
-                        if (c.flags?.[MODULE_ID]?.isLegendaryPlaceholder) continue;
+                        if (_isSkippablePlaceholder(combat, c)) continue;
                         lastTurn = i;
                         break;
                     }
@@ -637,7 +717,7 @@ export function initLegendaryActionPlaceholders() {
         }
     });
     Hooks.on("updateToken", (tokenDoc, changed) => {
-        if ("hidden" in changed && game.combat?.isView && isLegendaryPlaceholderTurn(game.combat)) {
+        if (("hidden" in changed || "disposition" in changed) && game.combat?.isView && isLegendaryPlaceholderTurn(game.combat)) {
             game.combat._updateTurnMarkers();
         }
     });
@@ -739,72 +819,71 @@ export function initLegendaryActionPlaceholders() {
                 return;
             }
 
-            // Find all player characters or friendly creatures, preserving current turn order from combat.turns
-            const playerCombatants = (combat.turns ?? []).filter(c => {
-                if (c.getFlag(MODULE_ID, "isLegendaryPlaceholder")) return false;
-                const isPC = c.actor?.type === "character";
-                const isFriendly = c.token?.disposition === CONST.TOKEN_DISPOSITIONS?.FRIENDLY || c.token?.disposition === 1;
-                return isPC || isFriendly;
-            });
+            // All creatures in turn order. A placeholder follows each creature after whose turn at least one other
+            // legendary creature may act (see _canActAfter and the placement setting)
+            const creatures = (combat.turns ?? []).filter(c => !_isPlaceholder(c));
+            const legendary = creatures.filter(c => isLegendaryCombatant(c));
+            const mode = _getPlacementMode();
+            const followed = creatures.filter(c => legendary.some(l => _canActAfter(l, c, mode)));
 
-            if (!playerCombatants.length) return;
+            if (!followed.length) {
+                debug(`Legendary Action Placeholders | No creature in combat ${combat.id} needs a placeholder (${mode}).`);
+                return;
+            }
 
-            // Detect and prepare minimal tie breaker updates for tied initiatives among player combatants
+            // Tied initiatives: every creature after the first in a tie gets a minimal tie breaker, keeping the current
+            // order, so each placeholder sorts directly after its own creature
             const roundKey = val => Number(Number(val).toFixed(4));
             const initiativeCounts = new Map();
-            for (const pc of playerCombatants) {
-                if (!Number.isNumeric(pc.initiative)) continue;
-                const key = roundKey(pc.initiative);
+            for (const c of creatures) {
+                if (!Number.isNumeric(c.initiative)) continue;
+                const key = roundKey(c.initiative);
                 initiativeCounts.set(key, (initiativeCounts.get(key) ?? 0) + 1);
             }
 
             const seenCounts = new Map();
             const combatantUpdates = [];
-            const pcEffectiveInitiatives = new Map();
+            const effectiveInitiatives = new Map();
 
-            for (const pc of playerCombatants) {
-                const baseInit = pc.initiative;
+            for (const c of creatures) {
+                const baseInit = c.initiative;
                 if (!Number.isNumeric(baseInit)) {
-                    pcEffectiveInitiatives.set(pc.id, 0);
+                    effectiveInitiatives.set(c.id, 0);
                     continue;
                 }
 
                 const key = roundKey(baseInit);
-                const totalWithInit = initiativeCounts.get(key) ?? 0;
-                if (totalWithInit > 1) {
+                if ((initiativeCounts.get(key) ?? 0) > 1) {
                     const tieIndex = seenCounts.get(key) ?? 0;
                     seenCounts.set(key, tieIndex + 1);
-
                     if (tieIndex > 0) {
-                        // Apply an additional minimal tie breaker to subsequent tied characters
-                        // to ensure each has a distinct initiative strictly ordered after previous tied PCs
                         const tieBreaker = Number((tieIndex * TIE_BREAKER_STEP).toFixed(5));
                         const newInitiative = Number((baseInit - tieBreaker).toFixed(5));
-                        combatantUpdates.push({
-                            _id: pc.id,
-                            initiative: newInitiative
-                        });
-                        pcEffectiveInitiatives.set(pc.id, newInitiative);
+                        combatantUpdates.push({ _id: c.id, initiative: newInitiative });
+                        effectiveInitiatives.set(c.id, newInitiative);
                         continue;
                     }
                 }
 
-                pcEffectiveInitiatives.set(pc.id, baseInit);
+                effectiveInitiatives.set(c.id, baseInit);
             }
 
             const configuredIcon = getSetting("legendaryActionPlaceholderIcon");
             const img = await _resolveIcon(configuredIcon);
+            const showToPlayers = getSetting("showLegendaryActionPlaceholders");
 
-            const newCombatants = playerCombatants.map(pc => {
-                const effectiveInit = pcEffectiveInitiatives.get(pc.id) ?? pc.initiative ?? 0;
+            const newCombatants = followed.map(c => {
+                const effectiveInit = effectiveInitiatives.get(c.id) ?? c.initiative ?? 0;
                 return {
                     name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
-                    hidden: !getSetting("showLegendaryActionPlaceholders"),
+                    // A visible placeholder after a hidden creature would give its position away
+                    hidden: !showToPlayers || Boolean(c.hidden),
                     img,
                     initiative: Number((effectiveInit - PLACEHOLDER_OFFSET).toFixed(5)),
                     flags: {
                         [MODULE_ID]: {
-                            isLegendaryPlaceholder: true
+                            isLegendaryPlaceholder: true,
+                            afterCombatantId: c.id
                         }
                     }
                 };
@@ -816,7 +895,7 @@ export function initLegendaryActionPlaceholders() {
 
                     // First give an additional minimal tie breaker to their initiative if needed
                     if (combatantUpdates.length > 0) {
-                        debug(`Legendary Action Placeholders | Applying minimal initiative tie breakers to ${combatantUpdates.length} player combatants in combat ${combat.id}.`);
+                        debug(`Legendary Action Placeholders | Applying minimal initiative tie breakers to ${combatantUpdates.length} combatants in combat ${combat.id}.`);
                         await combat.updateEmbeddedDocuments("Combatant", combatantUpdates);
                     }
 

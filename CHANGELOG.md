@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.81.0] - 2026-11-13
+### Changed
+- **Legendary Action Placeholders**: Placeholders now follow the rules for legendary actions: a legendary creature can act after any other creature's turn, ally or enemy. A placeholder now follows every creature's turn. With only one legendary creature in the fight, there's none after its own turn; with several, there's one after every turn, since another legendary creature can act then.
+- **Legendary Action Placeholders**: *Auto-Skip When No Uses Left* now looks at each placeholder separately. It skips a placeholder when none of the legendary creatures that could act at that point has uses left, or when the creature before it is defeated. The turn markers during a placeholder turn only show on the legendary creatures that could act at that point.
+- **Legendary Action Placeholders**: Placeholders after hidden creatures stay hidden from players, even with *Show Placeholders to Players* on.
+
+### Added
+- **Legendary Action Placeholders**: New **Placeholder Placement** option. *After Every Creature's Turn* (default) works as described above. *After Opposing Creatures' Turns Only* gives friendly legendary creatures placeholders only after hostile creatures, and hostile ones only after friendly creatures, by token disposition. Neutral and secret legendary creatures still get them after every creature. Both apply to combats started afterwards.
+
 ## [14.80.1] - 2026-11-13
 ### Changed
 - **Weapon Mastery Automation**: Sap and Slow now use the system's own "until the start of the source's next turn" duration, which the effect shows. Out of combat they end as soon as game time moves on instead of staying until removed.
