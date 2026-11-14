@@ -53,6 +53,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Force Compendium Browser](#force-compendium-browser)** | UI & Visuals | ✅ Enabled | No |
+| **[Compendium Browser Columns](#compendium-browser-columns)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
@@ -203,6 +204,22 @@ Fixes chat log spam during short rests when characters roll multiple hit dice:
 ### Force Compendium Browser
 Forces non-GM players clicking the Compendium sidebar to open the DnD5e Compendium Browser instead of the raw pack directory. Hold <kbd>Shift</kbd> to access the default sidebar.
 
+### Compendium Browser Columns
+Adds columns that fit the current tab to the D&D 5e Compendium Browser results, and makes every column header sortable. Click a header to sort by it; click it again to reverse the order. Results, Source and the new columns all sort, and entries without a value stay at the bottom either way. Each tab remembers its own sort while the browser is open.
+
+| Tab | Columns |
+|---|---|
+| Spells | Level, School, Concentration / Ritual (icons) |
+| Items | Rarity (with an attunement icon), Price, Weight |
+| Monsters | CR, Type |
+| Feats | Category, Level requirement |
+| Classes | Hit die, Spellcasting, Primary ability |
+| Subclasses | Class |
+| Backgrounds | Ability scores (e.g. *Int, Wis, Cha* for the Acolyte), Feat (the origin feat; older backgrounds show their background feature) |
+| Vehicles | Vehicle type |
+
+Species and the advanced mode's mixed lists get no extra columns, but their Results and Source columns still sort. In advanced mode, the columns appear once the type filter is narrowed to one of the tabs above (e.g. only weapons). Price sorts by gold value across coin types, rarity in game order (common → artifact), CR from ⅛ upward. Players can turn the columns on or off for themselves.
+
 ---
 
 ## 🎯 Canvas & Tokens
@@ -349,6 +366,7 @@ Offers seamless toggles in damage roll configuration dialogs for conditional dam
 * **Savage Attacker (2024 Rules)**: Under 2024 (modern) rules, characters possessing the `savage-attacker` feat gain an optional toggle on weapon attacks to roll the weapon's damage dice twice and use the higher roll (evaluated seamlessly via native `{dice, dice}kh` dice pools). Enabled by default on the first eligible weapon attack of each turn, and automatically defaults to disabled for any subsequent attacks on that same turn once used.
 * **Boon of Irresistible Offense (2024 Rules)**: Under 2024 (modern) rules, characters possessing the `boon-of-irresistible-offense` feat gain an optional toggle when rolling a 20 on the d20 for an attack roll. Adds flat extra damage equal to the ability score increased by the feat (determined from advancement data, or defaulting to the higher of Strength and Dexterity). Matches the attack's damage type. Strictly offered only when the attack roll's d20 rolled a natural 20, and always enabled by default whenever offered.
 * **Genie's Wrath**: Genie warlocks (with the *Genie's Wrath* or *Genie's Vessel* feature) get a toggle on attack rolls made on their own turn, weapon or spell (e.g. *Eldritch Blast*). Adds extra damage equal to your proficiency bonus, not doubled on a critical hit. The damage type depends on your patron, so the row has a dropdown with bludgeoning (Dao), thunder (Djinni), fire (Efreeti) and cold (Marid). Pick it once and it's remembered for that character; until then the toggle's tooltip reminds you and the row starts on bludgeoning. Enabled by default on the first attack of each turn, and starts off on later attacks that turn once used. Outside combat it is always offered.
+* **Great Weapon Fighting (always on, no toggle)**: Characters with the Great Weapon Fighting fighting style (`great-weapon-fighting`, both the 2014 class feature and the 2024 feat) get it applied automatically when attacking with a melee weapon held in two hands: a Two-Handed weapon, or a Versatile weapon used in its Two-Handed attack mode. It only affects the weapon's own damage dice, not Sneak Attack, Hex, Divine Smite or other added damage. 2024 rules treat every 1 or 2 as a 3 (`2d6min3`); 2014 rules reroll each 1 or 2 once and keep the new roll (`2d6r<3`). The feature's own rules version decides which applies (older items without one follow the world setting). Critical hit dice and Savage Attacker's second roll get it too. When the damage roll doesn't know how a Versatile weapon was held (e.g. damage rolled without an attack), it isn't applied to that weapon.
 * **Cleave Weapon Mastery (Damage Malus)**: When a player character attacks with a weapon whose Cleave mastery they have unlocked under 2024 rules (never offered for NPCs), provides a toggle for the secondary attack that removes the ability score modifier from the damage formula (unless negative). Disabled by default and strictly one-off (never remembered for subsequent rolls).
 * **Hex (+1d6 Necrotic)**: Adds `1d6 necrotic` damage when hitting your hexed target while concentrating on Hex.
 * **Hunter's Mark (+1d6 Force)**: Adds `1d6 force` damage when hitting your quarry while concentrating on Hunter's Mark.
@@ -526,7 +544,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Remove Instantaneous Templates on Turn Change** | **Works**. With midi-qol's *Auto remove instantaneous templates* on, midi-qol already deletes them right after the roll. |
 | **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
 | **Reckless Attack Automation** | **Works** with midi-qol workflows. When midi-qol skips the attack dialog, the Yes / No prompt asks instead; when it shows the dialog (e.g. for thrown weapons), the checkbox is there. Advantage against a Reckless creature uses the workflow's target. A premade Reckless Attack item with its own effect counts as Reckless too. |
-| **Conditional Damage Bonuses** | **Works** with midi-qol workflows. Sneak Attack reads Advantage from midi-qol's attack roll (including its optional flanking rule) and checks only the targets midi-qol says were hit. Genie's Wrath works the same way as without midi-qol. midi-qol has no Sneak Attack automation of its own, but a premade Sneak Attack item from another module would add the damage a second time: turn one of them off. |
+| **Conditional Damage Bonuses** | **Works** with midi-qol workflows. Great Weapon Fighting also applies to midi-qol's damage rolls (midi-qol has no automation of its own for it). Sneak Attack reads Advantage from midi-qol's attack roll (including its optional flanking rule) and checks only the targets midi-qol says were hit. Genie's Wrath works the same way as without midi-qol. midi-qol has no Sneak Attack automation of its own, but a premade Sneak Attack item from another module would add the damage a second time: turn one of them off. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. **Prone Attack Rolls** is switched off while midi-qol's optional *Condition Rules* are on. |
 | **Condition Advantage & Disadvantage** | **Works** with midi-qol workflows, using the workflow's targets. Critical hits within 5 feet follow midi-qol's hit check and make the workflow critical; failed saves count as 0 in midi-qol's save check. Switched off while midi-qol's optional *Condition Rules* are on, which apply the same rules. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on (its default), which checks token vision instead. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |

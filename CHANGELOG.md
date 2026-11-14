@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.83.0] - 2026-11-14
+### Added
+- **Compendium Browser Columns**: The Compendium Browser shows extra columns that fit the current tab: level, school and concentration/ritual for spells; rarity, price and weight for items; CR and type for monsters; category and level for feats; hit die, spellcasting and primary ability for classes; the class for subclasses; ability scores and feat for backgrounds; and the vehicle type for vehicles.
+- **Compendium Browser Columns**: Click any column header to sort by it, including Results and Source. Click again to reverse the order. Prices sort by gold value, rarity from common to artifact, and entries without a value stay at the bottom.
+- **Compendium Browser Columns**: Players can turn the columns on or off for themselves in their personal preferences.
+- **Conditional Damage Bonuses**: Great Weapon Fighting now works automatically, under both rule sets. When a character with the fighting style attacks with a melee weapon held in two hands (a Two-Handed weapon, or a Versatile weapon used two-handed), the weapon's damage dice treat 1s and 2s as 3s (2024) or reroll them once (2014). Only the weapon's own dice count, not Sneak Attack, Hex or Divine Smite. Critical hits and Savage Attacker are included. There's no toggle, since there's never a reason not to use it.
+
 ## [14.82.0] - 2026-11-14
 ### Added
 - **Damage Emanation Automation**: Fifteen more spells from the Player's Handbook work out of the box: *Blade Barrier*, *Cloud of Daggers*, *Control Water* (Whirlpool), *Evard's Black Tentacles*, *Forbiddance*, *Grease*, *Gust of Wind*, *Incendiary Cloud*, *Insect Plague*, *Jallarzi's Storm of Radiance*, *Sleet Storm*, *Stinking Cloud*, *Wall of Fire*, *Wall of Thorns* and *Web*. Worlds that have already edited the *Emanation Spells* list keep their own version: add the new spells there by hand.

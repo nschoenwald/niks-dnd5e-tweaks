@@ -6,6 +6,7 @@ import { initSheetPlusCompendium } from "./features/ui-visuals/sheet-plus-compen
 import { initSpellSlotsLeftToRight, refreshSpellSlotSheets } from "./features/ui-visuals/spell-slots-left-to-right.js";
 import { initNpcHpScaler, disableNpcHpScaler } from "./features/ui-visuals/npc-hp-scaler.js";
 import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
+import { initCompendiumBrowserColumns, refreshCompendiumBrowsers } from "./features/ui-visuals/compendium-browser-columns.js";
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/ui-visuals/chat-card-styling.js";
 import { initRollBreakdownDetails } from "./features/ui-visuals/roll-breakdown-details.js";
@@ -51,6 +52,7 @@ import { initPreventGroupActorRolls } from "./features/combat-automation/prevent
 import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
 import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
 import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
+import { initGreatWeaponFighting } from "./features/combat-automation/great-weapon-fighting.js";
 import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
 
 // Utilities
@@ -151,6 +153,20 @@ Hooks.once("init", () => {
         }
     });
 
+    game.settings.register(MODULE_ID, "clientCompendiumBrowserColumns", {
+        name: "Compendium Browser Columns (Personal)",
+        hint: "Extra sortable columns in the Compendium Browser results. Use World Setting follows the GM.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "world",
+        choices: OVERRIDE_CHOICES,
+        onChange: () => {
+            isFeatureOnForUser("enableCompendiumBrowserColumns", "clientCompendiumBrowserColumns", { refresh: true });
+            refreshCompendiumBrowsers();
+        }
+    });
+
     game.settings.register(MODULE_ID, "clientEnableAttackDamagePrompt", {
         name: "Prompt for Attack Damage (Personal)",
         hint: "Automatically opens the damage dialog when your player character's attack roll hits target AC (if enabled by the GM). Turn off to roll damage manually from the chat card.",
@@ -189,7 +205,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
         name: "Conditional Damage Bonuses (Personal)",
-        hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM).",
+        hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM). Great Weapon Fighting applies automatically to two-handed melee weapon dice.",
         scope: "client",
         config: false,
         type: Boolean,
@@ -691,6 +707,20 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableCompendiumBrowserColumns", {
+        name: "Compendium Browser Columns",
+        hint: "Adds columns that fit the current tab to the Compendium Browser results (spell level and school, item rarity, price and weight, monster CR and type, background ability scores and feat, …) and makes all column headers sortable.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => {
+            isFeatureOnForUser("enableCompendiumBrowserColumns", "clientCompendiumBrowserColumns", { refresh: true });
+            refreshCompendiumBrowsers();
+        }
     });
 
     // ==========================================
@@ -1245,7 +1275,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
-        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls.",
+        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls. Also applies Great Weapon Fighting automatically to the weapon dice of two-handed melee attacks (2024: 1s and 2s count as 3s; 2014: rerolls 1s and 2s once).",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1809,6 +1839,7 @@ Hooks.once("setup", () => {
     initRemoveInstantaneousTemplates();
     initSheetPlusCompendium();
     initSpellSlotsLeftToRight();
+    initCompendiumBrowserColumns();
     initNpcHpScaler();
     initItemSheetAttunementTag();
     initTemplateTargeting();
@@ -1841,6 +1872,8 @@ Hooks.once("setup", () => {
     initConditionRollModes();
     initRecklessAttack();
     initConditionHud();
+    // Before Conditional Damage: Savage Attacker builds its dice pool from the dice Great Weapon Fighting modified
+    initGreatWeaponFighting();
     initConditionalDamage();
     initDamageEmanation();
 });

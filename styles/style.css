@@ -4388,3 +4388,91 @@ body.nd5t-condition-hud #token-hud .nd5t-status-count {
     pointer-events: none;
     box-shadow: 0 0 3px var(--color-shadow-dark, rgba(0, 0, 0, 0.6));
 }
+
+/* ==========================================
+   Compendium Browser Columns (14.83.0)
+   Cells and headers are only added while the feature is on, so the classes scope it.
+   Colors come from dnd5e's theme variables (Core Apps light/dark).
+   ========================================== */
+.dnd5e2.compendium-browser {
+    --nd5t-cbc-icon-color: var(--color-text-secondary, currentColor);
+}
+
+.dnd5e2.compendium-browser .items-section .nd5t-cbc-cell,
+.dnd5e2.compendium-browser .items-section .nd5t-cbc-header {
+    flex: 0 0 var(--nd5t-cbc-width, 70px);
+    width: var(--nd5t-cbc-width, 70px);
+    min-width: 0;
+    gap: 3px;
+    padding: 0 2px;
+}
+
+.dnd5e2.compendium-browser .items-section .nd5t-cbc-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dnd5e2.compendium-browser .items-section .nd5t-cbc-icon {
+    flex: none;
+    color: var(--nd5t-cbc-icon-color);
+    font-size: var(--font-size-11, 11px);
+}
+
+.dnd5e2.compendium-browser .items-section dnd5e-icon.nd5t-cbc-icon {
+    --icon-fill: var(--nd5t-cbc-icon-color);
+    width: 16px;
+    height: 16px;
+}
+
+/* Sortable headers (the added ones plus dnd5e's Results and Source) */
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sortable {
+    cursor: var(--cursor-pointer, pointer);
+    user-select: none;
+    gap: 3px;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header h3.nd5t-cbc-sortable {
+    justify-content: flex-start;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* The header bar is dark red in both themes: keep its own text color and mark hover with dnd5e's rollable glow */
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sortable:hover,
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sortable:focus-visible {
+    text-shadow: 0 0 8px var(--color-shadow-primary, #ff6400);
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sorted {
+    font-weight: bold;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sortable:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: -2px;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sort-icon {
+    flex: none;
+    font-size: var(--font-size-10, 10px);
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sort-icon.inactive {
+    opacity: 0.35;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-sortable:not(:hover, :focus-visible) .nd5t-cbc-sort-icon.inactive {
+    visibility: hidden;
+}
+
+.dnd5e2.compendium-browser .items-section .items-header .nd5t-cbc-header dnd5e-icon.nd5t-cbc-icon {
+    --icon-fill: currentColor;
+    color: inherit;
+}
