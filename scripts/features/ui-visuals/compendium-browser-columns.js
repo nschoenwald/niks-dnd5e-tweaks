@@ -5,6 +5,7 @@
  *
  * @introduced v14.83.0
  * @updated v14.84.0 (Ability Scores column for feats)
+ * @updated v14.86.1 (index fields ordered nested-first: filtered choices like Fighting Style no longer fail server-side)
  */
 import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -688,6 +689,31 @@ function decorateHeader(app, htmlElement) {
     if (sourceHeader) makeSortable(app, set, sourceHeader, "source", sourceHeader.textContent.trim());
 }
 
+/**
+ * Index fields for `fetch`: dnd5e's own, the filter keys and the column fields, with nested fields ahead of their
+ * parents.
+ *
+ * The server builds the index projection with `setProperty(projection, field, 1)` in list order. A parent before one
+ * of its children (`system.type`, then `system.type.value`) leaves `1` where the child needs an object and throws
+ * "Cannot use 'in' operator to search for 'value' in 1" (issue #28: Fighting Style choice, filtered on
+ * `system.type.value`, against our `system.type` column). dnd5e appends the filter keys after our fields inside
+ * `fetch`, so they are added here first (`Set#union` keeps existing positions) and the list is ordered deepest first.
+ * A parent after its child overwrites it with `1`, which projects the whole parent and still covers the child.
+ * @param {object} options   The options dnd5e passed to `fetch`
+ * @param {object} set       The column set
+ * @returns {Set<string>}
+ */
+function buildIndexFields(options, set) {
+    const filterKeys = options.filters?.length ? (dnd5e.Filter?.uniqueKeys?.(options.filters) ?? []) : [];
+    const fields = [...new Set([
+        ...(options.indexFields ?? []),
+        ...filterKeys,
+        ...set.columns.flatMap(c => c.fields)
+    ])];
+    const depth = field => field.split(".").length;
+    return new Set(fields.sort((a, b) => depth(b) - depth(a)));
+}
+
 /* -------------------------------------------- */
 /*  Init                                        */
 /* -------------------------------------------- */
@@ -717,9 +743,7 @@ export function initCompendiumBrowserColumns() {
             if (!isOn()) return wrapped(documentClass, options);
             const set = getColumnSet(documentNameOf(documentClass), options.types);
             const next = { ...options };
-            if (set) {
-                next.indexFields = new Set([...(options.indexFields ?? []), ...set.columns.flatMap(c => c.fields)]);
-            }
+            if (set) next.indexFields = buildIndexFields(options, set);
             const state = getSortState(app, set);
             const column = state ? findColumn(set, state.key) : null;
             if (column && !((state.key === "name") && (state.dir === 1))) next.sort = makeComparator(column, state.dir);

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.86.1] - 2026-11-14
+### Fixed
+- **Compendium Browser Columns**: Choosing a feat from a filtered list during advancement (e.g. a Fighter's Fighting Style) no longer fails with "Cannot use 'in' operator to search for 'value' in 1" and an empty browser.
+
 ## [14.86.0] - 2026-11-14
 ### Added
 - **Weapon Mastery Automation**: Vex is automated. When you hit a creature with a Vex weapon and deal damage, you get Advantage on your next attack roll against it before the end of your next turn. A **Vex** effect on your character shows which creature, and it's used up by that attack. The effect's icon can be changed in the settings.
