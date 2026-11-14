@@ -1734,6 +1734,28 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableCompanionLevelSync",
+                            introduced: "14.87.0",
+                            docs: "companion-level-sync",
+                            keywords: ["summon", "Primal Companion", "Beast Master", "level up", "hit points"],
+                            name: "Companion Level Sync",
+                            hint: "When a character levels up or changes an ability score, their companions summoned by class features (Primal Companion, …) update their AC, hit points, Hit Dice, proficiency and attack and damage bonuses. Damage already taken stays. Works for companions that keep one actor between summons; spell summons aren't changed.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "enableSummonFullHp",
+                            introduced: "14.87.0",
+                            docs: "summon-at-full-hp",
+                            keywords: ["summon", "Primal Companion", "Find Steed", "hit points", "heal"],
+                            name: "Summon at Full HP",
+                            hint: "Companions that keep one actor between summons (Primal Companion, Find Steed, …) arrive at full hit points, including the HP their summon adds, and lose Dead and Unconscious. Without it they keep their current HP: a Primal Companion's first summon shows 5 / 20 HP, and a re-summoned one keeps its old damage.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableDamageEmanation",
                             introduced: "14.54.0",
                             docs: "damage-emanation-automation",

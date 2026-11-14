@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.87.0] - 2026-11-14
+### Added
+- **Companion Level Sync**: Companions summoned by class features, such as a Beast Master's Primal Companion, now keep up with their summoner. When the character levels up or an ability score changes, the companion's AC, hit points, Hit Dice, proficiency and attack and damage bonuses update straight away. You no longer need to summon it again. Damage it has taken stays: a companion at 12 / 20 HP becomes 17 / 25.
+- **Summon at Full HP**: Companions such as a Primal Companion or a Find Steed mount now arrive at full hit points every time they're summoned. Before, a Primal Companion's first summon showed 5 / 20 HP, and a companion summoned again kept the damage from last time. Dead and Unconscious are cleared as well.
+
 ## [14.86.1] - 2026-11-14
 ### Fixed
 - **Compendium Browser Columns**: Choosing a feat from a filtered list during advancement (e.g. a Fighter's Fighting Style) no longer fails with "Cannot use 'in' operator to search for 'value' in 1" and an empty browser.

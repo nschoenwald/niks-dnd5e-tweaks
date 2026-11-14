@@ -37,6 +37,7 @@ import { initAutoRollConcentration } from "./features/combat-automation/auto-rol
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
+import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
@@ -1526,6 +1527,26 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableCompanionLevelSync", {
+        name: "Companion Level Sync",
+        hint: "When a character levels up or changes an ability score, their companions summoned by class features (Primal Companion, …) update their summon bonuses. Damage already taken stays.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSummonFullHp", {
+        name: "Summon at Full HP",
+        hint: "Companions that keep one actor between summons (Primal Companion, Find Steed, …) arrive at full hit points, including the HP their summon adds, and lose Dead and Unconscious.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -1845,6 +1866,7 @@ Hooks.once("setup", () => {
     initMagicResistance();
     // Before Undead Fortitude: a creature with both keeps 1 HP from the ward without rolling
     initDeathWard();
+    initCompanionLevelSync();
     initUndeadFortitude();
     initSelfEffectApplication();
     initSelfTargetCorrection();

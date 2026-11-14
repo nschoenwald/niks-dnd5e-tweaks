@@ -87,6 +87,8 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Conditions & Effects | ✅ Enabled | No |
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Death Ward Automation](#death-ward-automation)** | Conditions & Effects | ✅ Enabled | No |
+| **[Companion Level Sync](#companion-level-sync)** | Conditions & Effects | ✅ Enabled | No |
+| **[Summon at Full HP](#summon-at-full-hp)** | Conditions & Effects | ✅ Enabled | No |
 | **[Auto-End Concentration](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
 | **[Damage Emanation Automation](#damage-emanation-automation)** | Conditions & Effects | ✅ Prompt Caster | No |
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
@@ -472,6 +474,22 @@ The first time a creature under **Death Ward** would drop to 0 HP, it drops to 1
 * **Recognized Effects**: the effect the spell applies (named "Protection from Death" in the 2024 Player's Handbook, or "Death Ward"), effects that come from a spell with the identifier `death-ward`, and any effect that sets the flag `flags.niks-dnd5e-tweaks.deathWard`.
 * **Undead Fortitude**: a creature with both uses Death Ward first and doesn't roll.
 * **Not automated**: the second part of the spell, which negates effects that kill instantly without dealing damage. Remove the effect by hand when that happens.
+
+### Companion Level Sync
+D&D 5e works out a summoned companion's bonuses (from the summoner's level, ability modifier and proficiency) only when it is summoned. A Beast Master's **Primal Companion** kept its old AC, hit points and attack bonus after the Ranger levelled up, until it was summoned again. This tweak updates the companion straight away.
+* **When**: after a level-up (or a class level changed by hand), a class added or removed, or a change to the summoner's ability scores.
+* **What updates**: everything the summon activity adds that depends on the summoner: bonus AC, bonus hit points and Hit Dice, matched proficiency bonus, matched attack bonus and save DC, and bonus damage or healing. A notification says which companion was updated.
+* **Damage stays**: current hit points move by as much as maximum hit points, so a companion at 12 / 20 HP becomes 17 / 25. A companion at 0 HP stays at 0.
+* **Which companions**: those summoned by a feature's D&D 5e Summon activity that keep one actor between summons (linked actors), such as the Player's Handbook Primal Companions. One-off copies (unlinked tokens) aren't changed.
+* **Spells aren't changed**: summons from spells such as *Find Steed* scale with the level the spell was cast at, which only the cast knows.
+* **Left as they are**: temporary hit points, the size and creature type picked when summoning, bonuses that roll dice, and bonus AC on companions with a flat AC value. Summon the companion again to update those.
+* **Permissions**: the update is made by the player or GM whose change triggered it, and only for companions they own.
+
+### Summon at Full HP
+Companions that keep one actor between summons (linked actors, such as the Player's Handbook Primal Companions and Otherworldly Steeds) used to arrive with whatever hit points that actor had. A Primal Companion's first summon showed 5 / 20 HP, because D&D 5e raised its maximum but not its current hit points, and a companion summoned again kept the damage from last time. Now every summon arrives at full hit points, including the HP its summon adds.
+* **Fresh creature**: Dead and Unconscious are removed too. Temporary hit points from the summon are kept.
+* **Every summon counts**: summoning a damaged companion again restores it, since the rules treat each summon (or casting) as a new creature.
+* **One-off copies** (unlinked tokens) already arrived at full HP and aren't affected.
 
 ### Damage Emanation Automation
 Handles the "enters the area or ends its turn there" rule of emanation spells such as *Spirit Guardians*, *Conjure Woodland Beings*, *Cacophonic Shield*, *Dirge* and *Yolande's Regal Presence*, and of placed areas and walls such as *Moonbeam*, *Cloudkill*, *Doomtide*, *Web* and *Wall of Fire*:

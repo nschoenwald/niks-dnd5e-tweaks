@@ -184,6 +184,8 @@
 
   "ND5T.DeathWard.Triggered": "Todesschutz: {name} fällt auf 1 TP statt auf 0, und der Zauber endet.",
 
+  "ND5T.CompanionLevelSync.Updated": "{companion} wurde an {summoner} angepasst.",
+
   "ND5T.ConditionRollModes.AutoFail": "automatisch misslungen: {condition}",
 
   "ND5T.RecklessAttack.Label": "Rücksichtsloser Angriff",
