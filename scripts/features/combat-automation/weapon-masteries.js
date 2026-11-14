@@ -1,5 +1,5 @@
 /**
- * Feature: Weapon Mastery Automation (Slow, Sap & Topple)
+ * Feature: Weapon Mastery Automation (Slow, Sap, Topple & Vex)
  * Description: Automates weapon masteries when the attacker rolls weapon damage with the required mastery.
  *              Strictly applies to player character actors (not NPCs).
  *              - Sap: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn.
@@ -12,6 +12,9 @@
  *                        opens the roll dialog for its player (or the GM), a prompt card only, or rolled
  *                        automatically (setting "masteryToppleSaveMode"). Spending a Legendary Resistance
  *                        on the failed save (dnd5e's Resist button) removes the Prone condition again.
+ *              - Vex: After hitting a creature and dealing damage, the attacker has Advantage on its next attack roll
+ *                     against that creature before the end of its next turn. Stored as a marker effect on the
+ *                     attacker (the attacker's owner can create it without a GM), keyed by the target's token.
  *              - Duplicate prevention: A creature can only be sapped or slowed once at a time.
  *              - Expiry: dnd5e's own `sourceStart` expiry ends Sap and Slow at the start of the attacker's
  *                next turn (out of combat: when game time advances). Expired effects that core only marks
@@ -32,12 +35,19 @@
  * @updated v14.60.0 (Topple)
  * @updated v14.60.1 (Legendary Resistance on the Topple save removes Prone)
  * @updated v14.80.1 (Sap and Slow end through dnd5e's own "start of the source's next turn" expiry)
+ * @updated v14.86.0 (Vex; Sap, Slow, Topple and Vex step aside for characters set up with midi-qol's own weapon
+ *   mastery automation)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
-import { isMidiActive, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
+import { isMidiActive, isMidiMessage, isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
+import { singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
+const DEFAULT_VEX_ICON = "icons/magic/control/fear-fright-mask-yellow.webp";
+
+/** Vex effects that gave an attack Advantage, removed once that attack is rolled: actor uuid → effect ids. */
+const _pendingVexUse = new Map();
 
 const _pendingDeletions = new Set();
 
@@ -134,6 +144,10 @@ function _actorHasMastery(actor, weapon, masteryName) {
  */
 export async function applyMasteryEffect(mastery, targetActor, attackerActor, weapon) {
     if (!targetActor || !attackerActor) return;
+    if (_catHandlesMasteries(attackerActor)) {
+        debug(`Weapon Mastery | midi-qol's weapon mastery automation handles ${mastery} for ${attackerActor.name}`);
+        return;
+    }
 
     // Check if target actor already has an active effect for this mastery (prevent duplicates)
     // Expired effects stay on the actor (marked expired, inactive) until dnd5e cleans them up, so skip them
@@ -224,6 +238,146 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
             effectData
         });
     }
+}
+
+/* -------------------------------------------- */
+/*  Vex                                         */
+/* -------------------------------------------- */
+
+/**
+ * Whether midi-qol's own weapon mastery automation (a CAT macro, `flags.cat.macros` "weapon-mastery" on one of the
+ * actor's items) handles this actor's masteries. It does Sap, Slow, Topple and Vex itself, so ours stands down for
+ * that actor.
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+function _catHandlesMasteries(actor) {
+    if (!game.modules.get("cat")?.active || !actor?.items) return false;
+    return actor.items.some(item => {
+        const macros = item.flags?.cat?.macros;
+        if (!macros) return false;
+        try {
+            return JSON.stringify(macros).includes("weapon-mastery");
+        } catch {
+            return false;
+        }
+    });
+}
+
+/**
+ * The attacker's active Vex effects, optionally only those against one creature (its token or actor uuid).
+ * @param {Actor5e} attacker
+ * @param {TokenDocument|null} [targetToken=null]
+ * @returns {ActiveEffect[]}
+ */
+function _vexEffects(attacker, targetToken = null) {
+    return (attacker?.effects ?? []).filter(e => {
+        const flags = e.flags?.[MODULE_ID];
+        if (flags?.mastery !== "vex" || !e.active || e.duration?.expired) return false;
+        if (!targetToken) return true;
+        return (flags.vexTarget === targetToken.uuid)
+            || Boolean(flags.vexTargetActor && (flags.vexTargetActor === targetToken.actor?.uuid));
+    });
+}
+
+/**
+ * Give the attacker Vex against a creature: Advantage on its next attack roll against it before the end of the
+ * attacker's next turn. A new hit on the same creature replaces the old effect.
+ * dnd5e's "targetEnd" pseudo expiry ends the effect at the end of its own actor's (the attacker's) turn, skipping
+ * the turn it was created on, which is "the end of your next turn". Out of combat it ends when game time advances.
+ * @param {Actor5e} attacker
+ * @param {TokenDocument} targetToken
+ * @param {Item5e} [weapon]
+ */
+export async function applyVexEffect(attacker, targetToken, weapon) {
+    if (!attacker || !targetToken?.actor) return;
+    if (!attacker.isOwner) {
+        debug(`Weapon Mastery | Can't give ${attacker.name} Vex: not the owner`);
+        return;
+    }
+    if (_catHandlesMasteries(attacker)) {
+        debug(`Weapon Mastery | midi-qol's weapon mastery automation handles Vex for ${attacker.name}`);
+        return;
+    }
+
+    const old = _vexEffects(attacker, targetToken);
+    if (old.length) await attacker.deleteEmbeddedDocuments("ActiveEffect", old.map(e => e.id)).catch(() => null);
+
+    const name = targetToken.name ?? targetToken.actor.name;
+    const label = game.i18n.has("ND5T.WeaponMastery.Vex.EffectName")
+        ? game.i18n.format("ND5T.WeaponMastery.Vex.EffectName", { name })
+        : `Vex: ${name}`;
+    const effectData = {
+        name: label,
+        img: normalizeIcon(getSetting("masteryVexIcon") || DEFAULT_VEX_ICON, DEFAULT_VEX_ICON),
+        origin: weapon?.uuid ?? attacker.uuid,
+        description: `<p>Advantage on the next attack roll against ${foundry.utils.escapeHTML?.(name) ?? name} before the end of your next turn.</p>`,
+        flags: {
+            [MODULE_ID]: {
+                mastery: "vex",
+                vexTarget: targetToken.uuid,
+                vexTargetActor: targetToken.actor.uuid,
+                sourceActorUuid: attacker.uuid
+            },
+            dnd5e: { rules: "vex" }
+        },
+        duration: { expiry: "targetEnd" },
+        showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS
+    };
+    await ActiveEffect.createDocuments([effectData], { parent: attacker });
+    debug(`Weapon Mastery | ✓ ${attacker.name} has Vex against ${name}`);
+}
+
+/**
+ * Resolve a target entry (dnd5e message target, midi-qol token or uuid) to its token document.
+ * @param {object|Token|TokenDocument|string} target
+ * @returns {TokenDocument|null}
+ */
+function _targetTokenDoc(target) {
+    if (!target) return null;
+    const uuid = (typeof target === "string") ? target : (target.token ?? target.document?.uuid ?? target.uuid ?? null);
+    if (target.document?.actor) return target.document;
+    if (target.actor && (target.documentName === "Token")) return target;
+    if (typeof uuid !== "string") return null;
+    const doc = fromUuidSync(uuid, { strict: false });
+    return (doc?.documentName === "Token") ? doc : null;
+}
+
+/**
+ * dnd5e.preRollAttack: Advantage when the attacker has Vex against the attack's single target. The effect is
+ * removed once the attack is rolled (dnd5e.rollAttack), whether it hits or misses.
+ * @param {object} config
+ */
+function _onPreRollAttackVex(config) {
+    try {
+        if (!isFeatureActive("enableWeaponMasteries", "clientEnableWeaponMasteries")) return;
+        const attacker = config?.subject?.actor;
+        if (!attacker) return;
+        const target = singleAttackTarget(getMidiWorkflow(config));
+        if (!target?.document) return;
+        const effects = _vexEffects(attacker, target.document);
+        if (!effects.length) return;
+        addRollModes(config, { advantage: true });
+        _pendingVexUse.set(attacker.uuid, effects.map(e => e.id));
+        debug(`Weapon Mastery | Vex: Advantage for ${attacker.name} against ${target.name}`);
+    } catch (err) {
+        console.error("Weapon Mastery | Vex preRollAttack failed:", err);
+    }
+}
+
+/**
+ * Remove the Vex effects that gave the attacker's attack roll Advantage.
+ * @param {Actor5e} attacker
+ */
+async function _consumeVex(attacker) {
+    const ids = _pendingVexUse.get(attacker?.uuid);
+    if (!ids?.length) return;
+    _pendingVexUse.delete(attacker.uuid);
+    for (const id of ids) {
+        const effect = attacker.effects.get(id);
+        if (effect) await _safeDeleteEffect(effect, attacker);
+    }
+    debug(`Weapon Mastery | Vex used by ${attacker.name}`);
 }
 
 /**
@@ -378,7 +532,10 @@ async function _onCreateChatMessage(message, options, userId) {
 
         const originatingMessage = _getOriginatingMessage(message);
         const activeMastery = _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon);
-        if (activeMastery !== "sap" && activeMastery !== "slow") return;
+        if (!["sap", "slow", "vex"].includes(activeMastery)) return;
+
+        // Vex needs damage to be dealt
+        if ((activeMastery === "vex") && !((message.rolls ?? []).reduce((sum, r) => sum + (Number(r.total) || 0), 0) > 0)) return;
 
         // Damage roll targets, falling back to the usage card's targets
         const damageTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
@@ -397,6 +554,11 @@ async function _onCreateChatMessage(message, options, userId) {
         debug(`Weapon Mastery | Damage rolled against ${targets.length} target(s) with ${activeMastery.toUpperCase()} mastery`);
 
         for (const target of targets) {
+            if (activeMastery === "vex") {
+                const tokenDoc = _targetTokenDoc(target);
+                if (tokenDoc) await applyVexEffect(attackerActor, tokenDoc, weapon);
+                continue;
+            }
             let targetActor = null;
             if (target.token) {
                 const tokenDoc = fromUuidSync(target.token, { strict: false });
@@ -458,7 +620,17 @@ async function _onMidiDamageRollComplete(workflow) {
         if (!activeMastery && weapon.system?.mastery && _actorHasMastery(attackerActor, weapon, weapon.system.mastery)) {
             activeMastery = weapon.system.mastery;
         }
-        if (activeMastery !== "sap" && activeMastery !== "slow") return;
+        if (!["sap", "slow", "vex"].includes(activeMastery)) return;
+
+        if (activeMastery === "vex") {
+            const dealt = Number(workflow.damageTotal ?? (workflow.damageRolls ?? []).reduce((sum, r) => sum + (Number(r.total) || 0), 0));
+            if (!(dealt > 0)) return;
+            for (const target of hitTargets) {
+                const tokenDoc = _targetTokenDoc(target);
+                if (tokenDoc) await applyVexEffect(attackerActor, tokenDoc, weapon);
+            }
+            return;
+        }
 
         debug(`Weapon Mastery | midi-qol workflow hit ${hitTargets.length} target(s) with ${activeMastery.toUpperCase()} mastery`);
 
@@ -482,6 +654,7 @@ async function _onRollAttack(rolls, data) {
 
     try {
         const actor = data.subject?.actor;
+        if (actor) await _consumeVex(actor);
         if (actor) await removeSapFromActor(actor);
     } catch (err) {
         if (!err?.message?.includes("does not exist")) {
@@ -564,6 +737,10 @@ async function _onApplyDamage(targetActor, amount, options = {}) {
         else if (midiAttackOptions?.mastery) mastery = midiAttackOptions.mastery;
         else mastery = _resolveDamageMastery(message, usageMessage, activity, attackerActor, weapon);
         if (mastery !== "topple") return;
+        if (_catHandlesMasteries(attackerActor)) {
+            debug(`Weapon Mastery | midi-qol's weapon mastery automation handles Topple for ${attackerActor.name}`);
+            return;
+        }
 
         const triggerKey = `${attackMessage?.id ?? usageMessage.id}:${targetActor.uuid}`;
         if (_toppleTriggered.has(triggerKey)) {
@@ -810,7 +987,7 @@ async function _onDeleteCombat(combat) {
 
             const masteryEffects = actor.effects.filter(e => {
                 const m = e.flags?.[MODULE_ID]?.mastery;
-                let isMatch = m === "sap" || m === "slow";
+                let isMatch = m === "sap" || m === "slow" || m === "vex";
                 if (!isMatch) {
                     const nameLower = (e.name || "").toLowerCase();
                     isMatch = nameLower.includes("sap") || nameLower.includes("slow");
@@ -897,6 +1074,7 @@ export function initWeaponMasteries() {
         return;
     }
     Hooks.on("createChatMessage", _onCreateChatMessage);
+    Hooks.on("dnd5e.preRollAttack", _onPreRollAttackVex);
     Hooks.on("dnd5e.rollAttack", _onRollAttack);
     Hooks.on("deleteCombat", _onDeleteCombat);
     if (isMidiActive()) Hooks.on("midi-qol.DamageRollComplete", _onMidiDamageRollComplete);
@@ -906,5 +1084,5 @@ export function initWeaponMasteries() {
     Hooks.on("updateChatMessage", _onUpdateToppleSave);
     Hooks.on("renderChatMessageHTML", _onRenderTopplePrompt);
 
-    log("Weapon Mastery automation initialized (Slow, Sap & Topple)");
+    log("Weapon Mastery automation initialized (Slow, Sap, Topple & Vex)");
 }

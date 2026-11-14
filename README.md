@@ -76,7 +76,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense, Genie's Wrath, Cleave & Player's Handbook class features)](#conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Reckless Attack Automation](#reckless-attack-automation)** | Rolls & Damage | ✅ Enabled | Yes |
-| **[Weapon Mastery Automation (Slow, Sap & Topple)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Weapon Mastery Automation (Slow, Sap, Topple & Vex)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Rolls & Damage | ✅ Enabled | No |
 | **[Player Damage Prompt](#player-damage-prompt)** | Rolls & Damage | ❌ Disabled | Yes |
 | **[Healing Roll Context Menu](#healing-roll-context-menu)** | Rolls & Damage | ✅ Enabled | No |
@@ -407,14 +407,15 @@ Adds **Apply Damage**, **Apply Healing** and **Apply Temp HP** to the right-clic
 
 ### Weapon Mastery Automation
 Automatically handles weapon masteries when player characters deal damage with mastery weapons:
-* **Applied on Damage Roll**: Sap and Slow are applied to the targets of the weapon's damage roll (not on the attack roll), using the mastery chosen for that attack.
+* **Applied on Damage Roll**: Sap, Slow and Vex are applied when the weapon's damage is rolled against its targets (not on the attack roll), using the mastery chosen for that attack.
 * **Topple (Applied with the Damage)**: When the damage of a Topple attack is applied to a creature (from the damage card, the Player Damage Prompt or midi-qol), it makes a Constitution saving throw against DC 8 + the attack's ability modifier + the attacker's Proficiency Bonus. On a failure it has the Prone condition. By default the creature's owners get a prompt card with a save button, and the roll dialog opens right away for the creature's player (or for the GM if no owner is online), just like concentration saves. The card shows the outcome once the save is rolled, and stays clickable if the dialog is closed. The GM can switch to the prompt card only, or to rolling the save automatically. If a creature spends a Legendary Resistance on the failed save (the system's Resist button on the save card), Prone is removed again and the prompt card says so. Creatures that are already Prone aren't asked, and applying the same hit twice doesn't ask again.
 * **Player Character Only**: Triggers strictly on attacks made by player characters possessing the required mastery trait, leaving NPC mechanics unaffected.
 * **Sapped (Weapon Mastery)**: Target creature gains Disadvantage on its next attack roll before the start of the attacker's next turn. Automatically expires once the sapped creature rolls an attack, or at the start of the attacker's next turn.
 * **Slowed (Weapon Mastery)**: Reduces target creature's Speed by 10 ft across all movement modes (via native movement bonus). Automatically expires at the start of the attacker's next turn.
 * **Duplicate Prevention**: Creatures cannot have duplicate Sap or Slow effects applied simultaneously; hitting a target multiple times with Slow weapons caps the reduction at 10 ft.
 * **Durations**: Sap and Slow use the system's own **until the start of the source's next turn** duration, so the effect shows how long it lasts. Out of combat they end as soon as game time moves on, and lingering effects are cleaned up when combat ends.
-* *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap and Slow.
+* **Vex**: When you hit a creature with a Vex weapon and deal damage, you get a **Vex: <creature>** effect. Your next attack roll against that creature, with any weapon or spell, has Advantage, and the effect is used up by that roll whether it hits or misses. It ends at the end of your next turn (out of combat: when game time moves on). Hitting the same creature again refreshes it; several creatures each get their own effect. Advantage is only added to attacks with a single target.
+* *Sub-settings*: Topple saving throw (prompt and open the roll dialog, prompt card only, or roll automatically) and configurable active effect icons for Sap, Slow and Vex.
 
 ---
 
@@ -564,7 +565,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Rules-Accurate Cones on Square Grids** | **Disabled** (midi-qol targets cones from its own cone shape, which would not match the squares). |
 | **Grid-Based Templates** | **Works**: midi-qol targets the grid-based template shape. |
 | **Remove Instantaneous Templates on Turn Change** | **Works**. With midi-qol's *Auto remove instantaneous templates* on, midi-qol already deletes them right after the roll. |
-| **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap and Slow are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. |
+| **Weapon Mastery Automation** | **Works** with midi-qol workflows: Sap, Slow and Vex are applied to the targets midi-qol says were hit, and Topple asks for its save when midi-qol applies the damage. If midi-qol's own Weapon Mastery automation (through CAT) is set up for a character, Sap, Slow, Topple and Vex step aside for that character, since midi-qol applies those masteries itself. |
 | **Reckless Attack Automation** | **Works** with midi-qol workflows. When midi-qol skips the attack dialog, the Yes / No prompt asks instead; when it shows the dialog (e.g. for thrown weapons), the checkbox is there. Advantage against a Reckless creature uses the workflow's target. A premade Reckless Attack item with its own effect counts as Reckless too. |
 | **Conditional Damage Bonuses** | **Works** with midi-qol workflows. Great Weapon Fighting also applies to midi-qol's damage rolls (midi-qol has no automation of its own for it). Sneak Attack reads Advantage from midi-qol's attack roll (including its optional flanking rule) and checks only the targets midi-qol says were hit. Genie's Wrath works the same way as without midi-qol. midi-qol has no Sneak Attack automation of its own, but a premade Sneak Attack item from another module would add the damage a second time: turn one of them off. The Player's Handbook feature and spell bonuses (Divine Strike, Colossus Slayer, Eldritch Smite, Empowered Evocation, …) and Elemental Adept work the same way; Colossus Slayer checks the targets midi-qol says were hit. Premade automations of those features from other modules would also add their damage twice. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. **Prone Attack Rolls** is switched off while midi-qol's optional *Condition Rules* are on. |
@@ -579,7 +580,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 
 ### Automated Conditions 5e & Automated Masteries 5e
 * **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone and the other conditions itself, so **Prone Attack Rolls** and **Condition Advantage & Disadvantage** are switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
-* **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow & Topple) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
+* **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow, Topple & Vex) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules
 * **libWrapper**: All method and property overrides across combat automation, canvas layers, sheet hooks, and UI components automatically register cooperatively via `libWrapper` when installed (preventing conflict warnings with modules like Monk's Combat Details), while maintaining zero-dependency standalone fallback wrapping.

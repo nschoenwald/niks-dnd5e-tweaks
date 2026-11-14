@@ -117,6 +117,7 @@
   "ND5T.ConditionalDamage.Cleave.Label": "Cleave (-{formula})",
   "ND5T.ConditionalDamage.Cleave.NoMalusLabel": "Cleave (No Malus)",
   "ND5T.ConditionalDamage.InactivePlaceholder": "(Inactive)",
+  "ND5T.WeaponMastery.Vex.EffectName": "Vex: {name}",
   "ND5T.ConditionalDamage.HuntersMark.FoeSlayerLabel": "Hunter's Mark (+1d10 Force)",
   "ND5T.ConditionalDamage.ColossusSlayer.Label": "Colossus Slayer (+{formula})",
   "ND5T.ConditionalDamage.ColossusSlayer.Reason.Hurt": "The target is missing hit points.",

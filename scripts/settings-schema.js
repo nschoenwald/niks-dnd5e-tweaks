@@ -1375,7 +1375,7 @@ export function getSettingsSchema() {
                             keywords: ["Slow", "Sap", "Topple", "Graze", "Cleave", "Vex", "Push", "Nick"],
                             unavailableWith: "wm5e",
                             name: "Weapon Mastery Automation",
-                            hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Automates Slow (reducing speed by 10 ft), Sap (disadvantage on the creature's next attack roll) and Topple (a Constitution save when the damage is applied, Prone on a failure). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
+                            hint: "Automatically applies weapon masteries to targets when hit by player character attacks. Automates Slow (reducing speed by 10 ft), Sap (disadvantage on the creature's next attack roll), Topple (a Constitution save when the damage is applied, Prone on a failure) and Vex (Advantage on your next attack roll against the creature). Works with midi-qol. Disabled while Automated Masteries 5e is active.",
                             type: "Boolean",
                             default: true,
                             scope: "world"
@@ -1417,6 +1417,18 @@ export function getSettingsSchema() {
                             type: "FilePicker",
                             filePicker: "image",
                             default: "icons/creatures/invertebrates/snail-movement-green.webp",
+                            scope: "world",
+                            parentKey: "enableWeaponMasteries"
+                        },
+                        {
+                            key: "masteryVexIcon",
+                            introduced: "14.86.0",
+                            unavailableWith: "wm5e",
+                            name: "Vex Effect Icon",
+                            hint: "Select an icon for the Vex weapon mastery active effect on the attacker.",
+                            type: "FilePicker",
+                            filePicker: "image",
+                            default: "icons/magic/control/fear-fright-mask-yellow.webp",
                             scope: "world",
                             parentKey: "enableWeaponMasteries"
                         }

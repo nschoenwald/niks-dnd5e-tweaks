@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.86.0] - 2026-11-14
+### Added
+- **Weapon Mastery Automation**: Vex is automated. When you hit a creature with a Vex weapon and deal damage, you get Advantage on your next attack roll against it before the end of your next turn. A **Vex** effect on your character shows which creature, and it's used up by that attack. The effect's icon can be changed in the settings.
+
+### Changed
+- **Weapon Mastery Automation**: Characters set up with midi-qol's own Weapon Mastery automation no longer get Sap, Slow, Topple or Vex twice. The module steps aside for them, and midi-qol applies those masteries.
+
 ## [14.85.0] - 2026-11-14
 ### Added
 - **Conditional Damage Bonuses**: Many more Player's Handbook features get a toggle in the damage roll dialog, offered only when their conditions are met: *Colossus Slayer* (starts on when the target is missing hit points), *Divine Strike* (starts on Radiant), *Primal Strike*, *Divine Fury* (while raging), *Frenzy* (while raging and attacking recklessly), *Dreadful Strikes*, *Elemental Epitome*, *Lunar Form* (only in Wild Shape), *Celestial Revelation* (only while transformed) and *Lifedrinker* (only with your Pact Weapon). Once-per-turn features start off after you've used them that turn.

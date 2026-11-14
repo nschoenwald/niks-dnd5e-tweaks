@@ -1082,7 +1082,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableWeaponMasteries", {
         name: "Weapon Mastery Automation",
-        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Automates Slow (reducing speed by 10 ft until the start of the attacker's next turn), Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn) and Topple (a Constitution saving throw when the damage is applied, knocking the creature Prone on a failure). Works with midi-qol workflows. Disabled while Automated Masteries 5e is active.",
+        hint: "Automatically triggers weapon masteries when player character weapon attacks hit their target and the character has the corresponding mastery. Automates Slow (reducing speed by 10 ft until the start of the attacker's next turn), Sap (disadvantage on the creature's next attack roll before the start of the attacker's next turn) Topple (a Constitution saving throw when the damage is applied, knocking the creature Prone on a failure) and Vex (Advantage on the attacker's next attack roll against the creature before the end of its next turn). Works with midi-qol workflows. Disabled while Automated Masteries 5e is active.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1122,6 +1122,16 @@ Hooks.once("init", () => {
         config: false,
         type: String,
         default: "icons/creatures/invertebrates/snail-movement-green.webp",
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "masteryVexIcon", {
+        name: "Vex Effect Icon",
+        hint: "Icon used for the Vex weapon mastery active effect on the attacker.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "icons/magic/control/fear-fright-mask-yellow.webp",
         restricted: true
     });
 
