@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.87.1] - 2026-11-14
+### Fixed
+- **Damage Emanation Automation**: Players can cast *Spirit Guardians* and the other emanation spells again. Placing the area failed with "lacks permission to create Region", even with the Region permission, because only a GM may create an area that already contains automation. The GM's client now adds the automation right after the player places the area. If no GM is online, the area is placed without it and the player gets a notice.
+
 ## [14.87.0] - 2026-11-14
 ### Added
 - **Companion Level Sync**: Companions summoned by class features, such as a Beast Master's Primal Companion, now keep up with their summoner. When the character levels up or an ability score changes, the companion's AC, hit points, Hit Dice, proficiency and attack and damage bonuses update straight away. You no longer need to summon it again. Damage it has taken stays: a companion at 12 / 20 HP becomes 17 / 25.

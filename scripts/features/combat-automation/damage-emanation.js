@@ -10,6 +10,7 @@
  * @updated v14.59.0 (Length conversion uses the D&D 5e 6.1 signature where available)
  * @updated v14.82.0 (Per-spell triggers incl. turn start, damage-only and save-only activities, creature type
  *   filter, Spell field for hand-drawn regions; more PHB 2024 spells in the default list)
+ * @updated v14.87.1 (Players' templates: the active GM attaches the behavior, players can't create regions with behaviors)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -418,6 +419,11 @@ function _onPreUseActivity(activity, usageConfig) {
 /**
  * Add the Damage Emanation behavior to template regions of listed spells before they are created.
  * Runs on the casting client; `activity` is the scaled clone used for this cast.
+ *
+ * Core only lets GMs create a Region that already has behaviors (`BaseRegion.#canCreate`), whatever the player's
+ * Region permission, and only GMs can create RegionBehaviors. A player's template therefore carries the behavior
+ * data in a flag instead, and the active GM attaches it once the region exists (`_attachPendingEmanation`), the way
+ * dnd5e attaches its own activity behaviors (`UtilityActivity.placeTemplateBehaviors`).
  * @param {Activity} activity
  * @param {object[]} regionData
  */
@@ -439,15 +445,23 @@ function _onCreateMeasuredTemplate(activity, regionData) {
 
     const scaling = _getUsageScaling(activity);
     const drift = profile.drift ?? 0;
+    const behaviorData = {
+        type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
+        name: game.i18n.localize(`TYPES.RegionBehavior.${DAMAGE_EMANATION_BEHAVIOR_TYPE}`),
+        system: { activity: damageActivity.uuid, scaling, drift }
+    };
+    if (!game.user.isGM && !game.users?.activeGM) {
+        ui.notifications?.warn(game.i18n.has("ND5T.DamageEmanation.NoGM")
+            ? game.i18n.format("ND5T.DamageEmanation.NoGM", { spell: item.name })
+            : `${item.name}: Damage Emanation needs a GM online to set up the area. Its damage isn't automated this time.`);
+        return;
+    }
     for (const data of regionData) {
-        data.behaviors = [
-            ...(data.behaviors ?? []),
-            {
-                type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
-                name: game.i18n.localize(`TYPES.RegionBehavior.${DAMAGE_EMANATION_BEHAVIOR_TYPE}`),
-                system: { activity: damageActivity.uuid, scaling, drift }
-            }
-        ];
+        if (game.user.isGM) {
+            data.behaviors = [...(data.behaviors ?? []), foundry.utils.deepClone(behaviorData)];
+        } else {
+            foundry.utils.setProperty(data, `flags.${MODULE_ID}.pendingEmanation`, foundry.utils.deepClone(behaviorData));
+        }
     }
     debug(`Damage Emanation | Added behavior to "${item.name}" template (activity: ${damageActivity.name}, scaling: ${scaling})`);
 }
@@ -470,6 +484,27 @@ function _getUsageScaling(activity) {
  */
 function _onCreateRegion(region) {
     for (const behavior of _getEmanationBehaviors(region)) _suppressTokensInside(behavior);
+    _attachPendingEmanation(region);
+}
+
+/**
+ * Active GM: attach the Damage Emanation behavior a player's template carries in its flags (players can't create
+ * regions with behaviors). The tokens inside are remembered by `_onCreateRegionBehavior`.
+ * @param {RegionDocument} region
+ */
+async function _attachPendingEmanation(region) {
+    if (!game.user.isActiveGM) return;
+    const pending = region.getFlag?.(MODULE_ID, "pendingEmanation");
+    if (!pending?.type) return;
+    try {
+        if (!_getEmanationBehaviors(region).length) {
+            await region.createEmbeddedDocuments("RegionBehavior", [pending]);
+            debug(`Damage Emanation | Attached behavior to "${region.name}" for a player's template`);
+        }
+        await region.unsetFlag(MODULE_ID, "pendingEmanation");
+    } catch (err) {
+        console.error(`${MODULE_ID} | Damage Emanation: could not attach the behavior to "${region.name}"`, err);
+    }
 }
 
 /**

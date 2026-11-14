@@ -105,6 +105,7 @@
   "ND5T.ConditionalDamage.Cleave.Label": "Spalten (-{formula})",
   "ND5T.ConditionalDamage.Cleave.NoMalusLabel": "Spalten (ohne Abzug)",
   "ND5T.ConditionalDamage.InactivePlaceholder": "(Inaktiv)",
+  "ND5T.DamageEmanation.NoGM": "{spell}: Die Schadensaura braucht einen SL online, um den Bereich einzurichten. Ihr Schaden wird diesmal nicht automatisiert.",
   "ND5T.WeaponMastery.Vex.EffectName": "Plagen: {name}",
   "ND5T.ConditionalDamage.HuntersMark.FoeSlayerLabel": "Mal des Jägers (+1W10 Energie)",
   "ND5T.ConditionalDamage.ColossusSlayer.Label": "Kolosstöter (+{formula})",
