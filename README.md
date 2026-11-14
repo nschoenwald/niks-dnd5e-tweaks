@@ -212,7 +212,7 @@ Adds columns that fit the current tab to the D&D 5e Compendium Browser results, 
 | Spells | Level, School, Concentration / Ritual (icons) |
 | Items | Rarity (with an attunement icon), Price, Weight |
 | Monsters | CR, Type |
-| Feats | Category, Level requirement |
+| Feats | Category, Level requirement, Ability scores (e.g. *Cha* for Actor, *Str +1* for Great Weapon Master, *Any* for Resilient) |
 | Classes | Hit die, Spellcasting, Primary ability |
 | Subclasses | Class |
 | Backgrounds | Ability scores (e.g. *Int, Wis, Cha* for the Acolyte), Feat (the origin feat; older backgrounds show their background feature) |

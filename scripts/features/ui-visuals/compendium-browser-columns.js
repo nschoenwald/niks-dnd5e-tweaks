@@ -4,6 +4,7 @@
  * monster CR, background ability scores and feat, …) and makes every column header click-to-sort.
  *
  * @introduced v14.83.0
+ * @updated v14.84.0 (Ability Scores column for feats)
  */
 import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -285,6 +286,14 @@ const FEAT_COLUMNS = [
             return level ? text(`${level}+`) : null;
         },
         sort: e => sys(e).prerequisites?.level || null
+    },
+    {
+        id: "featAbilities",
+        label: "ND5T.CompendiumColumns.AbilityScores",
+        width: 96,
+        fields: ["system.advancement", "system.identifier"],
+        display: e => text(abilityScoresLabel(e)),
+        sort: abilityScoresSortKey
     }
 ];
 
@@ -354,11 +363,19 @@ const SUBCLASS_COLUMNS = [
 ];
 
 /**
- * Abilities a background improves. 2024 backgrounds use an Ability Score Improvement advancement with `points` and
- * the non-eligible abilities in `locked` (Acolyte: points 3, locked str/dex/con → Int, Wis, Cha); fixed bonuses are
- * shown as "Str +1". Legacy backgrounds have no such advancement.
+ * The 2024 Ability Score Improvement feat has no ASI advancement of its own (dnd5e handles it in the class's ASI
+ * advancement); it raises any ability.
  */
-function backgroundAbilitiesLabel(entry) {
+const ANY_ABILITY_FEATS = new Set(["ability-score-improvement"]);
+
+/**
+ * Abilities a background or feat improves. 2024 content uses an Ability Score Improvement advancement with `points`
+ * and the non-eligible abilities in `locked` (Acolyte: points 3, locked str/dex/con → Int, Wis, Cha; Actor: points 1,
+ * everything but cha locked → Cha); fixed bonuses are shown as "Str +1" (Great Weapon Master: fixed str 1, all locked).
+ * All six eligible → "Any". Legacy backgrounds and most legacy feats have no such advancement.
+ */
+function abilityScoresLabel(entry) {
+    if (ANY_ABILITY_FEATS.has(sys(entry).identifier)) return loc("ND5T.CompendiumColumns.AnyAbility");
     const parts = [];
     const allAbilities = Object.keys(CONFIG.DND5E.abilities);
     for (const adv of advancements(entry)) {
@@ -381,8 +398,9 @@ function backgroundAbilitiesLabel(entry) {
  * Sort key in ability order (Str, Dex, Con, Int, Wis, Cha) rather than by the localized abbreviations, so
  * "Str, Dex, Con" comes before "Con, Int, Cha". One letter per ability index.
  */
-function backgroundAbilitiesSortKey(entry) {
+function abilityScoresSortKey(entry) {
     const allAbilities = Object.keys(CONFIG.DND5E.abilities);
+    if (ANY_ABILITY_FEATS.has(sys(entry).identifier)) return allAbilities.map((k, i) => String.fromCharCode(97 + i)).join("");
     const indices = new Set();
     for (const adv of advancements(entry)) {
         if (adv?.type !== "AbilityScoreImprovement") continue;
@@ -427,8 +445,8 @@ const BACKGROUND_COLUMNS = [
         label: "ND5T.CompendiumColumns.AbilityScores",
         width: 96,
         fields: ["system.advancement"],
-        display: e => text(backgroundAbilitiesLabel(e)),
-        sort: backgroundAbilitiesSortKey
+        display: e => text(abilityScoresLabel(e)),
+        sort: abilityScoresSortKey
     },
     {
         id: "backgroundFeat",

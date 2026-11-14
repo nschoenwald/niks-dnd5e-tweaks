@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.84.0] - 2026-11-14
+### Added
+- **Compendium Browser Columns**: The Feats tab shows which ability scores a feat increases, such as *Cha* for Actor, *Str +1* for Great Weapon Master or *Any* for Resilient, and can be sorted by it.
+
 ## [14.83.1] - 2026-11-14
 ### Fixed
 - **Rich Tooltip Race**: Sweeping the cursor quickly across items, for example in the Compendium Browser or a sheet's inventory, no longer leaves the tooltip lagging behind. It used to flip through the items you had passed over, kept changing after the cursor stopped, and could end up showing the wrong item. It now shows the item under the cursor.
