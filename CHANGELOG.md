@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.83.1] - 2026-11-14
+### Fixed
+- **Rich Tooltip Race**: Sweeping the cursor quickly across items, for example in the Compendium Browser or a sheet's inventory, no longer leaves the tooltip lagging behind. It used to flip through the items you had passed over, kept changing after the cursor stopped, and could end up showing the wrong item. It now shows the item under the cursor.
+
 ## [14.83.0] - 2026-11-14
 ### Added
 - **Compendium Browser Columns**: The Compendium Browser shows extra columns that fit the current tab: level, school and concentration/ritual for spells; rarity, price and weight for items; CR and type for monsters; category and level for feats; hit die, spellcasting and primary ability for classes; the class for subclasses; ability scores and feat for backgrounds; and the vehicle type for vehicles.

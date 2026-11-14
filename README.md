@@ -506,6 +506,7 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 * **Animated HP Bars**: Foundry VTT V14 smoothly animates token resource bars when their values change, but the D&D 5e HP bar skipped the animation and jumped straight to the new value. HP bars (including temporary HP and temporary max HP) now slide to their new value and colour like every other bar.
 * **Untyped Healing**: A heal activity whose healing part has no type selected (common on imported or hand-made items) was rolled as untyped, and D&D 5e treated it as damage: the tray offered **Apply Damage** and hurt the target. Such healing now rolls as Healing. Healing rolls already in chat are fixed too and apply as healing.
 * **Roll Dialogs Off-Screen**: Roll dialogs open where you click. When a dialog grew after opening (for example once its dice images loaded), its buttons could end up below the bottom of the screen until you dragged it up. Dialogs that grow are now moved back up so they stay fully visible. A dialog you dragged somewhere stays where you put it.
+* **Rich Tooltip Race**: Item, spell and other rich tooltips load after you hover. When the cursor swept quickly across many rows (Compendium Browser, inventories, spell lists), every row you passed started loading its tooltip, and whichever finished last was shown: the tooltip kept changing after you stopped and could show the wrong item. Tooltips that finish loading after you have moved on are now ignored, so the tooltip always shows the item under the cursor.
 
 ---
 
