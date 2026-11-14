@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.85.0] - 2026-11-14
+### Added
+- **Conditional Damage Bonuses**: Many more Player's Handbook features get a toggle in the damage roll dialog, offered only when their conditions are met: *Colossus Slayer* (starts on when the target is missing hit points), *Divine Strike* (starts on Radiant), *Primal Strike*, *Divine Fury* (while raging), *Frenzy* (while raging and attacking recklessly), *Dreadful Strikes*, *Elemental Epitome*, *Lunar Form* (only in Wild Shape), *Celestial Revelation* (only while transformed) and *Lifedrinker* (only with your Pact Weapon). Once-per-turn features start off after you've used them that turn.
+- **Conditional Damage Bonuses**: Features that cost something start off and show what's left: *Dread Ambusher*, *Fire's Burn*, *Frost's Chill*, *Psionic Strike*, *Hand of Harm* (a Focus Point) and *Eldritch Smite* (a Pact Magic slot, only with your Pact Weapon). Ticking one spends the use when you roll.
+- **Conditional Damage Bonuses**: *Empowered Evocation* and *Radiant Soul* add their bonus to spell damage, including spells with a saving throw such as *Fireball*.
+- **Conditional Damage Bonuses**: *Elemental Adept* works automatically: spell damage of your chosen type treats 1s on the damage dice as 2s. Put the type in the feat's name, e.g. *Elemental Adept (Fire)*.
+- **Conditional Damage Bonuses**: Assassins add their Rogue level to Sneak Attack in the first round of combat, and Rangers with *Foe Slayer* roll a d10 for Hunter's Mark.
+
 ## [14.84.0] - 2026-11-14
 ### Added
 - **Compendium Browser Columns**: The Feats tab shows which ability scores a feat increases, such as *Cha* for Actor, *Str +1* for Great Weapon Master or *Any* for Resilient, and can be sorted by it.

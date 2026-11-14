@@ -16,6 +16,9 @@
  *
  * @updated v14.75.0 (Sneak Attack detects Advantage, Disadvantage, allies next to the target and Rakish Audacity)
  * @updated v14.76.0 (Genie's Wrath: +PB on your turn, once per turn, with a remembered damage type dropdown)
+ * @updated v14.85.0 (PHB class feature, species and spell bonuses: Colossus Slayer, Divine Strike, Primal Strike, Divine Fury,
+ *   Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form,
+ *   Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul; Assassinate; Foe Slayer)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -23,6 +26,7 @@ import { patchMethod } from "../../utils/patch-helper.js";
 import { isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
 import { areTokensWithin } from "../../utils/token-distance.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
+import { isActorReckless } from "./reckless-attack.js";
 
 /**
  * Registry of static conditional damage bonus definitions.
@@ -387,11 +391,7 @@ export function actorHasGeniesWrath(actor) {
  * @returns {string|null}
  */
 export function getActorGeniesWrathType(actor) {
-    if (!actor) return null;
-    const memType = _actorChoiceMemory.get(actor.uuid || actor.id)?.geniesWrathType;
-    if (GENIES_WRATH_DAMAGE_TYPES.includes(memType)) return memType;
-    const flagType = actor.getFlag?.(MODULE_ID, "conditionalDamage.geniesWrathType");
-    return GENIES_WRATH_DAMAGE_TYPES.includes(flagType) ? flagType : null;
+    return getActorBonusType(actor, "geniesWrath", GENIES_WRATH_DAMAGE_TYPES);
 }
 
 /**
@@ -401,18 +401,49 @@ export function getActorGeniesWrathType(actor) {
  * @param {string} type
  */
 export async function setActorGeniesWrathType(actor, type) {
-    if (!actor || !GENIES_WRATH_DAMAGE_TYPES.includes(type)) return;
-    const key = actor.uuid || actor.id;
-    const existingMem = _actorChoiceMemory.get(key) ?? {};
-    existingMem.geniesWrathType = type;
-    _actorChoiceMemory.set(key, existingMem);
+    return setActorBonusType(actor, "geniesWrath", type, GENIES_WRATH_DAMAGE_TYPES);
+}
+
+/**
+ * The damage type the actor picked last for a bonus with a type dropdown, or null if none was picked yet.
+ * Stored as `conditionalDamage.<bonusId>Type` (Genie's Wrath: `geniesWrathType`).
+ *
+ * @param {Actor5e|null} actor
+ * @param {string} bonusId
+ * @param {string[]} allowed  Types the bonus offers.
+ * @returns {string|null}
+ */
+export function getActorBonusType(actor, bonusId, allowed) {
+    if (!actor) return null;
+    const key = `${bonusId}Type`;
+    const memType = _actorChoiceMemory.get(actor.uuid || actor.id)?.[key];
+    if (allowed.includes(memType)) return memType;
+    const flagType = actor.getFlag?.(MODULE_ID, `conditionalDamage.${key}`);
+    return allowed.includes(flagType) ? flagType : null;
+}
+
+/**
+ * Remember the damage type picked for a bonus with a type dropdown.
+ *
+ * @param {Actor5e|null} actor
+ * @param {string} bonusId
+ * @param {string} type
+ * @param {string[]} allowed
+ */
+export async function setActorBonusType(actor, bonusId, type, allowed) {
+    if (!actor || !allowed?.includes(type)) return;
+    const key = `${bonusId}Type`;
+    const memKey = actor.uuid || actor.id;
+    const existingMem = _actorChoiceMemory.get(memKey) ?? {};
+    existingMem[key] = type;
+    _actorChoiceMemory.set(memKey, existingMem);
     try {
-        if (actor.getFlag?.(MODULE_ID, "conditionalDamage.geniesWrathType") === type) return;
+        if (actor.getFlag?.(MODULE_ID, `conditionalDamage.${key}`) === type) return;
         if (actor.isOwner && !actor.inCompendium && actor.setFlag) {
-            await actor.setFlag(MODULE_ID, "conditionalDamage.geniesWrathType", type);
+            await actor.setFlag(MODULE_ID, `conditionalDamage.${key}`, type);
         }
     } catch (err) {
-        debug(`Conditional Damage | Could not persist Genie's Wrath type on actor "${actor.name}":`, err);
+        debug(`Conditional Damage | Could not persist ${bonusId} type on actor "${actor.name}":`, err);
     }
 }
 
@@ -1595,6 +1626,638 @@ export async function setActorConditionalPreference(actor, bonusId, active) {
     }
 }
 
+// ── Class feature, species and spell bonuses (PHB 2024) ───────────────────────────────────────────────
+
+/** Identifier of an item, lower case. */
+function _identifierOf(item) {
+    return (item?.system?.identifier || item?.identifier || "").toLowerCase();
+}
+
+/**
+ * Find a feature item on an actor by identifier, or by an anchored name pattern for items without one.
+ *
+ * @param {Actor5e|null} actor
+ * @param {string[]} identifiers
+ * @param {RegExp|null} [namePattern=null]
+ * @param {(item: Item5e) => boolean} [filter]
+ * @returns {Item5e|null}
+ */
+function _findFeature(actor, identifiers, namePattern = null, filter = () => true) {
+    if (!actor?.items) return null;
+    return actor.items.find(i => (i.type === "feat") && filter(i)
+        && (identifiers.includes(_identifierOf(i))
+            || Boolean(namePattern?.test((i.name || "").replace(/[‘’`]/g, "'").trim())))) ?? null;
+}
+
+/**
+ * The original actor of a polymorphed (wild shaped) actor. Its features, levels and scale values still count.
+ *
+ * @param {Actor5e} actor
+ * @returns {Actor5e|null}
+ */
+function _originalActor(actor) {
+    if (!actor?.isPolymorphed) return null;
+    const id = actor.getFlag?.("dnd5e", "originalActor");
+    return id ? (game.actors?.get(id) ?? null) : null;
+}
+
+/**
+ * Levels in a class, by class identifier.
+ *
+ * @param {Actor5e|null} actor
+ * @param {string} identifier
+ * @returns {number}
+ */
+function _classLevels(actor, identifier) {
+    return Number(actor?.classes?.[identifier]?.system?.levels ?? 0);
+}
+
+/**
+ * Number of faces of a dice scale value (e.g. `@scale.monk.die`), or the fallback.
+ *
+ * @param {Actor5e|null} actor
+ * @param {string} group  Identifier of the class, subclass or feature holding the scale value.
+ * @param {string} key
+ * @param {number} fallback
+ * @returns {number}
+ */
+function _scaleDieFaces(actor, group, key, fallback) {
+    const faces = Number(actor?.system?.scale?.[group]?.[key]?.faces);
+    return (faces > 0) ? faces : fallback;
+}
+
+/**
+ * Join a dice formula and a flat modifier, each tagged with the bonus's flavor.
+ *
+ * @param {string} dice
+ * @param {number} mod
+ * @param {string} flavor
+ * @returns {{ formula: string, display: string }}
+ */
+function _diceWithMod(dice, mod, flavor) {
+    if (!mod) return { formula: `${dice}[${flavor}]`, display: dice };
+    const sign = mod < 0 ? "-" : "+";
+    return {
+        formula: `${dice}[${flavor}] ${sign} ${Math.abs(mod)}[${flavor}]`,
+        display: `${dice} ${sign} ${Math.abs(mod)}`
+    };
+}
+
+/**
+ * Whether an active effect on the actor belongs to a feature: matched by name, or (for effects applied by an
+ * activity, not passive ones) by the identifier of the item it came from.
+ *
+ * @param {Actor5e} actor
+ * @param {string[]} identifiers
+ * @param {RegExp} namePattern
+ * @returns {ActiveEffect[]}
+ */
+function _activeFeatureEffects(actor, identifiers, namePattern) {
+    const effects = actor?.appliedEffects ?? [];
+    return effects.filter(e => {
+        if (e.disabled || e.isSuppressed) return false;
+        if (namePattern.test((e.name || "").trim())) return true;
+        if (e.transfer || !e.origin) return false;
+        try {
+            const origin = fromUuidSync(e.origin, { strict: false });
+            const item = (origin instanceof Item) ? origin : (origin?.item ?? null);
+            return identifiers.includes(_identifierOf(item));
+        } catch {
+            return false;
+        }
+    });
+}
+
+/**
+ * Whether the actor is raging (an active Rage effect).
+ *
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+export function isActorRaging(actor) {
+    return _activeFeatureEffects(actor, ["rage"], /^(?:rage|raging|kampfrausch)$/i).length > 0;
+}
+
+/**
+ * Whether an activity is an attack (weapon, unarmed or spell attack).
+ *
+ * @param {Activity|null} activity
+ * @returns {boolean}
+ */
+function _isAttackActivity(activity) {
+    return activity?.type === "attack" || ["mwak", "rwak", "msak", "rsak"].includes(activity?.actionType ?? "");
+}
+
+/**
+ * Whether the attack is an Unarmed Strike.
+ *
+ * @param {Item5e|null} item
+ * @param {Activity|null} activity
+ * @returns {boolean}
+ */
+function _isUnarmedStrike(item, activity) {
+    return activity?.attack?.type?.classification === "unarmed"
+        || _identifierOf(item).includes("unarmed-strike")
+        || (item?.name || "").toLowerCase().includes("unarmed strike");
+}
+
+/**
+ * Whether a weapon is the warlock's pact weapon: it carries the Pact Weapon enchantment from Pact of the Blade.
+ *
+ * @param {Item5e|null} item
+ * @param {Actor5e|null} [actor=null]
+ * @returns {boolean}
+ */
+export function isPactWeapon(item, actor = null) {
+    if (item?.type !== "weapon") return false;
+    const pact = _findFeature(actor ?? item.actor, ["pact-of-the-blade"], /^pact of the blade$/i);
+    for (const effect of item.effects ?? []) {
+        if ((effect.type !== "enchantment") || effect.disabled || (effect.isAppliedEnchantment === false)) continue;
+        if (/pact weapon/i.test(effect.name ?? "")) return true;
+        if (pact && (typeof effect.origin === "string") && effect.origin.includes(`.Item.${pact.id}`)) return true;
+    }
+    return false;
+}
+
+/**
+ * Uses left on an item with limited uses, or null if it has none.
+ *
+ * @param {Item5e|null} item
+ * @returns {number|null}
+ */
+function _usesLeft(item) {
+    const uses = item?.system?.uses;
+    if (!uses || !(Number(uses.max) > 0)) return null;
+    return Math.max(0, Number(uses.value ?? 0));
+}
+
+/**
+ * Token documents targeted by the attack behind this damage roll (or the user's targets).
+ *
+ * @param {Actor5e} actor
+ * @param {object} context
+ * @returns {TokenDocument[]}
+ */
+function _resolveTargetDocs(actor, { config, dialog, message, activity } = {}) {
+    let uuids = resolveAttackForDamage(actor, { config, dialog, message, activity })?.targets ?? [];
+    if (!uuids.length) {
+        uuids = (message?.data?.system?.targets ?? message?.system?.targets ?? []).map(t => t?.token).filter(Boolean);
+    }
+    if (!uuids.length) uuids = Array.from(game.user?.targets ?? [], t => t.document?.uuid).filter(Boolean);
+    return uuids.map(uuid => {
+        try {
+            return fromUuidSync(uuid, { strict: false });
+        } catch {
+            return null;
+        }
+    }).filter(doc => doc?.actor);
+}
+
+/**
+ * Spend the resource of a bonus that costs one (item uses or a Pact Magic slot) once its roll is made.
+ *
+ * @param {object} bonus
+ */
+async function _consumeBonusResource(bonus) {
+    const actor = bonus?.actor;
+    const consume = bonus?.consume;
+    if (!actor || !consume) return;
+    try {
+        if (consume.type === "pactSlot") {
+            const value = Number(actor.system?.spells?.pact?.value ?? 0);
+            if (value > 0) await actor.update({ "system.spells.pact.value": value - 1 });
+        } else if (consume.type === "itemUses") {
+            const item = consume.actor?.items?.get(consume.itemId) ?? actor.items?.get(consume.itemId);
+            const uses = item?.system?.uses;
+            if (uses && (Number(uses.value ?? 0) > 0)) {
+                await item.update({ "system.uses.spent": Number(uses.spent ?? 0) + 1 });
+            }
+        }
+        debug(`Conditional Damage | ${bonus.spellName}: spent ${consume.type === "pactSlot" ? "a Pact Magic slot" : "1 use"}.`);
+    } catch (err) {
+        console.error(`${MODULE_ID} | Conditional Damage: could not spend the resource of ${bonus.spellName}`, err);
+    }
+}
+
+/**
+ * Whether a bonus of this kind follows the weapon's damage type and properties (magical, silvered …).
+ *
+ * @param {object} bonus
+ * @returns {boolean}
+ */
+function _matchesWeaponType(bonus) {
+    return Boolean(bonus?.matchWeaponType)
+        || ["sneakAttack", "greatWeaponMaster", "brutalStrike", "charger", "boonOfIrresistibleOffense"].includes(bonus?.id);
+}
+
+/** Damage types offered by bonuses with a type choice. */
+const DIVINE_STRIKE_TYPES = ["radiant", "necrotic"];
+const PRIMAL_STRIKE_TYPES = ["cold", "fire", "lightning", "thunder"];
+const DIVINE_FURY_TYPES = ["necrotic", "radiant"];
+const ELEMENTAL_EPITOME_TYPES = ["acid", "cold", "fire", "lightning", "thunder"];
+const LIFEDRINKER_TYPES = ["necrotic", "psychic", "radiant"];
+
+/**
+ * Add the class feature and species bonuses that ride on attacks (PHB 2024).
+ *
+ * @param {object} ctx
+ * @param {object[]} out
+ */
+function _addFeatureAttackBonuses(ctx, out) {
+    const { actor, item, activity, config, dialog, message, baseDamageType, turnKey, isMyTurn } = ctx;
+    const isWeapon = item?.type === "weapon";
+    const unarmed = _isUnarmedStrike(item, activity);
+    const original = _originalActor(actor);
+    const feature = (ids, pattern, filter) => _findFeature(actor, ids, pattern, filter)
+        ?? (original ? _findFeature(original, ids, pattern, filter) : null);
+    const levels = id => _classLevels(actor, id) || _classLevels(original, id);
+    const used = (usageId) => hasUsedBonusThisTurn(actor, usageId, turnKey);
+    const add = (bonus) => out.push({ turnKey, oneOff: true, ...bonus });
+
+    // Remembered pick, or the first type
+    const pickType = (bonusId, types) => getActorBonusType(actor, bonusId, types) ?? types[0];
+
+    // Colossus Slayer (Hunter's Prey): +1d8 once per turn when the target is missing hit points
+    if (isWeapon && feature(["hunters-prey"], /^hunter's prey(?::\s*colossus slayer)?$|^colossus slayer$/i)) {
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const hurt = targets.some(doc => {
+            const hp = doc.actor.system?.attributes?.hp;
+            return hp && (Number(hp.max) > 0) && (Number(hp.value) < Number(hp.max));
+        });
+        const usedNow = used("colossusSlayer");
+        add({
+            id: "colossusSlayer",
+            spellName: "Colossus Slayer",
+            formula: "1d8[Colossus Slayer]",
+            formulaDisplay: "1d8",
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flavor: "Colossus Slayer",
+            labelKey: "ND5T.ConditionalDamage.ColossusSlayer.Label",
+            defaultLabel: "Colossus Slayer (+1d8)",
+            tooltipKey: `ND5T.ConditionalDamage.ColossusSlayer.Reason.${!targets.length ? "NoTarget" : (hurt ? "Hurt" : "Full")}`,
+            tooltipFallback: !targets.length
+                ? "No target found. Check the target's hit points yourself."
+                : (hurt ? "The target is missing hit points." : "The target has all its hit points."),
+            // Hunter's Prey can be switched to Horde Breaker: a choice made while the target qualified is remembered
+            rememberWhen: hurt && !usedNow,
+            defaultActive: hurt && !usedNow && getActorConditionalPreference(actor, "colossusSlayer", true)
+        });
+    }
+
+    // Divine Strike (Cleric Blessed Strikes): +1d8 (2d8 at 14) radiant or necrotic, once on each of your turns
+    if (isWeapon && isMyTurn && feature(["divine-strike"], /^(?:blessed strikes:\s*)?divine strike$/i)) {
+        const dice = levels("cleric") >= 14 ? "2d8" : "1d8";
+        add({
+            id: "divineStrike",
+            spellName: "Divine Strike",
+            formula: `${dice}[Divine Strike]`,
+            formulaDisplay: dice,
+            damageType: "radiant",
+            damageTypes: [...DIVINE_STRIKE_TYPES],
+            flavor: "Divine Strike",
+            labelKey: "ND5T.ConditionalDamage.DivineStrike.Label",
+            defaultLabel: `Divine Strike (+${dice})`,
+            defaultActive: !used("divineStrike")
+        });
+    }
+
+    // Primal Strike (Druid Elemental Fury): +1d8 (2d8 at 15), weapon or Wild Shape attack, once on each of your turns
+    if ((isWeapon || actor.isPolymorphed) && isMyTurn
+        && feature(["primal-strike"], /^(?:elemental fury:\s*)?primal strike$/i)) {
+        const dice = levels("druid") >= 15 ? "2d8" : "1d8";
+        add({
+            id: "primalStrike",
+            spellName: "Primal Strike",
+            formula: `${dice}[Primal Strike]`,
+            formulaDisplay: dice,
+            damageType: pickType("primalStrike", PRIMAL_STRIKE_TYPES),
+            damageTypes: [...PRIMAL_STRIKE_TYPES],
+            rememberType: true,
+            flavor: "Primal Strike",
+            labelKey: "ND5T.ConditionalDamage.PrimalStrike.Label",
+            defaultLabel: `Primal Strike (+${dice})`,
+            defaultActive: !used("primalStrike")
+        });
+    }
+
+    // Divine Fury (Zealot): +1d6 + half Barbarian level on the first hit of each of your turns while raging
+    if (isMyTurn && feature(["divine-fury"], /^divine fury$/i) && isActorRaging(actor)) {
+        const half = Math.floor(levels("barbarian") / 2);
+        const { formula, display } = _diceWithMod("1d6", half, "Divine Fury");
+        add({
+            id: "divineFury",
+            spellName: "Divine Fury",
+            formula,
+            formulaDisplay: display,
+            damageType: pickType("divineFury", DIVINE_FURY_TYPES),
+            damageTypes: [...DIVINE_FURY_TYPES],
+            rememberType: true,
+            flavor: "Divine Fury",
+            labelKey: "ND5T.ConditionalDamage.DivineFury.Label",
+            defaultLabel: `Divine Fury (+${display})`,
+            defaultActive: !used("divineFury")
+        });
+    }
+
+    // Frenzy (Berserker): Rage Damage d6s on the first Strength-based hit of your turn, raging and Reckless
+    if (isMyTurn && feature(["frenzy"], /^frenzy$/i) && isActorRaging(actor) && isActorReckless(actor)
+        && isEligibleBrutalStrikeAttack(item, activity, config, actor)) {
+        const count = Number(actor.system?.scale?.barbarian?.["rage-damage"]?.value
+            ?? original?.system?.scale?.barbarian?.["rage-damage"]?.value ?? 2) || 2;
+        const dice = `${count}d6`;
+        add({
+            id: "frenzy",
+            spellName: "Frenzy",
+            formula: `${dice}[Frenzy]`,
+            formulaDisplay: dice,
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flavor: "Frenzy",
+            labelKey: "ND5T.ConditionalDamage.Frenzy.Label",
+            defaultLabel: `Frenzy (+${dice})`,
+            defaultActive: !used("frenzy")
+        });
+    }
+
+    // Dreadful Strikes (Fey Wanderer): +1d4 (1d6 at 11) psychic, each creature once per turn
+    if (isWeapon && feature(["dreadful-strikes"], /^dreadful strikes?$/i)) {
+        const dice = levels("ranger") >= 11 ? "1d6" : "1d4";
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const usageId = targets.length === 1 ? `dreadfulStrikes:${targets[0].uuid}` : "dreadfulStrikes";
+        add({
+            id: "dreadfulStrikes",
+            usageId,
+            spellName: "Dreadful Strikes",
+            formula: `${dice}[Dreadful Strikes]`,
+            formulaDisplay: dice,
+            damageType: "psychic",
+            flavor: "Dreadful Strikes",
+            labelKey: "ND5T.ConditionalDamage.DreadfulStrikes.Label",
+            defaultLabel: `Dreadful Strikes (+${dice})`,
+            defaultActive: !used(usageId)
+        });
+    }
+
+    // Dread Ambusher (Gloom Stalker): +2d6 (2d8 at 11) psychic once per turn, Wisdom modifier uses per Long Rest
+    const ambusher = isWeapon ? feature(["dread-ambusher"], /^dread ambusher$/i) : null;
+    const ambusherUses = _usesLeft(ambusher);
+    if (ambusher && ((ambusherUses ?? 0) > 0) && !used("dreadAmbusher")) {
+        const dice = levels("ranger") >= 11 ? "2d8" : "2d6";
+        add({
+            id: "dreadAmbusher",
+            spellName: "Dread Ambusher",
+            formula: `${dice}[Dread Ambusher]`,
+            formulaDisplay: dice,
+            damageType: "psychic",
+            flavor: "Dread Ambusher",
+            usesLeft: ambusherUses,
+            consume: { type: "itemUses", itemId: ambusher.id, actor: ambusher.actor },
+            labelKey: "ND5T.ConditionalDamage.DreadAmbusher.Label",
+            defaultLabel: `Dread Ambusher (+${dice}, ${ambusherUses} left)`,
+            defaultActive: false
+        });
+    }
+
+    // Elemental Epitome (Monk 17): +1 Martial Arts die on an Unarmed Strike, once on each of your turns, while
+    // Elemental Attunement is active
+    if (unarmed && isMyTurn && feature(["elemental-epitome"], /^elemental epitome$/i)) {
+        const attunement = feature(["elemental-attunement"], /^elemental attunement/i);
+        const attuned = !attunement
+            || (attunement.effects ?? []).some(e => (e.type === "enchantment") && !e.disabled && (e.isAppliedEnchantment === true))
+            || /\(active\)/i.test(attunement.name ?? "");
+        if (attuned) {
+            const dice = `1d${_scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 10)}`;
+            add({
+                id: "elementalEpitome",
+                spellName: "Elemental Epitome",
+                formula: `${dice}[Elemental Epitome]`,
+                formulaDisplay: dice,
+                damageType: pickType("elementalEpitome", ELEMENTAL_EPITOME_TYPES),
+                damageTypes: [...ELEMENTAL_EPITOME_TYPES],
+                rememberType: true,
+                flavor: "Elemental Epitome",
+                labelKey: "ND5T.ConditionalDamage.ElementalEpitome.Label",
+                defaultLabel: `Elemental Epitome (+${dice})`,
+                defaultActive: !used("elementalEpitome")
+            });
+        }
+    }
+
+    // Fire's Burn / Frost's Chill (Goliath Giant Ancestry): on a hit with an attack roll, Proficiency Bonus uses
+    for (const giant of [
+        { id: "firesBurn", ids: ["fires-burn"], pattern: /^fire's burn/i, name: "Fire's Burn", dice: "1d10", type: "fire", key: "FiresBurn" },
+        { id: "frostsChill", ids: ["frosts-chill"], pattern: /^frost's chill/i, name: "Frost's Chill", dice: "1d6", type: "cold", key: "FrostsChill" }
+    ]) {
+        const giantItem = feature(giant.ids, giant.pattern);
+        const left = _usesLeft(giantItem);
+        if (!giantItem || !((left ?? 0) > 0)) continue;
+        add({
+            id: giant.id,
+            spellName: giant.name,
+            formula: `${giant.dice}[${giant.name}]`,
+            formulaDisplay: giant.dice,
+            damageType: giant.type,
+            flavor: giant.name,
+            usesLeft: left,
+            consume: { type: "itemUses", itemId: giantItem.id, actor: giantItem.actor },
+            labelKey: `ND5T.ConditionalDamage.${giant.key}.Label`,
+            defaultLabel: `${giant.name} (+${giant.dice}, ${left} left)`,
+            turnKey: null,
+            defaultActive: false
+        });
+    }
+
+    // Lunar Form (Moon Druid 10): +2d10 radiant on a Wild Shape form's attack, once on each of your turns
+    if (actor.isPolymorphed && isMyTurn && feature(["lunar-form"], /^lunar form$/i)) {
+        add({
+            id: "lunarForm",
+            spellName: "Lunar Form",
+            formula: "2d10[Lunar Form]",
+            formulaDisplay: "2d10",
+            damageType: "radiant",
+            flavor: "Lunar Form",
+            labelKey: "ND5T.ConditionalDamage.LunarForm.Label",
+            defaultLabel: "Lunar Form (+2d10)",
+            defaultActive: !used("lunarForm")
+        });
+    }
+
+    // Psionic Strike (Psi Warrior): Psionic Energy Die + Intelligence modifier force, once on each of your turns
+    const psionic = isWeapon && isMyTurn
+        ? feature(["psionic-power"], /^psionic power$/i, i => Array.from(i.system?.activities ?? []).some(a => a.type === "damage"))
+        : null;
+    const psionicUses = _usesLeft(psionic);
+    if (psionic && ((psionicUses ?? 0) > 0) && !used("psionicStrike")) {
+        const faces = _scaleDieFaces(actor, "psi-warrior", "die", 0) || _scaleDieFaces(original, "psi-warrior", "die", 6);
+        const { formula, display } = _diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.int?.mod ?? 0), "Psionic Strike");
+        add({
+            id: "psionicStrike",
+            spellName: "Psionic Strike",
+            formula,
+            formulaDisplay: display,
+            damageType: "force",
+            flavor: "Psionic Strike",
+            usesLeft: psionicUses,
+            consume: { type: "itemUses", itemId: psionic.id, actor: psionic.actor },
+            labelKey: "ND5T.ConditionalDamage.PsionicStrike.Label",
+            defaultLabel: `Psionic Strike (+${display}, ${psionicUses} left)`,
+            defaultActive: false
+        });
+    }
+
+    // Hand of Harm (Warrior of Mercy): 1 Focus Point, Martial Arts die + Wisdom modifier necrotic, once per turn
+    if (unarmed && !used("handOfHarm") && feature(["hand-of-harm"], /^hand of harm$/i)) {
+        const focus = feature(["monks-focus"], /^monk's focus$/i);
+        const focusLeft = _usesLeft(focus);
+        if (focus && (focusLeft ?? 0) > 0) {
+            const faces = _scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 6);
+            const { formula, display } = _diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.wis?.mod ?? 0), "Hand of Harm");
+            add({
+                id: "handOfHarm",
+                spellName: "Hand of Harm",
+                formula,
+                formulaDisplay: display,
+                damageType: "necrotic",
+                flavor: "Hand of Harm",
+                usesLeft: focusLeft,
+                consume: { type: "itemUses", itemId: focus.id, actor: focus.actor },
+                labelKey: "ND5T.ConditionalDamage.HandOfHarm.Label",
+                defaultLabel: `Hand of Harm (+${display}, ${focusLeft} Focus left)`,
+                defaultActive: false
+            });
+        }
+    }
+
+    // Eldritch Smite (invocation): a Pact Magic slot, (1 + slot level)d8 force with the pact weapon, once per turn
+    const pactWeapon = isWeapon && isPactWeapon(item, actor);
+    const pact = actor.system?.spells?.pact;
+    if (pactWeapon && (Number(pact?.value ?? 0) > 0) && (Number(pact?.level ?? 0) > 0) && !used("eldritchSmite")
+        && feature(["eldritch-smite"], /^(?:eldritch invocation:\s*)?eldritch smite$/i)) {
+        const dice = `${1 + Number(pact.level)}d8`;
+        add({
+            id: "eldritchSmite",
+            spellName: "Eldritch Smite",
+            formula: `${dice}[Eldritch Smite]`,
+            formulaDisplay: dice,
+            damageType: "force",
+            flavor: "Eldritch Smite",
+            usesLeft: Number(pact.value),
+            consume: { type: "pactSlot" },
+            labelKey: "ND5T.ConditionalDamage.EldritchSmite.Label",
+            defaultLabel: `Eldritch Smite (+${dice}, uses a Pact slot)`,
+            defaultActive: false
+        });
+    }
+
+    // Lifedrinker (invocation): +1d6 necrotic, psychic or radiant with the pact weapon
+    if (pactWeapon && feature(["lifedrinker"], /^(?:eldritch invocation:\s*)?lifedrinker$/i)) {
+        add({
+            id: "lifedrinker",
+            spellName: "Lifedrinker",
+            formula: "1d6[Lifedrinker]",
+            formulaDisplay: "1d6",
+            damageType: pickType("lifedrinker", LIFEDRINKER_TYPES),
+            damageTypes: [...LIFEDRINKER_TYPES],
+            rememberType: true,
+            flavor: "Lifedrinker",
+            labelKey: "ND5T.ConditionalDamage.Lifedrinker.Label",
+            defaultLabel: "Lifedrinker (+1d6)",
+            turnKey: null,
+            oneOff: false,
+            defaultActive: true
+        });
+    }
+}
+
+/**
+ * Add the bonuses for spell damage (Empowered Evocation, Radiant Soul) and Celestial Revelation, which also works
+ * with attacks. Spell bonuses work with every spell damage roll, saving throw spells included.
+ *
+ * @param {object} ctx
+ * @param {object[]} out
+ */
+function _addSpellBonuses(ctx, out) {
+    const { actor, item, config, baseDamageType, turnKey, isMyTurn, isAttack } = ctx;
+    const isSpell = item?.type === "spell";
+    const used = (usageId) => hasUsedBonusThisTurn(actor, usageId, turnKey);
+
+    // Damage types of the roll's parts
+    const rollTypes = new Set();
+    for (const roll of config?.rolls ?? []) {
+        if (roll?.options?._nd5tConditionalId) continue;
+        const types = roll?.options?.types ?? (roll?.options?.type ? [roll.options.type] : []);
+        for (const type of types) if (type) rollTypes.add(type);
+    }
+
+    // Empowered Evocation (Evoker): + Intelligence modifier to a Wizard Evocation spell's damage
+    if (isSpell && (item.system?.school === "evo") && _findFeature(actor, ["empowered-evocation"], /^empowered evocation$/i)) {
+        const classId = item.system?.classIdentifier ?? "";
+        const intMod = Number(actor.system?.abilities?.int?.mod ?? 0);
+        if ((!classId || classId === "wizard") && intMod > 0) {
+            out.push({
+                id: "empoweredEvocation",
+                spellName: "Empowered Evocation",
+                formula: `${intMod}[Empowered Evocation]`,
+                formulaDisplay: String(intMod),
+                damageType: baseDamageType,
+                matchWeaponType: true,
+                flat: true,
+                flavor: "Empowered Evocation",
+                labelKey: "ND5T.ConditionalDamage.EmpoweredEvocation.Label",
+                defaultLabel: `Empowered Evocation (+${intMod})`,
+                defaultActive: true
+            });
+        }
+    }
+
+    // Radiant Soul (Celestial Patron): + Charisma modifier to a radiant or fire spell, once on each of your turns
+    const soulTypes = ["radiant", "fire"].filter(t => rollTypes.has(t));
+    const chaMod = Number(actor.system?.abilities?.cha?.mod ?? 0);
+    if (isSpell && isMyTurn && soulTypes.length && (chaMod > 0) && _findFeature(actor, ["radiant-soul"], /^radiant soul$/i)) {
+        out.push({
+            id: "radiantSoul",
+            spellName: "Radiant Soul",
+            formula: `${chaMod}[Radiant Soul]`,
+            formulaDisplay: String(chaMod),
+            damageType: soulTypes.includes(baseDamageType) ? baseDamageType : soulTypes[0],
+            ...(soulTypes.length > 1 ? { damageTypes: soulTypes } : {}),
+            flat: true,
+            oneOff: true,
+            turnKey,
+            flavor: "Radiant Soul",
+            labelKey: "ND5T.ConditionalDamage.RadiantSoul.Label",
+            defaultLabel: `Radiant Soul (+${chaMod})`,
+            defaultActive: !used("radiantSoul")
+        });
+    }
+
+    // Celestial Revelation (Aasimar): + Proficiency Bonus to an attack or spell, once on each of your turns, while
+    // transformed. Necrotic Shroud deals necrotic damage, Heavenly Wings and Inner Radiance radiant.
+    if ((isAttack || isSpell) && isMyTurn && _findFeature(actor, ["celestial-revelation"], /^celestial revelation$/i)) {
+        const revelation = _activeFeatureEffects(actor, ["celestial-revelation"],
+            /^(?:heavenly wings|inner radiance|searing radiance|necrotic shroud)$/i);
+        if (revelation.length) {
+            const pb = Number(actor.system?.attributes?.prof ?? 2);
+            const necrotic = revelation.some(e => /necrotic shroud/i.test(e.name ?? ""));
+            out.push({
+                id: "celestialRevelation",
+                spellName: "Celestial Revelation",
+                formula: `${pb}[Celestial Revelation]`,
+                formulaDisplay: String(pb),
+                damageType: necrotic ? "necrotic" : "radiant",
+                flat: true,
+                oneOff: true,
+                turnKey,
+                flavor: "Celestial Revelation",
+                labelKey: "ND5T.ConditionalDamage.CelestialRevelation.Label",
+                defaultLabel: `Celestial Revelation (+${pb})`,
+                defaultActive: !used("celestialRevelation")
+            });
+        }
+    }
+}
+
 /**
  * Determine which conditional damage bonuses are currently active on an actor.
  * Checks concentration effects (Hex, Hunter's Mark) as well as Sneak Attack eligibility.
@@ -1611,12 +2274,16 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     if (!actor) return [];
     const activeBonuses = [];
 
+    // Damage rolls without an activity count as attacks (old behaviour); other activities (saving throw spells,
+    // damage activities) only get the spell damage bonuses.
+    const isAttack = !activity || _isAttackActivity(activity);
+
     // --- 1. Concentration Spells (Hex & Hunter's Mark) ---
     const effects = actor.appliedEffects ?? Array.from(actor.effects?.values() ?? []);
     const concentrationItems = actor.concentration?.items ?? new Set();
     const localizedConcentrating = (game.i18n?.localize("EFFECT.DND5E.StatusConcentrating") || "Concentrating").toLowerCase();
 
-    for (const def of CONDITIONAL_DAMAGE_DEFINITIONS) {
+    for (const def of (isAttack ? CONDITIONAL_DAMAGE_DEFINITIONS : [])) {
         const targetSpell = def.spellName.toLowerCase();
         const defId = def.id.toLowerCase();
         const defSlug = (def.slug || "").toLowerCase();
@@ -1660,7 +2327,15 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
             });
         }
 
-        if (hasMatch) {
+        if (hasMatch && (def.id === "huntersMark") && _findFeature(actor, ["foe-slayer"], /^foe slayer$/i)) {
+            // Foe Slayer (Ranger 20): the Hunter's Mark damage die becomes a d10
+            activeBonuses.push({
+                ...def,
+                formula: "1d10[Hunter's Mark]",
+                labelKey: "ND5T.ConditionalDamage.HuntersMark.FoeSlayerLabel",
+                defaultLabel: "Hunter's Mark (+1d10 Force)"
+            });
+        } else if (hasMatch) {
             activeBonuses.push(def);
         }
     }
@@ -1708,6 +2383,12 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     const inCombat = Boolean(combat?.active && combat.started);
     const turnKey = getCombatTurnKey(combat, actor, token);
     const isMyTurn = isAttackerCombatTurn(actor, token);
+    const featureContext = { actor, item, activity, config, dialog, message, baseDamageType, token, combat, inCombat, turnKey, isMyTurn, isAttack };
+
+    if (!isAttack) {
+        _addSpellBonuses(featureContext, activeBonuses);
+        return activeBonuses;
+    }
 
     // --- 2. Sneak Attack (Rogue class scale value on ranged or finesse weapon; once per turn) ---
     const rogueData = getRogueData(actor);
@@ -1723,15 +2404,26 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         }
         const usedThisTurn = hasUsedBonusThisTurn(actor, "sneakAttack", turnKey);
         debug(`Conditional Damage | Sneak Attack for ${actor.name}: ${eligibility.state} (${eligibility.reason})`);
+
+        // Assassinate (Assassin): during the first round of combat, Sneak Attack deals extra damage equal to the
+        // Rogue level
+        let formula = `${rogueData.formula}[Sneak Attack]`;
+        let formulaDisplay = rogueData.formula;
+        if (inCombat && (combat.round === 1) && (rogueData.levels > 0)
+            && _findFeature(actor, ["assassinate"], /^assassinate$/i)) {
+            formula += ` + ${rogueData.levels}[Assassinate]`;
+            formulaDisplay += ` + ${rogueData.levels}`;
+        }
+
         activeBonuses.push({
             id: "sneakAttack",
             spellName: "Sneak Attack",
-            formula: `${rogueData.formula}[Sneak Attack]`,
-            formulaDisplay: rogueData.formula,
+            formula,
+            formulaDisplay,
             damageType: baseDamageType,
             flavor: "Sneak Attack",
             labelKey: "ND5T.ConditionalDamage.SneakAttack.Label",
-            defaultLabel: `Sneak Attack (+${rogueData.formula})`,
+            defaultLabel: `Sneak Attack (+${formulaDisplay})`,
             turnKey,
             eligibility,
             defaultActive: eligibility.state === "unknown" ? !usedThisTurn : (eligibility.state === "eligible" && !usedThisTurn)
@@ -1856,6 +2548,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
                 formulaDisplay: String(pb),
                 damageType: rememberedType ?? GENIES_WRATH_DAMAGE_TYPES[0],
                 damageTypes: [...GENIES_WRATH_DAMAGE_TYPES],
+                rememberType: true,
                 typeRemembered: Boolean(rememberedType),
                 flavor: "Genie's Wrath",
                 labelKey: "ND5T.ConditionalDamage.GeniesWrath.Label",
@@ -1892,6 +2585,10 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         }
     }
 
+    // --- 10. Class features and species traits (PHB 2024), then spell damage bonuses ---
+    _addFeatureAttackBonuses(featureContext, activeBonuses);
+    _addSpellBonuses(featureContext, activeBonuses);
+
     return activeBonuses;
 }
 
@@ -1927,7 +2624,7 @@ export function createConditionalRollConfig(def, rollData = {}, { isCritical = f
         }
     }
 
-    const isFlatBonus = def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense" || def.id === "geniesWrath";
+    const isFlatBonus = Boolean(def.flat) || def.id === "greatWeaponMaster" || def.id === "boonOfIrresistibleOffense" || def.id === "geniesWrath";
     const rollOptions = {
         type: damageType,
         flavor: def.flavor,
@@ -1987,14 +2684,10 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
     // Damage rolls are associated with activities/items, not an Actor directly (e.g. rollInitiative passes subject: this [Actor])
     if (config.subject instanceof Actor) return;
 
-    // Conditional damage bonuses strictly require hitting with an attack.
-    // If an activity subject is defined and is NOT an attack activity (e.g. SaveActivity like Fireball,
-    // DamageActivity like Magic Missile / environmental damage, UtilityActivity, etc.), bail out.
-    if (config.subject) {
-        const isAttackActivity = config.subject.type === "attack"
-            || ["mwak", "rwak", "msak", "rsak"].includes(config.subject.actionType);
-        if (!isAttackActivity) return;
-    }
+    // Most bonuses require hitting with an attack. Other activities (a saving throw spell like Fireball, a damage
+    // activity like Magic Missile) only get the spell damage bonuses (Empowered Evocation, Radiant Soul, Celestial
+    // Revelation), so non-attack activities of anything but spells bail out here.
+    if (config.subject && !_isAttackActivity(config.subject) && (config.subject.item?.type !== "spell")) return;
 
     // Resolve the rolling actor
     const actor = config.subject?.actor
@@ -2026,6 +2719,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
             || def.id === "boonOfIrresistibleOffense"
             || def.id === "savageAttacker"
             || def.id === "geniesWrath"
+            || Boolean(def.oneOff)
             || (def.id === "sneakAttack" && (def.turnKey || def.eligibility?.state !== "unknown"));
         const lastChoice = isOneOffOrTurnTracked
             ? def.defaultActive
@@ -2059,8 +2753,9 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
     if (isFastForward) {
         for (const bonus of config._nd5tConditionalBonuses) {
             if (bonus.active && bonus.turnKey) {
-                markBonusUsedThisTurn(actor, bonus.id, bonus.turnKey);
+                markBonusUsedThisTurn(actor, bonus.usageId ?? bonus.id, bonus.turnKey);
             }
+            if (bonus.active && bonus.consume) _consumeBonusResource(bonus);
         }
         if (actor) {
             const actorKey = actor.uuid || actor.id;
@@ -2078,7 +2773,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
 
         const alreadyPresent = config.rolls.some(r => r.options?._nd5tConditionalId === bonus.id);
         if (!alreadyPresent) {
-            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") ? baseProperties : [];
+            const properties = _matchesWeaponType(bonus) ? baseProperties : [];
             config.rolls.push(createConditionalRollConfig(bonus, baseRollData, { isCritical, properties }));
         }
     }
@@ -2108,7 +2803,7 @@ function _ensureAllConditionalRollsInConfig(config) {
 
         let rollConfig = config.rolls.find(r => r.options?._nd5tConditionalId === bonus.id);
         if (!rollConfig) {
-            const properties = (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") ? baseProperties : [];
+            const properties = _matchesWeaponType(bonus) ? baseProperties : [];
             rollConfig = createConditionalRollConfig(bonus, baseRollData, { isCritical, properties });
             if (!bonus.active) {
                 rollConfig.options._nd5tInactive = true;
@@ -2231,6 +2926,22 @@ function _applyGeniesWrathTooltip(app) {
         ? game.i18n.localize(key)
         : "Pick your patron's damage type in the Genie's Wrath row. Your pick is remembered.";
     group.dataset.tooltipDirection = "UP";
+}
+
+/**
+ * Show a bonus's own tooltip (e.g. why Colossus Slayer starts on or off) on its toggle.
+ *
+ * @param {DamageRollConfigurationDialog} app
+ */
+function _applyBonusTooltips(app) {
+    for (const bonus of app?.config?._nd5tConditionalBonuses ?? []) {
+        if (!bonus.tooltipKey || !app.element) continue;
+        const input = app.element.querySelector(`input[name="nd5t.conditional.${bonus.id}"]`);
+        const group = input?.closest(".form-group") ?? input?.parentElement;
+        if (!group) continue;
+        group.dataset.tooltip = game.i18n?.has(bonus.tooltipKey) ? game.i18n.localize(bonus.tooltipKey) : (bonus.tooltipFallback ?? "");
+        group.dataset.tooltipDirection = "UP";
+    }
 }
 
 let _isDialogPatched = false;
@@ -2368,7 +3079,7 @@ function _patchDamageRollConfigurationDialog() {
             const bonusFields = bonuses.map(bonus => {
                 let label = bonus.defaultLabel;
                 if (bonus.labelKey && game.i18n?.has(bonus.labelKey)) {
-                    label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "" });
+                    label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "", uses: bonus.usesLeft ?? "" });
                 }
 
                 // Normalize any internal newlines to spaces
@@ -2424,6 +3135,7 @@ function _patchDamageRollConfigurationDialog() {
             _updateFormulaRowStates(this);
             _applySneakAttackTooltip(this);
             _applyGeniesWrathTooltip(this);
+            _applyBonusTooltips(this);
         },
         "WRAPPER"
     );
@@ -2495,8 +3207,9 @@ function _patchDamageRollConfigurationDialog() {
                                 roll.options._nd5tInactive = true;
                             }
 
-                            // Genie's Wrath: keep the picked type, since a disabled (unticked) row's dropdown isn't in the form data
-                            if (bonus.id === "geniesWrath") {
+                            // Bonuses with a type dropdown (Genie's Wrath, Divine Strike …): keep the picked type, since a
+                            // disabled (unticked) row's dropdown isn't in the form data
+                            if (bonus.damageTypes?.length > 1) {
                                 const pickedType = _getPickedRollType(this, formData, roll);
                                 if (pickedType) {
                                     bonus.damageType = pickedType;
@@ -2506,7 +3219,7 @@ function _patchDamageRollConfigurationDialog() {
                             }
 
                             // Keep Sneak Attack, Great Weapon Master, Brutal Strike, Charger, and Boon of Irresistible Offense aligned with weapon damage type and properties
-                            if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                            if (_matchesWeaponType(bonus)) {
                                 bonus.damageType = resolvedType;
                                 roll.options.type = resolvedType;
                                 if (resolvedType) {
@@ -2600,7 +3313,7 @@ function _patchDamageRollConfigurationDialog() {
                                 roll.options._nd5tInactive = true;
                             }
 
-                            if (bonus.id === "sneakAttack" || bonus.id === "greatWeaponMaster" || bonus.id === "brutalStrike" || bonus.id === "charger" || bonus.id === "boonOfIrresistibleOffense") {
+                            if (_matchesWeaponType(bonus)) {
                                 bonus.damageType = resolvedType;
                                 roll.options.type = resolvedType;
                                 if (resolvedType) {
@@ -2614,21 +3327,31 @@ function _patchDamageRollConfigurationDialog() {
                                 roll.options.properties = [...baseProperties];
                             }
 
-                            // Genie's Wrath: apply and remember the picked type (only when it's used)
-                            if (bonus.id === "geniesWrath") {
+                            // Bonuses with a type dropdown: apply the picked type, and remember it where the bonus
+                            // remembers its type (only when it's used)
+                            if (bonus.damageTypes?.length > 1) {
                                 const pickedType = _getPickedRollType(this, formData, roll);
                                 if (pickedType) {
                                     bonus.damageType = pickedType;
                                     roll.options.type = pickedType;
                                     if (roll.data?.roll) roll.data.roll.damageType = pickedType;
-                                    if (isChecked) setActorGeniesWrathType(bonus.actor, pickedType);
+                                    if (isChecked && bonus.rememberType) {
+                                        setActorBonusType(bonus.actor, bonus.id, pickedType, bonus.damageTypes);
+                                    }
                                 }
                             }
                         }
 
-                        // Record once-per-turn usage
+                        // Record once-per-turn usage and spend the bonus's resource
                         if (isChecked && bonus.turnKey) {
-                            markBonusUsedThisTurn(bonus.actor, bonus.id, bonus.turnKey);
+                            markBonusUsedThisTurn(bonus.actor, bonus.usageId ?? bonus.id, bonus.turnKey);
+                        }
+                        if (isChecked && bonus.consume) _consumeBonusResource(bonus);
+
+                        // Colossus Slayer: a choice made while the target qualified is remembered (Horde Breaker
+                        // hunters untick it once)
+                        if (bonus.rememberWhen && bonus.actor) {
+                            setActorConditionalPreference(bonus.actor, bonus.id, isChecked);
                         }
 
                         // Persist selection so subsequent rolls remember it (exempt one-offs and turn-tracked bonuses).
@@ -2636,7 +3359,7 @@ function _patchDamageRollConfigurationDialog() {
                         // choice is only the fallback for when eligibility can't be worked out.
                         const isTurnTracked = Boolean(bonus.turnKey)
                             || (bonus.id === "sneakAttack" && Boolean(bonus.eligibility) && bonus.eligibility.state !== "unknown");
-                        if (bonus.actor && !isTurnTracked && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense" && bonus.id !== "geniesWrath") {
+                        if (bonus.actor && !isTurnTracked && !bonus.oneOff && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense" && bonus.id !== "geniesWrath") {
                             if (bonus.id === "greatWeaponMaster" && !isChecked) {
                                 // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
                                 // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.

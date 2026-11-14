@@ -10,6 +10,7 @@
  *
  * @introduced v14.80.0
  * @updated v14.80.1 (dnd5e's "start of next turn" effect expiry; the effect is also added out of combat)
+ * @updated v14.85.0 (exports isActorReckless for Frenzy)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -185,6 +186,15 @@ function _recklessState(actor) {
         if (item && _isFeature(item) && (item.actor?.uuid === actor.uuid)) return { effect, rules: _itemRules(item) };
     }
     return null;
+}
+
+/**
+ * Whether the actor attacked recklessly and the Reckless effect is still on (used by Frenzy in Conditional Damage).
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+export function isActorReckless(actor) {
+    return Boolean(_recklessState(actor));
 }
 
 /**

@@ -53,6 +53,7 @@ import { initAggregateShortRestRolls } from "./features/combat-automation/aggreg
 import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
 import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
 import { initGreatWeaponFighting } from "./features/combat-automation/great-weapon-fighting.js";
+import { initElementalAdept } from "./features/combat-automation/elemental-adept.js";
 import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
 
 // Utilities
@@ -206,7 +207,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
         name: "Conditional Damage Bonuses (Personal)",
-        hint: "Offers toggles in damage rolls for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls (if enabled by the GM). Great Weapon Fighting applies automatically to two-handed melee weapon dice.",
+        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul). Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting and Elemental Adept apply automatically, remembering your choices across rolls (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1276,7 +1277,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
-        hint: "Offers toggles in damage roll configuration dialogs for Sneak Attack, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath, Cleave weapon mastery malus, and active Hex or Hunter's Mark concentration effects, remembering your choices across rolls. Also applies Great Weapon Fighting automatically to the weapon dice of two-handed melee attacks (2024: 1s and 2s count as 3s; 2014: rerolls 1s and 2s once).",
+        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul). Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting and Elemental Adept apply automatically.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1876,6 +1877,7 @@ Hooks.once("setup", () => {
     initConditionHud();
     // Before Conditional Damage: Savage Attacker builds its dice pool from the dice Great Weapon Fighting modified
     initGreatWeaponFighting();
+    initElementalAdept();
     initConditionalDamage();
     initDamageEmanation();
 });
