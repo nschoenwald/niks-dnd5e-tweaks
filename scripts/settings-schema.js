@@ -1788,7 +1788,7 @@ export function getSettingsSchema() {
                             list: true,
                             hint: "Spell identifiers (or names) that get the automation. Other spells can add \"Damage Emanation\" in an activity's Behaviors tab or to a region by hand.",
                             type: "String",
-                            default: "black-tentacles, blade-barrier, cacophonic-shield, cloud-of-daggers, cloudkill, conjure-woodland-beings, control-water, dirge, doomtide, forbiddance, grease, gust-of-wind, incendiary-cloud, insect-plague, moonbeam, sleet-storm, spirit-guardians, stinking-cloud, storm-of-radiance, wall-of-fire, wall-of-thorns, web, yolandes-regal-presence",
+                            default: "black-tentacles, blade-barrier, cacophonic-shield, cloud-of-daggers, cloudkill, conjure-woodland-beings, control-water, dirge, doomtide, forbiddance, grease, gust-of-wind, incendiary-cloud, insect-plague, moonbeam, sleet-storm, spirit-guardians, stinking-cloud, storm-of-radiance, wall-of-fire, wall-of-thorns, web, yolandes-regal-presence, lightning-ring, grave-ground, spellfire-storm, hunger-of-hadar, cordon-of-arrows",
                             scope: "world",
                             parentKey: "enableDamageEmanation"
                         },

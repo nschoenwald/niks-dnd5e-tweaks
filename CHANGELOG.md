@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.89.0] - 2026-11-15
+### Added
+- **Damage Emanation Automation**: Five more spells work out of the box: *Lightning Ring* and *Grave Ground* (Arcana Unleashed), *Spellfire Storm* (Heroes of Faerûn), and *Hunger of Hadar* and *Cordon of Arrows* (Player's Handbook). Worlds that have already edited the *Emanation Spells* list keep their own version: add the new spells there by hand.
+- **Damage Emanation Automation**: *Hunger of Hadar* deals its Cold damage when a creature starts its turn in the area and asks for the Acid save when it ends its turn there.
+- **Damage Emanation Automation**: *Cordon of Arrows* counts its pieces of ammunition (4, plus 2 per slot level above 2nd) and removes its area when the last one is used. It never targets the caster.
+- **Damage Emanation Automation**: Spells that only affect enemies, such as *Grave Ground*, skip creatures on the caster's side.
+
 ## [14.88.0] - 2026-11-15
 ### Added
 - **Conditional Damage Bonuses**: Features from Forge of the Artificer, Heroes of Faerûn, Ravenloft and Arcana Unleashed get toggles in the damage dialog: *Pull of Death* (starts on when the target is missing hit points), *Polar Strikes*, *Power from Pain* (while Bloodied), *Ominous Strikes* (starts on against a Frightened target), *Lightning Launcher*, *Guided Precision* (Cartographer spells, or targets outlined by your Faerie Fire) and *Dreaded Necrosis* (in Form of Dread).

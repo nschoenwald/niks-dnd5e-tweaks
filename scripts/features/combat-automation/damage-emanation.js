@@ -11,6 +11,8 @@
  * @updated v14.82.0 (Per-spell triggers incl. turn start, damage-only and save-only activities, creature type
  *   filter, Spell field for hand-drawn regions; more PHB 2024 spells in the default list)
  * @updated v14.87.1 (Players' templates: the active GM attaches the behavior, players can't create regions with behaviors)
+ * @updated v14.89.0 (Lightning Ring, Grave Ground, Spellfire Storm, Hunger of Hadar (two behaviors), Cordon of Arrows
+ *   (ammunition count); enemy-only spells skip the caster's side)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -64,6 +66,14 @@ const DEFAULT_TRIGGERS = new Set(["enter", "emanationEnter", "turnEnd"]);
  * @property {boolean} [excludeCaster]             The caster is never affected, even by a placed area.
  * @property {boolean} [requirePlacingActivity]    Only the activity that applies the trigger may place the area
  *                                                 (Control Water: only the Whirlpool option, not the other options' area).
+ * @property {RegExp} [activityName]               The activity to use, by name (Lightning Ring: "Emanation Save", not
+ *                                                 the separate "Lightning Line").
+ * @property {{activityName: RegExp, triggers: string[]}[]} [behaviors]
+ *                                                 Several behaviors, each with its own activity and triggers (Hunger of
+ *                                                 Hadar: damage at the start of a turn, a save at the end of a turn).
+ * @property {(scaling: number) => number} [charges]
+ *                                                 Uses before the area ends: each affected creature uses one (Cordon of
+ *                                                 Arrows' pieces of ammunition).
  * @type {Map<string, SpellProfile>}
  */
 const SPELL_PROFILES = new Map([
@@ -76,7 +86,14 @@ const SPELL_PROFILES = new Map([
     ["web", { triggers: ["enter", "emanationEnter", "turnStart"] }],
     ["sleet-storm", { triggers: ["enter", "emanationEnter", "turnStart"] }],
     ["stinking-cloud", { triggers: ["turnStart"] }],
-    ["gust-of-wind", { triggers: ["turnEnd"], excludeCaster: true }]
+    ["gust-of-wind", { triggers: ["turnEnd"], excludeCaster: true }],
+    ["lightning-ring", { activityName: /emanation/i }],
+    ["hunger-of-hadar", { behaviors: [
+        { activityName: /start of turn/i, triggers: ["turnStart"] },
+        { activityName: /end of turn/i, triggers: ["turnEnd"] }
+    ] }],
+    // 4 pieces of ammunition, 2 more per slot level above 2nd; "a creature other than you"
+    ["cordon-of-arrows", { excludeCaster: true, triggers: ["enter", "turnEnd"], charges: scaling => 4 + (2 * scaling) }]
 ]);
 
 /**
@@ -181,6 +198,7 @@ function _createRegionBehaviorType() {
                 scaling: new NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null }),
                 damageType: new StringField({ required: false, blank: true, initial: "" }),
                 drift: new NumberField({ required: false, nullable: false, min: 0, initial: 0 }),
+                charges: new NumberField({ required: false, nullable: true, integer: true, min: 0, initial: null }),
                 triggered: new ObjectField()
             };
         }
@@ -335,6 +353,9 @@ function _isTriggerActivity(activity) {
 function _resolveDamageActivity(item, placingActivity) {
     const candidates = Array.from(item?.system.activities ?? []).filter(_isTriggerActivity);
     if (!candidates.length) return null;
+    const named = _getProfile(item).activityName;
+    const byName = named ? candidates.find(a => named.test(a.name ?? "")) : null;
+    if (byName) return byName;
     const separate = candidates.filter(a => (a.id !== placingActivity?.id) && !a.consumption?.spellSlot);
     const hasDamage = a => !!a.damage?.parts?.length;
     return separate.find(a => (a.type === "save") && hasDamage(a))
@@ -445,11 +466,28 @@ function _onCreateMeasuredTemplate(activity, regionData) {
 
     const scaling = _getUsageScaling(activity);
     const drift = profile.drift ?? 0;
-    const behaviorData = {
-        type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
-        name: game.i18n.localize(`TYPES.RegionBehavior.${DAMAGE_EMANATION_BEHAVIOR_TYPE}`),
-        system: { activity: damageActivity.uuid, scaling, drift }
-    };
+    const charges = profile.charges ? Math.max(0, profile.charges(scaling)) : null;
+    const name = game.i18n.localize(`TYPES.RegionBehavior.${DAMAGE_EMANATION_BEHAVIOR_TYPE}`);
+    const behaviorData = [];
+    if (profile.behaviors) {
+        const activities = Array.from(item.system.activities ?? []);
+        for (const entry of profile.behaviors) {
+            const entryActivity = activities.find(a => entry.activityName.test(a.name ?? ""));
+            if (!entryActivity) continue;
+            behaviorData.push({
+                type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
+                name: `${name} (${entryActivity.name})`,
+                system: { activity: entryActivity.uuid, scaling, drift, triggers: [...entry.triggers] }
+            });
+        }
+    }
+    if (!behaviorData.length) {
+        behaviorData.push({
+            type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
+            name,
+            system: { activity: damageActivity.uuid, scaling, drift, charges }
+        });
+    }
     if (!game.user.isGM && !game.users?.activeGM) {
         ui.notifications?.warn(game.i18n.has("ND5T.DamageEmanation.NoGM")
             ? game.i18n.format("ND5T.DamageEmanation.NoGM", { spell: item.name })
@@ -458,12 +496,12 @@ function _onCreateMeasuredTemplate(activity, regionData) {
     }
     for (const data of regionData) {
         if (game.user.isGM) {
-            data.behaviors = [...(data.behaviors ?? []), foundry.utils.deepClone(behaviorData)];
+            data.behaviors = [...(data.behaviors ?? []), ...foundry.utils.deepClone(behaviorData)];
         } else {
             foundry.utils.setProperty(data, `flags.${MODULE_ID}.pendingEmanation`, foundry.utils.deepClone(behaviorData));
         }
     }
-    debug(`Damage Emanation | Added behavior to "${item.name}" template (activity: ${damageActivity.name}, scaling: ${scaling})`);
+    debug(`Damage Emanation | Added ${behaviorData.length} behavior(s) to "${item.name}" template (scaling: ${scaling}${charges !== null ? `, ${charges} uses` : ""})`);
 }
 
 /**
@@ -494,11 +532,12 @@ function _onCreateRegion(region) {
  */
 async function _attachPendingEmanation(region) {
     if (!game.user.isActiveGM) return;
-    const pending = region.getFlag?.(MODULE_ID, "pendingEmanation");
-    if (!pending?.type) return;
+    const flag = region.getFlag?.(MODULE_ID, "pendingEmanation");
+    const pending = (Array.isArray(flag) ? flag : [flag]).filter(b => b?.type);
+    if (!pending.length) return;
     try {
         if (!_getEmanationBehaviors(region).length) {
-            await region.createEmbeddedDocuments("RegionBehavior", [pending]);
+            await region.createEmbeddedDocuments("RegionBehavior", pending);
             debug(`Damage Emanation | Attached behavior to "${region.name}" for a player's template`);
         }
         await region.unsetFlag(MODULE_ID, "pendingEmanation");
@@ -781,6 +820,10 @@ function _isAffected(token, casterToken, activity, behavior) {
     const creatureTypes = behavior.system.creatureTypes;
     if (creatureTypes?.size && !creatureTypes.has(_getCreatureType(actor))) return false;
 
+    // Spells that only affect enemies (Grave Ground: "An enemy also makes this save") skip the caster's side
+    const enemiesOnly = [activity.target?.affects?.type, activity.item?.system.target?.affects?.type].includes("enemy");
+    if (enemiesOnly && casterToken && (token.disposition === casterToken.disposition)) return false;
+
     const choosesTargets = centeredOnCaster || !!activity.item?.system.target?.affects?.choice;
     if (getSetting("damageEmanationExcludeAllies") && choosesTargets && casterToken
         && (token.disposition === casterToken.disposition)) return false;
@@ -929,6 +972,14 @@ async function _executeDamageEmanation(behavior, tokens) {
     tokens = tokens.filter(t => t?.parent && t.actor);
     if (!tokens.length) return;
 
+    // Limited uses (Cordon of Arrows): one per affected creature; the area ends when they run out
+    const charges = behavior.system.charges;
+    const limited = Number.isInteger(charges);
+    if (limited) {
+        if (charges <= 0) return;
+        tokens = tokens.slice(0, charges);
+    }
+
     const scaling = _getBehaviorScaling(behavior, activity);
     const slot = _findSpellSlotKey(activity.actor, activity.item.system.level + scaling);
     const TargetsField = dnd5e.dataModels.chatMessage.fields.TargetsField;
@@ -962,6 +1013,38 @@ async function _executeDamageEmanation(behavior, tokens) {
     } finally {
         _pendingDamageTargets.delete(activity.uuid);
         restoreTargets?.();
+    }
+    if (limited) await _spendCharges(behavior, activity, tokens.length);
+}
+
+/**
+ * Spend uses of a limited emanation (Cordon of Arrows) and remove its area when none are left.
+ * Behaviors can only be changed by a GM; without one, the count isn't tracked.
+ * @param {RegionBehavior} behavior
+ * @param {Activity} activity
+ * @param {number} count
+ */
+async function _spendCharges(behavior, activity, count) {
+    const left = Math.max(0, Number(behavior.system.charges) - count);
+    if (!behavior.isOwner) {
+        debug(`Damage Emanation | Can't track the uses of ${activity.item.name}: no permission to change the behavior`);
+        return;
+    }
+    try {
+        if (left > 0) {
+            await behavior.update({ "system.charges": left });
+            debug(`Damage Emanation | ${activity.item.name}: ${left} use(s) left`);
+            return;
+        }
+        const region = behavior.region;
+        const spell = activity.item.name;
+        ui.notifications?.info(game.i18n.has("ND5T.DamageEmanation.ChargesSpent")
+            ? game.i18n.format("ND5T.DamageEmanation.ChargesSpent", { spell })
+            : `${spell}: all uses are spent, the area is removed.`);
+        if (region?.isOwner) await region.delete();
+        else await behavior.update({ "system.charges": 0 });
+    } catch (err) {
+        debug("Damage Emanation | Could not update the remaining uses", err);
     }
 }
 
