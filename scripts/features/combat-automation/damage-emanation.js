@@ -13,9 +13,13 @@
  * @updated v14.87.1 (Players' templates: the active GM attaches the behavior, players can't create regions with behaviors)
  * @updated v14.89.0 (Lightning Ring, Grave Ground, Spellfire Storm, Hunger of Hadar (two behaviors), Cordon of Arrows
  *   (ammunition count); enemy-only spells skip the caster's side)
+ * @updated v14.92.0 (Notices for listed spells without a usable activity and incomplete behaviors; a lost activity
+ *   is found again on the caster; the caster's player rolls the damage when the GM triggers the saves; save cards
+ *   are always public)
  */
-import { MODULE_ID, getSetting, debug, log } from "../../context.js";
+import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
+import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
 
 /**
@@ -374,10 +378,83 @@ function _resolveDamageActivity(item, placingActivity) {
 function _getBehaviorActivity(behavior) {
     const system = behavior?.system;
     if (!system) return null;
-    if (system.activity) return fromUuidSync(system.activity, { strict: false }) ?? null;
+    if (system.activity) return _safeFromUuid(system.activity) ?? _recoverActivity(behavior);
     if (!system.spell) return null;
-    const item = fromUuidSync(system.spell, { strict: false });
+    const item = _safeFromUuid(system.spell);
     return item?.system?.activities ? _resolveDamageActivity(item) : null;
+}
+
+/**
+ * fromUuidSync without throwing on malformed or foreign UUIDs.
+ * @param {string} uuid
+ * @returns {foundry.abstract.Document|object|null}
+ */
+function _safeFromUuid(uuid) {
+    if (!uuid || (typeof uuid !== "string")) return null;
+    try {
+        return fromUuidSync(uuid, { strict: false }) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** Behaviors whose activity was already repaired on this client. */
+const _repairedBehaviors = new Set();
+
+/**
+ * Find the activity of a behavior whose stored activity is gone (the spell was removed and added back, or replaced by
+ * another version): the region's item if it still exists, otherwise the caster's spell with the same identifier or
+ * name (the caster from the region's origin token, else from the old activity's UUID). The behavior is repaired
+ * when this client may change it (GM).
+ * @param {RegionBehavior} behavior
+ * @returns {Activity|null}
+ */
+function _recoverActivity(behavior) {
+    const region = behavior.region;
+    if (!region) return null;
+    const info = region.getFlag(MODULE_ID, "emanationItem") ?? {};
+    let item = _safeFromUuid(region.getFlag("dnd5e", "item"));
+    if (!item?.system?.activities) {
+        const oldUuid = behavior.system.activity;
+        const actor = _safeFromUuid(region.getFlag("dnd5e", "origin"))?.actor
+            ?? (oldUuid?.includes(".Item.") ? _safeFromUuid(oldUuid.split(".Item.")[0]) : null);
+        const identifier = info.identifier;
+        const name = String(info.name ?? "").toLowerCase();
+        item = actor?.items?.find(i => (i.type === "spell")
+            && ((identifier && (i.system?.identifier === identifier)) || (name && (i.name?.toLowerCase() === name)))) ?? null;
+    }
+    if (!item?.system?.activities) return null;
+
+    // Several behaviors (Hunger of Hadar): the profile entry with the same triggers; otherwise the usual pick
+    const own = Array.from(behavior.system.triggers ?? []).sort().join(",");
+    const entry = _getProfile(item).behaviors?.find(b => [...b.triggers].sort().join(",") === own);
+    const activity = (entry ? Array.from(item.system.activities).find(a => entry.activityName.test(a.name ?? "")) : null)
+        ?? _resolveDamageActivity(item);
+    if (!activity) return null;
+
+    if (behavior.isOwner && !_repairedBehaviors.has(behavior.uuid)) {
+        _repairedBehaviors.add(behavior.uuid);
+        behavior.update({ "system.activity": activity.uuid })
+            .then(() => debug(`Damage Emanation | Repaired "${region.name}": now uses ${item.name} (${activity.name})`))
+            .catch(err => debug("Damage Emanation | Could not repair the behavior", err));
+    }
+    return activity;
+}
+
+/** Notices already shown on this client, by key. */
+const _shownNotices = new Set();
+
+/**
+ * Show a warning once per client and key.
+ * @param {string} key
+ * @param {string} i18nKey
+ * @param {object} data
+ * @param {string} fallback
+ */
+function _notifyOnce(key, i18nKey, data, fallback) {
+    if (_shownNotices.has(key)) return;
+    _shownNotices.add(key);
+    ui.notifications?.warn(game.i18n.has(i18nKey) ? game.i18n.format(i18nKey, data) : fallback);
 }
 
 /**
@@ -456,6 +533,8 @@ function _onCreateMeasuredTemplate(activity, regionData) {
     const damageActivity = _resolveDamageActivity(item, activity);
     if (!damageActivity) {
         debug(`Damage Emanation | "${item.name}" is listed but has no save or damage activity`);
+        _notifyOnce(`noActivity:${item.uuid}`, "ND5T.DamageEmanation.NoTriggerActivity", { spell: item.name },
+            `${item.name} is on the Emanation Spells list but has no save or damage activity, so its area isn't automated.`);
         return;
     }
     const profile = _getProfile(item);
@@ -495,6 +574,8 @@ function _onCreateMeasuredTemplate(activity, regionData) {
         return;
     }
     for (const data of regionData) {
+        // Lets a lost activity be found again on the caster (spell removed and added back, replaced by another version)
+        foundry.utils.setProperty(data, `flags.${MODULE_ID}.emanationItem`, { identifier: item.system?.identifier ?? "", name: item.name });
         if (game.user.isGM) {
             data.behaviors = [...(data.behaviors ?? []), ...foundry.utils.deepClone(behaviorData)];
         } else {
@@ -861,6 +942,18 @@ function _enqueueTrigger(behavior, token, reason, turnKey, mergeKey) {
     const activity = _getBehaviorActivity(behavior);
     if (!activity?.item) {
         debug(`Damage Emanation | No activity found for behavior ${behavior.uuid}`);
+        // Tell the GM once why the area does nothing
+        if (game.user.isActiveGM) {
+            const region = behavior.region;
+            if (!behavior.system.activity && !behavior.system.spell) {
+                _notifyOnce(`incomplete:${behavior.uuid}`, "ND5T.DamageEmanation.BehaviorIncomplete", { region: region?.name ?? "" },
+                    `Damage Emanation behavior on "${region?.name ?? ""}": drop a spell onto its Spell field (or set a Damage Activity), otherwise it does nothing.`);
+            } else {
+                const spell = region?.getFlag(MODULE_ID, "emanationItem")?.name ?? region?.name ?? "";
+                _notifyOnce(`lost:${behavior.uuid}`, "ND5T.DamageEmanation.ActivityLost", { spell },
+                    `${spell}: the area's save or damage activity can't be found any more (the spell was removed or replaced). Remove the area, or drop the spell onto the Damage Emanation behavior again.`);
+            }
+        }
         return;
     }
     if (!_getTriggers(behavior, activity.item).has(reason)) return;
@@ -992,6 +1085,14 @@ async function _executeDamageEmanation(behavior, tokens) {
     };
     if (slot) usage.spell = { slot };
 
+    // The caster's player rolls the damage, not the GM who triggered the emanation: this client skips its own damage
+    // roll (dnd5e's for damage activities, Auto-Open Damage Dialog for Saves for save activities) and asks them.
+    const damageRoller = _getDamageRoller(activity);
+    if (damageRoller) {
+        usage.subsequentActions = false;
+        usage.nd5tEmanationDamageDelegated = true;
+    }
+
     debug(`Damage Emanation | Using ${activity.item.name} (${activity.name}) at +${scaling} against`, tokens.map(t => t.name));
 
     // Link the card to the caster's concentration, so effects applied from it (e.g. Deafened)
@@ -1002,14 +1103,27 @@ async function _executeDamageEmanation(behavior, tokens) {
 
     const restoreTargets = isMidiActive() ? _setUserTargets(tokens) : null;
     // A damage activity rolls its damage straight after the use; give that roll the same targets.
-    if (activity.type === "damage") _pendingDamageTargets.set(activity.uuid, messageSystem.targets);
+    if ((activity.type === "damage") && !damageRoller) _pendingDamageTargets.set(activity.uuid, messageSystem.targets);
     try {
-        await activity.use(usage, { configure: false }, {
+        // Always public: the targets' players roll their saves from this card, and the caster's player rolls the
+        // damage from it. dnd5e would otherwise use the triggering user's chat mode (often private for a GM).
+        const results = await activity.use(usage, { configure: false }, {
+            rollMode: "public",
             data: {
                 system: messageSystem,
                 flags: { [MODULE_ID]: { damageEmanation: behavior.uuid } }
             }
         });
+        if (damageRoller && results?.message?.id && activity.damage?.parts?.length) {
+            game.socket.emit(`module.${MODULE_ID}`, {
+                action: "damageEmanationRollDamage",
+                userId: damageRoller.id,
+                messageId: results.message.id,
+                targets: messageSystem.targets,
+                kind: activity.type
+            });
+            debug(`Damage Emanation | Asked ${damageRoller.name} to roll the damage of ${activity.item.name}`);
+        }
     } finally {
         _pendingDamageTargets.delete(activity.uuid);
         restoreTargets?.();
@@ -1046,6 +1160,44 @@ async function _spendCharges(behavior, activity, count) {
     } catch (err) {
         debug("Damage Emanation | Could not update the remaining uses", err);
     }
+}
+
+/**
+ * The player who rolls an emanation's damage when another user (usually the GM) triggers it: an active player who
+ * owns the caster, preferring the one whose character it is. Null when this client is that player, when no such
+ * player is online (this client rolls, as before), or with midi-qol (its workflow rolls the damage).
+ * @param {Activity} activity
+ * @returns {User|null}
+ */
+function _getDamageRoller(activity) {
+    const actor = activity?.actor;
+    if (!actor || isMidiActive()) return null;
+    const owners = game.users?.filter(u => u.active && !u.isGM && actor.testUserPermission(u, "OWNER")) ?? [];
+    const roller = owners.find(u => u.character?.id === actor.id) ?? owners[0] ?? null;
+    return (roller && (roller.id !== game.user.id)) ? roller : null;
+}
+
+/**
+ * Socket request on the caster's player's client: roll the damage of an emanation card, like clicking its Damage
+ * button. Save activities follow the player's Auto-Open Damage Dialog for Saves setting (without it, the card's
+ * button is there); damage activities always roll, as dnd5e does after using one.
+ * @param {{messageId: string, targets: object[], kind: string}} data
+ */
+async function _rollDelegatedDamage({ messageId, targets, kind }) {
+    // The card may arrive a moment after the request
+    let message = game.messages.get(messageId);
+    for (let i = 0; !message && (i < 20); i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        message = game.messages.get(messageId);
+    }
+    const activity = message?.getAssociatedActivity?.({ scaled: true });
+    if (!activity?.rollDamage) {
+        debug(`Damage Emanation | Can't roll the delegated damage: card ${messageId} or its activity not found`);
+        return;
+    }
+    if ((kind === "save") && !isFeatureActive("enableAutoRollSaveDamage", "clientEnableAutoRollSaveDamage")) return;
+    const configure = !getSetting("autoRollStaticDamage") || activityHasDamageDice(activity);
+    await activity.rollDamage({}, { configure }, { data: { system: { origin: messageId, targets } } });
 }
 
 /**
@@ -1445,6 +1597,12 @@ async function _applyPromptResolution({ messageId, affected, resolvedBy }) {
  * @param {object} data
  */
 export function onSocketMessage(data) {
+    if (data?.action === "damageEmanationRollDamage") {
+        if (data.userId === game.user.id) {
+            _rollDelegatedDamage(data).catch(err => console.error("Nik's DnD5e Tweaks | Damage Emanation: Failed to roll the damage", err));
+        }
+        return;
+    }
     if (data?.action === "damageEmanationClaimResult") {
         if (data.userId === game.user.id) _pendingClaims.get(data.requestId)?.(data.granted);
         return;

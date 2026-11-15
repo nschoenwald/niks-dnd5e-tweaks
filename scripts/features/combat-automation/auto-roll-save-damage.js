@@ -4,6 +4,7 @@
  *
  * @introduced v14.7.0
  * @updated v14.58.1 (Damage roll uses the targets of the placed area template, not the ones recorded before placement)
+ * @updated v14.92.0 (Skips emanation saves whose damage the caster's player rolls)
  */
 import { getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { activityHasDamageDice } from "./auto-roll-attack-damage.js";
@@ -40,6 +41,9 @@ function _onPostUseActivity(activity, usageConfig, results) {
 
     // Only act on Save-type activities that actually have damage parts
     if (activity.type !== "save") return;
+
+    // Damage Emanation asked the caster's player to roll this damage instead
+    if (usageConfig?.nd5tEmanationDamageDelegated) return;
     if (!activity.damage?.parts?.length) return;
 
     const autoRollStatic = getSetting("autoRollStaticDamage");

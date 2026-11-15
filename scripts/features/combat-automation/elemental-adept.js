@@ -4,6 +4,7 @@
  * a damage die counts as a 2. Part of Conditional Damage Bonuses, but without a toggle, like Great Weapon Fighting.
  *
  * @introduced v14.85.0
+ * @updated v14.92.0 (Tells the owner once when the feat's name doesn't say the chosen type)
  */
 import { isFeatureActive, log, debug } from "../../context.js";
 
@@ -23,6 +24,19 @@ import { isFeatureActive, log, debug } from "../../context.js";
 const IDENTIFIER = "elemental-adept";
 const NAME_PATTERN = /^elemental adept\b/i;
 const TYPES = ["acid", "cold", "fire", "lightning", "thunder"];
+
+/** Actors whose owner was already told this session that their Elemental Adept has no type in its name. */
+const _warnedActors = new Set();
+
+/**
+ * Whether the actor has an Elemental Adept feat.
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+function hasElementalAdept(actor) {
+    return Boolean(actor?.items?.some(item => (item.type === "feat")
+        && ((item.system?.identifier === IDENTIFIER) || NAME_PATTERN.test(item.name?.trim() ?? ""))));
+}
 
 /**
  * Damage types the actor's Elemental Adept feats name.
@@ -76,7 +90,17 @@ function onPostDamageRollConfiguration(rolls, config) {
         if (item?.type !== "spell") return;
         const actor = config.subject.actor ?? item.actor;
         const types = getElementalAdeptTypes(actor);
-        if (!types.size) return;
+        if (!types.size) {
+            // The feat is there but its name doesn't say the type: tell the owner once, when it would have mattered
+            const eligible = (rolls ?? []).some(r => TYPES.includes(r.options?.type));
+            if (eligible && hasElementalAdept(actor) && !_warnedActors.has(actor.uuid)) {
+                _warnedActors.add(actor.uuid);
+                ui.notifications?.warn(game.i18n.has("ND5T.ConditionalDamage.ElementalAdeptNoType")
+                    ? game.i18n.format("ND5T.ConditionalDamage.ElementalAdeptNoType", { name: actor.name })
+                    : `${actor.name}: Elemental Adept doesn't know your chosen damage type. Add it to the feat's name, e.g. "Elemental Adept (Fire)".`);
+            }
+            return;
+        }
 
         for (const roll of rolls ?? []) {
             const type = roll.options?.type;

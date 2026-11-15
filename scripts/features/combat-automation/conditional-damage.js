@@ -1783,6 +1783,60 @@ export function isPactWeapon(item, actor = null) {
 }
 
 /**
+ * The resource of a feature that costs uses. Items with uses configured are spent when the bonus is ticked; items
+ * without (homebrew, hand-made items) are still offered, but nothing is spent and the label says so.
+ *
+ * @param {Item5e|null} item
+ * @returns {{available: boolean, tracked: boolean, usesLeft: number|null, consume: object|null}|null}
+ */
+function _resource(item) {
+    if (!item) return null;
+    const left = _usesLeft(item);
+    if (left === null) return { available: true, tracked: false, usesLeft: null, consume: null };
+    return {
+        available: left > 0,
+        tracked: true,
+        usesLeft: left,
+        consume: { type: "itemUses", itemId: item.id, actor: item.actor }
+    };
+}
+
+/**
+ * The "uses" part of a resource bonus's label: "3 left", "3 Focus left" or "uses not tracked".
+ *
+ * @param {{usesLeft?: number|null, usesTracked?: boolean, usesUnit?: string}} bonus
+ * @returns {string}
+ */
+function _usesText(bonus) {
+    const i18n = game.i18n;
+    if (bonus?.usesTracked === false) {
+        return i18n?.has("ND5T.ConditionalDamage.UsesNotTracked") ? i18n.localize("ND5T.ConditionalDamage.UsesNotTracked") : "uses not tracked";
+    }
+    const count = bonus?.usesLeft ?? 0;
+    const key = (bonus?.usesUnit === "focus") ? "ND5T.ConditionalDamage.FocusLeft" : "ND5T.ConditionalDamage.UsesLeft";
+    if (i18n?.has(key)) return i18n.format(key, { count });
+    return (bonus?.usesUnit === "focus") ? `${count} Focus left` : `${count} left`;
+}
+
+/**
+ * Faces of a class's die from its level, for when the scale value is missing (2024 tables: Martial Arts die,
+ * Psionic Energy Die).
+ *
+ * @param {number} level
+ * @param {number[][]} table  [[minLevel, faces], …], ascending.
+ * @returns {number}
+ */
+function _facesByLevel(level, table) {
+    let faces = table[0][1];
+    for (const [min, value] of table) if (level >= min) faces = value;
+    return faces;
+}
+
+const MARTIAL_ARTS_DIE = [[1, 6], [5, 8], [11, 10], [17, 12]];
+const PSIONIC_ENERGY_DIE = [[1, 6], [5, 8], [11, 10], [17, 12]];
+const RAGE_DAMAGE = [[1, 2], [9, 3], [16, 4]];
+
+/**
  * Uses left on an item with limited uses, or null if it has none.
  *
  * @param {Item5e|null} item
@@ -1967,7 +2021,8 @@ function _addFeatureAttackBonuses(ctx, out) {
     if (isMyTurn && feature(["frenzy"], /^frenzy$/i) && isActorRaging(actor) && isActorReckless(actor)
         && isEligibleBrutalStrikeAttack(item, activity, config, actor)) {
         const count = Number(actor.system?.scale?.barbarian?.["rage-damage"]?.value
-            ?? original?.system?.scale?.barbarian?.["rage-damage"]?.value ?? 2) || 2;
+            ?? original?.system?.scale?.barbarian?.["rage-damage"]?.value)
+            || _facesByLevel(levels("barbarian"), RAGE_DAMAGE);
         const dice = `${count}d6`;
         add({
             id: "frenzy",
@@ -2004,8 +2059,8 @@ function _addFeatureAttackBonuses(ctx, out) {
 
     // Dread Ambusher (Gloom Stalker): +2d6 (2d8 at 11) psychic once per turn, Wisdom modifier uses per Long Rest
     const ambusher = isWeapon ? feature(["dread-ambusher"], /^dread ambusher$/i) : null;
-    const ambusherUses = _usesLeft(ambusher);
-    if (ambusher && ((ambusherUses ?? 0) > 0) && !used("dreadAmbusher")) {
+    const ambusherRes = _resource(ambusher);
+    if (ambusherRes?.available && !used("dreadAmbusher")) {
         const dice = levels("ranger") >= 11 ? "2d8" : "2d6";
         add({
             id: "dreadAmbusher",
@@ -2014,10 +2069,11 @@ function _addFeatureAttackBonuses(ctx, out) {
             formulaDisplay: dice,
             damageType: "psychic",
             flavor: "Dread Ambusher",
-            usesLeft: ambusherUses,
-            consume: { type: "itemUses", itemId: ambusher.id, actor: ambusher.actor },
+            usesLeft: ambusherRes.usesLeft,
+            usesTracked: ambusherRes.tracked,
+            consume: ambusherRes.consume,
             labelKey: "ND5T.ConditionalDamage.DreadAmbusher.Label",
-            defaultLabel: `Dread Ambusher (+${dice}, ${ambusherUses} left)`,
+            defaultLabel: `Dread Ambusher (+${dice}, ${_usesText({ usesLeft: ambusherRes.usesLeft, usesTracked: ambusherRes.tracked })})`,
             defaultActive: false
         });
     }
@@ -2030,7 +2086,8 @@ function _addFeatureAttackBonuses(ctx, out) {
             || (attunement.effects ?? []).some(e => (e.type === "enchantment") && !e.disabled && (e.isAppliedEnchantment === true))
             || /\(active\)/i.test(attunement.name ?? "");
         if (attuned) {
-            const dice = `1d${_scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 10)}`;
+            const dice = `1d${_scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 0)
+                || _facesByLevel(levels("monk"), MARTIAL_ARTS_DIE)}`;
             add({
                 id: "elementalEpitome",
                 spellName: "Elemental Epitome",
@@ -2053,8 +2110,8 @@ function _addFeatureAttackBonuses(ctx, out) {
         { id: "frostsChill", ids: ["frosts-chill"], pattern: /^frost's chill/i, name: "Frost's Chill", dice: "1d6", type: "cold", key: "FrostsChill" }
     ]) {
         const giantItem = feature(giant.ids, giant.pattern);
-        const left = _usesLeft(giantItem);
-        if (!giantItem || !((left ?? 0) > 0)) continue;
+        const giantRes = _resource(giantItem);
+        if (!giantRes?.available) continue;
         add({
             id: giant.id,
             spellName: giant.name,
@@ -2062,10 +2119,11 @@ function _addFeatureAttackBonuses(ctx, out) {
             formulaDisplay: giant.dice,
             damageType: giant.type,
             flavor: giant.name,
-            usesLeft: left,
-            consume: { type: "itemUses", itemId: giantItem.id, actor: giantItem.actor },
+            usesLeft: giantRes.usesLeft,
+            usesTracked: giantRes.tracked,
+            consume: giantRes.consume,
             labelKey: `ND5T.ConditionalDamage.${giant.key}.Label`,
-            defaultLabel: `${giant.name} (+${giant.dice}, ${left} left)`,
+            defaultLabel: `${giant.name} (+${giant.dice}, ${_usesText({ usesLeft: giantRes.usesLeft, usesTracked: giantRes.tracked })})`,
             turnKey: null,
             defaultActive: false
         });
@@ -2090,9 +2148,10 @@ function _addFeatureAttackBonuses(ctx, out) {
     const psionic = isWeapon && isMyTurn
         ? feature(["psionic-power"], /^psionic power$/i, i => Array.from(i.system?.activities ?? []).some(a => a.type === "damage"))
         : null;
-    const psionicUses = _usesLeft(psionic);
-    if (psionic && ((psionicUses ?? 0) > 0) && !used("psionicStrike")) {
-        const faces = _scaleDieFaces(actor, "psi-warrior", "die", 0) || _scaleDieFaces(original, "psi-warrior", "die", 6);
+    const psionicRes = _resource(psionic);
+    if (psionicRes?.available && !used("psionicStrike")) {
+        const faces = _scaleDieFaces(actor, "psi-warrior", "die", 0) || _scaleDieFaces(original, "psi-warrior", "die", 0)
+            || _facesByLevel(levels("fighter"), PSIONIC_ENERGY_DIE);
         const { formula, display } = _diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.int?.mod ?? 0), "Psionic Strike");
         add({
             id: "psionicStrike",
@@ -2101,10 +2160,11 @@ function _addFeatureAttackBonuses(ctx, out) {
             formulaDisplay: display,
             damageType: "force",
             flavor: "Psionic Strike",
-            usesLeft: psionicUses,
-            consume: { type: "itemUses", itemId: psionic.id, actor: psionic.actor },
+            usesLeft: psionicRes.usesLeft,
+            usesTracked: psionicRes.tracked,
+            consume: psionicRes.consume,
             labelKey: "ND5T.ConditionalDamage.PsionicStrike.Label",
-            defaultLabel: `Psionic Strike (+${display}, ${psionicUses} left)`,
+            defaultLabel: `Psionic Strike (+${display}, ${_usesText({ usesLeft: psionicRes.usesLeft, usesTracked: psionicRes.tracked })})`,
             defaultActive: false
         });
     }
@@ -2112,9 +2172,10 @@ function _addFeatureAttackBonuses(ctx, out) {
     // Hand of Harm (Warrior of Mercy): 1 Focus Point, Martial Arts die + Wisdom modifier necrotic, once per turn
     if (unarmed && !used("handOfHarm") && feature(["hand-of-harm"], /^hand of harm$/i)) {
         const focus = feature(["monks-focus"], /^monk's focus$/i);
-        const focusLeft = _usesLeft(focus);
-        if (focus && (focusLeft ?? 0) > 0) {
-            const faces = _scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 6);
+        const focusRes = _resource(focus);
+        if (focusRes?.available) {
+            const faces = _scaleDieFaces(actor, "monk", "die", 0) || _scaleDieFaces(original, "monk", "die", 0)
+                || _facesByLevel(levels("monk"), MARTIAL_ARTS_DIE);
             const { formula, display } = _diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.wis?.mod ?? 0), "Hand of Harm");
             add({
                 id: "handOfHarm",
@@ -2123,10 +2184,12 @@ function _addFeatureAttackBonuses(ctx, out) {
                 formulaDisplay: display,
                 damageType: "necrotic",
                 flavor: "Hand of Harm",
-                usesLeft: focusLeft,
-                consume: { type: "itemUses", itemId: focus.id, actor: focus.actor },
+                usesLeft: focusRes.usesLeft,
+                usesTracked: focusRes.tracked,
+                usesUnit: "focus",
+                consume: focusRes.consume,
                 labelKey: "ND5T.ConditionalDamage.HandOfHarm.Label",
-                defaultLabel: `Hand of Harm (+${display}, ${focusLeft} Focus left)`,
+                defaultLabel: `Hand of Harm (+${display}, ${_usesText({ usesLeft: focusRes.usesLeft, usesTracked: focusRes.tracked, usesUnit: "focus" })})`,
                 defaultActive: false
             });
         }
@@ -2239,8 +2302,8 @@ function _addFeatureAttackBonuses(ctx, out) {
     // Intelligence modifier uses per Long Rest
     const magicWeapon = isWeapon && (Boolean(item.system?.properties?.has?.("mgc")) || (Number(item.system?.magicalBonus) > 0));
     const jolt = magicWeapon && !used("arcaneJolt") ? feature(["arcane-jolt"], /^arcane jolt$/i) : null;
-    const joltUses = _usesLeft(jolt);
-    if (jolt && (joltUses ?? 0) > 0) {
+    const joltRes = _resource(jolt);
+    if (joltRes?.available) {
         const dice = feature(["improved-defender"], /^improved defender$/i) ? "4d6" : "2d6";
         add({
             id: "arcaneJolt",
@@ -2249,10 +2312,11 @@ function _addFeatureAttackBonuses(ctx, out) {
             formulaDisplay: dice,
             damageType: "force",
             flavor: "Arcane Jolt",
-            usesLeft: joltUses,
-            consume: { type: "itemUses", itemId: jolt.id, actor: jolt.actor },
+            usesLeft: joltRes.usesLeft,
+            usesTracked: joltRes.tracked,
+            consume: joltRes.consume,
             labelKey: "ND5T.ConditionalDamage.ArcaneJolt.Label",
-            defaultLabel: `Arcane Jolt (+${dice}, ${joltUses} left)`,
+            defaultLabel: `Arcane Jolt (+${dice}, ${_usesText({ usesLeft: joltRes.usesLeft, usesTracked: joltRes.tracked })})`,
             defaultActive: false
         });
     }
@@ -2590,8 +2654,8 @@ function _addSpellBonuses(ctx, out) {
 
     // Power Surge (Arcane Overload): + Proficiency Bonus to one damage roll of an Evocation spell, once per Long Rest
     const overload = (isSpell && isDamage && (school === "evo")) ? _findFeature(actor, ["arcane-overload"], /^arcane overload$/i) : null;
-    const overloadUses = _usesLeft(overload);
-    if (overload && (overloadUses ?? 0) > 0) {
+    const overloadRes = _resource(overload);
+    if (overloadRes?.available) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         out.push({
             id: "powerSurge",
@@ -2602,11 +2666,12 @@ function _addSpellBonuses(ctx, out) {
             matchWeaponType: true,
             flat: true,
             oneOff: true,
-            usesLeft: overloadUses,
-            consume: { type: "itemUses", itemId: overload.id, actor: overload.actor },
+            usesLeft: overloadRes.usesLeft,
+            usesTracked: overloadRes.tracked,
+            consume: overloadRes.consume,
             flavor: "Power Surge",
             labelKey: "ND5T.ConditionalDamage.PowerSurge.Label",
-            defaultLabel: `Power Surge (+${pb}, ${overloadUses} left)`,
+            defaultLabel: `Power Surge (+${pb}, ${_usesText({ usesLeft: overloadRes.usesLeft, usesTracked: overloadRes.tracked })})`,
             defaultActive: false
         });
     }
@@ -2758,6 +2823,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
 
     if (!isAttack) {
         _addSpellBonuses(featureContext, activeBonuses);
+        _markUsedThisTurn(actor, activeBonuses);
         return activeBonuses;
     }
 
@@ -2960,7 +3026,24 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     _addFeatureAttackBonuses(featureContext, activeBonuses);
     _addSpellBonuses(featureContext, activeBonuses);
 
+    _markUsedThisTurn(actor, activeBonuses);
     return activeBonuses;
+}
+
+/**
+ * Explain on the toggle why a once-per-turn bonus starts off: it was already used this turn. Sneak Attack has its
+ * own explanation.
+ *
+ * @param {Actor5e} actor
+ * @param {object[]} bonuses
+ */
+function _markUsedThisTurn(actor, bonuses) {
+    for (const bonus of bonuses) {
+        if (!bonus.turnKey || (bonus.id === "sneakAttack") || bonus.defaultActive) continue;
+        if (!hasUsedBonusThisTurn(actor, bonus.usageId ?? bonus.id, bonus.turnKey)) continue;
+        bonus.tooltipKey = "ND5T.ConditionalDamage.UsedThisTurn";
+        bonus.tooltipFallback = "Already used this turn.";
+    }
 }
 
 /**
@@ -3451,7 +3534,7 @@ function _patchDamageRollConfigurationDialog() {
             const bonusFields = bonuses.map(bonus => {
                 let label = bonus.defaultLabel;
                 if (bonus.labelKey && game.i18n?.has(bonus.labelKey)) {
-                    label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "", uses: bonus.usesLeft ?? "" });
+                    label = game.i18n.format(bonus.labelKey, { formula: bonus.formulaDisplay ?? "", uses: _usesText(bonus) });
                 }
 
                 // Normalize any internal newlines to spaces

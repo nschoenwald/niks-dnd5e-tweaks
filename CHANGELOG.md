@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.92.0] - 2026-11-15
+### Changed
+- **Conditional Damage Bonuses**: Features that cost uses are now offered even when their item has no uses set up, such as homebrew items. They're labeled *uses not tracked* and nothing is spent. Before, they never appeared.
+- **Conditional Damage Bonuses**: Once-per-turn toggles that start off because they were already used this turn now say so when you hover them.
+- **Conditional Damage Bonuses**: Characters missing a scale value get the right Martial Arts die, Psionic Energy Die and Rage Damage for their class level. Before, a fixed die was assumed.
+- **Conditional Damage Bonuses**: If Elemental Adept's name doesn't say the chosen damage type, the owner is told once, the first time it would have applied.
+- **Damage Emanation Automation**: When the GM triggers an emanation, the damage roll now opens for the caster's player instead of the GM. The save card works as before. If the player isn't online, the GM rolls as before.
+- **Damage Emanation Automation**: Save cards are now always posted publicly. Before, a GM using a private or blind chat mode hid them from the players, who then couldn't roll their saves.
+- **Damage Emanation Automation**: A spell on the list without a save or damage activity now gives the caster a notice, instead of placing an area that silently does nothing.
+- **Damage Emanation Automation**: An area whose spell was removed and added back, or replaced by another version, finds the caster's spell again and keeps working. If it can't, or a hand-drawn area has no spell set, the GM gets a notice the first time a creature triggers it.
+
 ## [14.91.0] - 2026-11-15
 ### Added
 - **Effects Only on Failed Saves**: The effect tray of a spell or feature that calls for a saving throw now skips creatures that succeeded. *Faerie Fire*, for example, only outlines the creatures that failed their Dexterity save. Effects marked **Always Apply** in the activity still go to every target. A notification tells you who was skipped. Roll the saves before you click Apply: targets that haven't rolled yet still get the effect.
