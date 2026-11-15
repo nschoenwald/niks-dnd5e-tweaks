@@ -872,12 +872,30 @@ export function getSettingsSchema() {
                             key: "enableRemoveInstantaneousTemplates",
                             introduced: "14.74.0",
                             docs: "remove-instantaneous-templates-on-turn-change",
-                            keywords: ["AoE", "area of effect", "measured template", "delete", "cleanup", "Fireball", "combat", "turn"],
+                            keywords: ["AoE", "area of effect", "measured template", "delete", "cleanup", "Fireball", "combat", "turn", "Ice Storm", "Plant Growth", "keep", "exception"],
                             name: "Remove Instantaneous Templates on Turn Change",
                             hint: "In combat, deletes the templates of spells and abilities with an instantaneous duration (e.g. Fireball, Burning Hands, breath weapons) when the turn changes, and when the combat ends. Templates of lasting spells and hand-drawn templates stay.",
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "removeInstantaneousTemplatesKeep",
+                            introduced: "14.90.0",
+                            name: "Template Exceptions",
+                            list: true,
+                            listChoices: [
+                                { value: "never", label: "Keep (remove by hand)" },
+                                { value: "casterTurnStart", label: "Start of the caster's next turn" },
+                                { value: "casterTurnEnd", label: "End of the caster's next turn" },
+                                { value: "combatEnd", label: "When combat ends" }
+                            ],
+                            listChoiceDefault: "never",
+                            hint: "Instantaneous spells whose area lasts (e.g. Ice Storm's Difficult Terrain), by identifier or name. Pick when each template is removed instead of at the next turn change.",
+                            type: "String",
+                            default: "heroes-feast, ice-storm=casterTurnEnd, plant-growth",
+                            scope: "world",
+                            parentKey: "enableRemoveInstantaneousTemplates"
                         },
                         {
                             key: "enableTemplateControlsHUD",

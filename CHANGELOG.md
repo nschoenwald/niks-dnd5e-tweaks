@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.90.0] - 2026-11-15
+### Added
+- **Remove Instantaneous Templates on Turn Change**: New *Template Exceptions* list for instantaneous spells whose area lasts. For each spell you pick when its template is removed: kept until you delete it, at the start or end of the caster's next turn, or when combat ends. By default *Ice Storm* is removed at the end of the caster's next turn, when its Difficult Terrain ends, and *Plant Growth* and *Heroes' Feast* are kept. Add your own spells or abilities by identifier or name. The dropdown needs Nik's Foundry Tweaks 14.4.0.
+
 ## [14.89.0] - 2026-11-15
 ### Added
 - **Damage Emanation Automation**: Five more spells work out of the box: *Lightning Ring* and *Grave Ground* (Arcana Unleashed), *Spellfire Storm* (Heroes of Faerûn), and *Hunger of Hadar* and *Cordon of Arrows* (Player's Handbook). Worlds that have already edited the *Emanation Spells* list keep their own version: add the new spells there by hand.

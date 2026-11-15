@@ -797,6 +797,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "removeInstantaneousTemplatesKeep", {
+        name: "↳ Template Exceptions",
+        hint: "A comma-separated list of item identifiers or names (case-insensitive) of instantaneous spells whose area lasts (e.g. Ice Storm's Difficult Terrain). Each entry can say when its template is removed: \"ice-storm=casterTurnEnd\". Times: never (default), casterTurnStart, casterTurnEnd, combatEnd.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "heroes-feast, ice-storm=casterTurnEnd, plant-growth",
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableGridBasedTemplates", {
         name: "Grid-Based Templates",
         hint: "New spell, item and drawn templates of the chosen types are measured with the scene's grid rules instead of as round shapes, like Foundry's grid-based Region shapes. On a square grid with 5/5/5 diagonals a 20 ft sphere covers a square, with 5/10/5 diagonals an octagon; on hex grids round shapes follow the hexes. Existing templates keep their shape. Applies to every player.",
