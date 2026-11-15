@@ -19,6 +19,9 @@
  * @updated v14.85.0 (PHB class feature, species and spell bonuses: Colossus Slayer, Divine Strike, Primal Strike, Divine Fury,
  *   Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form,
  *   Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul; Assassinate; Foe Slayer)
+ * @updated v14.88.0 (Bonuses from other official books: Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes,
+ *   Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from
+ *   Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner; healing rolls and feature damage rolls are considered)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -2168,6 +2171,197 @@ function _addFeatureAttackBonuses(ctx, out) {
             defaultActive: true
         });
     }
+
+    // Polar Strikes (Winter Walker, Frigid Explorer): +1d4 cold (1d6 at Ranger 11), weapon hits, each creature once
+    // per turn
+    if (isWeapon && feature(["frigid-explorer"], /^frigid explorer$/i)) {
+        const dice = levels("ranger") >= 11 ? "1d6" : "1d4";
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const usageId = targets.length === 1 ? `polarStrikes:${targets[0].uuid}` : "polarStrikes";
+        add({
+            id: "polarStrikes",
+            usageId,
+            spellName: "Polar Strikes",
+            formula: `${dice}[Polar Strikes]`,
+            formulaDisplay: dice,
+            damageType: "cold",
+            flavor: "Polar Strikes",
+            labelKey: "ND5T.ConditionalDamage.PolarStrikes.Label",
+            defaultLabel: `Polar Strikes (+${dice})`,
+            defaultActive: !used(usageId)
+        });
+    }
+
+    // Power from Pain (Boon of Bloodshed): + Proficiency Bonus once per turn on an attack made while Bloodied
+    if (feature(["boon-of-bloodshed"], /^boon of bloodshed$/i) && _isBloodied(actor)) {
+        const pb = Number(actor.system?.attributes?.prof ?? 2);
+        add({
+            id: "powerFromPain",
+            spellName: "Power from Pain",
+            formula: `${pb}[Power from Pain]`,
+            formulaDisplay: String(pb),
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flat: true,
+            flavor: "Power from Pain",
+            labelKey: "ND5T.ConditionalDamage.PowerFromPain.Label",
+            defaultLabel: `Power from Pain (+${pb})`,
+            defaultActive: !used("powerFromPain")
+        });
+    }
+
+    // Ominous Strikes (Hollow Warden, Ancient Might): + Wisdom modifier on a hit against a Frightened creature
+    const wisMod = Number(actor.system?.abilities?.wis?.mod ?? 0);
+    if ((wisMod > 0) && feature(["ancient-might"], /^ancient might$/i)) {
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const frightened = targets.some(doc => doc.actor?.statuses?.has("frightened"));
+        add({
+            id: "ominousStrikes",
+            spellName: "Ominous Strikes",
+            formula: `${wisMod}[Ominous Strikes]`,
+            formulaDisplay: String(wisMod),
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flat: true,
+            flavor: "Ominous Strikes",
+            labelKey: "ND5T.ConditionalDamage.OminousStrikes.Label",
+            defaultLabel: `Ominous Strikes (+${wisMod})`,
+            tooltipKey: `ND5T.ConditionalDamage.OminousStrikes.Reason.${!targets.length ? "NoTarget" : (frightened ? "Frightened" : "NotFrightened")}`,
+            tooltipFallback: !targets.length
+                ? "No target found. Check yourself whether it's Frightened."
+                : (frightened ? "The target is Frightened." : "The target isn't Frightened."),
+            turnKey: null,
+            defaultActive: frightened
+        });
+    }
+
+    // Arcane Jolt (Battle Smith): +2d6 force (4d6 with Improved Defender) with a magic weapon, once per turn,
+    // Intelligence modifier uses per Long Rest
+    const magicWeapon = isWeapon && (Boolean(item.system?.properties?.has?.("mgc")) || (Number(item.system?.magicalBonus) > 0));
+    const jolt = magicWeapon && !used("arcaneJolt") ? feature(["arcane-jolt"], /^arcane jolt$/i) : null;
+    const joltUses = _usesLeft(jolt);
+    if (jolt && (joltUses ?? 0) > 0) {
+        const dice = feature(["improved-defender"], /^improved defender$/i) ? "4d6" : "2d6";
+        add({
+            id: "arcaneJolt",
+            spellName: "Arcane Jolt",
+            formula: `${dice}[Arcane Jolt]`,
+            formulaDisplay: dice,
+            damageType: "force",
+            flavor: "Arcane Jolt",
+            usesLeft: joltUses,
+            consume: { type: "itemUses", itemId: jolt.id, actor: jolt.actor },
+            labelKey: "ND5T.ConditionalDamage.ArcaneJolt.Label",
+            defaultLabel: `Arcane Jolt (+${dice}, ${joltUses} left)`,
+            defaultActive: false
+        });
+    }
+
+    // Lightning Launcher (Armorer, Infiltrator model): +1d6 lightning once on each of your turns with the launcher
+    if (isWeapon && isMyTurn && ((_identifierOf(item) === "lightning-launcher") || /lightning launcher/i.test(item.name ?? ""))) {
+        add({
+            id: "lightningLauncher",
+            spellName: "Lightning Launcher",
+            formula: "1d6[Lightning Launcher]",
+            formulaDisplay: "1d6",
+            damageType: "lightning",
+            flavor: "Lightning Launcher",
+            labelKey: "ND5T.ConditionalDamage.LightningLauncher.Label",
+            defaultLabel: "Lightning Launcher (+1d6)",
+            defaultActive: !used("lightningLauncher")
+        });
+    }
+
+    // Dreaded Necrosis (Undead Patron, Grave Touched): one extra damage die for necrotic damage while in Form of
+    // Dread, once per turn
+    if (feature(["grave-touched"], /^grave touched$/i)
+        && _activeFeatureEffects(actor, ["form-of-dread"], /^form of (?:superior )?dread\b/i).length) {
+        const faces = _firstDieFacesOfType(config, "necrotic");
+        if (faces) {
+            const dice = `1d${faces}`;
+            add({
+                id: "dreadedNecrosis",
+                spellName: "Dreaded Necrosis",
+                formula: `${dice}[Dreaded Necrosis]`,
+                formulaDisplay: dice,
+                damageType: "necrotic",
+                flavor: "Dreaded Necrosis",
+                labelKey: "ND5T.ConditionalDamage.DreadedNecrosis.Label",
+                defaultLabel: `Dreaded Necrosis (+${dice})`,
+                defaultActive: !used("dreadedNecrosis")
+            });
+        }
+    }
+}
+
+/**
+ * Whether the actor is Bloodied (the system's status, or at half its hit points or fewer).
+ *
+ * @param {Actor5e} actor
+ * @returns {boolean}
+ */
+function _isBloodied(actor) {
+    if (actor?.statuses?.has("bloodied")) return true;
+    const hp = actor?.system?.attributes?.hp;
+    return Boolean(hp && (Number(hp.max) > 0) && (Number(hp.value) > 0) && (Number(hp.value) <= (Number(hp.max) / 2)));
+}
+
+/**
+ * Faces of the first literal die in the roll parts of a damage type, or null.
+ *
+ * @param {object} config  Damage roll process configuration.
+ * @param {string} type
+ * @returns {number|null}
+ */
+function _firstDieFacesOfType(config, type) {
+    for (const roll of config?.rolls ?? []) {
+        if (roll?.options?._nd5tConditionalId) continue;
+        const types = roll?.options?.types ?? (roll?.options?.type ? [roll.options.type] : []);
+        if (!types.includes(type)) continue;
+        for (const part of roll.parts ?? []) {
+            const match = (typeof part === "string") ? part.match(/\b\d+d(\d+)/i) : null;
+            if (match) return Number(match[1]);
+        }
+    }
+    return null;
+}
+
+/** Spells of the Cartographer Spells table (Forge of the Artificer). */
+const CARTOGRAPHER_SPELLS = new Set([
+    "faerie-fire", "guiding-bolt", "healing-word", "locate-object", "mind-spike", "call-lightning", "clairvoyance",
+    "banishment", "locate-creature", "scrying", "teleportation-circle"
+]);
+
+/**
+ * Damage types of a damage roll's own parts (not conditional bonus rolls).
+ *
+ * @param {object} config
+ * @param {boolean} [anyChoice=false]  Also count types a part only offers in its dropdown.
+ * @returns {Set<string>}
+ */
+function _rollTypes(config, anyChoice = false) {
+    const types = new Set();
+    for (const roll of config?.rolls ?? []) {
+        if (roll?.options?._nd5tConditionalId) continue;
+        const list = (anyChoice || !roll?.options?.type) ? (roll?.options?.types ?? []) : [];
+        for (const type of [roll?.options?.type, ...list]) if (type) types.add(type);
+    }
+    return types;
+}
+
+/**
+ * Whether a spell is being cast with a spell slot: a leveled spell whose activity uses a slot and that isn't
+ * innate, at will or a ritual.
+ *
+ * @param {Item5e} item
+ * @param {Activity|null} activity
+ * @returns {boolean}
+ */
+function _castWithSlot(item, activity) {
+    if (!(Number(item?.system?.level) > 0)) return false;
+    const method = item.system?.method ?? item.system?.preparation?.mode ?? "spell";
+    if (["innate", "atwill", "ritual"].includes(method)) return false;
+    return activity?.consumption?.spellSlot !== false;
 }
 
 /**
@@ -2178,9 +2372,15 @@ function _addFeatureAttackBonuses(ctx, out) {
  * @param {object[]} out
  */
 function _addSpellBonuses(ctx, out) {
-    const { actor, item, config, baseDamageType, turnKey, isMyTurn, isAttack } = ctx;
+    const { actor, item, activity, config, dialog, message, baseDamageType, turnKey, isMyTurn, isAttack, isHealing } = ctx;
     const isSpell = item?.type === "spell";
+    const isDamage = !isHealing;
     const used = (usageId) => hasUsedBonusThisTurn(actor, usageId, turnKey);
+    const spellClass = isSpell ? (item.system?.classIdentifier ?? "") : "";
+    const school = isSpell ? item.system?.school : null;
+    const intMod = Number(actor.system?.abilities?.int?.mod ?? 0);
+    // Type of a spell bonus: the spell's own damage type, or healing
+    const spellType = isHealing ? "healing" : baseDamageType;
 
     // Damage types of the roll's parts
     const rollTypes = new Set();
@@ -2191,10 +2391,8 @@ function _addSpellBonuses(ctx, out) {
     }
 
     // Empowered Evocation (Evoker): + Intelligence modifier to a Wizard Evocation spell's damage
-    if (isSpell && (item.system?.school === "evo") && _findFeature(actor, ["empowered-evocation"], /^empowered evocation$/i)) {
-        const classId = item.system?.classIdentifier ?? "";
-        const intMod = Number(actor.system?.abilities?.int?.mod ?? 0);
-        if ((!classId || classId === "wizard") && intMod > 0) {
+    if (isSpell && isDamage && (school === "evo") && _findFeature(actor, ["empowered-evocation"], /^empowered evocation$/i)) {
+        if ((!spellClass || spellClass === "wizard") && intMod > 0) {
             out.push({
                 id: "empoweredEvocation",
                 spellName: "Empowered Evocation",
@@ -2214,7 +2412,7 @@ function _addSpellBonuses(ctx, out) {
     // Radiant Soul (Celestial Patron): + Charisma modifier to a radiant or fire spell, once on each of your turns
     const soulTypes = ["radiant", "fire"].filter(t => rollTypes.has(t));
     const chaMod = Number(actor.system?.abilities?.cha?.mod ?? 0);
-    if (isSpell && isMyTurn && soulTypes.length && (chaMod > 0) && _findFeature(actor, ["radiant-soul"], /^radiant soul$/i)) {
+    if (isSpell && isDamage && isMyTurn && soulTypes.length && (chaMod > 0) && _findFeature(actor, ["radiant-soul"], /^radiant soul$/i)) {
         out.push({
             id: "radiantSoul",
             spellName: "Radiant Soul",
@@ -2234,7 +2432,7 @@ function _addSpellBonuses(ctx, out) {
 
     // Celestial Revelation (Aasimar): + Proficiency Bonus to an attack or spell, once on each of your turns, while
     // transformed. Necrotic Shroud deals necrotic damage, Heavenly Wings and Inner Radiance radiant.
-    if ((isAttack || isSpell) && isMyTurn && _findFeature(actor, ["celestial-revelation"], /^celestial revelation$/i)) {
+    if ((isAttack || isSpell) && isDamage && isMyTurn && _findFeature(actor, ["celestial-revelation"], /^celestial revelation$/i)) {
         const revelation = _activeFeatureEffects(actor, ["celestial-revelation"],
             /^(?:heavenly wings|inner radiance|searing radiance|necrotic shroud)$/i);
         if (revelation.length) {
@@ -2256,6 +2454,179 @@ function _addSpellBonuses(ctx, out) {
             });
         }
     }
+
+    // Pull of Death (Grave Domain, Circle of Mortality): +1d4 necrotic (1d6 at Cleric 11) once per turn, attack or
+    // spell, against a creature that's missing hit points
+    if ((isAttack || isSpell) && isDamage && _findFeature(actor, ["circle-of-mortality"], /^circle of mortality$/i)) {
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const hurt = targets.some(doc => {
+            const hp = doc.actor.system?.attributes?.hp;
+            return hp && (Number(hp.max) > 0) && (Number(hp.value) < Number(hp.max));
+        });
+        const dice = _classLevels(actor, "cleric") >= 11 ? "1d6" : "1d4";
+        out.push({
+            id: "pullOfDeath",
+            spellName: "Pull of Death",
+            formula: `${dice}[Pull of Death]`,
+            formulaDisplay: dice,
+            damageType: "necrotic",
+            flavor: "Pull of Death",
+            oneOff: true,
+            turnKey,
+            labelKey: "ND5T.ConditionalDamage.PullOfDeath.Label",
+            defaultLabel: `Pull of Death (+${dice})`,
+            tooltipKey: `ND5T.ConditionalDamage.ColossusSlayer.Reason.${!targets.length ? "NoTarget" : (hurt ? "Hurt" : "Full")}`,
+            tooltipFallback: !targets.length
+                ? "No target found. Check the target's hit points yourself."
+                : (hurt ? "The target is missing hit points." : "The target has all its hit points."),
+            defaultActive: hurt && !used("pullOfDeath")
+        });
+    }
+
+    // Guided Precision (Cartographer): + Intelligence modifier once per turn to a Cartographer list spell, or to an
+    // attack against a creature outlined by your Faerie Fire
+    if (isDamage && (intMod > 0) && _findFeature(actor, ["guided-precision"], /^guided precision$/i)) {
+        const listed = isSpell && CARTOGRAPHER_SPELLS.has(_identifierOf(item) || (item.name ?? "").slugify?.({ strict: true }));
+        let outlined = false;
+        if (!listed && isAttack) {
+            outlined = _resolveTargetDocs(actor, { config, dialog, message, activity }).some(doc =>
+                (doc.actor?.appliedEffects ?? []).some(e => /^(?:outlined|faerie fire)\b/i.test(e.name ?? "")
+                    && (!e.origin || e.origin.includes(actor.id))));
+        }
+        if (listed || outlined) {
+            out.push({
+                id: "guidedPrecision",
+                spellName: "Guided Precision",
+                formula: `${intMod}[Guided Precision]`,
+                formulaDisplay: String(intMod),
+                damageType: baseDamageType,
+                matchWeaponType: true,
+                flat: true,
+                oneOff: true,
+                turnKey,
+                flavor: "Guided Precision",
+                labelKey: "ND5T.ConditionalDamage.GuidedPrecision.Label",
+                defaultLabel: `Guided Precision (+${intMod})`,
+                defaultActive: !used("guidedPrecision")
+            });
+        }
+    }
+
+    // Arcane Firearm (Artillerist): +1d8 to one damage roll of an Artificer spell cast through the firearm
+    if (isSpell && isDamage && (spellClass === "artificer") && _findFeature(actor, ["arcane-firearm"], /^arcane firearm$/i)) {
+        out.push({
+            id: "arcaneFirearm",
+            spellName: "Arcane Firearm",
+            formula: "1d8[Arcane Firearm]",
+            formulaDisplay: "1d8",
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flavor: "Arcane Firearm",
+            labelKey: "ND5T.ConditionalDamage.ArcaneFirearm.Label",
+            defaultLabel: "Arcane Firearm (+1d8)",
+            defaultActive: true
+        });
+    }
+
+    // Alchemical Savant (Alchemist): + Intelligence modifier (minimum 1) to one healing roll, or one acid, fire or
+    // poison damage roll, of a spell cast with Alchemist's Supplies
+    const savantTypes = isHealing ? ["healing"] : ["acid", "fire", "poison"].filter(t => _rollTypes(config).has(t));
+    if (isSpell && savantTypes.length && _findFeature(actor, ["alchemical-savant"], /^alchemical savant$/i)) {
+        const bonus = Math.max(1, intMod);
+        out.push({
+            id: "alchemicalSavant",
+            spellName: "Alchemical Savant",
+            formula: `${bonus}[Alchemical Savant]`,
+            formulaDisplay: String(bonus),
+            damageType: savantTypes.includes(baseDamageType) ? baseDamageType : savantTypes[0],
+            ...(savantTypes.length > 1 ? { damageTypes: savantTypes } : {}),
+            flat: true,
+            flavor: "Alchemical Savant",
+            labelKey: "ND5T.ConditionalDamage.AlchemicalSavant.Label",
+            defaultLabel: `Alchemical Savant (+${bonus})`,
+            defaultActive: true
+        });
+    }
+
+    // Arcane Conduit (Reanimator): + Intelligence modifier once per turn to an Artificer Evocation or Necromancy spell
+    if (isSpell && isDamage && (spellClass === "artificer") && ["evo", "nec"].includes(school) && (intMod > 0)
+        && _findFeature(actor, ["arcane-conduit"], /^arcane conduit$/i)) {
+        out.push({
+            id: "arcaneConduit",
+            spellName: "Arcane Conduit",
+            formula: `${intMod}[Arcane Conduit]`,
+            formulaDisplay: String(intMod),
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flat: true,
+            oneOff: true,
+            turnKey,
+            flavor: "Arcane Conduit",
+            labelKey: "ND5T.ConditionalDamage.ArcaneConduit.Label",
+            defaultLabel: `Arcane Conduit (+${intMod})`,
+            defaultActive: !used("arcaneConduit")
+        });
+    }
+
+    // Power from Beyond (College of Spirits, Empowered Channeling): +1d6 once per turn to a Bard spell cast with a
+    // spell slot, damage or healing
+    if (isSpell && (spellClass === "bard") && _castWithSlot(item, activity)
+        && _findFeature(actor, ["empowered-channeling"], /^empowered channeling$/i)) {
+        out.push({
+            id: "powerFromBeyond",
+            spellName: "Power from Beyond",
+            formula: "1d6[Power from Beyond]",
+            formulaDisplay: "1d6",
+            damageType: spellType,
+            ...(isHealing ? {} : { matchWeaponType: true }),
+            oneOff: true,
+            turnKey,
+            flavor: "Power from Beyond",
+            labelKey: "ND5T.ConditionalDamage.PowerFromBeyond.Label",
+            defaultLabel: "Power from Beyond (+1d6)",
+            defaultActive: !used("powerFromBeyond")
+        });
+    }
+
+    // Power Surge (Arcane Overload): + Proficiency Bonus to one damage roll of an Evocation spell, once per Long Rest
+    const overload = (isSpell && isDamage && (school === "evo")) ? _findFeature(actor, ["arcane-overload"], /^arcane overload$/i) : null;
+    const overloadUses = _usesLeft(overload);
+    if (overload && (overloadUses ?? 0) > 0) {
+        const pb = Number(actor.system?.attributes?.prof ?? 2);
+        out.push({
+            id: "powerSurge",
+            spellName: "Power Surge",
+            formula: `${pb}[Power Surge]`,
+            formulaDisplay: String(pb),
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flat: true,
+            oneOff: true,
+            usesLeft: overloadUses,
+            consume: { type: "itemUses", itemId: overload.id, actor: overload.actor },
+            flavor: "Power Surge",
+            labelKey: "ND5T.ConditionalDamage.PowerSurge.Label",
+            defaultLabel: `Power Surge (+${pb}, ${overloadUses} left)`,
+            defaultActive: false
+        });
+    }
+
+    // Perfect Poisoner (Boon of Poison Mastery): once per turn, poison damage dice from an attack, spell or feature
+    // roll their highest number. Applied to the final rolls in dnd5e.postDamageRollConfiguration.
+    if (isDamage && _rollTypes(config, true).has("poison") && _findFeature(actor, ["boon-of-poison-mastery"], /^boon of poison mastery$/i)) {
+        out.push({
+            id: "perfectPoisoner",
+            spellName: "Perfect Poisoner",
+            flavor: "Perfect Poisoner",
+            isWeaponModifier: true,
+            formulaDisplay: "max",
+            oneOff: true,
+            turnKey,
+            labelKey: "ND5T.ConditionalDamage.PerfectPoisoner.Label",
+            defaultLabel: "Perfect Poisoner (max poison dice)",
+            defaultActive: !used("perfectPoisoner")
+        });
+    }
 }
 
 /**
@@ -2270,13 +2641,13 @@ function _addSpellBonuses(ctx, out) {
  * @param {object|null} [context.config=null]
  * @returns {Array<object>} Array of active definition objects
  */
-export function getActiveConditionalBonuses(actor, { item = null, activity = null, config = null, dialog = null, message = null } = {}) {
+export function getActiveConditionalBonuses(actor, { item = null, activity = null, config = null, dialog = null, message = null, isHealing = false } = {}) {
     if (!actor) return [];
     const activeBonuses = [];
 
     // Damage rolls without an activity count as attacks (old behaviour); other activities (saving throw spells,
     // damage activities) only get the spell damage bonuses.
-    const isAttack = !activity || _isAttackActivity(activity);
+    const isAttack = !isHealing && (!activity || _isAttackActivity(activity));
 
     // --- 1. Concentration Spells (Hex & Hunter's Mark) ---
     const effects = actor.appliedEffects ?? Array.from(actor.effects?.values() ?? []);
@@ -2383,7 +2754,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     const inCombat = Boolean(combat?.active && combat.started);
     const turnKey = getCombatTurnKey(combat, actor, token);
     const isMyTurn = isAttackerCombatTurn(actor, token);
-    const featureContext = { actor, item, activity, config, dialog, message, baseDamageType, token, combat, inCombat, turnKey, isMyTurn, isAttack };
+    const featureContext = { actor, item, activity, config, dialog, message, baseDamageType, token, combat, inCombat, turnKey, isMyTurn, isAttack, isHealing };
 
     if (!isAttack) {
         _addSpellBonuses(featureContext, activeBonuses);
@@ -2676,18 +3047,19 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
     // Initiative rolls or rolls with non-damage subjects must never receive conditional damage bonuses
     if (config.rolls?.some(r => r.options?.type === "initiative" || r.data?.roll?.type === "initiative")) return;
 
-    // Healing rolls cannot receive attack-dependent damage bonuses
+    // Temporary hit points never get bonuses. Healing rolls only get the spell bonuses that also add to healing
+    // (Alchemical Savant, Power from Beyond); getActiveConditionalBonuses handles that.
+    if (config.rolls?.some(r => r.options?.type === "temphp")) return;
     const rollType = config.subject?.type ?? message?.type ?? message?.system?.type ?? message?.data?.type;
-    if (rollType === "heal") return;
-    if (config.rolls?.some(r => r.options?.type === "healing" || r.options?.type === "temphp")) return;
+    const isHealing = (rollType === "heal") || (rollType === "healing")
+        || Boolean(config.rolls?.some(r => r.options?.type === "healing"));
 
     // Damage rolls are associated with activities/items, not an Actor directly (e.g. rollInitiative passes subject: this [Actor])
     if (config.subject instanceof Actor) return;
 
     // Most bonuses require hitting with an attack. Other activities (a saving throw spell like Fireball, a damage
-    // activity like Magic Missile) only get the spell damage bonuses (Empowered Evocation, Radiant Soul, Celestial
-    // Revelation), so non-attack activities of anything but spells bail out here.
-    if (config.subject && !_isAttackActivity(config.subject) && (config.subject.item?.type !== "spell")) return;
+    // activity like Magic Missile, a feature's damage) only get the spell bonuses and Perfect Poisoner; see
+    // getActiveConditionalBonuses.
 
     // Resolve the rolling actor
     const actor = config.subject?.actor
@@ -2708,7 +3080,7 @@ function _onPreRollDamage(config, dialog = {}, message = {}) {
         ?? null;
 
     // Detect active conditional bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, etc.)
-    const activeDefs = getActiveConditionalBonuses(actor, { item, activity: config.subject, config, dialog, message });
+    const activeDefs = getActiveConditionalBonuses(actor, { item, activity: config.subject, config, dialog, message, isHealing });
     if (!activeDefs.length) return;
 
     // Prepare bonus metadata on the process configuration
@@ -3095,7 +3467,7 @@ function _patchDamageRollConfigurationDialog() {
                     label = `${titlePart} ${bonusPart}`;
                 }
 
-                const isCurrentlyInRolls = (bonus.id === "cleave" || bonus.id === "savageAttacker")
+                const isCurrentlyInRolls = (bonus.isMalus || bonus.isWeaponModifier)
                     ? Boolean(bonus.active)
                     : (this.config.rolls ?? []).some(
                         r => r.options?._nd5tConditionalId === bonus.id && !r.options?._nd5tInactive
@@ -3192,7 +3564,7 @@ function _patchDamageRollConfigurationDialog() {
                         const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
                         bonus.active = isChecked;
 
-                        if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
+                        if (bonus.isMalus || bonus.isWeaponModifier) {
                             continue;
                         }
 
@@ -3295,9 +3667,10 @@ function _patchDamageRollConfigurationDialog() {
                         const isChecked = _getBonusToggleValue(this.form, formData, bonus.id);
                         bonus.active = isChecked;
 
-                        if (bonus.id === "cleave" || bonus.id === "savageAttacker") {
-                            if (bonus.id === "savageAttacker" && isChecked && bonus.turnKey) {
-                                markBonusUsedThisTurn(bonus.actor, "savageAttacker", bonus.turnKey);
+                        if (bonus.isMalus || bonus.isWeaponModifier) {
+                            // Savage Attacker, Perfect Poisoner: once per turn
+                            if (bonus.isWeaponModifier && isChecked && bonus.turnKey) {
+                                markBonusUsedThisTurn(bonus.actor, bonus.usageId ?? bonus.id, bonus.turnKey);
                             }
                             continue;
                         }
@@ -3394,6 +3767,34 @@ function _patchDamageRollConfigurationDialog() {
     log("Conditional Damage | Patched DamageRollConfigurationDialog for conditional toggles");
 }
 
+/**
+ * dnd5e.postDamageRollConfiguration: when Perfect Poisoner is ticked, every die of the poison rolls rolls its
+ * highest number (`min<faces>`), critical dice included.
+ * @param {DamageRoll[]} rolls
+ * @param {object} config
+ */
+function _applyPerfectPoisoner(rolls, config) {
+    try {
+        const bonus = config?._nd5tConditionalBonuses?.find(b => b.id === "perfectPoisoner");
+        if (!bonus?.active) return;
+        for (const roll of rolls ?? []) {
+            if ((roll.options?.type !== "poison") || roll.options?._nd5tInactive) continue;
+            let changed = false;
+            for (const term of roll.terms ?? []) {
+                if (!(term instanceof foundry.dice.terms.Die) || !(term.faces > 1)) continue;
+                term.modifiers = [...(term.modifiers ?? []), `min${term.faces}`];
+                changed = true;
+            }
+            if (changed) {
+                roll.resetFormula?.();
+                roll.options.nd5tPerfectPoisoner = true;
+            }
+        }
+    } catch (err) {
+        console.error(`${MODULE_ID} | Conditional Damage: Perfect Poisoner failed`, err);
+    }
+}
+
 let _isInitialized = false;
 
 /**
@@ -3449,6 +3850,9 @@ export function initConditionalDamage() {
     });
 
     // Mark cached attack rolls as having rolled damage when a damage roll is executed
+    // Perfect Poisoner: maximize the poison dice of the final rolls (the type picked in the dialog counts)
+    Hooks.on("dnd5e.postDamageRollConfiguration", _applyPerfectPoisoner);
+
     Hooks.on("dnd5e.rollDamage", (rolls, { subject } = {}) => {
         const actor = subject?.actor
             ?? rolls?.[0]?.data?.actor

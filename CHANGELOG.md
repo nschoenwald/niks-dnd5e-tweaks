@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.88.0] - 2026-11-15
+### Added
+- **Conditional Damage Bonuses**: Features from Forge of the Artificer, Heroes of Faerûn, Ravenloft and Arcana Unleashed get toggles in the damage dialog: *Pull of Death* (starts on when the target is missing hit points), *Polar Strikes*, *Power from Pain* (while Bloodied), *Ominous Strikes* (starts on against a Frightened target), *Lightning Launcher*, *Guided Precision* (Cartographer spells, or targets outlined by your Faerie Fire) and *Dreaded Necrosis* (in Form of Dread).
+- **Conditional Damage Bonuses**: Spell bonuses for *Arcane Firearm*, *Alchemical Savant*, *Arcane Conduit* and *Power from Beyond*. Alchemical Savant and Power from Beyond also appear when you roll a spell's healing.
+- **Conditional Damage Bonuses**: *Arcane Jolt* and *Power Surge* spend their uses when ticked.
+- **Conditional Damage Bonuses**: *Perfect Poisoner* makes the poison damage dice of an attack, spell or feature roll their highest number, once per turn.
+
 ## [14.87.1] - 2026-11-14
 ### Fixed
 - **Damage Emanation Automation**: Players can cast *Spirit Guardians* and the other emanation spells again. Placing the area failed with "lacks permission to create Region", even with the Region permission, because only a GM may create an area that already contains automation. The GM's client now adds the automation right after the player places the area. If no GM is online, the area is placed without it and the player gets a notice.
