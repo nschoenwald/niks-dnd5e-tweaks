@@ -546,11 +546,11 @@ D&D 5e lets each effect of a Save activity be set to **Always Apply** (Activity 
 * Disabled while midi-qol is active (midi-qol applies save effects only on failed saves itself).
 
 ### Self Effect Application Prompt
-When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*, *Blur*), whispers a chat card with one-click **Apply** and **Undo** buttons.
+When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*, *Blur*), whispers a chat card with one-click **Apply** and **Undo** buttons. The effect tray of the activity's own chat card starts collapsed, since the whispered card takes over applying the effects.
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
 * Seamless compatibility with **Automated Conditions 5e (AC5e)** dynamic condition flags.
 * *Sub-setting*: **Always Prompt Features** (names like `Mage Armor`).
-* *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Dodging` and `Dashing` (Patient Defense, Step of the Wind), `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button, and the effect tray of the activity's chat card is collapsed.
+* *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Dodging` and `Dashing` (Patient Defense, Step of the Wind), `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button.
 * Both name lists are edited in the settings dashboard with an **Edit List** button that opens a pop-out editor: search the list, add entries (Enter, or paste several separated by commas), remove them individually, or reset to the defaults. Lists are kept sorted alphabetically without duplicates.
 
 ### Self-Targeted Activities Target Self

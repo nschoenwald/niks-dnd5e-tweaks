@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.92.1] - 2026-11-15
+### Changed
+- **Self Effect Application Prompt**: Whenever the self-effect message is posted, the effect tray on the ability's chat card now starts collapsed. Before, this only happened for effects on the Auto-Apply list. You can still open the tray yourself.
+
 ## [14.92.0] - 2026-11-15
 ### Changed
 - **Conditional Damage Bonuses**: Features that cost uses are now offered even when their item has no uses set up, such as homebrew items. They're labeled *uses not tracked* and nothing is spent. Before, they never appeared.

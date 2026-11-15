@@ -6,6 +6,7 @@
  * @updated v14.49.1 (Auto-Apply Effects list applies matching effects directly and collapses the usage card's effect tray)
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.60.2 (Re-enabled effects keep the conditions of their changes and of the effect)
+ * @updated v14.92.1 (The usage card's effect tray is collapsed whenever the self-effect message is posted)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
@@ -36,7 +37,8 @@ export function initSelfEffectApplication() {
         _bindSelfEffectButtons(message, html);
     });
 
-    // Usage messages whose self effects were auto-applied render with the effect tray collapsed.
+    // Usage messages that got a self-effect message render with the effect tray collapsed.
+    // The flag keeps its old "selfEffectAutoApplied" key so existing messages stay collapsed.
     // dnd5e.renderChatMessage fires after ChatMessage5e#_collapseTrays has set the tray state.
     Hooks.on("dnd5e.renderChatMessage", (message, html) => {
         if (!message.getFlag?.(MODULE_ID, "selfEffectAutoApplied")) return;
@@ -442,7 +444,7 @@ async function _onPostUseActivity(activity, usageConfig, results) {
         if (!unappliedEffects.length) {
             debug(`Self Effect Application | All self effects for "${activity.item?.name || activity.name}" are already active on "${actor.name}" — skipping prompt card.`);
             // Auto-apply effects that are already running still don't need the usage card's effect tray.
-            if (applicableEffects.some(isAutoApplyEffect)) await _markUsageMessageAutoApplied(results?.message);
+            if (applicableEffects.some(isAutoApplyEffect)) await _markUsageMessageTrayCollapsed(results?.message);
             return;
         }
 
@@ -477,6 +479,10 @@ async function _onPostUseActivity(activity, usageConfig, results) {
             message: results?.message,
             effectsApplied
         });
+
+        // The self-effect message takes over applying these effects, so the usage card's
+        // effect tray starts collapsed.
+        await _markUsageMessageTrayCollapsed(results?.message);
     } catch (err) {
         console.error(`Nik's DnD5e Tweaks | Error in _onPostUseActivity for Self Effect Application:`, err);
     }
@@ -590,7 +596,7 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
         }
     }
 
-    if (Object.keys(effectsApplied).length) await _markUsageMessageAutoApplied(message);
+    if (Object.keys(effectsApplied).length) await _markUsageMessageTrayCollapsed(message);
     return effectsApplied;
 }
 
@@ -600,7 +606,7 @@ async function _autoApplyEffects(actor, activity, effects, { concentrationUuid =
  *
  * @param {ChatMessage|null} message  The activity usage message.
  */
-async function _markUsageMessageAutoApplied(message) {
+async function _markUsageMessageTrayCollapsed(message) {
     if (!message?.id) return;
     const element = _getChatMessageElement(message.id);
     if (element) _collapseEffectTray(message, element);
@@ -613,7 +619,7 @@ async function _markUsageMessageAutoApplied(message) {
 }
 
 /**
- * Collapse the effect application tray(s) of a usage message whose self effects were auto-applied.
+ * Collapse the effect application tray(s) of a usage message that got a self-effect message.
  *
  * Only the first collapse on each client is forced. `message._trayStates` cannot tell an
  * auto-opened tray from one the user opened: `ChatLog5e#updateMessage` records the tray's current
