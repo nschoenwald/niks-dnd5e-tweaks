@@ -232,5 +232,6 @@
   "ND5T.CompendiumColumns.AbilityScores": "Attribute",
   "ND5T.CompendiumColumns.Feat": "Talent",
   "ND5T.CompendiumColumns.AnyAbility": "Beliebig",
-  "ND5T.CompendiumColumns.SortBy": "Nach {column} sortieren"
+  "ND5T.CompendiumColumns.SortBy": "Nach {column} sortieren",
+  "ND5T.SaveGatedEffects.Skipped": "{effect} wurde nicht auf {targets} angewendet: Rettungswurf geschafft."
 }

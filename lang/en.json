@@ -246,5 +246,6 @@
   "ND5T.CompendiumColumns.AbilityScores": "Abilities",
   "ND5T.CompendiumColumns.Feat": "Feat",
   "ND5T.CompendiumColumns.AnyAbility": "Any",
-  "ND5T.CompendiumColumns.SortBy": "Sort by {column}"
+  "ND5T.CompendiumColumns.SortBy": "Sort by {column}",
+  "ND5T.SaveGatedEffects.Skipped": "{effect} was not applied to {targets}: they succeeded on the save."
 }

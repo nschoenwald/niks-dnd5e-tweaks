@@ -1901,6 +1901,18 @@ export function getSettingsSchema() {
                             parentKey: "enableSelfEffectApplication"
                         },
                         {
+                            key: "enableSaveGatedEffects",
+                            introduced: "14.91.0",
+                            docs: "effects-only-on-failed-saves",
+                            keywords: ["Faerie Fire", "save", "failed save", "Always Apply", "effect tray", "apply effect"],
+                            unavailableWith: "midi",
+                            name: "Effects Only on Failed Saves",
+                            hint: "The effect tray of a Save activity's chat card skips targets that succeeded on the save, unless the effect has the activity's \"Always Apply\" option (e.g. Faerie Fire only outlines creatures that failed). Targets that haven't rolled yet still get the effect.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableSelfTargetCorrection",
                             introduced: "14.73.0",
                             docs: "self-targeted-activities-target-self",

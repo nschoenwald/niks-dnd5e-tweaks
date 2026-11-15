@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.91.0] - 2026-11-15
+### Added
+- **Effects Only on Failed Saves**: The effect tray of a spell or feature that calls for a saving throw now skips creatures that succeeded. *Faerie Fire*, for example, only outlines the creatures that failed their Dexterity save. Effects marked **Always Apply** in the activity still go to every target. A notification tells you who was skipped. Roll the saves before you click Apply: targets that haven't rolled yet still get the effect.
+
 ## [14.90.0] - 2026-11-15
 ### Added
 - **Remove Instantaneous Templates on Turn Change**: New *Template Exceptions* list for instantaneous spells whose area lasts. For each spell you pick when its template is removed: kept until you delete it, at the start or end of the caster's next turn, or when combat ends. By default *Ice Storm* is removed at the end of the caster's next turn, when its Difficult Terrain ends, and *Plant Growth* and *Heroes' Feast* are kept. Add your own spells or abilities by identifier or name. The dropdown needs Nik's Foundry Tweaks 14.4.0.

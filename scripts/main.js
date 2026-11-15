@@ -30,6 +30,7 @@ import { initAutoRollSaveDamage } from "./features/combat-automation/auto-roll-s
 import { initAutoRollAttackDamage } from "./features/combat-automation/auto-roll-attack-damage.js";
 import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } from "./features/combat-automation/player-damage-prompt.js";
 import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
+import { initSaveGatedEffects } from "./features/combat-automation/save-gated-effects.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
 import { initSelfTargetCorrection } from "./features/combat-automation/self-target-correction.js";
 import { initRemoveInstantaneousTemplates } from "./features/combat-automation/remove-instantaneous-templates.js";
@@ -1404,6 +1405,16 @@ Hooks.once("init", () => {
         requiresReload: true
     });
 
+    game.settings.register(MODULE_ID, "enableSaveGatedEffects", {
+        name: "Effects Only on Failed Saves",
+        hint: "The effect tray of a Save activity's chat card skips targets that succeeded on the save, unless the effect has the activity's \"Always Apply\" option (e.g. Faerie Fire only outlines creatures that failed). Disabled while midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableSelfEffectApplication", {
         name: "Self Effect Application Prompt",
         hint: "When an actor uses an ability that has Active Effects targeting \"Self\" (e.g. Rage, Divine Favor, Mirror Image), whispers a chat card to the actor's owner and the GM with one-click Apply buttons for each effect.",
@@ -1879,6 +1890,7 @@ Hooks.once("setup", () => {
     initCompanionLevelSync();
     initUndeadFortitude();
     initSelfEffectApplication();
+    initSaveGatedEffects();
     initSelfTargetCorrection();
     initRemoveInstantaneousTemplates();
     initSheetPlusCompendium();

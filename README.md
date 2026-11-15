@@ -92,6 +92,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-End Concentration](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
 | **[Damage Emanation Automation](#damage-emanation-automation)** | Conditions & Effects | ✅ Prompt Caster | No |
 | **[Auto-End Class Features (Rage, etc.)](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
+| **[Effects Only on Failed Saves](#effects-only-on-failed-saves)** | Conditions & Effects | ✅ Enabled | No |
 | **[Self Effect Application Prompt](#self-effect-application-prompt)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Self-Targeted Activities Target Self](#self-targeted-activities-target-self)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Disable Active Effect Expiry](#disable-active-effect-expiry)** | Conditions & Effects | ❌ Disabled | No |
@@ -535,6 +536,13 @@ Handles the "enters the area or ends its turn there" rule of emanation spells su
 * **Other Spells**: Add spell identifiers to the **Emanation Spells** list, or add the **Damage Emanation** behavior in an activity's **Behaviors** tab and pick its save or damage activity and its triggers.
 * *Sub-settings*: **Trigger Mode**, **Emanation Spells** (worlds that changed the list keep their own version: add new spells there by hand), **Only During Combat** (default on), **Exclude Allies** (creatures with the caster's token disposition are never affected by emanations centered on the caster or by spells that let the caster choose, default on), **Move Drifting Areas** (*Cloudkill*, *Doomtide* and *Incendiary Cloud*, default off), **Respect "Creature You Can See"** (*Conjure Woodland Beings* and *Yolande's Regal Presence* skip hidden and invisible creatures, default on), **Remember Damage Type** (*Spirit Guardians* keeps the Radiant or Necrotic choice from its first roll, default on).
 
+### Effects Only on Failed Saves
+D&D 5e lets each effect of a Save activity be set to **Always Apply** (Activity sheet → Effect tab → the effect's settings). Without it, the effect is meant only for creatures that fail the save, but the effect tray's **Apply** button gives it to every target anyway. With this feature on, targets that succeeded on the save are skipped: *Faerie Fire* only outlines the creatures that failed their Dexterity save.
+* Effects with **Always Apply** still go to everyone. The official content already sets this where the rules want it (*Flesh to Stone*'s first effect, *Otto's Irresistible Dance*'s short dance).
+* Targets that haven't rolled their save yet still get the effect, so roll the saves first.
+* A notification lists who didn't get an effect.
+* Disabled while midi-qol is active (midi-qol applies save effects only on failed saves itself).
+
 ### Self Effect Application Prompt
 When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targeting self with spells (*Haste*, *Bless*, *Shield of Faith*, *Blur*), whispers a chat card with one-click **Apply** and **Undo** buttons.
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
@@ -594,6 +602,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Auto-Open Damage for Saves** | **Disabled** (midi-qol handles save damage workflows). |
 | **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
 | **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
+| **Effects Only on Failed Saves** | **Disabled** (midi-qol applies save effects only to creatures that failed). |
 | **Self Effect Application** | **Bypassed** if midi-qol auto-applies item effects. |
 | **Self-Targeted Activities Target Self** | **Disabled** (midi-qol already uses the actor's own token for self-targeted activities). |
 | **Player Damage Prompt** | **Bypassed** if midi-qol auto-applies damage, and for damage rolled inside a midi-qol workflow. |
