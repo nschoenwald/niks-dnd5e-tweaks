@@ -5,6 +5,7 @@ import { initItemSheetAttunementTag, disableItemSheetAttunementTag } from "./fea
 import { initSheetPlusCompendium } from "./features/ui-visuals/sheet-plus-compendium.js";
 import { initSpellSlotsLeftToRight, refreshSpellSlotSheets } from "./features/ui-visuals/spell-slots-left-to-right.js";
 import { initNpcHpScaler, disableNpcHpScaler } from "./features/ui-visuals/npc-hp-scaler.js";
+import { initNpcSpellcastingBuilder, disableNpcSpellcastingBuilder } from "./features/utilities/npc-spellcasting-builder.js";
 import { initForceCompendiumBrowser } from "./features/ui-visuals/force-compendium-browser.js";
 import { initCompendiumBrowserColumns, refreshCompendiumBrowsers } from "./features/ui-visuals/compendium-browser-columns.js";
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
@@ -712,6 +713,20 @@ Hooks.once("init", () => {
         onChange: (value) => {
             if (value) initNpcHpScaler();
             else disableNpcHpScaler();
+        }
+    });
+
+    game.settings.register(MODULE_ID, "enableNpcSpellcastingBuilder", {
+        name: "NPC Spellcasting Builder",
+        hint: "Adds a Spellcasting Builder to the header menu of NPC sheets and Spellcasting features. Pick spells per frequency (At Will, 3/Day, 2/Day, 1/Day) and it creates the Spellcasting feature in the 2024 Monster Manual format: one Cast activity per spell and the matching description.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: (value) => {
+            if (value) initNpcSpellcastingBuilder();
+            else disableNpcSpellcastingBuilder();
         }
     });
 
@@ -1953,6 +1968,7 @@ Hooks.once("setup", () => {
     initSpellSlotsLeftToRight();
     initCompendiumBrowserColumns();
     initNpcHpScaler();
+    initNpcSpellcastingBuilder();
     initItemSheetAttunementTag();
     initTemplateTargeting();
 

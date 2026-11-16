@@ -49,6 +49,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Blood Drop Bloodied Icon](#blood-drop-bloodied-icon)** | UI & Visuals | ✅ Enabled | No |
 | **[Spell Slots Expend Left to Right](#spell-slots-expend-left-to-right)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[NPC Hit Point Scaling Buttons](#npc-hit-point-scaling-buttons)** | UI & Visuals | ✅ Enabled | No |
+| **[NPC Spellcasting Builder](#npc-spellcasting-builder)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Hostile Damage Trays (GM)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Auto-Collapse Unowned Damage Trays (Players)](#auto-collapse-hostile--unowned-damage--healing-trays)** | UI & Visuals | ✅ Enabled | No |
 | **[Aggregate Short Rest Hit Dice Rolls](#aggregate-short-rest-hit-dice-rolls)** | UI & Visuals | ✅ Enabled | Yes |
@@ -193,6 +194,16 @@ On the D&D 5e character and NPC sheets, expended spell slots fill up from the le
 
 ### NPC Hit Point Scaling Buttons
 Adds `+` and `-` buttons to the NPC Hit Points configuration dialog to quickly scale hit dice up or down, automatically recalculating average maximum HP and health formulas. Hold <kbd>Shift</kbd> to scale by 5.
+
+### NPC Spellcasting Builder
+Building a 2024-style *Spellcasting* feature for an NPC by hand means one Cast activity per spell, uses per day on each, and a description that matches. The builder does all of it. Open it from the header menu (<i class="fa-solid fa-ellipsis-vertical"></i>) of an NPC sheet, or of an existing Spellcasting feature's sheet to edit that one.
+
+* **Spells by frequency**: *At Will*, *3/Day Each*, *2/Day Each* and *1/Day Each*. Drop spells (or a folder of spells) onto a group, or click **Add** to pick them in the Compendium Browser. Drag a spell to another group, or change it in the row, to move it.
+* **Per spell**: cast a leveled spell at a higher level (written as "level 4 version"), and add a note such as *included in AC* or *self only*.
+* **Spellcasting ability**, the components the creature doesn't need (*requiring no Material components* …), and whether the text shows the spell save DC and the spell attack bonus. Both are live lookups, so they follow the NPC's stats. The ability is also set as the NPC's spellcasting ability.
+* **Live preview** of the description, with the NPC's actual numbers.
+
+Saving creates the feature exactly as the 2025 Monster Manual does: one Cast activity per spell, *X/Day* spells with their own uses that recover daily, the spells listed in the NPC's spellbook, and the description in the book's format. Editing an existing feature (also official monsters from the Monster Manual) keeps the spells' used uses and any other activities of the feature, but rebuilds its description, so make manual text changes after the last edit in the builder. The text is written in the game's language (English or German).
 
 ### Auto-Collapse Hostile / Unowned Damage & Healing Trays
 * **For GM**: Auto-collapses the interactive damage/healing application tray on hostile monster attacks and abilities targeting player characters (delegating application to players).

@@ -1,0 +1,98 @@
+<div class="nd5t-scb-body">
+    <fieldset class="nd5t-scb-config">
+        <div class="form-group">
+            <label>{{localize "ND5T.SpellcastingBuilder.Name"}}</label>
+            <div class="form-fields">
+                <input type="text" name="name" value="{{name}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>{{localize "ND5T.SpellcastingBuilder.Ability"}}</label>
+            <div class="form-fields">
+                <select name="ability">
+                    {{#each abilities}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            <p class="hint">{{localize "ND5T.SpellcastingBuilder.AbilityHint"}}</p>
+        </div>
+        <div class="form-group">
+            <label>{{localize "ND5T.SpellcastingBuilder.NoComponents"}}</label>
+            <div class="form-fields nd5t-scb-checks">
+                {{#each components}}
+                <label class="checkbox">
+                    <input type="checkbox" name="ignored" value="{{key}}" {{#if checked}}checked{{/if}}>
+                    {{label}}
+                </label>
+                {{/each}}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>{{localize "ND5T.SpellcastingBuilder.ShowInText"}}</label>
+            <div class="form-fields nd5t-scb-checks">
+                <label class="checkbox">
+                    <input type="checkbox" name="showSaveDC" {{#if showSaveDC}}checked{{/if}}>
+                    {{localize "ND5T.SpellcastingBuilder.SaveDC"}}
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" name="showAttack" {{#if showAttack}}checked{{/if}}>
+                    {{localize "ND5T.SpellcastingBuilder.AttackBonus"}}
+                </label>
+            </div>
+        </div>
+    </fieldset>
+
+    {{#each groups}}
+    <section class="nd5t-scb-group" data-group="{{group}}">
+        <header class="nd5t-scb-group-header">
+            <h4>{{label}}</h4>
+            <button type="button" class="nd5t-scb-browse" data-action="browse"
+                    data-tooltip="ND5T.SpellcastingBuilder.BrowseHint">
+                <i class="fa-solid fa-book-open" inert></i> {{localize "ND5T.SpellcastingBuilder.Browse"}}
+            </button>
+        </header>
+        <ol class="nd5t-scb-spells">
+            {{#each spells}}
+            <li class="nd5t-scb-spell {{#if missing}}missing{{/if}}" data-key="{{key}}" draggable="true">
+                <img class="nd5t-scb-spell-img" src="{{img}}" alt="" data-action="openSpell">
+                <div class="nd5t-scb-spell-name">
+                    <a data-action="openSpell">{{name}}</a>
+                    <span class="nd5t-scb-spell-level">{{levelLabel}}</span>
+                </div>
+                {{#if upcast}}
+                <select data-field="castLevel" data-tooltip="ND5T.SpellcastingBuilder.CastAt"
+                        aria-label="{{localize "ND5T.SpellcastingBuilder.CastAt"}}">
+                    {{#each levelOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                    {{/each}}
+                </select>
+                {{else}}
+                <span></span>
+                {{/if}}
+                <input type="text" data-field="note" value="{{note}}"
+                       placeholder="{{localize "ND5T.SpellcastingBuilder.NotePlaceholder"}}"
+                       aria-label="{{localize "ND5T.SpellcastingBuilder.Note"}}">
+                <select data-field="group" data-tooltip="ND5T.SpellcastingBuilder.Frequency"
+                        aria-label="{{localize "ND5T.SpellcastingBuilder.Frequency"}}">
+                    {{#each frequencyOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+                    {{/each}}
+                </select>
+                <button type="button" class="icon fa-solid fa-trash" data-action="removeSpell"
+                        data-tooltip="ND5T.SpellcastingBuilder.Remove"
+                        aria-label="{{localize "ND5T.SpellcastingBuilder.Remove"}}"></button>
+            </li>
+            {{else}}
+            <li class="nd5t-scb-empty">{{localize "ND5T.SpellcastingBuilder.DropHint"}}</li>
+            {{/each}}
+        </ol>
+    </section>
+    {{/each}}
+
+    <section class="nd5t-scb-preview">
+        <h4>{{localize "ND5T.SpellcastingBuilder.Preview"}}</h4>
+        <div class="nd5t-scb-preview-content">{{{preview}}}</div>
+        <p class="hint">{{footerHint}}</p>
+    </section>
+</div>

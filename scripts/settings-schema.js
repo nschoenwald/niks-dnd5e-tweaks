@@ -559,6 +559,17 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "enableNpcSpellcastingBuilder",
+                            introduced: "14.98.0",
+                            docs: "npc-spellcasting-builder",
+                            keywords: ["monster", "spellcasting", "innate", "at will", "per day", "cast activity", "statblock"],
+                            name: "NPC Spellcasting Builder",
+                            hint: "Adds a Spellcasting Builder to the header menu of NPC sheets and Spellcasting features. Pick spells per frequency (At Will, 3/Day, 2/Day, 1/Day) and it creates the Spellcasting feature in the 2024 Monster Manual format: one Cast activity per spell and the matching description.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
                         }
                     ]
                 },

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.98.0] - 2026-11-17
+### Added
+- **NPC Spellcasting Builder**: A builder for the 2024 *Spellcasting* monster feature, opened from the header menu of an NPC sheet (or of an existing Spellcasting feature to edit it). Drop spells into *At Will*, *3/Day Each*, *2/Day Each* and *1/Day Each*, or add them from the Compendium Browser, set an upcast level or a note per spell, pick the spellcasting ability and the components the creature doesn't need, and watch the description update live. Saving creates the feature the way the Monster Manual does: one Cast activity per spell with its own uses per day, the spells in the NPC's spellbook, and the matching statblock text with the save DC kept up to date.
+
 ## [14.97.0] - 2026-11-16
 ### Changed
 - **Damage Emanation Automation**: *Hunger of Hadar* cast with a higher slot now increases only the Cold *or* the Acid damage, as the rules say, not both. The casting dialog asks which one once a slot above 3rd is picked. If the dialog is skipped, the Cold damage gets the extra dice. Versions of the spell whose damage doesn't grow with the slot (2014 rules) don't ask.
