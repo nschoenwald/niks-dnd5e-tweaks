@@ -4,6 +4,7 @@
  *              across many rows, instead of flipping through the items that finished loading late.
  *
  * @introduced v14.83.1
+ * @updated v14.96.1 (skipped on D&D 5e 6.1.1 and newer, fixed upstream)
  */
 import { log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -21,7 +22,8 @@ import { patchMethod } from "../../utils/patch-helper.js";
  * rests on one row and can end on the wrong item. A request whose document can't be found also calls
  * `game.tooltip.deactivate()`, closing whatever tooltip is showing by then.
  *
- * Same code in dnd5e 6.0.6 and 6.1.0, not fixed upstream, so not version-gated.
+ * Same code in dnd5e 6.0.6 and 6.1.0. Fixed upstream in dnd5e 6.1.1, so the patch is only applied below that
+ * version (FIXED_IN_VERSION).
  *
  * libWrapper binds `this` for the wrapped call, so the stale writes inside the original can't be redirected. This
  * patch is therefore MIXED: the two document branches (content links and sheet tooltips with a `data-uuid`
@@ -31,10 +33,18 @@ import { patchMethod } from "../../utils/patch-helper.js";
  * changes these methods, compare them with this copy.
  */
 
+/** dnd5e version that fixes the race itself. */
+const FIXED_IN_VERSION = "6.1.1";
+
 /** Incremented on every tooltip activation; a request is stale once a newer activation has started. */
 let activationCount = 0;
 
 export function initFixTooltipRace() {
+    if (!foundry.utils.isNewerVersion(FIXED_IN_VERSION, game.system.version)) {
+        log(`Fix: Rich Tooltip Race | Skipped, fixed in D&D 5e ${FIXED_IN_VERSION}.`);
+        return;
+    }
+
     const patched = patchMethod(
         "game.dnd5e.tooltips._onTooltipActivate",
         async function patchedOnTooltipActivate(wrapped, ...args) {

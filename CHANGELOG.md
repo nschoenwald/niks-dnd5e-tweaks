@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.96.1] - 2026-11-16
+### Changed
+- **Rich Tooltip Race**: D&D 5e 6.1.1 fixes this itself, so the module's fix now only runs on older D&D 5e versions.
+
 ## [14.96.0] - 2026-11-16
 ### Changed
 - **Intelligence for Weapon Attacks (Bladesong & Battle Ready)**: Heroes of Faerûn enchants every weapon with *Bladework* while Bladesong is active, which always uses Intelligence. Those weapons, and weapons enchanted with Battle Ready's *Arcane Empowerment*, now use Strength or Dexterity instead when it's higher. The attack dialog still offers Intelligence.
