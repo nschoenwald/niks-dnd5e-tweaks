@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.97.0] - 2026-11-16
+### Changed
+- **Damage Emanation Automation**: *Hunger of Hadar* cast with a higher slot now increases only the Cold *or* the Acid damage, as the rules say, not both. The casting dialog asks which one once a slot above 3rd is picked. If the dialog is skipped, the Cold damage gets the extra dice. Versions of the spell whose damage doesn't grow with the slot (2014 rules) don't ask.
+
 ## [14.96.1] - 2026-11-16
 ### Changed
 - **Rich Tooltip Race**: D&D 5e 6.1.1 fixes this itself, so the module's fix now only runs on older D&D 5e versions.

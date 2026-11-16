@@ -16,6 +16,7 @@
  * @updated v14.92.0 (Notices for listed spells without a usable activity and incomplete behaviors; a lost activity
  *   is found again on the caster; the caster's player rolls the damage when the GM triggers the saves; save cards
  *   are always public)
+ * @updated v14.97.0 (Hunger of Hadar: the caster chooses whether the cold or the acid damage gets the upcast dice)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -75,6 +76,9 @@ const DEFAULT_TRIGGERS = new Set(["enter", "emanationEnter", "turnEnd"]);
  * @property {{activityName: RegExp, triggers: string[]}[]} [behaviors]
  *                                                 Several behaviors, each with its own activity and triggers (Hunger of
  *                                                 Hadar: damage at the start of a turn, a save at the end of a turn).
+ * @property {boolean} [upcastChoice]              Only one of the behaviors gets the upcast bonus, chosen by the
+ *                                                 caster in the usage dialog (Hunger of Hadar: "the Cold or Acid
+ *                                                 damage (your choice) increases by 1d6"). Defaults to the first.
  * @property {(scaling: number) => number} [charges]
  *                                                 Uses before the area ends: each affected creature uses one (Cordon of
  *                                                 Arrows' pieces of ammunition).
@@ -92,7 +96,7 @@ const SPELL_PROFILES = new Map([
     ["stinking-cloud", { triggers: ["turnStart"] }],
     ["gust-of-wind", { triggers: ["turnEnd"], excludeCaster: true }],
     ["lightning-ring", { activityName: /emanation/i }],
-    ["hunger-of-hadar", { behaviors: [
+    ["hunger-of-hadar", { upcastChoice: true, behaviors: [
         { activityName: /start of turn/i, triggers: ["turnStart"] },
         { activityName: /end of turn/i, triggers: ["turnEnd"] }
     ] }],
@@ -313,6 +317,7 @@ function _findParentItem(model) {
  */
 export function initDamageEmanation() {
     Hooks.on("dnd5e.preUseActivity", _onPreUseActivity);
+    Hooks.on("renderActivityUsageDialog", _onRenderUsageDialog);
     Hooks.on("dnd5e.createMeasuredTemplate", _onCreateMeasuredTemplate);
     Hooks.on("createRegion", _onCreateRegion);
     Hooks.on("updateRegion", _onUpdateRegion);
@@ -507,11 +512,106 @@ function _hasActivityBehavior(activity) {
 function _onPreUseActivity(activity, usageConfig) {
     if (!getSetting("enableDamageEmanation")) return;
     if (usageConfig?.nd5tDamageEmanation) return;
+    // Remember the usage config of casts that place the area: the usage dialog writes the upcast choice into it
+    if (usageConfig && activity?.target?.template?.type && _getProfile(activity.item).upcastChoice) {
+        _upcastUsages.set(activity.item.uuid, usageConfig);
+    }
     if (!usageConfig?.create || (usageConfig.create.measuredTemplate !== false)) return;
     if (!activity?.target?.template?.type || !activity.consumption?.spellSlot) return;
     if (!_isListedSpell(activity.item)) return;
     usageConfig.create.measuredTemplate = true;
     debug(`Damage Emanation | Enabled template placement for "${activity.item.name}" (${activity.name})`);
+}
+
+// ── Upcast choice (Hunger of Hadar) ──────────────────────────────────
+
+/** Name of the usage dialog field and usage config key that hold the chosen activity id. */
+const UPCAST_CHOICE_KEY = "nd5tUpcastActivity";
+
+/**
+ * Usage config of the latest area-placing cast of spells with an upcast choice, by item uuid. Kept after the cast,
+ * so an area placed later from the chat card uses the same choice.
+ * @type {Map<string, object>}
+ */
+const _upcastUsages = new Map();
+
+/**
+ * The behavior activities a caster can give the upcast bonus to: those whose damage scales with the slot level.
+ * A version without scaling damage (the 2014 Hunger of Hadar) offers none, so no choice is shown.
+ * @param {Item5e} item
+ * @returns {Activity[]}
+ */
+function _getUpcastChoices(item) {
+    const profile = _getProfile(item);
+    if (!profile.upcastChoice || !profile.behaviors) return [];
+    const activities = Array.from(item?.system?.activities ?? []);
+    return profile.behaviors.map(entry => activities.find(a => entry.activityName.test(a.name ?? "")))
+        .filter(a => a && _hasScalingDamage(a));
+}
+
+/**
+ * Whether any damage part of an activity grows with the spell slot level (dnd5e's damage scaling mode is set).
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function _hasScalingDamage(activity) {
+    return (activity.damage?.parts ?? []).some(p => p.scaling?.mode && (p.scaling.number || p.scaling.formula));
+}
+
+/**
+ * Label of an upcast choice: its damage types, then the activity name ("Cold (Start of Turn Damage)").
+ * @param {Activity} activity
+ * @returns {string}
+ */
+function _getUpcastChoiceLabel(activity) {
+    const types = new Set((activity.damage?.parts ?? []).flatMap(p => Array.from(p.types ?? [])));
+    const labels = [...types].map(t => CONFIG.DND5E.damageTypes?.[t]?.label ?? t).filter(Boolean);
+    return labels.length ? `${labels.join(", ")} (${activity.name})` : activity.name;
+}
+
+/**
+ * Add a choice to the usage dialog of spells where only one damage gets the upcast bonus, shown once the chosen
+ * slot is above the spell's level. dnd5e merges every field of its form into the usage config.
+ * @param {ActivityUsageDialog} app
+ * @param {HTMLElement} element
+ */
+function _onRenderUsageDialog(app, element) {
+    if (!getSetting("enableDamageEmanation")) return;
+    const activity = app.activity;
+    const item = activity?.item;
+    const config = app.config;
+    if (!config || config.nd5tDamageEmanation || !activity?.target?.template?.type) return;
+    if (!_isListedSpell(item) || _hasActivityBehavior(activity)) return;
+    const choices = _getUpcastChoices(item);
+    if (choices.length < 2) return;
+
+    const slotLevel = activity.actor?.system.spells?.[config.spell?.slot]?.level;
+    const scaling = Number.isFinite(slotLevel) ? (slotLevel - item.system.level) : (config.scaling || 0);
+    const fieldset = element.querySelector('[data-application-part="scaling"] fieldset');
+    if (!(scaling > 0) || !fieldset || fieldset.querySelector(`[name="${UPCAST_CHOICE_KEY}"]`)) return;
+
+    const value = choices.some(a => a.id === config[UPCAST_CHOICE_KEY]) ? config[UPCAST_CHOICE_KEY] : choices[0].id;
+    const label = game.i18n.has("ND5T.DamageEmanation.UpcastChoice")
+        ? game.i18n.localize("ND5T.DamageEmanation.UpcastChoice") : "Upcast Damage";
+    const group = document.createElement("div");
+    group.classList.add("form-group");
+    const labelEl = document.createElement("label");
+    labelEl.textContent = label;
+    const fields = document.createElement("div");
+    fields.classList.add("form-fields");
+    const select = document.createElement("select");
+    select.name = UPCAST_CHOICE_KEY;
+    for (const choice of choices) {
+        const option = document.createElement("option");
+        option.value = choice.id;
+        option.textContent = _getUpcastChoiceLabel(choice);
+        option.selected = choice.id === value;
+        select.append(option);
+    }
+    fields.append(select);
+    group.append(labelEl, fields);
+    fieldset.append(group);
+    config[UPCAST_CHOICE_KEY] = value;
 }
 
 /**
@@ -550,15 +650,25 @@ function _onCreateMeasuredTemplate(activity, regionData) {
     const behaviorData = [];
     if (profile.behaviors) {
         const activities = Array.from(item.system.activities ?? []);
+        // Only one behavior gets the upcast bonus (Hunger of Hadar): the caster's choice, otherwise the first
+        let upcastId = null;
+        if (profile.upcastChoice && (scaling > 0)) {
+            const choices = _getUpcastChoices(item);
+            const chosen = _upcastUsages.get(item.uuid)?.[UPCAST_CHOICE_KEY];
+            // Fewer than two scaling damages: nothing to choose, every behavior keeps the cast level
+            if (choices.length > 1) upcastId = choices.find(a => a.id === chosen)?.id ?? choices[0].id;
+        }
         for (const entry of profile.behaviors) {
             const entryActivity = activities.find(a => entry.activityName.test(a.name ?? ""));
             if (!entryActivity) continue;
+            const entryScaling = (upcastId && (entryActivity.id !== upcastId)) ? 0 : scaling;
             behaviorData.push({
                 type: DAMAGE_EMANATION_BEHAVIOR_TYPE,
                 name: `${name} (${entryActivity.name})`,
-                system: { activity: entryActivity.uuid, scaling, drift, triggers: [...entry.triggers] }
+                system: { activity: entryActivity.uuid, scaling: entryScaling, drift, triggers: [...entry.triggers] }
             });
         }
+        if (upcastId) debug(`Damage Emanation | "${item.name}": the upcast bonus goes to ${activities.find(a => a.id === upcastId)?.name}`);
     }
     if (!behaviorData.length) {
         behaviorData.push({
