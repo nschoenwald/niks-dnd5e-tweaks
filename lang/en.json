@@ -255,5 +255,9 @@
   "ND5T.CompendiumColumns.Feat": "Feat",
   "ND5T.CompendiumColumns.AnyAbility": "Any",
   "ND5T.CompendiumColumns.SortBy": "Sort by {column}",
-  "ND5T.SaveGatedEffects.Skipped": "{effect} was not applied to {targets}: they succeeded on the save."
+  "ND5T.SaveGatedEffects.Skipped": "{effect} was not applied to {targets}: they succeeded on the save.",
+  "ND5T.PlayersRollOwnSaves.NotTargeted": "None of your tokens is a target of this card. To roll for your selected tokens instead, click the icon left of the card's target list to switch it to Selected.",
+  "ND5T.PlayersRollOwnSaves.AllPlayers": "Players roll for their own characters: {names}. To roll for them yourself, switch the card's target list to Selected (icon left of the list) and select their tokens.",
+  "ND5T.PlayersRollOwnSaves.Skipped": "Skipped {names}: their players roll.",
+  "ND5T.PlayersRollOwnSaves.PillTooltip": "Rolled by its player"
 }

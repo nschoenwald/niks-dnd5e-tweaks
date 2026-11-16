@@ -165,6 +165,17 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnablePlayersRollOwnSaves",
+                            introduced: "14.93.0",
+                            pairedWith: "enablePlayersRollOwnSaves",
+                            unavailableWith: "midi",
+                            name: "Players Roll Their Own Saves",
+                            hint: "The Save and Check buttons of chat cards only roll for your side: as GM, player characters whose player is online are skipped; as a player, you can't roll for a token that isn't a target (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
                             key: "clientEnableDeathSavePrompt",
                             introduced: "14.28.5",
                             pairedWith: "enableDeathSavePrompt",
@@ -1247,6 +1258,28 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "enablePlayersRollOwnSaves",
+                            introduced: "14.93.0",
+                            docs: "players-roll-their-own-saves",
+                            keywords: ["Fireball", "saving throw", "save button", "ability check", "allies", "player characters", "roll dialog"],
+                            unavailableWith: "midi",
+                            name: "Players Roll Their Own Saves",
+                            hint: "The GM's Save and Check buttons on a chat card skip player characters whose player is online (marked with a person icon in the card's target list): their players roll. Players can't roll for a token that isn't a target. Switch the card's target list to Selected tokens to roll for anyone.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "playersRollOwnSavesOffline",
+                            introduced: "14.93.0",
+                            name: "GM Rolls for Offline Players",
+                            hint: "The GM still rolls for player characters whose player isn't logged in. When off, the GM never rolls for player characters from the card.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enablePlayersRollOwnSaves"
                         },
                         {
                             key: "enableRecklessAttack",

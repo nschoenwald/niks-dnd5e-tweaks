@@ -4476,3 +4476,20 @@ body.nd5t-condition-hud #token-hud .nd5t-status-count {
     --icon-fill: currentColor;
     color: inherit;
 }
+
+/* ── Players Roll Their Own Saves: GM-side marker on target pills a player rolls for ── */
+.chat-message target-pill.pill[data-nd5t-player-rolls] {
+    border-style: dashed;
+}
+
+.chat-message target-pill.pill[data-nd5t-player-rolls] > .nd5t-player-rolls-icon {
+    flex: none;
+    font-size: var(--font-size-10, 10px);
+    color: inherit;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.chat-message target-pill.pill[data-nd5t-player-rolls] > label {
+    opacity: 0.75;
+}

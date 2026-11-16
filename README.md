@@ -74,6 +74,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Prompt for Attack Damage](#prompt--auto-roll-attack-damage)** | Rolls & Damage | ✅ For All | Yes |
 | **[Auto-Roll Attack Damage](#prompt--auto-roll-attack-damage)** | Rolls & Damage | ❌ Disabled | Yes |
 | **[Auto-Open Damage Dialog for Saves](#auto-open-damage-dialog-for-saves)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Players Roll Their Own Saves](#players-roll-their-own-saves)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense, Genie's Wrath, Cleave & Player's Handbook class features)](#conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Reckless Attack Automation](#reckless-attack-automation)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Weapon Mastery Automation (Slow, Sap, Topple & Vex)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
@@ -344,6 +345,15 @@ Tallies hostile NPC XP at the end of combat with a one-click button for the GM t
 ### Auto-Open Damage Dialog for Saves
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
 
+### Players Roll Their Own Saves
+D&D 5e's Save button on a chat card rolls for every target the clicking user owns, and the GM owns every token. So when a *Fireball* hits allies and enemies, the GM's click opened a roll for each player character too. With this feature, everyone rolls for their own side, using the same button:
+* **GM**: Player characters whose player is online are skipped. They're marked with a person icon in the card's target list, and a notice says who was skipped. If every target is a player character, nothing is rolled.
+* **Players**: As before, the button rolls for their own tokens among the targets. If none of their tokens is a target, they get a notice instead of rolling for whatever token they have selected.
+* **Rolling for someone anyway**: Click the icon left of the card's target list to switch it to *Selected*, select the tokens and click the button. That mode isn't changed by this feature.
+* Works the same for the ability check buttons of Check activities.
+* *Sub-setting*: **GM Rolls for Offline Players** (characters whose player isn't logged in are still rolled by the GM, default on; when off, the GM never rolls for player characters from the card).
+* Personal opt-out available. Disabled while midi-qol is active (midi-qol's *Player Roll Saves* and NPC save settings do this there).
+
 ### Reckless Attack Automation
 A creature with the **Reckless Attack** feature decides on its first attack roll of its turn without using the feature from its sheet:
 * **In the attack roll dialog**, a **Reckless Attack** checkbox appears. Ticking it selects **Advantage** as the default button. The checkbox is greyed out while the chosen ability or attack mode doesn't qualify (see below).
@@ -605,6 +615,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
 | **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
 | **Effects Only on Failed Saves** | **Disabled** (midi-qol applies save effects only to creatures that failed). |
+| **Players Roll Their Own Saves** | **Disabled** (midi-qol's *Player Roll Saves* and *Roll NPC Saves* decide who rolls). |
 | **Self Effect Application** | **Bypassed** if midi-qol auto-applies item effects. |
 | **Self-Targeted Activities Target Self** | **Disabled** (midi-qol already uses the actor's own token for self-targeted activities). |
 | **Player Damage Prompt** | **Bypassed** if midi-qol auto-applies damage, and for damage rolled inside a midi-qol workflow. |

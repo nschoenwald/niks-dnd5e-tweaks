@@ -241,5 +241,9 @@
   "ND5T.CompendiumColumns.Feat": "Talent",
   "ND5T.CompendiumColumns.AnyAbility": "Beliebig",
   "ND5T.CompendiumColumns.SortBy": "Nach {column} sortieren",
-  "ND5T.SaveGatedEffects.Skipped": "{effect} wurde nicht auf {targets} angewendet: Rettungswurf geschafft."
+  "ND5T.SaveGatedEffects.Skipped": "{effect} wurde nicht auf {targets} angewendet: Rettungswurf geschafft.",
+  "ND5T.PlayersRollOwnSaves.NotTargeted": "Keiner deiner Tokens ist ein Ziel dieser Karte. Um stattdessen für deine ausgewählten Tokens zu würfeln, klicke auf das Symbol links neben der Zielliste der Karte und stelle sie auf „Ausgewählt“ um.",
+  "ND5T.PlayersRollOwnSaves.AllPlayers": "Die Spieler würfeln für ihre eigenen Charaktere: {names}. Um selbst für sie zu würfeln, stelle die Zielliste der Karte auf „Ausgewählt“ um (Symbol links neben der Liste) und wähle ihre Tokens aus.",
+  "ND5T.PlayersRollOwnSaves.Skipped": "{names} übersprungen: Ihre Spieler würfeln selbst.",
+  "ND5T.PlayersRollOwnSaves.PillTooltip": "Würfelt der Spieler selbst"
 }

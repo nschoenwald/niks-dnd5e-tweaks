@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.93.0] - 2026-11-16
+### Added
+- **Players Roll Their Own Saves**: When a spell like *Fireball* hits allies and enemies, the GM's click on the card's Save button no longer opens a roll for every player character. Characters whose player is online are skipped and marked with a person icon in the card's target list: their players roll with the same button. The same applies to ability check buttons. To roll for someone anyway, switch the card's target list to *Selected* and select their tokens. Players' characters whose player is offline are still rolled by the GM (sub-setting).
+- **Players Roll Their Own Saves**: A player whose tokens aren't targets of the card no longer rolls for their selected token by accident. A notice explains how to roll for selected tokens on purpose.
+
 ## [14.92.1] - 2026-11-15
 ### Changed
 - **Self Effect Application Prompt**: Whenever the self-effect message is posted, the effect tray on the ability's chat card now starts collapsed. Before, this only happened for effects on the Auto-Apply list. You can still open the tray yourself.

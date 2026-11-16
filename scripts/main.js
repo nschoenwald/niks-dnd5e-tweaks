@@ -31,6 +31,7 @@ import { initAutoRollAttackDamage } from "./features/combat-automation/auto-roll
 import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } from "./features/combat-automation/player-damage-prompt.js";
 import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
 import { initSaveGatedEffects } from "./features/combat-automation/save-gated-effects.js";
+import { initPlayersRollOwnSaves, refreshPlayersRollOwnSavesMarks } from "./features/combat-automation/players-roll-own-saves.js";
 import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
 import { initSelfTargetCorrection } from "./features/combat-automation/self-target-correction.js";
 import { initRemoveInstantaneousTemplates } from "./features/combat-automation/remove-instantaneous-templates.js";
@@ -259,6 +260,16 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnablePlayersRollOwnSaves", {
+        name: "Players Roll Their Own Saves (Personal)",
+        hint: "The Save and Check buttons of chat cards only roll for your side: as GM, player characters whose player is online are skipped; as a player, you can't roll for a token that isn't a target (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => refreshPlayersRollOwnSavesMarks()
     });
 
     game.settings.register(MODULE_ID, "clientEnableDeathSavePrompt", {
@@ -1038,6 +1049,28 @@ Hooks.once("init", () => {
         type: Boolean,
         default: true,
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enablePlayersRollOwnSaves", {
+        name: "Players Roll Their Own Saves",
+        hint: "When the GM clicks the Save or Check button of a chat card (e.g. a Fireball hitting allies and enemies), player characters whose player is online are skipped and marked on the card: their players roll. Players can't roll for a token that isn't a target. Switch the card's target list to Selected tokens to roll for anyone. Disabled while midi-qol is active.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshPlayersRollOwnSavesMarks()
+    });
+
+    game.settings.register(MODULE_ID, "playersRollOwnSavesOffline", {
+        name: "↳ GM Rolls for Offline Players",
+        hint: "The GM still rolls for player characters whose player isn't logged in. When off, the GM never rolls for player characters from the card.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshPlayersRollOwnSavesMarks()
     });
 
     game.settings.register(MODULE_ID, "promptForAttackDamage", {
@@ -1891,6 +1924,7 @@ Hooks.once("setup", () => {
     initUndeadFortitude();
     initSelfEffectApplication();
     initSaveGatedEffects();
+    initPlayersRollOwnSaves();
     initSelfTargetCorrection();
     initRemoveInstantaneousTemplates();
     initSheetPlusCompendium();
