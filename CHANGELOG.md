@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.96.0] - 2026-11-16
+### Changed
+- **Intelligence for Weapon Attacks (Bladesong & Battle Ready)**: Heroes of Faerûn enchants every weapon with *Bladework* while Bladesong is active, which always uses Intelligence. Those weapons, and weapons enchanted with Battle Ready's *Arcane Empowerment*, now use Strength or Dexterity instead when it's higher. The attack dialog still offers Intelligence.
+
 ## [14.95.0] - 2026-11-16
 ### Added
 - **Intelligence for Weapon Attacks (Bladesong & Battle Ready)**: Battle Smith Artificers now use Intelligence for attacks with magic weapons whenever it's higher than Strength or Dexterity, for both the attack and the damage roll (Battle Ready's Arcane Empowerment). No need to enchant each weapon by hand. The feature, previously *Bladesong: Intelligence for Weapon Attacks*, covers both now.

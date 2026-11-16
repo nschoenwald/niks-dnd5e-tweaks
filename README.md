@@ -358,8 +358,9 @@ D&D 5e's Save button on a chat card rolls for every target the clicking user own
 ### Intelligence for Weapon Attacks (Bladesong & Battle Ready)
 Some features let a character attack with **Intelligence** instead of Strength or Dexterity. Their weapon attacks use Intelligence automatically whenever it gives the higher modifier, for the attack roll and the damage, and the sheet shows the matching to-hit and damage.
 * **Bladesong** (Bladesinger, *Bladework*, 2024 rules): weapons the character is proficient with, while an effect named *Bladesong* is active (the feature's own effect, turned on or applied by *Invoke Bladesong*). Turning it off switches back at once. Only the 2024 Bladesong (Heroes of Faerûn) has Bladework; older items without a rules version follow the world's rules setting, and the 2014 Bladesong isn't affected.
-* **Battle Ready** (Battle Smith Artificer, *Arcane Empowerment*): every magic weapon, always. No need to use the feature's *Arcane Empowerment* enchantment any more; weapons already enchanted with it keep using Intelligence as before.
+* **Battle Ready** (Battle Smith Artificer, *Arcane Empowerment*): every magic weapon, always. No need to use the feature's *Arcane Empowerment* enchantment any more.
 * **Automatic, only when better**: If Strength or Dexterity is higher, that stays. The attack roll dialog lists Intelligence as an option too, so you can still pick another ability.
+* **Enchanted weapons**: Heroes of Faerûn itself enchants every weapon the character is proficient with (Unarmed Strike included) with *Bladework* while Bladesong is active, which always forces Intelligence. Weapons with that enchantment, or with Battle Ready's *Arcane Empowerment*, still use Strength or Dexterity when they're higher, since both features say you *can* use Intelligence.
 * **Which attacks**: Weapon attacks that use Strength or Dexterity. Not Unarmed Strikes, natural weapons, spell attacks, or weapons set to use a spellcasting ability (e.g. a Pact Weapon).
 * Works with midi-qol, which rolls with the same ability. Players can turn it off for themselves in their personal preferences.
 

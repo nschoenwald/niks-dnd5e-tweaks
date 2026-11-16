@@ -8,6 +8,8 @@
  *
  * @introduced v14.94.0
  * @updated v14.95.0 (Battle Ready: Intelligence for magic weapons)
+ * @updated v14.96.0 (Weapons that Heroes of Faerûn's Bladework or Battle Ready's Arcane Empowerment enchantment forces
+ *   to Intelligence fall back to Strength or Dexterity when they're higher)
  */
 import { isFeatureActive, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -39,13 +41,38 @@ import { isModernRules } from "./conditional-damage.js";
  * weapon, you can use your Intelligence modifier, instead of your Strength or Dexterity modifier, for the attack and
  * damage rolls." No proficiency or active effect needed; magic = the weapon's `mgc` property. The Forge item (identifier
  * `battle-ready`) ships an "Arcane Empowerment" enchantment that fixes the weapon's attack ability to Intelligence;
- * such a weapon no longer uses Strength / Dexterity and is left alone.
+ * such a weapon no longer uses Strength / Dexterity.
+ *
+ * Forced-Intelligence enchantments: Heroes of Faerûn (2.0.1, `scripts/automation/bladesong.mjs`) automates Bladework
+ * itself. When an effect flagged `dnd-heroes-faerun.bladesong` is created or enabled, the user who did it enchants
+ * every weapon with proficiency (`proficiencyMultiplier >= 1`, Unarmed Strike included) with "Bladework" (static id
+ * `HoFBladework`, `activities[attack].attack.ability` override "int", origin = that effect); deleting or disabling the
+ * effect removes them. There's no setting to turn it off. Battle Ready's "Arcane Empowerment" does the same per weapon. Both rules say
+ * the character *can* use Intelligence, so for a weapon with such an applied enchantment the weapon's own abilities
+ * (Strength / Dexterity) are added back before dnd5e adds the fixed "int": the best modifier wins and the dialog offers
+ * all of them.
  */
 
 const IDENTIFIER = "bladesong";
 const NAME_PATTERN = /^bladesong$/i;
 const EFFECT_PATTERN = /^bladesong\b/i;
 const BATTLE_READY_IDENTIFIER = "battle-ready";
+/** Enchantments that fix a weapon's attack ability to Intelligence for a "can use Intelligence" feature. */
+const FORCED_INT_ENCHANTMENTS = /^(?:bladework|arcane empowerment)$/i;
+
+/**
+ * Whether a weapon carries an applied, enabled enchantment that forces Intelligence for Bladework or Arcane
+ * Empowerment.
+ * @param {Item5e} item
+ * @returns {boolean}
+ */
+function _hasForcedIntEnchantment(item) {
+    for (const effect of item?.effects ?? []) {
+        if ((effect.type !== "enchantment") || effect.disabled || (effect.isAppliedEnchantment === false)) continue;
+        if (FORCED_INT_ENCHANTMENTS.test(effect.name?.trim() ?? "")) return true;
+    }
+    return false;
+}
 const BATTLE_READY_PATTERN = /^battle ready$/i;
 
 /**
@@ -128,10 +155,16 @@ function _qualifies(activity) {
  */
 function _wrapPrepareFinalData(wrapped, ...args) {
     try {
-        if (this.attack?.abilities && !this.attack.abilities.has("int") && this.actor
-            && isFeatureActive("enableBladesongBladework", "clientEnableBladesongBladework") && _qualifies(this)) {
-            this.attack.abilities.add("int");
-            debug(`Intelligence for Weapon Attacks | ${this.actor.name}'s ${this.item.name} may use Intelligence`);
+        if (this.attack?.abilities && this.actor && (this.item?.type === "weapon")
+            && isFeatureActive("enableBladesongBladework", "clientEnableBladesongBladework")) {
+            if ((this.attack.ability === "int") && _hasForcedIntEnchantment(this.item)) {
+                // Forced to Intelligence by an enchantment: put Strength / Dexterity back as options, best one wins
+                for (const ability of this.item.system?.availableAbilities ?? []) this.attack.abilities.add(ability);
+                debug(`Intelligence for Weapon Attacks | ${this.actor.name}'s ${this.item.name}: Intelligence only when it's best`);
+            } else if (!this.attack.abilities.has("int") && _qualifies(this)) {
+                this.attack.abilities.add("int");
+                debug(`Intelligence for Weapon Attacks | ${this.actor.name}'s ${this.item.name} may use Intelligence`);
+            }
         }
     } catch (err) {
         debug("Bladesong Bladework | Check failed", err);
