@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.95.0] - 2026-11-16
+### Added
+- **Intelligence for Weapon Attacks (Bladesong & Battle Ready)**: Battle Smith Artificers now use Intelligence for attacks with magic weapons whenever it's higher than Strength or Dexterity, for both the attack and the damage roll (Battle Ready's Arcane Empowerment). No need to enchant each weapon by hand. The feature, previously *Bladesong: Intelligence for Weapon Attacks*, covers both now.
+
 ## [14.94.0] - 2026-11-16
 ### Added
 - **Bladesong: Intelligence for Weapon Attacks**: While a Bladesinger's Bladesong is active, attacks with a weapon they're proficient with use Intelligence instead of Strength or Dexterity whenever it's higher, for both the attack and the damage roll. The sheet shows the matching numbers, and the attack dialog offers Intelligence as a choice. Follows the 2024 rules (Heroes of Faerûn); the 2014 Bladesong isn't affected. Players can turn it off for themselves.

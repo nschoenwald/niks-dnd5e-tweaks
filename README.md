@@ -77,7 +77,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Players Roll Their Own Saves](#players-roll-their-own-saves)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Conditional Damage Bonuses (Hex, Hunter's Mark, Sneak Attack, GWM, Charger, Savage Attacker, Boon of Irresistible Offense, Genie's Wrath, Cleave & Player's Handbook class features)](#conditional-damage-bonuses-sneak-attack-hex-hunters-mark-great-weapon-master-brutal-strike-charger-savage-attacker-boon-of-irresistible-offense--cleave)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Reckless Attack Automation](#reckless-attack-automation)** | Rolls & Damage | ✅ Enabled | Yes |
-| **[Bladesong: Intelligence for Weapon Attacks](#bladesong-intelligence-for-weapon-attacks)** | Rolls & Damage | ✅ Enabled | Yes |
+| **[Intelligence for Weapon Attacks (Bladesong & Battle Ready)](#intelligence-for-weapon-attacks-bladesong--battle-ready)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Weapon Mastery Automation (Slow, Sap, Topple & Vex)](#weapon-mastery-automation)** | Rolls & Damage | ✅ Enabled | Yes |
 | **[Prevent Rolling as Group Actors](#prevent-rolling-as-group-actors)** | Rolls & Damage | ✅ Enabled | No |
 | **[Player Damage Prompt](#player-damage-prompt)** | Rolls & Damage | ❌ Disabled | Yes |
@@ -355,12 +355,12 @@ D&D 5e's Save button on a chat card rolls for every target the clicking user own
 * *Sub-setting*: **GM Rolls for Offline Players** (characters whose player isn't logged in are still rolled by the GM, default on; when off, the GM never rolls for player characters from the card).
 * Personal opt-out available. Disabled while midi-qol is active (midi-qol's *Player Roll Saves* and NPC save settings do this there).
 
-### Bladesong: Intelligence for Weapon Attacks
-While a Bladesinger's **Bladesong** is active, attacks with a weapon they're proficient with use **Intelligence** instead of Strength or Dexterity whenever Intelligence gives the higher modifier (*Bladework*, 2024 rules). The attack roll and the damage both use it, and the sheet shows the matching to-hit and damage while Bladesong lasts.
+### Intelligence for Weapon Attacks (Bladesong & Battle Ready)
+Some features let a character attack with **Intelligence** instead of Strength or Dexterity. Their weapon attacks use Intelligence automatically whenever it gives the higher modifier, for the attack roll and the damage, and the sheet shows the matching to-hit and damage.
+* **Bladesong** (Bladesinger, *Bladework*, 2024 rules): weapons the character is proficient with, while an effect named *Bladesong* is active (the feature's own effect, turned on or applied by *Invoke Bladesong*). Turning it off switches back at once. Only the 2024 Bladesong (Heroes of Faerûn) has Bladework; older items without a rules version follow the world's rules setting, and the 2014 Bladesong isn't affected.
+* **Battle Ready** (Battle Smith Artificer, *Arcane Empowerment*): every magic weapon, always. No need to use the feature's *Arcane Empowerment* enchantment any more; weapons already enchanted with it keep using Intelligence as before.
 * **Automatic, only when better**: If Strength or Dexterity is higher, that stays. The attack roll dialog lists Intelligence as an option too, so you can still pick another ability.
-* **Which attacks**: Weapons you're proficient with, including attacks set to Strength or Dexterity. Not Unarmed Strikes, natural weapons, spell attacks, or weapons set to use a spellcasting ability (e.g. a Pact Weapon).
-* **When**: While an effect named *Bladesong* is active on the character, i.e. the feature's own effect, turned on or applied by *Invoke Bladesong*. Turning it off switches back at once.
-* **Rules**: Only the 2024 Bladesong (Heroes of Faerûn) has Bladework. Older items without a rules version follow the world's rules setting. The 2014 Bladesong isn't affected.
+* **Which attacks**: Weapon attacks that use Strength or Dexterity. Not Unarmed Strikes, natural weapons, spell attacks, or weapons set to use a spellcasting ability (e.g. a Pact Weapon).
 * Works with midi-qol, which rolls with the same ability. Players can turn it off for themselves in their personal preferences.
 
 ### Reckless Attack Automation

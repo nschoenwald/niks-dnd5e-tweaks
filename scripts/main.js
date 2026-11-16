@@ -228,8 +228,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "clientEnableBladesongBladework", {
-        name: "Bladesong: Intelligence for Weapon Attacks (Personal)",
-        hint: "Uses Intelligence for your weapon attacks during Bladesong when it's your best modifier (if enabled by the GM).",
+        name: "Intelligence for Weapon Attacks (Bladesong & Battle Ready) (Personal)",
+        hint: "Uses Intelligence for your weapon attacks when it's your best modifier, during Bladesong or with magic weapons as a Battle Smith (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1342,8 +1342,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "enableBladesongBladework", {
-        name: "Bladesong: Intelligence for Weapon Attacks",
-        hint: "While a Bladesinger's Bladesong is active (2024 rules), attacks with a weapon they're proficient with use Intelligence instead of Strength or Dexterity whenever its modifier is higher, for the attack and the damage. The attack roll dialog offers Intelligence too.",
+        name: "Intelligence for Weapon Attacks (Bladesong & Battle Ready)",
+        hint: "Weapon attacks that may use Intelligence instead of Strength or Dexterity use it whenever its modifier is higher, for the attack and the damage: a Bladesinger's weapons they're proficient with while Bladesong is active (2024 rules), and a Battle Smith's magic weapons (Battle Ready). The attack roll dialog offers Intelligence too.",
         scope: "world",
         config: false,
         type: Boolean,
