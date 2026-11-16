@@ -124,6 +124,16 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnableBladesongBladework",
+                            introduced: "14.94.0",
+                            pairedWith: "enableBladesongBladework",
+                            name: "Bladesong: Intelligence for Weapon Attacks",
+                            hint: "Uses Intelligence for your weapon attacks during Bladesong when it's your best modifier (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
                             key: "clientEnableInitiativePrompt",
                             introduced: "14.28.5",
                             pairedWith: "promptForInitiative",
@@ -1288,6 +1298,17 @@ export function getSettingsSchema() {
                             keywords: ["Reckless Attack", "Barbarian", "advantage", "reckless"],
                             name: "Reckless Attack Automation",
                             hint: "A creature with Reckless Attack decides on its first attack roll of its turn, without using the feature: a checkbox in the attack roll dialog, or a Yes / No prompt when the dialog is skipped (e.g. midi-qol fast-forward). Attacking recklessly gives Advantage and makes the creature Reckless until the start of its next turn: attacks against it have Advantage, and its Strength attacks keep Advantage (2014 rules: melee weapon attacks, this turn only; 2024 rules: until its next turn). Follows the feature's 2014 / 2024 rules.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "enableBladesongBladework",
+                            introduced: "14.94.0",
+                            docs: "bladesong-intelligence-for-weapon-attacks",
+                            keywords: ["Bladesong", "Bladesinger", "Bladework", "Intelligence", "Wizard", "attack ability"],
+                            name: "Bladesong: Intelligence for Weapon Attacks",
+                            hint: "While a Bladesinger's Bladesong is active (2024 rules), attacks with a weapon they're proficient with use Intelligence instead of Strength or Dexterity whenever its modifier is higher, for the attack and the damage. The attack roll dialog offers Intelligence too.",
                             type: "Boolean",
                             default: true,
                             scope: "world"

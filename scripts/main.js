@@ -44,6 +44,7 @@ import { initUndeadFortitude } from "./features/combat-automation/undead-fortitu
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
+import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
 import { initDisableActiveEffectExpiry, onDisableActiveEffectExpiryChanged } from "./features/combat-automation/disable-active-effect-expiry.js";
@@ -224,6 +225,16 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableBladesongBladework", {
+        name: "Bladesong: Intelligence for Weapon Attacks (Personal)",
+        hint: "Uses Intelligence for your weapon attacks during Bladesong when it's your best modifier (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true,
+        onChange: () => refreshBladesongActors()
     });
 
     game.settings.register(MODULE_ID, "clientEnableInitiativePrompt", {
@@ -1330,6 +1341,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableBladesongBladework", {
+        name: "Bladesong: Intelligence for Weapon Attacks",
+        hint: "While a Bladesinger's Bladesong is active (2024 rules), attacks with a weapon they're proficient with use Intelligence instead of Strength or Dexterity whenever its modifier is higher, for the attack and the damage. The attack roll dialog offers Intelligence too.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshBladesongActors()
+    });
+
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
         hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul) and from other official books (Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes, Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner). Alchemical Savant and Power from Beyond also add to healing. Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting and Elemental Adept apply automatically.",
@@ -1962,6 +1984,9 @@ Hooks.once("setup", () => {
     initProneRules();
     initConditionRollModes();
     initRecklessAttack();
+    initBladesongBladework();
+    // Actors were prepared before this patch existed
+    refreshBladesongActors();
     initConditionHud();
     // Before Conditional Damage: Savage Attacker builds its dice pool from the dice Great Weapon Fighting modified
     initGreatWeaponFighting();
