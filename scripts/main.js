@@ -1939,7 +1939,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "languageFilterList", {
         name: "↳ Languages",
-        hint: "A comma-separated list of language keys or names (case-insensitive), e.g. \"Abyssal, Gith, primordial\". A category (Standard Languages, Rare Languages) or a language with dialects (Primordial) covers everything under it.",
+        hint: "A comma-separated list of language keys or names (case-insensitive), e.g. \"exotic, gith, primordial\": the languages to hide, or the only ones offered, depending on Filter Mode. A category (exotic = Rare Languages) or a language with dialects (Primordial) covers everything under it. Picked from a list in the settings dashboard with Nik's Foundry Tweaks 14.7.0.",
         scope: "world",
         config: false,
         type: String,

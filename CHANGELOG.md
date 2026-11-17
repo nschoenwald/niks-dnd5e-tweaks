@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [14.99.1] - 2026-11-17
+## [14.100.0] - 2026-11-17
 ### Changed
-- **Enhanced Summoning Placement HUD**: The range boundary now follows the scene's grid rules. On a square grid where every diagonal counts as 5 ft. it is a square, so it shows exactly the squares you can summon into. Other diagonal rules get the matching shape, hex grids a hexagon, and gridless scenes keep the circle.
+- **World Language Filter**: The languages are now picked from a list of your world's languages, grouped into Standard and Rare, with dialects under Primordial. Check a whole group at once with *All Standard Languages* or *All Rare Languages*. Entries you typed in 14.99.0 carry over. Needs Nik's Foundry Tweaks 14.7.0; with an older version the list is still typed by hand.
 
 ## [14.99.0] - 2026-11-17
 ### Added

@@ -5,6 +5,7 @@
  * languages or by offering only listed ones.
  *
  * @introduced v14.99.0
+ * @updated v14.100.0 (Languages picked from the world's languages in the dashboard, with Nik's Foundry Tweaks 14.7.0)
  */
 import { debug, getSetting } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -58,25 +59,72 @@ function getFilter() {
 }
 
 /**
+ * Label of a language config entry, localized.
+ * @param {string|object} data
+ * @returns {string}
+ */
+function languageLabel(data) {
+    const label = (typeof data === "string") ? data : data?.label;
+    return label ? game.i18n.localize(label) : "";
+}
+
+/**
+ * Config key of a listed entry: a key (`abyssal`, `languages:exotic:abyssal`) or a label (`Abyssal`), case-insensitive.
+ * @param {string} entry
+ * @returns {string|null}
+ */
+export function findLanguageKey(entry) {
+    const wanted = String(entry ?? "").trim().split(":").pop().toLocaleLowerCase();
+    if (!wanted) return null;
+    let byLabel = null;
+    const walk = (config) => {
+        for (const [key, data] of Object.entries(config ?? {})) {
+            if (key.toLocaleLowerCase() === wanted) return key;
+            if (!byLabel && (languageLabel(data).toLocaleLowerCase() === wanted)) byLabel = key;
+            const found = data?.children ? walk(data.children) : null;
+            if (found) return found;
+        }
+        return null;
+    };
+    return walk(CONFIG.DND5E?.languages) ?? byLabel;
+}
+
+/**
+ * The world's languages as groups for the dashboard's choice picker (Nik's Foundry Tweaks 14.7.0): one group per
+ * category (Standard, Rare), which can be picked as a whole, and "Other Languages" for languages outside a category
+ * (Thieves' Cant and Druidic with legacy rules). Dialects are listed under their language.
+ * @returns {object[]}
+ */
+export function getLanguageGroups() {
+    const toChoices = (config) => Object.entries(config ?? {}).map(([key, data]) => ({
+        value: key,
+        label: languageLabel(data) || key,
+        children: data?.children ? toChoices(data.children) : undefined
+    }));
+    const groups = [];
+    const other = [];
+    for (const [key, data] of Object.entries(CONFIG.DND5E?.languages ?? {})) {
+        if (data?.children && (data.selectable === false)) {
+            groups.push({ label: languageLabel(data) || key, value: key, choices: toChoices(data.children) });
+        } else other.push(...toChoices({ [key]: data }));
+    }
+    if (other.length) groups.push({ label: "Other Languages", choices: other });
+    return groups;
+}
+
+/**
  * Turn the listed entries (keys or labels) into config keys.
  * @param {string} raw  Comma-separated list.
  * @returns {Set<string>}
  */
 function resolveKeys(raw) {
-    const wanted = new Set(raw.split(",").map(e => e.trim().split(":").pop().toLocaleLowerCase()).filter(Boolean));
     const keys = new Set();
-    const walk = (config) => {
-        for (const [key, data] of Object.entries(config ?? {})) {
-            const label = (typeof data === "string") ? data : data?.label;
-            if (wanted.has(key.toLocaleLowerCase()) || (label && wanted.has(game.i18n.localize(label).toLocaleLowerCase()))) {
-                keys.add(key);
-            }
-            if (data?.children) walk(data.children);
-        }
-    };
-    walk(CONFIG.DND5E.languages);
-    const unmatched = [...wanted].filter(w => ![...keys].some(k => k.toLocaleLowerCase() === w));
-    if (unmatched.length) debug(`Language filter: matched ${keys.size} entries. Matched by label or not found: ${unmatched.join(", ")}`);
+    for (const entry of raw.split(",")) {
+        if (!entry.trim()) continue;
+        const key = findLanguageKey(entry);
+        if (key) keys.add(key);
+        else debug(`Language filter: "${entry.trim()}" matches no language.`);
+    }
     return keys;
 }
 

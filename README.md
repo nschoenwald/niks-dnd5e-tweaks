@@ -184,7 +184,7 @@ Hold <kbd>Shift</kbd> to force a move or <kbd>Ctrl</kbd> to force a copy (D&D 5e
 ### World Language Filter
 Limits the languages players can pick to the ones that exist in your world. Applies to the actor's **Languages** dialog and to species, background and class advancements such as "choose one Standard language" or "choose any language".
 * **Filter Mode**: **Hide Listed Languages** (default), or **Offer Only Listed Languages**.
-* **Languages**: names or keys, e.g. *Abyssal*, *Gith* or *primordial*. A category (*Standard Languages*, *Rare Languages*) or a language with dialects (*Primordial*) covers everything under it. An empty list filters nothing.
+* **Languages**: opens a list of your world's languages (including ones other modules add), grouped into Standard and Rare, with dialects under their language. Click a language to pick it: in hide mode the eye closes, in "offer only" mode it gets a checkmark. *All Standard Languages* / *All Rare Languages* pick a whole group, and picking a language with dialects (*Primordial*) covers its dialects. Nothing picked filters nothing. The picker needs Nik's Foundry Tweaks 14.7.0; with an older version you type language names or keys (e.g. *Abyssal*, *exotic*, *primordial*) into a list instead.
 
 Nothing is removed from actors: languages a character already knows stay in their dialog, monsters keep the languages in their statblocks, and a language that an advancement grants directly (e.g. a species that grants Elvish) is still granted. Custom languages typed into the *Special* field are not affected. Disabled by default.
 

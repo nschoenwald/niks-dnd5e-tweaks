@@ -18,6 +18,7 @@
  */
 import { DEFAULT_HIDDEN_STATUSES, isSystemCondition } from "./features/canvas-tokens/condition-hud.js";
 import { overrideSchemaChoices } from "./utils/personal-override.js";
+import { findLanguageKey, getLanguageGroups } from "./features/utilities/language-filter.js";
 
 /**
  * @returns {object[]} The tabs of this module's dashboard schema.
@@ -509,7 +510,15 @@ export function getSettingsSchema() {
                             introduced: "14.99.0",
                             name: "Languages",
                             list: true,
-                            hint: "Language names or keys, e.g. Abyssal, Gith or primordial. A category (Standard Languages, Rare Languages) or a language with dialects (Primordial) covers everything under it. An empty list filters nothing.",
+                            choicePicker: {
+                                getGroups: getLanguageGroups,
+                                normalize: findLanguageKey,
+                                noun: "languages",
+                                resetTitle: "Uncheck all languages",
+                                // Eye icons when hiding, checkboxes when listing the only languages offered
+                                mode: (readValue) => (readValue("languageFilterMode") === "allow" ? "select" : "hide")
+                            },
+                            hint: "The languages to hide, or the only ones offered, depending on Filter Mode. Picking a category (All Standard Languages) or a language with dialects (Primordial) covers everything under it. Nothing picked filters nothing.",
                             type: "String",
                             default: "",
                             scope: "world",
