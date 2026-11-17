@@ -23,6 +23,7 @@ import { initGridBasedTemplates } from "./features/canvas-tokens/grid-based-temp
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
 import { initSummonPlacementHUD } from "./features/canvas-tokens/summon-placement-hud.js";
+import { initTeleportTargeting } from "./features/canvas-tokens/teleport-targeting.js";
 
 // Combat & Automation
 import { initAutoRollInitiative } from "./features/combat-automation/auto-roll-initiative.js";
@@ -2031,6 +2032,7 @@ Hooks.once("setup", () => {
     initSuppressBloodiedDead();
     initTemplatePlacementHUD();
     initSummonPlacementHUD();
+    initTeleportTargeting();
     initPreventGroupActorRolls();
     initWeaponMasteries();
     initProneRules();

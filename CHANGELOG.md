@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.101.0] - 2026-11-17
+### Added
+- **Teleport Targeting**: The teleport banner and ghost token preview of Nik's Foundry Tweaks now work with D&D 5e's Teleport activity: click **Teleport** on the chat card, then click a spot within range instead of dragging your token. Boss Loot FX (BLFX) teleports now respect the spell's range, taken from its Teleport activity or, for older copies of a spell, from "teleport up to 30 feet" in its description. Needs Nik's Foundry Tweaks 14.9.0.
+
 ## [14.100.0] - 2026-11-17
 ### Changed
 - **World Language Filter**: The languages are now picked from a list of your world's languages, grouped into Standard and Rare, with dialects under Primordial. Check a whole group at once with *All Standard Languages* or *All Rare Languages*. Entries you typed in 14.99.0 carry over. Needs Nik's Foundry Tweaks 14.7.0; with an older version the list is still typed by hand.

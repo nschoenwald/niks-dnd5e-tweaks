@@ -59,6 +59,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Template Placement Controls HUD](#template-placement-controls-hud--scroll-rotation)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
 | **[Auto-Target Tokens in Spell Templates](#auto-target-tokens-in-spell-templates)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Enhanced Summoning Placement HUD](#enhanced-summoning-placement-hud--range-preview)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
+| **[Teleport Targeting](#teleport-targeting)** | Canvas & Tokens | ✅ Enabled (Nik's Foundry Tweaks setting) | Yes (Nik's Foundry Tweaks setting) |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
@@ -321,6 +322,11 @@ Appears during creature summoning activities (*Find Familiar*, *Summon Celestial
 * **Facing Rotation**: Hold <kbd>Shift</kbd> while scrolling to orient the summoned creature before placement.
 * **Step Tracking**: Multi-creature summons display step progress (*Summon 1 of 4*).
 * **Token Art Preview**: Evaluates wildcard patterns and actor portraits so canvas previews show actual creature artwork instead of mystery tokens.
+
+### Teleport Targeting
+The D&D 5e side of Nik's Foundry Tweaks' *Enhanced Teleport Targeting UI* (banner, ghost token preview, <kbd>ESC</kbd> to cancel). It is switched by that setting and needs Nik's Foundry Tweaks 14.9.0.
+* **D&D 5e Teleport activity**: Clicking **Teleport** on the chat card of a spell with a Teleport activity (*Misty Step*, *Dimension Door* from the current Player's Handbook) shows the banner and ghost token instead of dragging your token. Click a spot within range to teleport there. With more than one token selected (e.g. *Dimension Door* with a companion), D&D 5e's own drag-to-move flow is used.
+* **Range for BLFX teleports**: Boss Loot FX doesn't know a spell's range. The banner takes it from the spell you just used: its Teleport activity's distance, or for older copies of a spell (Utility activities only) the "teleport up to 30 feet" in its description. Spots beyond it are out of range. Without either, there is no limit.
 
 ---
 
