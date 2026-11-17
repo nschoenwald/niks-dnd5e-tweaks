@@ -1,9 +1,10 @@
 /**
  * Feature: Summoning Placement Controls HUD, Range Preview & Scroll Rotation
- * Description: Displays a floating HUD banner with key controls, live distance vs. max range badge, dynamic rotation readout, canvas range boundary ring, and inverted wheel scrolling during summoning placement.
+ * Description: Displays a floating HUD banner with key controls, live distance vs. max range badge, dynamic rotation readout, canvas range boundary (shaped by the grid's diagonal rule), and inverted wheel scrolling during summoning placement.
  *
  * @introduced v14.36.0
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
+ * @updated v14.99.0 (Range boundary follows the scene's grid and diagonal rule: a square on 5/5/5 square grids)
  */
 import { debug, log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -391,13 +392,9 @@ function _openOrUpdateSummonHud({ data, summonData, layer }) {
     let rangeRing = null;
     const originCenter = _getTokenCenter(originToken);
     if (canvas.controls && originCenter && range?.value && Number.isFinite(range.value)) {
-        const gridDist = canvas.scene?.grid?.distance || 5;
-        const gridSize = canvas.grid?.size || 100;
-        const radiusPixels = (range.value / gridDist) * gridSize;
-
         rangeRing = new PIXI.Graphics();
         canvas.controls.addChild(rangeRing);
-        _drawRangeRing(rangeRing, originCenter, radiusPixels, true);
+        _drawRangeRing(rangeRing, originCenter, range.value, true);
     }
 
     // Create DOM Element
@@ -608,12 +605,7 @@ function _updateDistanceDisplay(preview, document) {
 
         if (inRange !== activeSummonHudSession.lastInRange) {
             activeSummonHudSession.lastInRange = inRange;
-            if (rangeRing) {
-                const gridDist = canvas.scene?.grid?.distance || 5;
-                const gridSize = canvas.grid?.size || 100;
-                const radiusPixels = (range.value / gridDist) * gridSize;
-                _drawRangeRing(rangeRing, originCenter, radiusPixels, inRange);
-            }
+            if (rangeRing) _drawRangeRing(rangeRing, originCenter, range.value, inRange);
         }
 
         if (inRange) {
@@ -630,13 +622,36 @@ function _updateDistanceDisplay(preview, document) {
 }
 
 /**
- * Draws or updates the visual range boundary circle on canvas.
+ * Get the range boundary polygon around a point, following the scene's grid type and diagonal rule
+ * (`BaseGrid#getCircle`): a square on square grids with equidistant (5/5/5) diagonals, an octagon for
+ * 5/10/5 or 1.5×, a diamond for rectilinear, a hexagon on hex grids and a true circle when gridless.
+ * On grids the boundary is pushed out by half a square, so it wraps the outer edge of the furthest square
+ * still in range instead of cutting through its center.
+ * @param {{x: number, y: number}} center
+ * @param {number} range   Range in grid units (e.g. feet).
+ * @returns {number[]|null} Flat polygon points, or null when the grid can't provide one.
+ */
+function _getRangePolygon(center, range) {
+    const grid = canvas.grid;
+    if (typeof grid?.getCircle !== "function") return null;
+    const padding = grid.isGridless ? 0 : (grid.distance / 2);
+    try {
+        const points = grid.getCircle(center, range + padding);
+        if (!points?.length) return null;
+        return points.flatMap(p => [p.x, p.y]);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Draws or updates the visual range boundary on canvas.
  * @param {PIXI.Graphics} graphics
  * @param {{x: number, y: number}} center
- * @param {number} radius
+ * @param {number} range   Range in grid units.
  * @param {boolean} inRange
  */
-function _drawRangeRing(graphics, center, radius, inRange) {
+function _drawRangeRing(graphics, center, range, inRange) {
     if (!graphics || graphics.destroyed) return;
     graphics.clear();
 
@@ -646,7 +661,13 @@ function _drawRangeRing(graphics, center, radius, inRange) {
 
     graphics.lineStyle(2, color, strokeAlpha);
     graphics.beginFill(color, fillAlpha);
-    graphics.drawCircle(center.x, center.y, radius);
+    const polygon = _getRangePolygon(center, range);
+    if (polygon) {
+        graphics.drawPolygon(polygon);
+    } else {
+        const radius = (range / (canvas.scene?.grid?.distance || 5)) * (canvas.grid?.size || 100);
+        graphics.drawCircle(center.x, center.y, radius);
+    }
     graphics.endFill();
 }
 

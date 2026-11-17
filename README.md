@@ -44,6 +44,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Item / Spell Add: Choice Dialog](#item--spell--feature-add-choice-dialog)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Roll Mode Highlight](#roll-mode-highlight)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Dragging Items Between Actors](#dragging-items-between-actors)** | UI & Visuals | ✅ Always Move | No |
+| **[World Language Filter](#world-language-filter)** | UI & Visuals | ❌ Disabled | No |
 | **[Pact Magic Formula Scaling Fix](#pact-magic-formula-scaling-fix)** | UI & Visuals | ✅ Enabled | Yes |
 | **[Cursor Keyboard Hints](#cursor-keyboard-hints)** | UI & Visuals | ✅ Enabled | Yes, on or off¹ |
 | **[Blood Drop Bloodied Icon](#blood-drop-bloodied-icon)** | UI & Visuals | ✅ Enabled | No |
@@ -180,6 +181,13 @@ This also applies to containers: dropping onto a container on another actor's sh
 
 Hold <kbd>Shift</kbd> to force a move or <kbd>Ctrl</kbd> to force a copy (D&D 5e's *Force Move/Copy when Dragging* keybindings). Items are copied whenever a move isn't allowed: when you can't remove items from the original actor, when the item comes from the sidebar or a compendium, or for spells, features and classes.
 
+### World Language Filter
+Limits the languages players can pick to the ones that exist in your world. Applies to the actor's **Languages** dialog and to species, background and class advancements such as "choose one Standard language" or "choose any language".
+* **Filter Mode**: **Hide Listed Languages** (default), or **Offer Only Listed Languages**.
+* **Languages**: names or keys, e.g. *Abyssal*, *Gith* or *primordial*. A category (*Standard Languages*, *Rare Languages*) or a language with dialects (*Primordial*) covers everything under it. An empty list filters nothing.
+
+Nothing is removed from actors: languages a character already knows stay in their dialog, monsters keep the languages in their statblocks, and a language that an advancement grants directly (e.g. a species that grants Elvish) is still granted. Custom languages typed into the *Special* field are not affected. Disabled by default.
+
 ### Pact Magic Formula Scaling Fix
 Fixes an upstream DnD5e 6.x issue where Pact Magic spells on character and NPC sheets display unscaled base damage/healing formulas (e.g. 2d10 instead of 4d10 for a 1st-level *Hellish Rebuke* on a 5th-level Warlock) in the Formula column and activity rows. Formulas now dynamically scale to the caster's derived pact slot level.
 
@@ -309,7 +317,7 @@ Templates of spells and abilities with an instantaneous duration (e.g. *Fireball
 ### Enhanced Summoning Placement HUD & Range Preview
 Appears during creature summoning activities (*Find Familiar*, *Summon Celestial*, etc.):
 * **Live Distance Measurement**: Real-time distance readout with emerald `✓ In Range` and crimson `⚠ Out of Range` status badges.
-* **Boundary Ring**: Draws an ethereal range boundary circle around the caster token on the canvas.
+* **Range Boundary**: Outlines the spell's range around the caster token on the canvas, following the scene's grid rules: a square on square grids where diagonals count as 5 ft., the matching shape for other diagonal rules, a hexagon on hex grids and a circle on gridless scenes. It turns red while the preview is out of range.
 * **Facing Rotation**: Hold <kbd>Shift</kbd> while scrolling to orient the summoned creature before placement.
 * **Step Tracking**: Multi-creature summons display step progress (*Summon 1 of 4*).
 * **Token Art Preview**: Evaluates wildcard patterns and actor portraits so canvas previews show actual creature artwork instead of mystery tokens.

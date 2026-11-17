@@ -480,6 +480,42 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableLanguageFilter",
+                            introduced: "14.99.0",
+                            docs: "world-language-filter",
+                            keywords: ["languages", "setting", "campaign", "homebrew", "hide", "species", "background", "advancement", "Thieves' Cant", "Druidic"],
+                            name: "World Language Filter",
+                            hint: "Limits the languages offered in the actor Languages dialog and in species, background and class advancements (e.g. \"choose one Standard language\") to the ones used in your world. Languages an actor already has are kept, and monsters keep the languages in their statblocks.",
+                            type: "Boolean",
+                            default: false,
+                            scope: "world"
+                        },
+                        {
+                            key: "languageFilterMode",
+                            introduced: "14.99.0",
+                            name: "Filter Mode",
+                            hint: "Hide the listed languages, or offer only the listed languages.",
+                            type: "Select",
+                            default: "hide",
+                            choices: [
+                                { value: "hide", label: "Hide Listed Languages" },
+                                { value: "allow", label: "Offer Only Listed Languages" }
+                            ],
+                            scope: "world",
+                            parentKey: "enableLanguageFilter"
+                        },
+                        {
+                            key: "languageFilterList",
+                            introduced: "14.99.0",
+                            name: "Languages",
+                            list: true,
+                            hint: "Language names or keys, e.g. Abyssal, Gith or primordial. A category (Standard Languages, Rare Languages) or a language with dialects (Primordial) covers everything under it. An empty list filters nothing.",
+                            type: "String",
+                            default: "",
+                            scope: "world",
+                            parentKey: "enableLanguageFilter"
+                        },
+                        {
                             key: "enablePactSpellFormulaScaling",
                             introduced: "14.46.0",
                             docs: "pact-magic-formula-scaling-fix",

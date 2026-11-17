@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.99.1] - 2026-11-17
+### Changed
+- **Enhanced Summoning Placement HUD**: The range boundary now follows the scene's grid rules. On a square grid where every diagonal counts as 5 ft. it is a square, so it shows exactly the squares you can summon into. Other diagonal rules get the matching shape, hex grids a hexagon, and gridless scenes keep the circle.
+
+## [14.99.0] - 2026-11-17
+### Added
+- **World Language Filter**: Choose which languages exist in your world. Hide the languages you don't use, or list the only ones players may pick. The actor's Languages dialog and species, background and class advancements ("choose one Standard language") then offer only those. Characters keep the languages they already know, and monsters keep the languages in their statblocks. Disabled by default.
+
+### Changed
+- **Enhanced Summoning Placement HUD & Range Preview**: The range outline around the caster now follows the scene's grid rules: a square on square grids where diagonals count as 5 ft., the matching shape for other diagonal rules, a hexagon on hex grids and a circle on gridless scenes. It wraps the outer edge of the furthest square still in range.
+
 ## [14.98.0] - 2026-11-17
 ### Added
 - **NPC Spellcasting Builder**: A builder for the 2024 *Spellcasting* monster feature, opened from the header menu of an NPC sheet (or of an existing Spellcasting feature to edit it). Drop spells into *At Will*, *3/Day Each*, *2/Day Each* and *1/Day Each*, or add them from the Compendium Browser, set an upcast level or a note per spell, pick the spellcasting ability and the components the creature doesn't need, and watch the description update live. Saving creates the feature the way the Monster Manual does: one Cast activity per spell with its own uses per day, the spells in the NPC's spellbook, and the matching statblock text with the save DC kept up to date.

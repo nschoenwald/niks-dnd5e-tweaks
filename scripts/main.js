@@ -63,6 +63,7 @@ import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as d
 
 // Utilities
 import { initActorItemDragBehavior } from "./features/utilities/actor-item-drag-behavior.js";
+import { initLanguageFilter } from "./features/utilities/language-filter.js";
 
 // Patches
 import { initFixSkillTooltipOverlap } from "./features/patches/fix-skill-tooltip-overlap.js";
@@ -1912,6 +1913,40 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableLanguageFilter", {
+        name: "World Language Filter",
+        hint: "Limits the languages offered in the actor Languages dialog and in species, background and class advancements to the ones used in your world. Languages an actor already has are kept, and monsters keep the languages in their statblocks.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "languageFilterMode", {
+        name: "↳ Filter Mode",
+        hint: "Hide the listed languages, or offer only the listed languages.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "hide",
+        choices: {
+            hide: "Hide Listed Languages",
+            allow: "Offer Only Listed Languages"
+        },
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "languageFilterList", {
+        name: "↳ Languages",
+        hint: "A comma-separated list of language keys or names (case-insensitive), e.g. \"Abyssal, Gith, primordial\". A category (Standard Languages, Rare Languages) or a language with dialects (Primordial) covers everything under it.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "",
+        restricted: true
+    });
+
     // Hidden setting to track migration version (not shown in config UI)
     game.settings.register(MODULE_ID, "migrationVersion", {
         scope: "world",
@@ -1986,6 +2021,7 @@ Hooks.once("setup", () => {
 
     // Utilities
     initActorItemDragBehavior();
+    initLanguageFilter();
 
     // UI helpers
     initRollModeHighlight();
