@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.103.0] - 2026-11-18
+### Added
+- **Summoning Permission Notice**: When a player uses a summoning spell or feature but isn't allowed to summon, a whispered chat message tells them and the GM exactly what's missing: the D&D 5e setting *Allow Summoning*, the core permissions *Create Tokens* or *Create Actors*, or ownership of the creature. Shown at most once a day per player.
+
 ## [14.102.0] - 2026-11-18
 ### Added
 - **Indomitable Might Automation**: A Barbarian with Indomitable Might now uses their Strength score instead of a lower total on Strength checks (Athletics included) and Strength saving throws. The chat card shows *(Indomitable Might)* when it kicks in. Works with midi-qol.

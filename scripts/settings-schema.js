@@ -1006,6 +1006,17 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "enableSummonPermissionNotice",
+                            introduced: "14.103.0",
+                            docs: "summoning-permission-notice",
+                            keywords: ["summon", "permission", "Create Tokens", "Create Actors", "Allow Summoning", "player"],
+                            name: "Summoning Permission Notice",
+                            hint: "When a player uses a summoning spell or feature but isn't allowed to summon, a chat message whispered to them and the GMs names what's missing: the core permissions Create Tokens or Create Actors, the D&D 5e setting Allow Summoning, or ownership of the creature. At most once a day per player.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
                         }
                     ]
                 }

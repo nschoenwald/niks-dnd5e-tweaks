@@ -23,6 +23,7 @@ import { initGridBasedTemplates } from "./features/canvas-tokens/grid-based-temp
 import { initTemplateTargeting } from "./features/canvas-tokens/template-targeting.js";
 import { initTemplatePlacementHUD } from "./features/canvas-tokens/template-placement-hud.js";
 import { initSummonPlacementHUD } from "./features/canvas-tokens/summon-placement-hud.js";
+import { initSummonPermissionNotice } from "./features/canvas-tokens/summon-permission-notice.js";
 import { initTeleportTargeting } from "./features/canvas-tokens/teleport-targeting.js";
 
 // Combat & Automation
@@ -941,6 +942,16 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableAutoAttachSelfEmanations", {
         name: "Auto-Attach Self Emanation Templates",
         hint: "When an actor uses an ability with an emanation template targeting Self (e.g. Spirit Guardians, Aura of Protection), automatically attaches the template directly to the caster's token and skips manual canvas placement.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSummonPermissionNotice", {
+        name: "Summoning Permission Notice",
+        hint: "When a player uses a summoning spell or feature but isn't allowed to summon, a chat message whispered to them and the GMs names what's missing: the core permissions Create Tokens or Create Actors, the D&D 5e setting Allow Summoning, or ownership of the creature. At most once a day per player.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -2043,6 +2054,7 @@ Hooks.once("setup", () => {
     initSuppressBloodiedDead();
     initTemplatePlacementHUD();
     initSummonPlacementHUD();
+    initSummonPermissionNotice();
     initTeleportTargeting();
     initPreventGroupActorRolls();
     initWeaponMasteries();
