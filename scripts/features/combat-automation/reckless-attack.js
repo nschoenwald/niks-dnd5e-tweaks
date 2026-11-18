@@ -11,6 +11,7 @@
  * @introduced v14.80.0
  * @updated v14.80.1 (dnd5e's "start of next turn" effect expiry; the effect is also added out of combat)
  * @updated v14.85.0 (exports isActorReckless for Frenzy)
+ * @updated v14.102.0 (attacking recklessly again removes the actor's expired Reckless effects)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -462,6 +463,13 @@ async function _onRollAttack(rolls, { subject } = {}) {
         if (_recklessState(actor) || !actor.isOwner) return;
         const feature = _feature(actor);
         const rules = _itemRules(feature);
+        // Earlier Reckless effects stay on the actor once they expire (core only marks them expired): remove them.
+        // Ours are all inactive here (_recklessState found none); copies from using the feature by hand only if expired
+        const stale = actor.effects
+            .filter(e => e.getFlag(MODULE_ID, FLAG)
+                || (e.duration?.expired && feature?.uuid && (e.origin === feature.uuid)))
+            .map(e => e.id);
+        if (stale.length) await actor.deleteEmbeddedDocuments("ActiveEffect", stale);
         await actor.createEmbeddedDocuments("ActiveEffect", [{
             name: feature?.name || game.i18n.localize("ND5T.RecklessAttack.Label"),
             img: feature?.img || "icons/svg/combat.svg",

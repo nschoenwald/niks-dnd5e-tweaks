@@ -46,6 +46,7 @@ import { initUndeadFortitude } from "./features/combat-automation/undead-fortitu
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
+import { initIndomitableMight } from "./features/combat-automation/indomitable-might.js";
 import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
 import { initAutoEndClassFeatures } from "./features/combat-automation/auto-end-class-features.js";
@@ -1358,6 +1359,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableIndomitableMight", {
+        name: "Indomitable Might Automation",
+        hint: "A creature with Indomitable Might (Barbarian level 18) uses its Strength score in place of the total of a Strength check or Strength saving throw when the total is lower. The chat card names the feature when it applies. Also works with midi-qol.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableBladesongBladework", {
         name: "Intelligence for Weapon Attacks (Bladesong & Battle Ready)",
         hint: "Weapon attacks that may use Intelligence instead of Strength or Dexterity use it whenever its modifier is higher, for the attack and the damage: a Bladesinger's weapons they're proficient with while Bladesong is active (2024 rules), and a Battle Smith's magic weapons (Battle Ready). The attack roll dialog offers Intelligence too.",
@@ -2038,6 +2049,7 @@ Hooks.once("setup", () => {
     initProneRules();
     initConditionRollModes();
     initRecklessAttack();
+    initIndomitableMight();
     initBladesongBladework();
     // Actors were prepared before this patch existed
     refreshBladesongActors();

@@ -1359,6 +1359,17 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableIndomitableMight",
+                            introduced: "14.102.0",
+                            docs: "indomitable-might-automation",
+                            keywords: ["Indomitable Might", "Barbarian", "Strength", "saving throw", "ability check", "minimum"],
+                            name: "Indomitable Might Automation",
+                            hint: "A creature with Indomitable Might (Barbarian level 18) uses its Strength score in place of the total of a Strength check or Strength saving throw when the total is lower. The chat card names the feature when it applies. Also works with midi-qol.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableBladesongBladework",
                             introduced: "14.94.0",
                             docs: "intelligence-for-weapon-attacks-bladesong--battle-ready",

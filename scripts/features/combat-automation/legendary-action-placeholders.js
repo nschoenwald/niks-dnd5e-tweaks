@@ -26,6 +26,14 @@
  * it follows (`flags.niks-dnd5e-tweaks.afterCombatantId`); auto-skip and the placeholder-turn markers only consider the
  * legendary creatures that may act after that creature (re-evaluated live, so later disposition changes count).
  * Placeholders without that flag (made before 14.81.0) consider every legendary creature, as before.
+ * @updated v14.102.0 (One placeholder per group of creatures acting together instead of one per creature)
+ *
+ * Groups (`_groupCreatures`): consecutive creatures in turn order that belong to the same core combatant group, or
+ * (outside core groups) share the initiative count (integer part, like dnd5e's tracker grouping) and the token
+ * disposition. A group gets one placeholder after its last member, used by every legendary creature that can act after
+ * at least one member. The placeholder stores all members in `flags.niks-dnd5e-tweaks.afterCombatantIds` (and the last
+ * one in `afterCombatantId` for older code paths). Core combatant groups count as one unit for the tie breakers: their
+ * shared initiative is changed on the CombatantGroup, not on its members.
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -115,16 +123,65 @@ function _canActAfter(legendary, after, mode) {
  */
 function _getPlaceholderLegendaryCombatants(combat, placeholder) {
     const legendary = _getLegendaryCombatants(combat);
-    const afterId = placeholder?.flags?.[MODULE_ID]?.afterCombatantId;
-    const after = afterId ? combat.combatants.get(afterId) : null;
-    if (!after) return legendary;
+    const after = _getPlaceholderFollowed(combat, placeholder);
+    if (!after.length) return legendary;
     const mode = _getPlacementMode();
-    return legendary.filter(l => _canActAfter(l, after, mode));
+    return legendary.filter(l => after.some(a => _canActAfter(l, a, mode)));
+}
+
+/**
+ * The creatures a placeholder follows: every member of its group (from 14.102.0), or the single creature stored by
+ * 14.81.0 – 14.101.x. Empty for older placeholders or when those creatures were removed from the combat.
+ * @param {Combat} combat
+ * @param {Combatant} [placeholder]
+ * @returns {Combatant[]}
+ */
+function _getPlaceholderFollowed(combat, placeholder) {
+    const flags = placeholder?.flags?.[MODULE_ID];
+    if (!flags) return [];
+    const ids = Array.isArray(flags.afterCombatantIds) && flags.afterCombatantIds.length
+        ? flags.afterCombatantIds
+        : (flags.afterCombatantId ? [flags.afterCombatantId] : []);
+    return ids.map(id => combat.combatants.get(id)).filter(Boolean);
+}
+
+/**
+ * The core combatant group a combatant belongs to. `Combatant#group` holds the raw id when its group doesn't exist.
+ * @param {Combatant} combatant
+ * @returns {CombatantGroup|null}
+ */
+function _coreGroup(combatant) {
+    const group = combatant?.group;
+    return (group instanceof foundry.documents.CombatantGroup) ? group : null;
+}
+
+/**
+ * Split creatures (in turn order) into groups that act together: consecutive creatures in the same core combatant
+ * group, or, outside core groups, with the same initiative count (integer part) and token disposition.
+ * @param {Combatant[]} creatures
+ * @returns {Combatant[][]}
+ */
+function _groupCreatures(creatures) {
+    const sameGroup = (a, b) => {
+        const ga = _coreGroup(a);
+        const gb = _coreGroup(b);
+        if (ga || gb) return Boolean(ga) && (ga === gb);
+        if (!Number.isNumeric(a.initiative) || !Number.isNumeric(b.initiative)) return false;
+        if (Math.floor(a.initiative) !== Math.floor(b.initiative)) return false;
+        return (a.token?.disposition ?? null) === (b.token?.disposition ?? null);
+    };
+    const groups = [];
+    for (const c of creatures) {
+        const current = groups.at(-1);
+        if (current && sameGroup(current.at(-1), c)) current.push(c);
+        else groups.push([c]);
+    }
+    return groups;
 }
 
 /**
  * Check whether legendary action uses remain: for a placeholder, among the legendary creatures that may act during
- * it (none if the creature it follows is defeated, since that creature had no turn); otherwise among all legendary
+ * it (none if every creature it follows is defeated, since none of them had a turn); otherwise among all legendary
  * creatures of the combat.
  * @param {Combat} combat
  * @param {Combatant} [placeholder]
@@ -134,8 +191,8 @@ export function hasRemainingLegendaryActions(combat, placeholder = null) {
     if (!combat?.combatants?.size) return false;
     let candidates;
     if (placeholder) {
-        const afterId = placeholder.flags?.[MODULE_ID]?.afterCombatantId;
-        if (afterId && combat.combatants.get(afterId)?.isDefeated) return false;
+        const after = _getPlaceholderFollowed(combat, placeholder);
+        if (after.length && after.every(c => c.isDefeated)) return false;
         candidates = _getPlaceholderLegendaryCombatants(combat, placeholder);
     } else {
         candidates = _getLegendaryCombatants(combat);
@@ -819,71 +876,81 @@ export function initLegendaryActionPlaceholders() {
                 return;
             }
 
-            // All creatures in turn order. A placeholder follows each creature after whose turn at least one other
-            // legendary creature may act (see _canActAfter and the placement setting)
+            // All creatures in turn order, split into groups acting together. A placeholder follows each group after
+            // which at least one legendary creature may act: one that can act after any member (see _canActAfter
+            // and the placement setting). A lone legendary creature's own turn still gets none
             const creatures = (combat.turns ?? []).filter(c => !_isPlaceholder(c));
             const legendary = creatures.filter(c => isLegendaryCombatant(c));
             const mode = _getPlacementMode();
-            const followed = creatures.filter(c => legendary.some(l => _canActAfter(l, c, mode)));
+            const followedGroups = _groupCreatures(creatures)
+                .filter(group => legendary.some(l => group.some(c => _canActAfter(l, c, mode))));
 
-            if (!followed.length) {
+            if (!followedGroups.length) {
                 debug(`Legendary Action Placeholders | No creature in combat ${combat.id} needs a placeholder (${mode}).`);
                 return;
             }
 
-            // Tied initiatives: every creature after the first in a tie gets a minimal tie breaker, keeping the current
-            // order, so each placeholder sorts directly after its own creature
+            // Tied initiatives: every unit after the first in a tie gets a minimal tie breaker, keeping the current
+            // order, so each placeholder sorts directly after its own group. A unit is a single creature or a whole
+            // core combatant group (its members share the group's initiative, so the group itself is updated)
+            const units = [];
+            for (const c of creatures) {
+                const last = units.at(-1);
+                const group = _coreGroup(c);
+                if (group && (last?.group === group)) last.members.push(c);
+                else units.push({ group, members: [c], initiative: group?.initiative ?? c.initiative });
+            }
+
             const roundKey = val => Number(Number(val).toFixed(4));
             const initiativeCounts = new Map();
-            for (const c of creatures) {
-                if (!Number.isNumeric(c.initiative)) continue;
-                const key = roundKey(c.initiative);
+            for (const u of units) {
+                if (!Number.isNumeric(u.initiative)) continue;
+                const key = roundKey(u.initiative);
                 initiativeCounts.set(key, (initiativeCounts.get(key) ?? 0) + 1);
             }
 
             const seenCounts = new Map();
             const combatantUpdates = [];
+            const groupUpdates = [];
             const effectiveInitiatives = new Map();
 
-            for (const c of creatures) {
-                const baseInit = c.initiative;
-                if (!Number.isNumeric(baseInit)) {
-                    effectiveInitiatives.set(c.id, 0);
-                    continue;
-                }
-
-                const key = roundKey(baseInit);
-                if ((initiativeCounts.get(key) ?? 0) > 1) {
-                    const tieIndex = seenCounts.get(key) ?? 0;
-                    seenCounts.set(key, tieIndex + 1);
-                    if (tieIndex > 0) {
-                        const tieBreaker = Number((tieIndex * TIE_BREAKER_STEP).toFixed(5));
-                        const newInitiative = Number((baseInit - tieBreaker).toFixed(5));
-                        combatantUpdates.push({ _id: c.id, initiative: newInitiative });
-                        effectiveInitiatives.set(c.id, newInitiative);
-                        continue;
+            for (const u of units) {
+                const baseInit = u.initiative;
+                let effective = Number.isNumeric(baseInit) ? baseInit : 0;
+                if (Number.isNumeric(baseInit)) {
+                    const key = roundKey(baseInit);
+                    if ((initiativeCounts.get(key) ?? 0) > 1) {
+                        const tieIndex = seenCounts.get(key) ?? 0;
+                        seenCounts.set(key, tieIndex + 1);
+                        if (tieIndex > 0) {
+                            const tieBreaker = Number((tieIndex * TIE_BREAKER_STEP).toFixed(5));
+                            effective = Number((baseInit - tieBreaker).toFixed(5));
+                            if (u.group) groupUpdates.push({ _id: u.group.id, initiative: effective });
+                            else combatantUpdates.push({ _id: u.members[0].id, initiative: effective });
+                        }
                     }
                 }
-
-                effectiveInitiatives.set(c.id, baseInit);
+                for (const c of u.members) effectiveInitiatives.set(c.id, effective);
             }
 
             const configuredIcon = getSetting("legendaryActionPlaceholderIcon");
             const img = await _resolveIcon(configuredIcon);
             const showToPlayers = getSetting("showLegendaryActionPlaceholders");
 
-            const newCombatants = followed.map(c => {
-                const effectiveInit = effectiveInitiatives.get(c.id) ?? c.initiative ?? 0;
+            const newCombatants = followedGroups.map(group => {
+                const last = group.at(-1);
+                const effectiveInit = effectiveInitiatives.get(last.id) ?? last.initiative ?? 0;
                 return {
                     name: game.i18n.localize("ND5T.LegendaryActionPlaceholder") || "Legendary Action Placeholder",
-                    // A visible placeholder after a hidden creature would give its position away
-                    hidden: !showToPlayers || Boolean(c.hidden),
+                    // A visible placeholder after a hidden group would give its position away
+                    hidden: !showToPlayers || group.every(c => c.hidden),
                     img,
                     initiative: Number((effectiveInit - PLACEHOLDER_OFFSET).toFixed(5)),
                     flags: {
                         [MODULE_ID]: {
                             isLegendaryPlaceholder: true,
-                            afterCombatantId: c.id
+                            afterCombatantId: last.id,
+                            afterCombatantIds: group.map(c => c.id)
                         }
                     }
                 };
@@ -894,6 +961,10 @@ export function initLegendaryActionPlaceholders() {
                     if (!combat || combat.destroyed || !game.combats?.has(combat.id)) return;
 
                     // First give an additional minimal tie breaker to their initiative if needed
+                    if (groupUpdates.length > 0) {
+                        debug(`Legendary Action Placeholders | Applying minimal initiative tie breakers to ${groupUpdates.length} combatant groups in combat ${combat.id}.`);
+                        await combat.updateEmbeddedDocuments("CombatantGroup", groupUpdates);
+                    }
                     if (combatantUpdates.length > 0) {
                         debug(`Legendary Action Placeholders | Applying minimal initiative tie breakers to ${combatantUpdates.length} combatants in combat ${combat.id}.`);
                         await combat.updateEmbeddedDocuments("Combatant", combatantUpdates);

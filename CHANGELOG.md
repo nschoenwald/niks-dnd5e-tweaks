@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.102.0] - 2026-11-18
+### Added
+- **Indomitable Might Automation**: A Barbarian with Indomitable Might now uses their Strength score instead of a lower total on Strength checks (Athletics included) and Strength saving throws. The chat card shows *(Indomitable Might)* when it kicks in. Works with midi-qol.
+
+### Changed
+- **Legendary Action Placeholders**: Creatures that act together now get one placeholder after the whole group instead of one after each creature. A group is a combatant group in the tracker, or creatures next to each other with the same initiative count and disposition, like an adult dragon with three young dragons. Applies to combats started from now on.
+
+### Fixed
+- **Reckless Attack Automation**: Attacking recklessly again removes the expired Reckless effects of earlier turns instead of piling them up on the Barbarian.
+
 ## [14.101.0] - 2026-11-17
 ### Added
 - **Teleport Targeting**: The teleport banner and ghost token preview of Nik's Foundry Tweaks now work with D&D 5e's Teleport activity: click **Teleport** on the chat card, then click a spot within range instead of dragging your token. Boss Loot FX (BLFX) teleports now respect the spell's range, taken from its Teleport activity or, for older copies of a spell, from "teleport up to 30 feet" in its description. Needs Nik's Foundry Tweaks 14.9.0.
