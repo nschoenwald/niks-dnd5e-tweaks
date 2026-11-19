@@ -60,7 +60,7 @@ const MAGE_SLAYER_TTL_MS = 120000;
  * Matches:
  *   - actor flag dnd5e.mageSlayer === true or niks-dnd5e-tweaks.mageSlayer === true
  *   - item.identifier or item.system.identifier starting with "mage-slayer"
- *   - item.name containing "mage slayer" or "magietöter" (case-insensitive, e.g. "Mage Slayer (2024)")
+ *   - item.name containing "mage slayer" (case-insensitive, e.g. "Mage Slayer (2024)"); other languages match by identifier
  *
  * @param {Actor} actor
  * @returns {boolean}
@@ -78,7 +78,7 @@ function _hasMageSlayer(actor) {
         if (identifier === "mage-slayer" || identifier.startsWith("mage-slayer")) return true;
 
         const name = (item.name ?? "").toLowerCase();
-        if (name.includes("mage slayer") || name.includes("magietöter")) return true;
+        if (name.includes("mage slayer")) return true;
     }
 
     return false;

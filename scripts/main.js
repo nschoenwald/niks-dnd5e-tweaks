@@ -62,6 +62,7 @@ import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/comb
 import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
 import { initGreatWeaponFighting } from "./features/combat-automation/great-weapon-fighting.js";
 import { initElementalAdept } from "./features/combat-automation/elemental-adept.js";
+import { initAutomaticDamageRules } from "./features/combat-automation/automatic-damage-rules.js";
 import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
 
 // Utilities
@@ -216,7 +217,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "clientEnableConditionalDamage", {
         name: "Conditional Damage Bonuses (Personal)",
-        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul) and from other official books (Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes, Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner). Alchemical Savant and Power from Beyond also add to healing. Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting and Elemental Adept apply automatically, remembering your choices across rolls (if enabled by the GM).",
+        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul) and from other official books (Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes, Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner, and World of Warcraft's Fury of the Small, Touch of the Grave, Death and Decay, Touch of the Void, Havoc, Rain of Fire, Combo Strikes). Alchemical Savant and Power from Beyond also add to healing. Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting, Elemental Adept, Tavern Brawler, Healer, Clean Hits, Devourer and the Unholy Rune limit apply automatically, remembering your choices across rolls (if enabled by the GM).",
         scope: "client",
         config: false,
         type: Boolean,
@@ -845,7 +846,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: String,
-        default: "heroes-feast, ice-storm=casterTurnEnd, plant-growth",
+        default: "eruption=casterTurnEnd, heroes-feast, ice-storm=casterTurnEnd, plant-growth, upheaval=casterTurnEnd",
         restricted: true
     });
 
@@ -1393,7 +1394,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableConditionalDamage", {
         name: "Conditional Damage Bonuses",
-        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul) and from other official books (Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes, Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner). Alchemical Savant and Power from Beyond also add to healing. Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting and Elemental Adept apply automatically.",
+        hint: "Offers toggles in damage roll dialogs for Sneak Attack, Hex, Hunter's Mark, Great Weapon Master (2024), Brutal Strike, Charger (2024), Savage Attacker (2024), Boon of Irresistible Offense (2024), Genie's Wrath and the Cleave weapon mastery malus, plus Player's Handbook class features, species traits and spell bonuses (Colossus Slayer, Divine Strike, Primal Strike, Divine Fury, Frenzy, Dreadful Strikes, Dread Ambusher, Elemental Epitome, Fire's Burn, Frost's Chill, Celestial Revelation, Lunar Form, Psionic Strike, Hand of Harm, Eldritch Smite, Lifedrinker, Empowered Evocation, Radiant Soul) and from other official books (Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes, Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner, and World of Warcraft's Fury of the Small, Touch of the Grave, Death and Decay, Touch of the Void, Havoc, Rain of Fire, Combo Strikes). Alchemical Savant and Power from Beyond also add to healing. Features that cost uses, Focus Points or a Pact slot spend them when ticked. Great Weapon Fighting, Elemental Adept, Tavern Brawler, Healer, Clean Hits, Devourer and the Unholy Rune limit apply automatically.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1724,7 +1725,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: String,
-        default: "black-tentacles, blade-barrier, cacophonic-shield, cloud-of-daggers, cloudkill, conjure-woodland-beings, control-water, dirge, doomtide, forbiddance, grease, gust-of-wind, incendiary-cloud, insect-plague, moonbeam, sleet-storm, spirit-guardians, stinking-cloud, storm-of-radiance, wall-of-fire, wall-of-thorns, web, yolandes-regal-presence, lightning-ring, grave-ground, spellfire-storm, hunger-of-hadar, cordon-of-arrows",
+        default: "black-tentacles, blade-barrier, cacophonic-shield, cloud-of-daggers, cloudkill, conjure-woodland-beings, control-water, dirge, doomtide, forbiddance, grease, gust-of-wind, incendiary-cloud, insect-plague, moonbeam, sleet-storm, spirit-guardians, stinking-cloud, storm-of-radiance, wall-of-fire, wall-of-thorns, web, yolandes-regal-presence, lightning-ring, grave-ground, spellfire-storm, hunger-of-hadar, cordon-of-arrows, consecration, hand-of-guldan, rain-of-fire, starfall",
         restricted: true
     });
 
@@ -2069,6 +2070,7 @@ Hooks.once("setup", () => {
     // Before Conditional Damage: Savage Attacker builds its dice pool from the dice Great Weapon Fighting modified
     initGreatWeaponFighting();
     initElementalAdept();
+    initAutomaticDamageRules();
     initConditionalDamage();
     initDamageEmanation();
 });

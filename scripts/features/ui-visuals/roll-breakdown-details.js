@@ -1275,7 +1275,7 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
         }
     }
 
-    // Heuristic fallback for Rage / Kampfrausch effects
+    // Heuristic fallback for Rage effects (English name; other languages rely on the origin checks above)
     for (const effect of effects) {
         if (effect.disabled || effect.isSuppressed) continue;
         if (claimedEffectIds && (
@@ -1284,7 +1284,7 @@ export function findActiveEffectForDamageBonus(actor, targetVal, options = {}) {
             || (effect.name && claimedEffectIds.has(effect.name.toLowerCase()))
         )) continue;
         const name = (effect.name ?? "").toLowerCase();
-        if (name.includes("rage") || name.includes("kampfrausch")) {
+        if (name.includes("rage")) {
             if (hasTargetNum) {
                 const rageScale = actor.system?.scale?.barbarian?.["rage-damage"]?.value
                     ?? actor.system?.scale?.barbarian?.["rage-damage"]

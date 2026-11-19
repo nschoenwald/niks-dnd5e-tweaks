@@ -13,7 +13,8 @@ import { isFeatureActive, log, debug } from "../../context.js";
  * ---------------------------------------------------------------------------
  * The feat (identifier `elemental-adept`, PHB 2024) can be taken several times, once per damage type, but the item
  * doesn't record the chosen type (no advancement or effect for it). The type is read from the item's name instead,
- * e.g. "Elemental Adept (Fire)": the English key or the localized label of acid, cold, fire, lightning or thunder.
+ * e.g. "Elemental Adept (Fire)": the English name of acid, cold, fire, lightning or thunder (never a translated label;
+ * other languages need the English word in the name).
  *
  * The roll's damage type is only final after the dialog (spells such as Chromatic Orb or Dragon's Breath let you
  * pick it there), so the modifier is added in `dnd5e.postDamageRollConfiguration`, when the DamageRolls exist but
@@ -51,9 +52,7 @@ export function getElementalAdeptTypes(actor) {
         if ((item.system?.identifier !== IDENTIFIER) && !NAME_PATTERN.test(name)) continue;
         const lower = name.toLowerCase();
         for (const type of TYPES) {
-            const label = String(CONFIG.DND5E?.damageTypes?.[type]?.label ?? type).toLowerCase();
-            const word = new RegExp(`(?:^|[^\\p{L}])(?:${type}|${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?:$|[^\\p{L}])`, "iu");
-            if (word.test(lower)) types.add(type);
+            if (new RegExp(`(?:^|[^\\p{L}])${type}(?:$|[^\\p{L}])`, "iu").test(lower)) types.add(type);
         }
     }
     return types;
@@ -97,7 +96,7 @@ function onPostDamageRollConfiguration(rolls, config) {
                 _warnedActors.add(actor.uuid);
                 ui.notifications?.warn(game.i18n.has("ND5T.ConditionalDamage.ElementalAdeptNoType")
                     ? game.i18n.format("ND5T.ConditionalDamage.ElementalAdeptNoType", { name: actor.name })
-                    : `${actor.name}: Elemental Adept doesn't know your chosen damage type. Add it to the feat's name, e.g. "Elemental Adept (Fire)".`);
+                    : `${actor.name}: Elemental Adept doesn't know your chosen damage type. Add it to the feat's name in English, e.g. "Elemental Adept (Fire)".`);
             }
             return;
         }

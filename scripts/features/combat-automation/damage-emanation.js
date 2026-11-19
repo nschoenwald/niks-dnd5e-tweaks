@@ -17,6 +17,7 @@
  *   is found again on the caster; the caster's player rolls the damage when the GM triggers the saves; save cards
  *   are always public)
  * @updated v14.97.0 (Hunger of Hadar: the caster chooses whether the cold or the acid damage gets the upcast dice)
+ * @updated v14.104.0 (World of Warcraft: Consecration, Hand of Gul'dan, Rain of Fire, Starfall)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
@@ -101,7 +102,13 @@ const SPELL_PROFILES = new Map([
         { activityName: /end of turn/i, triggers: ["turnEnd"] }
     ] }],
     // 4 pieces of ammunition, 2 more per slot level above 2nd; "a creature other than you"
-    ["cordon-of-arrows", { excludeCaster: true, triggers: ["enter", "turnEnd"], charges: scaling => 4 + (2 * scaling) }]
+    ["cordon-of-arrows", { excludeCaster: true, triggers: ["enter", "turnEnd"], charges: scaling => 4 + (2 * scaling) }],
+    // World of Warcraft: "Creatures of your choice that start their turn in the Emanation take 1d8 Radiant damage"
+    ["consecration", { triggers: ["turnStart"], activityName: /consecration damage/i }],
+    ["hand-of-guldan", { activityName: /spirit damage/i }],
+    ["rain-of-fire", { activityName: /falling fire/i }],
+    // "a creature that enters the Cylinder for the first time on a turn or ends its turn there"
+    ["starfall", { triggers: ["enter", "turnEnd"], activityName: /aoe damage/i }]
 ]);
 
 /**

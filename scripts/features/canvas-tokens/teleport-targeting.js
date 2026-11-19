@@ -33,14 +33,12 @@ const recentActivities = new Map();
 let bypassPreTeleport = false;
 
 /**
- * Description patterns for "teleport … up to N feet" (English and German item text).
+ * Description patterns for "teleport … up to N feet" (English item text only; translated descriptions aren't parsed).
  * Group 1 is the number, group 2 the unit.
  */
 const DESCRIPTION_PATTERNS = [
     /teleport[^.]*?\bup to (\d+(?:[.,]\d+)?)\s*(feet|foot|ft\.?|meters?|metres?|m)\b/i,
-    /\bup to (\d+(?:[.,]\d+)?)\s*(feet|foot|ft\.?|meters?|metres?|m)\b[^.]*?teleport/i,
-    /teleportier[^.]*?\bbis zu (\d+(?:[.,]\d+)?)\s*(Meter|Metern|m|Fuß)\b/i,
-    /\bbis zu (\d+(?:[.,]\d+)?)\s*(Meter|Metern|m|Fuß)\b[^.]*?teleportier/i
+    /\bup to (\d+(?:[.,]\d+)?)\s*(feet|foot|ft\.?|meters?|metres?|m)\b[^.]*?teleport/i
 ];
 
 /**

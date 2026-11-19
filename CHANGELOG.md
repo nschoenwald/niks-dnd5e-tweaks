@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.104.0] - 2026-11-19
+### Added
+- **Conditional Damage Bonuses**: Features and spells from World of Warcraft get toggles in the damage dialog: *Fury of the Small* (against larger creatures) and *Touch of the Grave*, which spend their uses; *Death and Decay* (against creatures it cursed); *Touch of the Void* from *Entropic Embrace* (damage or healing); *Havoc* from *Metamorphosis*; *Rain of Fire* (spell attacks against creatures in it); and *Combo Strikes* from Fists of Fury, which counts your earlier melee hits on the creature this turn.
+- **Conditional Damage Bonuses**: More dice rules work automatically. *Tavern Brawler* gives your Unarmed Strike a d4 and rerolls its 1s, including a Monk's Martial Arts die. *Healer* rerolls 1s on the healing dice of spells. From World of Warcraft, *Clean Hits* (Fists of Fury) treats 1s as 2s for Unarmed Strikes and Light weapons, and *Devourer* (Metamorphosis) treats 1s and 2s as 3s for force damage.
+- **Conditional Damage Bonuses**: *Unholy Rune*'s extra damage now only applies to the first creature you hit with the weapon each turn, as written.
+- **Damage Emanation Automation**: World of Warcraft's *Consecration*, *Hand of Gul'dan*, *Rain of Fire* and *Starfall* work out of the box. Worlds that have already edited the *Emanation Spells* list keep their own version: add them there by hand.
+- **Remove Instantaneous Templates on Turn Change**: World of Warcraft's *Eruption* and *Upheaval* keep their area until the end of the caster's next turn, when their Difficult Terrain ends. Worlds that have already edited the *Template Exceptions* list keep their own version.
+
+### Changed
+- **All Features**: Items and effects are now recognized only by their identifier (the same in every language) or their English name, never by a translated name or description. A few German names were recognized before (Rage as *Kampfrausch*, Mage Slayer as *Magietöter*, translated "Concentrating" effects, German teleport descriptions); translated items with an identifier keep working as before.
+- **Elemental Adept**: The chosen damage type in the feat's name must be written in English, e.g. *Elemental Adept (Fire)*.
+
 ## [14.103.0] - 2026-11-18
 ### Added
 - **Summoning Permission Notice**: When a player uses a summoning spell or feature but isn't allowed to summon, a whispered chat message tells them and the GM exactly what's missing: the D&D 5e setting *Allow Summoning*, the core permissions *Create Tokens* or *Create Actors*, or ownership of the creature. Shown at most once a day per player.

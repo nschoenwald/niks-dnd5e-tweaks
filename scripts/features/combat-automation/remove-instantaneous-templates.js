@@ -25,7 +25,8 @@ import { MODULE_ID, debug, getSetting } from "../../context.js";
  *
  * Exceptions ("removeInstantaneousTemplatesKeep", entries "identifier" or "identifier=mode", matched by item
  * identifier or slugified name): instantaneous spells whose area outlasts the spell. Found in the PHB 2024 and the
- * other official books: Ice Storm (Difficult Terrain until the end of the caster's next turn), Plant Growth
+ * other official books: Ice Storm, Eruption and Upheaval (World of Warcraft) (Difficult Terrain until the end of the
+ * caster's next turn), Plant Growth
  * (Overgrowth), Heroes' Feast (the feast lasts 1 hour). Modes:
  *  - never:           kept until deleted by hand (the default for entries without a mode).
  *  - casterTurnStart: removed when the caster's next turn starts.

@@ -22,6 +22,8 @@
  * @updated v14.88.0 (Bonuses from other official books: Pull of Death, Polar Strikes, Power from Pain, Ominous Strikes,
  *   Arcane Jolt, Lightning Launcher, Guided Precision, Arcane Firearm, Alchemical Savant, Arcane Conduit, Power from
  *   Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner; healing rolls and feature damage rolls are considered)
+ * @updated v14.104.0 (World of Warcraft: Fury of the Small, Touch of the Grave, Death and Decay, Touch of the Void,
+ *   Havoc, Rain of Fire, Combo Strikes with a per-target melee hit counter)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -1294,6 +1296,56 @@ function _recordAttackRoll(actor, roll, { activityId, itemId, messageId, targets
 }
 
 /**
+ * Melee attack hits per attacker, target and combat turn (Fists of Fury's Combo Strikes).
+ * Keyed by `${actorKey}|${targetUuid}` → { turnKey, count }.
+ * @type {Map<string, {turnKey: string, count: number}>}
+ */
+const _meleeHits = new Map();
+
+/** The target of each attacker's latest melee hit: actorKey → { targetUuid, turnKey }. */
+const _lastMeleeHit = new Map();
+
+/**
+ * Count a melee attack roll that hit its single target (total ≥ AC, or a natural 20; a natural 1 misses), in combat.
+ * Called once per attack roll, from dnd5e.rollAttack.
+ * @param {Actor5e} actor
+ * @param {D20Roll} roll
+ * @param {Activity} activity
+ */
+function _recordMeleeHit(actor, roll, activity) {
+    const combat = getActiveCombat(actor);
+    const turnKey = getCombatTurnKey(combat, actor);
+    if (!turnKey || !roll) return;
+    const actionType = activity?.getActionType?.(roll.options?.attackMode) ?? activity?.actionType;
+    if (actionType !== "mwak") return;
+    const targets = Array.from(game.user?.targets ?? []);
+    if (targets.length !== 1) return;
+    const target = targets[0].document ?? targets[0];
+    const ac = Number(target.actor?.system?.attributes?.ac?.value);
+    const d20 = roll.d20?.total ?? roll.dice?.find(d => d.faces === 20)?.total;
+    const hit = (d20 === 20) || ((d20 !== 1) && Number.isFinite(ac) && (Number(roll.total) >= ac));
+    if (!hit) return;
+    const key = `${actor.uuid || actor.id}|${target.uuid}`;
+    const entry = _meleeHits.get(key);
+    _meleeHits.set(key, { turnKey, count: (entry?.turnKey === turnKey) ? entry.count + 1 : 1 });
+    _lastMeleeHit.set(actor.uuid || actor.id, { targetUuid: target.uuid, turnKey });
+}
+
+/**
+ * Melee hits on a target this turn before the current attack.
+ * @param {Actor5e} actor
+ * @param {string} targetUuid
+ * @param {string|null} turnKey
+ * @param {boolean} currentHit  Whether the attack behind this damage roll was one of them.
+ * @returns {number}
+ */
+function _previousMeleeHits(actor, targetUuid, turnKey, currentHit) {
+    const entry = _meleeHits.get(`${actor.uuid || actor.id}|${targetUuid}`);
+    if (!turnKey || (entry?.turnKey !== turnKey)) return 0;
+    return Math.max(0, entry.count - (currentHit ? 1 : 0));
+}
+
+/**
  * Check whether a given roll's d20 was an active (kept) natural 20.
  *
  * @param {BasicRoll|Roll|null} roll
@@ -1738,7 +1790,7 @@ function _activeFeatureEffects(actor, identifiers, namePattern) {
  * @returns {boolean}
  */
 export function isActorRaging(actor) {
-    return _activeFeatureEffects(actor, ["rage"], /^(?:rage|raging|kampfrausch)$/i).length > 0;
+    return _activeFeatureEffects(actor, ["rage"], /^(?:rage|raging)$/i).length > 0;
 }
 
 /**
@@ -2356,6 +2408,71 @@ function _addFeatureAttackBonuses(ctx, out) {
             });
         }
     }
+    // Death and Decay (World of Warcraft): attacks against a creature your Death and Decay cursed deal +1d6 necrotic
+    if (feature(["death-and-decay"], null, i => i.type === "spell") || actor.items?.some(i => _identifierOf(i) === "death-and-decay")) {
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        const cursed = targets.some(doc => _effectsFrom(doc.actor, /^cursed$/i, ["death-and-decay"], actor).length);
+        if (cursed) {
+            add({
+                id: "deathAndDecay",
+                spellName: "Death and Decay",
+                formula: "1d6[Death and Decay]",
+                formulaDisplay: "1d6",
+                damageType: "necrotic",
+                flavor: "Death and Decay",
+                labelKey: "ND5T.ConditionalDamage.DeathAndDecay.Label",
+                defaultLabel: "Death and Decay (+1d6)",
+                turnKey: null,
+                defaultActive: true
+            });
+        }
+    }
+
+    // Metamorphosis: Havoc (World of Warcraft): +1d6 fire on melee weapon hits while in the Havoc form
+    const meleeWeapon = isWeapon && ((activity?.getActionType?.(config?.attackMode) ?? activity?.actionType) === "mwak");
+    if (meleeWeapon && _effectsFrom(actor, /^havoc$/i, ["metamorphosis"]).length) {
+        add({
+            id: "havoc",
+            spellName: "Havoc",
+            formula: "1d6[Havoc]",
+            formulaDisplay: "1d6",
+            damageType: "fire",
+            flavor: "Havoc",
+            labelKey: "ND5T.ConditionalDamage.Havoc.Label",
+            defaultLabel: "Havoc (+1d6)",
+            turnKey: null,
+            defaultActive: true
+        });
+    }
+
+    // Combo Strikes (Fists of Fury feat, World of Warcraft): +1 Unarmed Strike damage for each earlier melee hit on
+    // the creature this turn
+    if (unarmed && turnKey && feature(["fists-of-fury"], /^fists of fury$/i)) {
+        const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
+        if (targets.length === 1) {
+            const target = targets[0];
+            const last = _lastMeleeHit.get(actor.uuid || actor.id);
+            const currentHit = Boolean(_getCachedAttack(actor, { config, activity }))
+                && (last?.targetUuid === target.uuid) && (last?.turnKey === turnKey);
+            const combo = _previousMeleeHits(actor, target.uuid, turnKey, currentHit);
+            if (combo > 0) {
+                add({
+                    id: "comboStrikes",
+                    spellName: "Combo Strikes",
+                    formula: `${combo}[Combo Strikes]`,
+                    formulaDisplay: String(combo),
+                    damageType: baseDamageType,
+                    matchWeaponType: true,
+                    flat: true,
+                    flavor: "Combo Strikes",
+                    labelKey: "ND5T.ConditionalDamage.ComboStrikes.Label",
+                    defaultLabel: `Combo Strikes (+${combo})`,
+                    turnKey: null,
+                    defaultActive: true
+                });
+            }
+        }
+    }
 }
 
 /**
@@ -2388,6 +2505,58 @@ function _firstDieFacesOfType(config, type) {
         }
     }
     return null;
+}
+
+/**
+ * Whether the actor has an active effect with this name that comes from a feature or spell with one of these
+ * identifiers (effects with generic names such as "Havoc" or "Cursed" are only trusted with the right origin).
+ * Effects without a resolvable origin count when the actor has such an item.
+ *
+ * @param {Actor5e} actor
+ * @param {RegExp} namePattern
+ * @param {string[]} identifiers
+ * @param {Actor5e} [originActor]  Only effects created by this actor's item (target curses).
+ * @returns {ActiveEffect[]}
+ */
+function _effectsFrom(actor, namePattern, identifiers, originActor = null) {
+    const ownerHasItem = owner => Boolean(owner?.items?.some(i => identifiers.includes(_identifierOf(i))));
+    return (actor?.appliedEffects ?? []).filter(e => {
+        if (e.disabled || e.isSuppressed || !namePattern.test((e.name || "").trim())) return false;
+        let item = null;
+        if (e.origin) {
+            const origin = _safeUuid(e.origin);
+            item = (origin instanceof Item) ? origin : (origin?.item ?? (origin?.parent instanceof Item ? origin.parent : null));
+        }
+        if (item) {
+            if (!identifiers.includes(_identifierOf(item))) return false;
+            return !originActor || (item.actor === originActor) || (item.actor?.uuid === originActor.uuid);
+        }
+        return ownerHasItem(originActor ?? actor);
+    });
+}
+
+/**
+ * fromUuidSync that never throws.
+ * @param {string} uuid
+ * @returns {object|null}
+ */
+function _safeUuid(uuid) {
+    try {
+        return fromUuidSync(uuid, { strict: false }) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Size rank of a creature (index in CONFIG.DND5E.actorSizes), or null.
+ * @param {Actor5e} actor
+ * @returns {number|null}
+ */
+function _sizeRank(actor) {
+    const keys = Object.keys(CONFIG.DND5E?.actorSizes ?? {});
+    const index = keys.indexOf(actor?.system?.traits?.size);
+    return index >= 0 ? index : null;
 }
 
 /** Spells of the Cartographer Spells table (Forge of the Artificer). */
@@ -2692,6 +2861,105 @@ function _addSpellBonuses(ctx, out) {
             defaultActive: !used("perfectPoisoner")
         });
     }
+
+    // Damage from an attack or a spell (World of Warcraft species traits and spells below)
+    const attackOrSpell = isDamage && (isAttack || isSpell);
+    const targets = attackOrSpell ? _resolveTargetDocs(actor, { config, dialog, message, activity }) : [];
+
+    // Fury of the Small (Goblin): + Proficiency Bonus against a larger creature, once per turn, PB uses per Long Rest
+    const fury = attackOrSpell && !used("furyOfTheSmall") ? _findFeature(actor, ["fury-of-the-small"], /^fury of the small$/i) : null;
+    const furyRes = _resource(fury);
+    const ownSize = _sizeRank(actor);
+    const larger = targets.some(doc => (ownSize !== null) && ((_sizeRank(doc.actor) ?? -1) > ownSize));
+    if (furyRes?.available && larger) {
+        const pb = Number(actor.system?.attributes?.prof ?? 2);
+        out.push({
+            id: "furyOfTheSmall",
+            spellName: "Fury of the Small",
+            formula: `${pb}[Fury of the Small]`,
+            formulaDisplay: String(pb),
+            damageType: baseDamageType,
+            matchWeaponType: true,
+            flat: true,
+            oneOff: true,
+            turnKey,
+            usesLeft: furyRes.usesLeft,
+            usesTracked: furyRes.tracked,
+            consume: furyRes.consume,
+            flavor: "Fury of the Small",
+            labelKey: "ND5T.ConditionalDamage.FuryOfTheSmall.Label",
+            defaultLabel: `Fury of the Small (+${pb}, ${_usesText({ usesLeft: furyRes.usesLeft, usesTracked: furyRes.tracked })})`,
+            defaultActive: false
+        });
+    }
+
+    // Touch of the Grave (Forsaken): + (Proficiency Bonus)d4 necrotic when you deal damage, once per Long Rest
+    const grave = attackOrSpell ? _findFeature(actor, ["touch-of-the-grave"], /^touch of the grave$/i) : null;
+    const graveRes = _resource(grave);
+    if (graveRes?.available) {
+        const dice = `${Number(actor.system?.attributes?.prof ?? 2)}d4`;
+        out.push({
+            id: "touchOfTheGrave",
+            spellName: "Touch of the Grave",
+            formula: `${dice}[Touch of the Grave]`,
+            formulaDisplay: dice,
+            damageType: "necrotic",
+            oneOff: true,
+            usesLeft: graveRes.usesLeft,
+            usesTracked: graveRes.tracked,
+            consume: graveRes.consume,
+            flavor: "Touch of the Grave",
+            labelKey: "ND5T.ConditionalDamage.TouchOfTheGrave.Label",
+            defaultLabel: `Touch of the Grave (+${dice}, ${_usesText({ usesLeft: graveRes.usesLeft, usesTracked: graveRes.tracked })})`,
+            defaultActive: false
+        });
+    }
+
+    // Entropic Embrace (Void Elf), Touch of the Void: once on each of your turns, +1d4 necrotic on damage or +1d4 on
+    // healing (1d4 more per slot level above 1st), while the spell lasts (marker effect created when it's cast)
+    const embrace = (attackOrSpell || (isHealing && isSpell)) && isMyTurn
+        ? (actor.appliedEffects ?? []).find(e => !e.disabled && e.getFlag?.(MODULE_ID, "entropicEmbrace"))
+        : null;
+    if (embrace) {
+        const level = Math.max(1, Number(embrace.getFlag(MODULE_ID, "entropicEmbrace")?.level ?? 1));
+        const dice = `${level}d4`;
+        out.push({
+            id: "touchOfTheVoid",
+            spellName: "Touch of the Void",
+            formula: `${dice}[Touch of the Void]`,
+            formulaDisplay: dice,
+            damageType: isHealing ? "healing" : "necrotic",
+            oneOff: true,
+            turnKey,
+            flavor: "Touch of the Void",
+            labelKey: "ND5T.ConditionalDamage.TouchOfTheVoid.Label",
+            defaultLabel: `Touch of the Void (+${dice})`,
+            defaultActive: !used("touchOfTheVoid")
+        });
+    }
+
+    // Rain of Fire (World of Warcraft): spell attacks against a creature inside your Rain of Fire deal +1d6 necrotic
+    const spellAttack = isAttack && ["msak", "rsak"].includes(activity?.actionType ?? "");
+    if (spellAttack && canvas?.scene) {
+        const rains = canvas.scene.regions.filter(r => {
+            const item = _safeUuid(r.getFlag?.("dnd5e", "item"));
+            return (_identifierOf(item) === "rain-of-fire") && (item?.actor === actor || item?.actor?.uuid === actor.uuid);
+        });
+        const inside = rains.length && targets.some(doc => rains.some(r => doc.regions?.has?.(r) || doc.testInsideRegion?.(r)));
+        if (inside) {
+            out.push({
+                id: "rainOfFire",
+                spellName: "Rain of Fire",
+                formula: "1d6[Rain of Fire]",
+                formulaDisplay: "1d6",
+                damageType: "necrotic",
+                flavor: "Rain of Fire",
+                labelKey: "ND5T.ConditionalDamage.RainOfFire.Label",
+                defaultLabel: "Rain of Fire (+1d6)",
+                defaultActive: true
+            });
+        }
+    }
 }
 
 /**
@@ -2717,7 +2985,6 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     // --- 1. Concentration Spells (Hex & Hunter's Mark) ---
     const effects = actor.appliedEffects ?? Array.from(actor.effects?.values() ?? []);
     const concentrationItems = actor.concentration?.items ?? new Set();
-    const localizedConcentrating = (game.i18n?.localize("EFFECT.DND5E.StatusConcentrating") || "Concentrating").toLowerCase();
 
     for (const def of (isAttack ? CONDITIONAL_DAMAGE_DEFINITIONS : [])) {
         const targetSpell = def.spellName.toLowerCase();
@@ -2745,9 +3012,6 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
                 if (e.disabled || e.isSuppressed) return false;
                 const name = (e.name || "").trim().toLowerCase();
                 if (def.effectMatch.test(name)) return true;
-
-                // Support localized "Concentrating: <Spell>"
-                if (name.startsWith(localizedConcentrating) && name.endsWith(targetSpell)) return true;
 
                 // Support special status effect concentrating where name or description matches spell
                 if (e.statuses?.has("concentrating") || e.statuses?.has(CONFIG.specialStatusEffects?.CONCENTRATING)) {
@@ -3878,6 +4142,33 @@ function _applyPerfectPoisoner(rolls, config) {
     }
 }
 
+/**
+ * When Entropic Embrace (World of Warcraft, no effect of its own) is cast, give the caster a 1-minute marker effect
+ * that records the cast level. Touch of the Void is offered while it lasts.
+ * @param {Activity} activity
+ */
+async function _onEntropicEmbraceCast(activity) {
+    try {
+        if (!isFeatureActive("enableConditionalDamage", "clientEnableConditionalDamage")) return;
+        const item = activity?.item;
+        if ((_identifierOf(item) !== "entropic-embrace") || (activity.type !== "utility") || !activity.actor?.isOwner) return;
+        const actor = activity.actor;
+        const level = Number(item.system?.level ?? 1) + Number(item.getFlag?.("dnd5e", "scaling") ?? 0);
+        const old = actor.effects.filter(e => e.getFlag?.(MODULE_ID, "entropicEmbrace")).map(e => e.id);
+        if (old.length) await actor.deleteEmbeddedDocuments("ActiveEffect", old);
+        await actor.createEmbeddedDocuments("ActiveEffect", [{
+            name: item.name,
+            img: item.img,
+            origin: item.uuid,
+            transfer: false,
+            duration: { value: 60, units: "seconds" },
+            flags: { [MODULE_ID]: { entropicEmbrace: { level } } }
+        }]);
+    } catch (err) {
+        debug("Conditional Damage | Could not mark Entropic Embrace", err);
+    }
+}
+
 let _isInitialized = false;
 
 /**
@@ -3901,6 +4192,11 @@ export function initConditionalDamage() {
             itemId: subject?.item?.id,
             targets: Array.from(game.user?.targets ?? [], t => t.document?.uuid)
         });
+        try {
+            _recordMeleeHit(actor, roll, subject);
+        } catch (err) {
+            debug("Conditional Damage | Could not count the melee hit", err);
+        }
     });
 
     Hooks.on("createChatMessage", (message) => {
@@ -3933,6 +4229,9 @@ export function initConditionalDamage() {
     });
 
     // Mark cached attack rolls as having rolled damage when a damage roll is executed
+    // Entropic Embrace: mark the caster for the spell's minute, so Touch of the Void can be offered
+    Hooks.on("dnd5e.postUseActivity", _onEntropicEmbraceCast);
+
     // Perfect Poisoner: maximize the poison dice of the final rolls (the type picked in the dialog counts)
     Hooks.on("dnd5e.postDamageRollConfiguration", _applyPerfectPoisoner);
 
@@ -3950,6 +4249,11 @@ export function initConditionalDamage() {
     // Clean up combat turn usage tracking and combat attack cache when a combat encounter is removed
     Hooks.on("deleteCombat", (combat) => {
         clearCombatTurnUsage(combat?.id);
+        if (combat?.id) {
+            for (const [key, entry] of _meleeHits.entries()) {
+                if (entry.turnKey?.startsWith(`${combat.id}-`)) _meleeHits.delete(key);
+            }
+        }
         if (combat?.id) {
             for (const [key, entry] of _lastAttackRollsByActor.entries()) {
                 if (entry.combatId === combat.id) {
