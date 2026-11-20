@@ -1873,6 +1873,28 @@ export function getSettingsSchema() {
                             parentKey: "enableMagicResistance"
                         },
                         {
+                            key: "enableCircleOfPower",
+                            introduced: "14.105.0",
+                            docs: "circle-of-power-automation",
+                            keywords: ["Paladin", "aura", "advantage", "saving throw", "half damage", "spell"],
+                            name: "Circle of Power Automation",
+                            hint: "Creatures inside a Circle of Power aura roll saves against spells and magical effects with Advantage, and take no damage instead of half when they succeed. Also works with midi-qol.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "enableHolyAura",
+                            introduced: "14.105.0",
+                            docs: "holy-aura-automation",
+                            keywords: ["Cleric", "aura", "advantage", "disadvantage", "Blinded", "Fiend", "Undead", "spell"],
+                            name: "Holy Aura Automation",
+                            hint: "Creatures protected by Holy Aura have Advantage on all saves while inside the aura, and attacks against them have Disadvantage. A Fiend or Undead hitting them in melee must make the spell's save or be Blinded. Also works with midi-qol.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableDeathWard",
                             introduced: "14.66.0",
                             docs: "death-ward-automation",

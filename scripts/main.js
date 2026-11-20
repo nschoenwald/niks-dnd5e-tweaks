@@ -41,6 +41,8 @@ import { initRemoveInstantaneousTemplates } from "./features/combat-automation/r
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
 import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
+import { initCircleOfPower, registerCircleOfPowerTypes } from "./features/combat-automation/circle-of-power.js";
+import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./features/combat-automation/holy-aura.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
@@ -1633,6 +1635,26 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableCircleOfPower", {
+        name: "Circle of Power Automation",
+        hint: "Creatures inside a Circle of Power aura roll saving throws against spells and magical effects with Advantage, and take no damage instead of half when they succeed on such a save. Concentration saves are not affected. Also works with midi-qol.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableHolyAura", {
+        name: "Holy Aura Automation",
+        hint: "Creatures protected by Holy Aura have Advantage on all saving throws while inside the aura, and attacks against them have Disadvantage. A Fiend or Undead that hits them with a melee attack must make the spell's Constitution save or be Blinded. Also works with midi-qol.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableDeathWard", {
         name: "Death Ward Automation",
         hint: "The first time a creature under Death Ward would drop to 0 HP, it drops to 1 HP instead and the spell ends.",
@@ -1989,6 +2011,7 @@ Hooks.once("init", () => {
 
     // Region / activity behavior types must be registered before data models are prepared
     registerDamageEmanationTypes();
+    registerCircleOfPowerTypes();
 });
 
 Hooks.once("setup", () => {
@@ -2014,6 +2037,8 @@ Hooks.once("setup", () => {
     initAutoRollConcentration();
     initMageSlayerConcentration();
     initMagicResistance();
+    initCircleOfPower();
+    initHolyAura();
     // Before Undead Fortitude: a creature with both keeps 1 HP from the ward without rolling
     initDeathWard();
     initCompanionLevelSync();
@@ -2094,6 +2119,10 @@ Hooks.once("ready", async () => {
     game.socket.on(`module.${MODULE_ID}`, (data) => {
         if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave" || data?.action === "openToppleSaveDialog") {
             weaponMasterySocketMessage(data);
+            return;
+        }
+        if (data?.action === "holyAuraSave") {
+            holyAuraSocketMessage(data);
             return;
         }
         if (data?.action === "damageEmanationResolve" || data?.action === "damageEmanationClaimResult") {

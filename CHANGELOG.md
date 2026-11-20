@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.105.0] - 2026-11-20
+### Added
+- **Circle of Power Automation**: Inside a *Circle of Power* aura, the caster and their allies roll saves against spells and magical effects with Advantage. On a successful save against damage that a save halves, they take no damage instead of half. Works with the 2024 Player's Handbook spell and with homebrew versions, and with midi-qol.
+- **Holy Aura Automation**: Creatures protected by *Holy Aura* have Advantage on all saves while inside the aura, and attacks against them have Disadvantage. When a Fiend or Undead hits one of them in melee, the spell's Constitution save against Blinded is rolled for the attacker automatically. Works with midi-qol.
+
+### Fixed
+- **Magic Resistance Automation**: Features are no longer recognized by their German name (*Magieresistenz*, *Zauberresistenz*). Features with an identifier keep working in every language.
+
 ## [14.104.0] - 2026-11-19
 ### Added
 - **Conditional Damage Bonuses**: Features and spells from World of Warcraft get toggles in the damage dialog: *Fury of the Small* (against larger creatures) and *Touch of the Grave*, which spend their uses; *Death and Decay* (against creatures it cursed); *Touch of the Void* from *Entropic Embrace* (damage or healing); *Havoc* from *Metamorphosis*; *Rain of Fire* (spell attacks against creatures in it); and *Combo Strikes* from Fists of Fury, which counts your earlier melee hits on the creature this turn.

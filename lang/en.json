@@ -182,6 +182,11 @@
   "ND5T.ChatCardStyling.ApplyHealingAmount": "Apply {amount} Healing",
   "ND5T.ChatCardStyling.ApplyTempHPAmount": "Apply {amount} Temp HP",
 
+  "TYPES.RegionBehavior.niks-dnd5e-tweaks.circleOfPower": "Circle of Power Aura",
+  "ND5T.CircleOfPower.EffectName": "Circle of Power",
+  "ND5T.CircleOfPower.EffectDescription": "While in the aura, you have Advantage on saving throws against spells and other magical effects. When a successful save against a spell or magical effect would halve the damage, you take no damage.",
+  "ND5T.HolyAura.NoGM": "{name} hit a creature protected by Holy Aura, but the save needs a GM online. Roll it by hand.",
+  "ND5T.HolyAura.NoSaveActivity": "{spell} has no save activity, so the Fiend/Undead save of Holy Aura can't be rolled.",
   "TYPES.RegionBehavior.niks-dnd5e-tweaks.damageEmanation": "Damage Emanation",
   "ND5T.DamageEmanation.Behavior.FIELDS.activity.label": "Damage Activity",
   "ND5T.DamageEmanation.Behavior.FIELDS.activity.hint": "UUID of the save or damage activity used when a creature triggers the emanation. Leave empty to use the Spell below.",

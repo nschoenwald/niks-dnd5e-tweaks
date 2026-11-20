@@ -4,6 +4,7 @@
  * Magic Resistance (and similar features such as Spell Resistance or the Mantle of Spell Resistance).
  *
  * @introduced v14.50.0
+ * @updated v14.105.0 (Source helpers shared with Circle of Power; German name fallbacks removed)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { getMidiSourceItem } from "../../utils/module-compat.js";
@@ -57,9 +58,7 @@ const KNOWN_IDENTIFIERS = {
  */
 const NAME_FALLBACKS = [
     ["magic resistance", KNOWN_IDENTIFIERS["magic-resistance"]],
-    ["magieresistenz", KNOWN_IDENTIFIERS["magic-resistance"]],
-    ["spell resistance", KNOWN_IDENTIFIERS["spell-resistance"]],
-    ["zauberresistenz", KNOWN_IDENTIFIERS["spell-resistance"]]
+    ["spell resistance", KNOWN_IDENTIFIERS["spell-resistance"]]
 ];
 
 /** Consumable subtypes that are always magical. */
@@ -122,7 +121,7 @@ function _getResistanceProfiles(actor) {
  * @param {object} message  Roll message configuration.
  * @returns {{ item: Item5e|null, itemType: string|null }}
  */
-function _resolveSource(config, message) {
+export function resolveSaveSource(config, message) {
     const system = message?.data?.system ?? {};
     const midiItem = getMidiSourceItem(config);
     if (midiItem) return { item: midiItem, itemType: midiItem.type ?? null };
@@ -159,7 +158,7 @@ function _resolveSource(config, message) {
  * @param {string|null} itemType
  * @returns {"spell"|"magicItem"|"magicFeature"|null}
  */
-function _classifySource(item, itemType) {
+export function classifyMagicSource(item, itemType) {
     if (itemType === "spell") return "spell";
     if (!item) return null;
 
@@ -204,8 +203,8 @@ function _onPreRollSavingThrow(config, _dialog, message) {
             .filter(p => !p.abilities || p.abilities.has(config.ability));
         if (!profiles.length) return;
 
-        const { item, itemType } = _resolveSource(config, message);
-        const category = _classifySource(item, itemType);
+        const { item, itemType } = resolveSaveSource(config, message);
+        const category = classifyMagicSource(item, itemType);
         if (!category || !_isCategoryEnabled(category)) return;
 
         const profile = profiles.find(p => (p.scope === "magic") || (category === "spell"));

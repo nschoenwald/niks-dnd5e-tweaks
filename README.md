@@ -93,6 +93,8 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll--prompt-concentration-saves)** | Conditions & Effects | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Conditions & Effects | ✅ Enabled | No |
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
+| **[Circle of Power Automation](#circle-of-power-automation)** | Conditions & Effects | ✅ Enabled | No |
+| **[Holy Aura Automation](#holy-aura-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Death Ward Automation](#death-ward-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Companion Level Sync](#companion-level-sync)** | Conditions & Effects | ✅ Enabled | No |
 | **[Summon at Full HP](#summon-at-full-hp)** | Conditions & Effects | ✅ Enabled | No |
@@ -564,6 +566,21 @@ Creatures with **Magic Resistance** automatically roll saving throws against spe
 * **Not Affected**: Concentration saves, death saves, and saves rolled from the character sheet without a source. Use the Retroactive Advantage buttons for edge cases.
 * *Sub-settings*: **What Counts as Magical** (Spells Only, Spells & Magic Items, Spells, Magic Items & Magical Features).
 
+### Circle of Power Automation
+While inside a **Circle of Power** aura, the caster and their allies roll saving throws against spells and magical effects with Advantage. When they succeed on such a save against damage that a save halves, they take no damage instead of half.
+* **The Aura**: The 2024 Player's Handbook spell already gives creatures inside the aura a "Circle's Power" effect, and removes it when they leave. Other versions of the spell (homebrew or imported, with the identifier `circle-of-power` and a 30-foot area) get the same aura from this module.
+* **Damage**: The chat card's damage tray shows 0 damage for creatures in the aura that saved. If you change the multiplier by hand, your choice wins.
+* **What Counts as Magical**: spells, magic items (items with the Magical property, potions, scrolls, wands and rods) and features with the Magical property.
+* **Not Affected**: Concentration saves, and the Full/Half buttons of the Player Damage Prompt.
+
+### Holy Aura Automation
+Creatures the caster protects with **Holy Aura** have Advantage on all saving throws, and other creatures have Disadvantage on attack rolls against them. When a Fiend or Undead hits a protected creature with a melee attack, the spell's Constitution save is rolled against the attacker automatically, and the Blinded condition is applied from its chat card as usual.
+* **Choosing Creatures**: Apply the spell's effect ("Holy Protection" in the 2024 Player's Handbook) from its chat card to the creatures you choose, as before.
+* **Inside the Aura Only**: While the spell's area is on the scene, a protected creature only benefits while its token is inside it.
+* **The Save**: The active GM rolls the save card publicly, without spending a spell slot. The attacker rolls its save from the card.
+* **Recognized Effects**: effects from a spell with the identifier `holy-aura` (or named "Holy Aura"), effects named "Holy Protection" or "Holy Aura", and any effect with the flag `flags.niks-dnd5e-tweaks.holyAura`.
+* **Not Affected**: attacks with several targets at once (one roll can't have Disadvantage for some targets only).
+
 ### Death Ward Automation
 The first time a creature under **Death Ward** would drop to 0 HP, it drops to 1 HP instead, the spell's effect is removed, and a chat message says so.
 * **Recognized Effects**: the effect the spell applies (named "Protection from Death" in the 2024 Player's Handbook, or "Death Ward"), effects that come from a spell with the identifier `death-ward`, and any effect that sets the flag `flags.niks-dnd5e-tweaks.deathWard`.
@@ -700,6 +717,8 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Condition Advantage & Disadvantage** | **Works** with midi-qol workflows, using the workflow's targets. Critical hits within 5 feet follow midi-qol's hit check and make the workflow critical; failed saves count as 0 in midi-qol's save check. Switched off while midi-qol's optional *Condition Rules* are on, which apply the same rules. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on (its default), which checks token vision instead. |
 | **Indomitable Might Automation** | **Works** with midi-qol saves and checks: the raised total decides whether the save succeeds. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
+| **Circle of Power Automation** | **Works** with midi-qol: Advantage on save requests, and midi-qol's *Super Saver* flag on the aura effect, so a successful save means no damage. |
+| **Holy Aura Automation** | **Works** with midi-qol attacks and save requests. The Fiend/Undead save is started as a midi-qol workflow targeting the attacker. |
 | **Undead Fortitude Automation** | **Works** with midi-qol damage application, which has no Undead Fortitude handling of its own. Critical hits come from the midi-qol workflow. midi-qol's damage card may still show 0 HP for the creature while it is held at 1 HP. |
 | **Death Ward Automation** | **Works** with midi-qol damage application, which has no Death Ward handling of its own. midi-qol's damage card may still show 0 HP for the creature. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
