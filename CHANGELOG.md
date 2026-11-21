@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.106.1] - 2026-11-21
+### Changed
+- **Performance**: A few small speed-ups.
+  - Characters and NPCs update a little faster with *Intelligence for Weapon Attacks* or *Auto-Roll Concentration* enabled.
+  - *Weapon Mastery Automation* finds the attack behind a damage roll faster.
+  - The template and summon placement bars over the map are less work for the graphics card while you place a template or summon, as are the pulsing glows on the recommended roll button and the emanation status badge. They look almost the same.
+
 ## [14.106.0] - 2026-11-21
 ### Added
 - **Ranged Attacks in Close Combat**: A ranged attack roll, with a weapon, a thrown weapon or a spell, has Disadvantage while an enemy within 5 feet can see the attacker and isn't Incapacitated. Enemies behind a wall, Blinded or hidden by the GM don't count. *Crossbow Expert*, *Sharpshooter* and *Spell Sniper* (2024) and *Gunner* lift it where they apply. Works with midi-qol; switched off while Automated Conditions 5e or midi-qol's *Nearby Foe* rule are active.

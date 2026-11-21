@@ -10,6 +10,7 @@
  * @updated v14.95.0 (Battle Ready: Intelligence for magic weapons)
  * @updated v14.96.0 (Weapons that Heroes of Faerûn's Bladework or Battle Ready's Arcane Empowerment enchantment forces
  *   to Intelligence fall back to Strength or Dexterity when they're higher)
+ * @updated v14.106.1 (The actor's Bladesong and Battle Ready items are looked up once per data preparation, not per weapon)
  */
 import { isFeatureActive, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -96,6 +97,32 @@ function _getBladesongItem(actor) {
 }
 
 /**
+ * Per-actor lookups for the current synchronous data preparation. An actor prepares all of its weapons' attack
+ * activities in one go, so the item scans run once per actor instead of once per weapon. The map is dropped at the
+ * next microtask; items can't change before then, so a cached result is never stale.
+ * @type {Map<Actor5e, {bladesong: Item5e|null, battleReady: boolean}>|null}
+ */
+let _preparationCache = null;
+
+/**
+ * The actor's Bladesong item and Battle Ready flag, cached for the current data preparation.
+ * @param {Actor5e} actor
+ * @returns {{bladesong: Item5e|null, battleReady: boolean}}
+ */
+function _actorFeatures(actor) {
+    if (!_preparationCache) {
+        _preparationCache = new Map();
+        queueMicrotask(() => { _preparationCache = null; });
+    }
+    let features = _preparationCache.get(actor);
+    if (!features) {
+        features = { bladesong: _getBladesongItem(actor), battleReady: _hasBattleReady(actor) };
+        _preparationCache.set(actor, features);
+    }
+    return features;
+}
+
+/**
  * Whether the feature follows the 2024 rules (Bladework): its own source rules, else the world's.
  * @param {Item5e} item
  * @returns {boolean}
@@ -137,13 +164,14 @@ function _qualifies(activity) {
     if (!fixed && !item.system?.availableAbilities?.size) return false;
 
     const actor = activity.actor;
+    const { bladesong, battleReady } = _actorFeatures(actor);
 
     // Battle Ready: any magic weapon
-    if (item.system?.properties?.has?.("mgc") && _hasBattleReady(actor)) return true;
+    if (battleReady && item.system?.properties?.has?.("mgc")) return true;
 
     // Bladesong: weapons with proficiency, while Bladesong is active
+    if (!bladesong) return false;
     if (!(Number(item.system?.proficiencyMultiplier ?? item.system?.prof?.multiplier ?? 0) > 0)) return false;
-    const bladesong = _getBladesongItem(actor);
     return Boolean(bladesong && _isModernBladesong(bladesong) && _isBladesongActive(actor));
 }
 

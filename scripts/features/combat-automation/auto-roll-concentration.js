@@ -8,6 +8,7 @@
  * @updated v14.67.4 (Badge and End Concentration button added after dnd5e renders the card, so they no longer get wiped)
  * @updated v14.67.5 (End Concentration buttons follow the actor's live concentration state on every client)
  * @updated v14.77.1 (Removes D&D 5e 6.1's labelled Break button from save cards too)
+ * @updated v14.106.1 (Boon of the Iron Mind is only looked up for updates that change HP)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -356,6 +357,8 @@ function _patchRollConcentration() {
 function _onPreUpdateActor(actor, change, options, userId) {
     try {
         if (!getSetting("enableAutoRollConcentration")) return;
+        // dnd5e only challenges concentration after an HP change; skip the item scan for every other update
+        if (!foundry.utils.hasProperty(change, "system.attributes.hp")) return;
         if (!hasBoonOfTheIronMind(actor)) return;
 
         foundry.utils.setProperty(options, "dnd5e.concentrationCheck", false);

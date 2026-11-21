@@ -629,25 +629,34 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 }
 
 /* --- Glow (default) ------------------------------------------ */
-/* Pulsing box-shadow in the mode's colour */
+/* Pulsing glow in the mode's colour. The stronger glow fades in on a pseudo-element: animating its opacity
+   is composited, while animating box-shadow repainted the button on every frame. */
 
 @keyframes nd5t-rmh-pulse {
-    0% {
-        box-shadow: 0 0 4px 1px var(--nd5t-rmh-color);
+    0%,
+    100% {
+        opacity: 0;
     }
 
     50% {
-        box-shadow: 0 0 10px 3px var(--nd5t-rmh-color);
-    }
-
-    100% {
-        box-shadow: 0 0 4px 1px var(--nd5t-rmh-color);
+        opacity: 1;
     }
 }
 
 .roll-configuration.nd5t-highlight-glow [data-nd5t-calculated-mode] {
+    position: relative;
+    box-shadow: 0 0 4px 1px var(--nd5t-rmh-color);
+}
+
+.roll-configuration.nd5t-highlight-glow [data-nd5t-calculated-mode]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 10px 3px var(--nd5t-rmh-color);
+    opacity: 0;
+    pointer-events: none;
     animation: nd5t-rmh-pulse 2s ease-in-out infinite;
-    box-shadow: 0 0 6px 2px var(--nd5t-rmh-color);
 }
 
 /* --- Border --------------------------------------------------  */
@@ -2816,9 +2825,8 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     display: flex;
     align-items: center;
     gap: 14px;
-    background: rgba(18, 22, 28, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Opaque instead of a backdrop blur: the blur was redone on every canvas frame while the HUD is shown */
+    background: rgba(18, 22, 28, 0.96);
     border: 1px solid rgba(245, 158, 11, 0.45);
     border-radius: 30px;
     padding: 8px 18px 8px 14px;
@@ -2980,7 +2988,20 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     background: rgba(245, 158, 11, 0.2);
     border: 1px solid rgba(245, 158, 11, 0.55);
     color: #fcd34d;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    position: relative;
+}
+
+/* Pulse on a pseudo-element (opacity only, composited) instead of animating box-shadow and border-color */
+.nd5t-template-status-badge.waiting::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    border: 1px solid rgba(245, 158, 11, 0.8);
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+    opacity: 0;
+    pointer-events: none;
     animation: nd5t-pulse-attention 2s infinite ease-in-out;
 }
 
@@ -3023,11 +3044,10 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
 
 @keyframes nd5t-pulse-attention {
     0%, 100% {
-        box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+        opacity: 0;
     }
     50% {
-        box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
-        border-color: rgba(245, 158, 11, 0.8);
+        opacity: 1;
     }
 }
 
@@ -3119,9 +3139,8 @@ body.nd5t-chat-card-styling .theme-dark :is(.chat-log, .chat-popout):not(.theme-
     display: flex;
     align-items: center;
     gap: 14px;
-    background: rgba(18, 22, 32, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Opaque instead of a backdrop blur: the blur was redone on every canvas frame while the HUD is shown */
+    background: rgba(18, 22, 32, 0.96);
     border: 1px solid rgba(168, 85, 247, 0.5);
     border-radius: 30px;
     padding: 8px 18px 8px 14px;

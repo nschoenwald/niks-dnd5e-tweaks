@@ -37,6 +37,7 @@
  * @updated v14.80.1 (Sap and Slow end through dnd5e's own "start of the source's next turn" expiry)
  * @updated v14.86.0 (Vex; Sap, Slow, Topple and Vex step aside for characters set up with midi-qol's own weapon
  *   mastery automation)
+ * @updated v14.106.1 (Finds the attack roll of a damage roll through dnd5e's message index before searching the chat)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
@@ -422,6 +423,10 @@ function _getOriginatingMessage(message) {
  */
 function _findAttackMessage(message, originatingMessage) {
     if (!originatingMessage) return null;
+    // dnd5e indexes the rolls made from a usage card by `system.origin`; only fall back to searching the chat
+    // history (newest first) for messages it doesn't index, such as ones linked by the older originatingMessage flag
+    const associated = originatingMessage.getAssociatedRolls?.("attack")?.filter(m => m !== message);
+    if (associated?.length) return associated.at(-1);
     return game.messages.contents.findLast(m => {
         if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") return false;
         const origin = m.system?.origin;
