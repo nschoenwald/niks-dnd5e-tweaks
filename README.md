@@ -90,6 +90,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Auto-Rotate Prone / Unconscious / Dead Tokens](#auto-rotate-prone--unconscious--dead-tokens)** | Conditions & Effects | ✅ Enabled | No |
 | **[Prone Rules (Crawling, Standing Up & Attacks)](#prone-rules)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Condition Advantage & Disadvantage](#condition-advantage--disadvantage)** | Conditions & Effects | ✅ Enabled | Yes |
+| **[Ranged Attacks in Close Combat](#ranged-attacks-in-close-combat)** | Conditions & Effects | ✅ Enabled | Yes |
 | **[Auto-Roll / Prompt Concentration Saves](#auto-roll--prompt-concentration-saves)** | Conditions & Effects | ✅ NPCs Only | No |
 | **[Mage Slayer: Concentration Disadvantage](#mage-slayer-concentration-disadvantage)** | Conditions & Effects | ✅ Enabled | No |
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
@@ -540,6 +541,15 @@ The system applies the movement, check and save parts of conditions, but not wha
 
 Prone is under [Prone Rules](#prone-rules). Immunity to a condition is respected. The whole feature is switched off while Automated Conditions 5e or midi-qol's optional *Condition Rules* are active. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on, which handles both through token vision.
 
+### Ranged Attacks in Close Combat
+When you make a ranged attack roll (with a ranged or thrown weapon, a spell, or any other ranged attack) while an enemy is within 5 feet of you, the roll has Disadvantage, so the roll dialog opens with it already selected. It works without a target.
+* **Enemies**: Tokens with the opposite disposition: Hostile and Secret tokens are enemies of Friendly and Neutral ones, Friendly tokens are enemies of Hostile ones. Tokens hidden by the GM, objects such as vehicles, and creatures at 0 HP don't count.
+* **Can see you, not Incapacitated**: An enemy who is Blinded (without Blindsight), can't see you because you are Invisible, or stands behind a wall doesn't count. Neither does one that is Incapacitated, Paralyzed, Petrified, Stunned, Unconscious or Dead. Light isn't checked.
+* **Feats**: *Crossbow Expert* lifts it for crossbows (the 2014 version for all ranged attacks), *Sharpshooter* (2024) for Ranged weapons, *Spell Sniper* (2024) for spell attacks, and *Gunner* for firearms.
+* **Thrown weapons**: The check uses the attack mode the roll starts with (the one used last). If you switch a weapon from *Thrown* to a melee mode in the roll dialog, set the mode back to Normal by hand.
+
+Switched off while Automated Conditions 5e or midi-qol's optional *Nearby Foe* rule are active, which apply the same rule.
+
 ### Auto-Rotate Prone / Unconscious / Dead Tokens
 Automatically tilts tokens 90° clockwise when given the Prone or Unconscious condition (90° counter-clockwise for Dead), and restores them to 0° on recovery. Fully compatible with locked rotation and unlinked tokens.
 
@@ -682,7 +692,7 @@ All features are managed in the shared **Settings Dashboard** of [Nik's Foundry 
 * **Personal settings that override the GM's**: For Chat Card Styling Improvements, Item Sheet Attunement Tag (and its tooltip option), Item / Spell Add: Choice Dialog, Spell Slots Expend Left to Right, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette, each player chooses **Use World Setting** (default), **On** or **Off**, so they can also turn these on when the GM left them off. All other personal settings only turn a feature off for that player, because the GM's choice matters for the whole table (rules, automation, shared templates, or what players learn about NPCs).
 * **Search, filters, New badges, linked world and personal settings, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
 * **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
-* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation), and Automated Conditions 5e or midi-qol's Condition Rules (Prone Attack Rolls, Condition Advantage & Disadvantage). Your stored choice is kept for when that module is turned off.
+* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation), Automated Conditions 5e or midi-qol's Condition Rules (Prone Attack Rolls, Condition Advantage & Disadvantage), and Automated Conditions 5e or midi-qol's Nearby Foe rule (Ranged Attacks in Close Combat). Your stored choice is kept for when that module is turned off.
 * **Debug Mode**: One switch in Nik's Foundry Tweaks (Utilities & Debug) turns on diagnostic logging for both modules.
 
 ---
@@ -715,6 +725,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Conditional Damage Bonuses** | **Works** with midi-qol workflows. Great Weapon Fighting also applies to midi-qol's damage rolls (midi-qol has no automation of its own for it). Sneak Attack reads Advantage from midi-qol's attack roll (including its optional flanking rule) and checks only the targets midi-qol says were hit. Genie's Wrath works the same way as without midi-qol. midi-qol has no Sneak Attack automation of its own, but a premade Sneak Attack item from another module would add the damage a second time: turn one of them off. The Player's Handbook feature and spell bonuses (Divine Strike, Colossus Slayer, Eldritch Smite, Empowered Evocation, …) and Elemental Adept work the same way; Colossus Slayer checks the targets midi-qol says were hit. Premade automations of those features from other modules would also add their damage twice. |
 | **Prone Rules** | **Works** with midi-qol: attack rolls in midi-qol workflows get the same Advantage / Disadvantage, using the workflow's targets. Movement isn't affected by midi-qol. **Prone Attack Rolls** is switched off while midi-qol's optional *Condition Rules* are on. |
 | **Condition Advantage & Disadvantage** | **Works** with midi-qol workflows, using the workflow's targets. Critical hits within 5 feet follow midi-qol's hit check and make the workflow critical; failed saves count as 0 in midi-qol's save check. Switched off while midi-qol's optional *Condition Rules* are on, which apply the same rules. **Blinded & Invisible** is also switched off while midi-qol's *Invisible Advantage* rule is on (its default), which checks token vision instead. |
+| **Ranged Attacks in Close Combat** | **Works** with midi-qol workflows. Switched off while midi-qol's optional *Nearby Foe* rule is on, which applies the same rule. midi-qol's `flags.midi-qol.ignoreNearbyFoes` is honoured when set to true. |
 | **Indomitable Might Automation** | **Works** with midi-qol saves and checks: the raised total decides whether the save succeeds. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
 | **Circle of Power Automation** | **Works** with midi-qol: Advantage on save requests, and midi-qol's *Super Saver* flag on the aura effect, so a successful save means no damage. |
@@ -727,7 +738,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Detailed Roll Breakdown Overlay** | **Works** on midi-qol's combined card: the attack and damage totals show the detailed breakdown, with midi-qol's advantage and bonus notes kept at the top, and the formula shows the short labels (STR, PB, MGC). Rolls midi-qol hides from players stay hidden. |
 
 ### Automated Conditions 5e & Automated Masteries 5e
-* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone and the other conditions itself, so **Prone Attack Rolls** and **Condition Advantage & Disadvantage** are switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
+* **[Automated Conditions 5e](https://github.com/thatlonelybugbear/automated-conditions-5e)**: Advantage from Magic Resistance, Mage Slayer and Sap is picked up by AC5e's own calculation. AC5e handles Advantage and Disadvantage for Prone and the other conditions itself, so **Prone Attack Rolls**, **Condition Advantage & Disadvantage** and **Ranged Attacks in Close Combat** are switched off; crawling and the cost of standing up keep working. **Roll Mode Highlight** follows the button AC5e recommends, so both modules highlight the same choice.
 * **[Automated Masteries 5e](https://github.com/thatlonelybugbear/wm5e)**: wm5e automates all weapon masteries, so **Weapon Mastery Automation** (Sap, Slow, Topple & Vex) and the **Graze** damage prompt are switched off, and the **Cleave** toggle is removed from damage dialogs (wm5e already rolls the Cleave attack without the ability modifier).
 
 ### Other Supported Modules

@@ -1752,6 +1752,18 @@ export function getSettingsSchema() {
                             parentKey: "enableConditionRollModes"
                         },
                         {
+                            key: "enableRangedCloseCombat",
+                            introduced: "14.106.0",
+                            docs: "ranged-attacks-in-close-combat",
+                            keywords: ["ranged", "melee", "adjacent", "nearby foe", "enemy", "close combat", "disadvantage", "crossbow expert", "sharpshooter", "spell sniper", "gunner"],
+                            unavailableWith: "nearbyFoe",
+                            name: "Ranged Attacks in Close Combat",
+                            hint: "A ranged attack roll (weapon, thrown weapon or spell) has Disadvantage while the attacker is within 5 feet of an enemy who can see it and isn't Incapacitated. Enemies are tokens with the opposite disposition; hidden tokens don't count. Crossbow Expert, Sharpshooter, Spell Sniper (2024) and Gunner lift it where they apply. Works with midi-qol. Disabled while Automated Conditions 5e or midi-qol's optional Nearby Foe rule are active.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableProneRotation",
                             introduced: "14.0.0",
                             docs: "auto-rotate-prone--unconscious--dead-tokens",

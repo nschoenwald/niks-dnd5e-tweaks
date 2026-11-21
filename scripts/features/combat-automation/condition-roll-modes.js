@@ -17,12 +17,13 @@
  *              Prone stays in Prone Rules.
  *
  * @introduced v14.80.0
+ * @updated v14.106.0 (Condition and sight checks moved to utils/creature-sight.js, shared with Ranged Attacks in Close Combat)
  */
 import { getSetting, debug, MODULE_ID } from "../../context.js";
 import {
     getMidiSettings, getMidiWorkflow, isAc5eActive, midiHandlesCantSee, midiHandlesConditionRules
 } from "../../utils/module-compat.js";
-import { convertLength } from "../../utils/dnd5e-compat.js";
+import { hasStatus as _has, canSee as _canSee } from "../../utils/creature-sight.js";
 import { tokenDistance, feetToSceneUnits } from "../../utils/token-distance.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
@@ -113,17 +114,6 @@ function _isModernRules() {
 // ── Actor helpers ─────────────────────────────────────────────────────
 
 /**
- * Whether an actor has a status and isn't immune to it.
- * @param {Actor5e|null} actor
- * @param {string} status
- * @returns {boolean}
- */
-function _has(actor, status) {
-    if (!actor?.statuses?.has(status)) return false;
-    return !actor.system?.traits?.ci?.value?.has(status);
-}
-
-/**
  * Whether an actor is Dodging: it ends while Incapacitated or without movement, as in dnd5e's own check.
  * @param {Actor5e|null} actor
  * @returns {boolean}
@@ -131,49 +121,6 @@ function _has(actor, status) {
 function _isDodging(actor) {
     if (!_has(actor, "dodging") || actor.statuses.has("incapacitated")) return false;
     return !actor.hasConditionEffect?.("noMovement");
-}
-
-/**
- * Range of a sense in the viewed scene's units: the actor's sense or the token's detection mode, whichever
- * reaches farther.
- * @param {Token} token
- * @param {Actor5e} actor
- * @param {string|null} sense          Key in the actor's `senses.ranges`.
- * @param {string} detectionMode       Detection mode id on the token.
- * @returns {number}
- */
-function _senseRange(token, actor, sense, detectionMode) {
-    let range = 0;
-    const senses = actor?.system?.attributes?.senses;
-    const value = sense ? Number(senses?.ranges?.[sense] ?? 0) : 0;
-    if (value > 0) {
-        const from = senses?.units;
-        const to = canvas.scene?.grid?.units;
-        range = (from && to && (from !== to) && (to in (CONFIG.DND5E.movementUnits ?? {})))
-            ? (convertLength(value, from, to) ?? value) : value;
-    }
-    const mode = token?.document?.detectionModes?.[detectionMode];
-    if (mode?.enabled && (Number(mode.range) > range)) range = Number(mode.range);
-    return range;
-}
-
-/**
- * Whether a creature can see another as far as conditions and senses go (walls and light are left out).
- * @param {Token} viewer
- * @param {Token} subject
- * @param {number} distance  Distance between them in scene units.
- * @returns {boolean}
- */
-function _canSee(viewer, subject, distance) {
-    const viewerActor = viewer.actor;
-    const reaches = range => range + 1e-6 >= distance;
-    if (reaches(_senseRange(viewer, viewerActor, "blindsight", "blindsight"))) return true;
-    if (_has(viewerActor, "blinded")) return false;
-    if (!_has(subject.actor, "invisible")) return true;
-    return reaches(Math.max(
-        _senseRange(viewer, viewerActor, "truesight", "seeAll"),
-        _senseRange(viewer, viewerActor, null, "seeInvisibility")
-    ));
 }
 
 /**

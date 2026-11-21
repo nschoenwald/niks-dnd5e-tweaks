@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.106.0] - 2026-11-21
+### Added
+- **Ranged Attacks in Close Combat**: A ranged attack roll, with a weapon, a thrown weapon or a spell, has Disadvantage while an enemy within 5 feet can see the attacker and isn't Incapacitated. Enemies behind a wall, Blinded or hidden by the GM don't count. *Crossbow Expert*, *Sharpshooter* and *Spell Sniper* (2024) and *Gunner* lift it where they apply. Works with midi-qol; switched off while Automated Conditions 5e or midi-qol's *Nearby Foe* rule are active.
+
 ## [14.105.0] - 2026-11-20
 ### Added
 - **Circle of Power Automation**: Inside a *Circle of Power* aura, the caster and their allies roll saves against spells and magical effects with Advantage. On a successful save against damage that a save halves, they take no damage instead of half. Works with the 2024 Player's Handbook spell and with homebrew versions, and with midi-qol.

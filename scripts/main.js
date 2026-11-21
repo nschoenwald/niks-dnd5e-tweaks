@@ -48,6 +48,7 @@ import { initCompanionLevelSync } from "./features/combat-automation/companion-l
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
+import { initRangedCloseCombat } from "./features/combat-automation/ranged-close-combat.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
 import { initIndomitableMight } from "./features/combat-automation/indomitable-might.js";
 import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
@@ -1263,6 +1264,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableRangedCloseCombat", {
+        name: "Ranged Attacks in Close Combat",
+        hint: "Ranged attack rolls have Disadvantage while an enemy who can see the attacker and isn't Incapacitated is within 5 feet.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableConditionRollModes", {
         name: "Condition Advantage & Disadvantage",
         hint: "Applies the Advantage and Disadvantage of conditions to attack rolls and ability checks where the system leaves them to the table.",
@@ -2086,6 +2097,7 @@ Hooks.once("setup", () => {
     initWeaponMasteries();
     initProneRules();
     initConditionRollModes();
+    initRangedCloseCombat();
     initRecklessAttack();
     initIndomitableMight();
     initBladesongBladework();

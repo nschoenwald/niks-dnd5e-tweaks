@@ -92,6 +92,16 @@ export function midiHandlesCantSee() {
 }
 
 /**
+ * Whether midi-qol's optional "Nearby Foe" rule gives ranged attacks Disadvantage while an enemy is close
+ * (its value is the distance in feet; 0 turns it off).
+ * @returns {boolean}
+ */
+export function midiHandlesNearbyFoe() {
+    const value = midiCheckRule("nearbyFoe");
+    return (value === true) || (Number(value) > 0);
+}
+
+/**
  * Whether midi-qol automatically applies damage to targets ("Yes", "Yes + damage card", ...).
  * @returns {boolean}
  */

@@ -15,7 +15,7 @@
  */
 import { MODULE_ID } from "./context.js";
 import { getSettingsSchema } from "./settings-schema.js";
-import { isAc5eActive, isMidiActive, isWm5eActive, midiHandlesCantSee, midiHandlesConditionRules } from "./utils/module-compat.js";
+import { isAc5eActive, isMidiActive, isWm5eActive, midiHandlesCantSee, midiHandlesConditionRules, midiHandlesNearbyFoe } from "./utils/module-compat.js";
 
 /** Package id of Nik's Foundry Tweaks. */
 export const CORE_ID = "niks-foundry-tweaks";
@@ -80,6 +80,11 @@ export function registerWithCore() {
                     return midiHandlesConditionRules() ? "midi-qol (Condition Rules)" : "midi-qol (Invisible Advantage)";
                 },
                 isActive: () => isAc5eActive() || midiHandlesConditionRules() || midiHandlesCantSee()
+            },
+            // Ranged Attacks in Close Combat: AC5e, or midi-qol's optional "Nearby Foe" rule
+            nearbyFoe: {
+                get label() { return isAc5eActive() ? "Automated Conditions 5e" : "midi-qol (Nearby Foe)"; },
+                isActive: () => isAc5eActive() || midiHandlesNearbyFoe()
             }
         });
         api.registerSettings(MODULE_ID, getSettingsSchema());
