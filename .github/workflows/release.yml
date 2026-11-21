@@ -18,6 +18,17 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # One minified file instead of a request per script file. The repo's module.json keeps scripts/main.js for development.
+      - name: Bundle scripts
+        run: |
+          ./tools/build.sh
+          jq '.esmodules = ["dist/main.js"]' module.json > tmp.json && mv tmp.json module.json
+
       - name: Update module.json download URL
         run: |
           jq --arg url "https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.VERSION }}/module.zip" '.download = $url' module.json > tmp.json && mv tmp.json module.json
@@ -25,7 +36,7 @@ jobs:
       - name: Create Module Archive
         run: |
           files_to_zip=""
-          for f in module.json scripts styles languages lang templates assets packs README.md LICENSE CHANGELOG.md; do
+          for f in module.json dist styles languages lang templates assets packs README.md LICENSE CHANGELOG.md; do
             if [ -e "$f" ]; then
               files_to_zip="$files_to_zip $f"
             fi

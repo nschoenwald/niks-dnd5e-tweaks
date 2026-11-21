@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.106.2] - 2026-11-21
+### Changed
+- **Faster loading**: The module now ships as one compact script file instead of 87 separate ones, so the game loads a little faster, most noticeably for players connecting over the internet.
+
 ## [14.106.1] - 2026-11-21
 ### Changed
 - **Performance**: A few small speed-ups.

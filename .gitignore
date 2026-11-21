@@ -1,8 +1,9 @@
 # macOS
 .DS_Store
 
-# Release archives
+# Release archives and the release bundle (tools/build.sh)
 *.zip
+/dist/
 
 # Markdown: ignore all, except the docs published with the repo
 *.md
