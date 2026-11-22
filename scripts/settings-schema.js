@@ -2056,6 +2056,16 @@ export function getSettingsSchema() {
                             parentKey: "enableSelfEffectApplication"
                         },
                         {
+                            key: "selfEffectAutoApply",
+                            introduced: "14.107.0",
+                            name: "Automatically Apply Effects",
+                            hint: "Applies the effects named in the Auto-Apply Effects list directly to the source token. When off, those effects get a normal Apply button on the self-effect message instead.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableSelfEffectApplication"
+                        },
+                        {
                             key: "selfEffectAutoApplyEffects",
                             introduced: "14.49.1",
                             name: "Auto-Apply Effects",

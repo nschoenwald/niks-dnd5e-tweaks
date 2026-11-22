@@ -655,6 +655,7 @@ When using self-buff abilities (*Rage*, *Divine Favor*, *Mirror Image*) or targe
 * Full concentration linking: automatically attaches concentration dependency (`flags.dnd5e.dependentOn`), properly preserving separate concentration tracking and terminating when concentration breaks.
 * Seamless compatibility with **Automated Conditions 5e (AC5e)** dynamic condition flags.
 * *Sub-setting*: **Always Prompt Features** (names like `Mage Armor`).
+* *Sub-setting*: **Automatically Apply Effects** (default on): applies the effects in the **Auto-Apply Effects** list directly. When off, those effects get a normal **Apply** button instead, and the list is kept.
 * *Sub-setting*: **Auto-Apply Effects** (effect names; the default covers self-only class and subclass features, feats, species traits and self-only spells from the Player's Handbook, such as `Rage`, `Bladesong`, `Innate Sorcery`, `Dodging` and `Dashing` (Patient Defense, Step of the Wind), `Divine Favor` and `Imperceptible Barrier`): matching effects are applied directly to the source token. The chat card is still posted, showing them as applied with an **Undo** button.
 * Both name lists are edited in the settings dashboard with an **Edit List** button that opens a pop-out editor: search the list, add entries (Enter, or paste several separated by commas), remove them individually, or reset to the defaults. Lists are kept sorted alphabetically without duplicates.
 

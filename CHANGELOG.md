@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.107.0] - 2026-11-22
+### Added
+- **Self Effect Application Prompt**: New *Automatically Apply Effects* sub-setting, on by default. Turn it off to get a normal Apply button for every self effect, without losing your Auto-Apply Effects list.
+
 ## [14.106.3] - 2026-11-22
 ### Changed
 - **French translation**: 15 more strings reviewed by Kameleau, including Reckless Attack, Genie's Wrath and the Sneak Attack reasons. Four Damage Emanation texts show in English until their updated French has been reviewed.

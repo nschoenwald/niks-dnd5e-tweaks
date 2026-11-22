@@ -7,6 +7,7 @@
  * @updated v14.57.0 (Active GM check uses the V14 API)
  * @updated v14.60.2 (Re-enabled effects keep the conditions of their changes and of the effect)
  * @updated v14.92.1 (The usage card's effect tray is collapsed whenever the self-effect message is posted)
+ * @updated v14.107.0 (Automatically Apply Effects sub-setting turns direct application on or off)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
@@ -365,10 +366,12 @@ function _isAlwaysPromptFeature(activity) {
 
 /**
  * Clean names of Active Effects configured to be applied directly, without a prompt card.
+ * Empty while the Automatically Apply Effects sub-setting is off, so every effect gets an Apply button.
  *
  * @returns {Set<string>}
  */
 function _getAutoApplyEffectNames() {
+    if (!getSetting("selfEffectAutoApply")) return new Set();
     const rawList = getSetting("selfEffectAutoApplyEffects");
     if (!rawList || typeof rawList !== "string") return new Set();
     return new Set(rawList.split(",").map(s => _cleanName(s)).filter(Boolean));

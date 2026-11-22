@@ -1543,6 +1543,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "selfEffectAutoApply", {
+        name: "↳ Automatically Apply Effects",
+        hint: "Applies the effects named in the Auto-Apply Effects list directly to the source token. When off, those effects get a normal Apply button on the self-effect message instead.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "selfEffectAutoApplyEffects", {
         name: "↳ Auto-Apply Effects",
         hint: "A comma-separated list of Active Effect names (case-insensitive). Matching self effects are applied directly to the source token. The self-effect message is still posted with the effect marked as applied and an Undo button, and the effect tray of the activity's chat card is collapsed.",
