@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.108.1] - 2026-11-23
+### Fixed
+- **Circle of Power Automation**: With midi-qol, creatures in the aura wrongly took half damage on a failed save. They now take full damage, and still take none on a success. Creatures already in an aura get the fix when they re-enter it or the spell is cast again.
+
+## [14.108.0] - 2026-11-23
+### Added
+- **Evasion Automation**: Rogues, Monks, monsters and anyone else with Evasion now take no damage on a successful Dexterity save against damage that a save halves, and half damage on a failed one. It works in the damage tray, the Player Damage Prompt and with midi-qol, stops while the creature is Incapacitated, and a multiplier you pick by hand always wins.
+
 ## [14.107.0] - 2026-11-22
 ### Added
 - **Self Effect Application Prompt**: New *Automatically Apply Effects* sub-setting, on by default. Turn it off to get a normal Apply button for every self effect, without losing your Auto-Apply Effects list.

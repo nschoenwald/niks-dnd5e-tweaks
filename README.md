@@ -96,6 +96,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Magic Resistance Automation](#magic-resistance-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Circle of Power Automation](#circle-of-power-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Holy Aura Automation](#holy-aura-automation)** | Conditions & Effects | ✅ Enabled | No |
+| **[Evasion Automation](#evasion-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Death Ward Automation](#death-ward-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Companion Level Sync](#companion-level-sync)** | Conditions & Effects | ✅ Enabled | No |
 | **[Summon at Full HP](#summon-at-full-hp)** | Conditions & Effects | ✅ Enabled | No |
@@ -591,6 +592,14 @@ Creatures the caster protects with **Holy Aura** have Advantage on all saving th
 * **Recognized Effects**: effects from a spell with the identifier `holy-aura` (or named "Holy Aura"), effects named "Holy Protection" or "Holy Aura", and any effect with the flag `flags.niks-dnd5e-tweaks.holyAura`.
 * **Not Affected**: attacks with several targets at once (one roll can't have Disadvantage for some targets only).
 
+### Evasion Automation
+A creature with **Evasion** takes no damage when it succeeds on a Dexterity save against damage that a save halves, and only half damage when it fails.
+* **Who Benefits**: creatures with the Evasion or Leading Evasion feature (identifier `evasion` or `leading-evasion`), including monsters, and any creature with the flag `flags.niks-dnd5e-tweaks.evasion`. Not while Incapacitated or at 0 HP.
+* **Damage Tray**: the chat card's tray shows the reduced damage as soon as the creature has rolled its save. If you change the multiplier by hand, your choice wins.
+* **Player Damage Prompt**: creatures with Evasion get Half (failed save) and 0 (saved) buttons instead of Full and Half.
+* **Saves With a Choice of Ability**: the tray checks which ability the creature actually rolled. The Player Damage Prompt only adjusts its buttons for Dexterity-only saves.
+* **Not Automated**: Leading Evasion's option to share the benefit with creatures within 5 feet.
+
 ### Death Ward Automation
 The first time a creature under **Death Ward** would drop to 0 HP, it drops to 1 HP instead, the spell's effect is removed, and a chat message says so.
 * **Recognized Effects**: the effect the spell applies (named "Protection from Death" in the 2024 Player's Handbook, or "Death Ward"), effects that come from a spell with the identifier `death-ward`, and any effect that sets the flag `flags.niks-dnd5e-tweaks.deathWard`.
@@ -729,9 +738,10 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | **Ranged Attacks in Close Combat** | **Works** with midi-qol workflows. Switched off while midi-qol's optional *Nearby Foe* rule is on, which applies the same rule. midi-qol's `flags.midi-qol.ignoreNearbyFoes` is honoured when set to true. |
 | **Indomitable Might Automation** | **Works** with midi-qol saves and checks: the raised total decides whether the save succeeds. |
 | **Magic Resistance Automation** | **Works** with midi-qol save requests, covering Spell Resistance, Gnome Cunning and the Mantle of Spell Resistance, which midi-qol doesn't recognise. |
-| **Circle of Power Automation** | **Works** with midi-qol: Advantage on save requests, and midi-qol's *Super Saver* flag on the aura effect, so a successful save means no damage. |
+| **Circle of Power Automation** | **Works** with midi-qol: Advantage on save requests, and midi-qol's *Semi Super Saver* flag on the aura effect, so a successful save means no damage and a failed save still deals full damage. |
 | **Holy Aura Automation** | **Works** with midi-qol attacks and save requests. The Fiend/Undead save is started as a midi-qol workflow targeting the attacker. |
 | **Undead Fortitude Automation** | **Works** with midi-qol damage application, which has no Undead Fortitude handling of its own. Critical hits come from the midi-qol workflow. midi-qol's damage card may still show 0 HP for the creature while it is held at 1 HP. |
+| **Evasion Automation** | **Works** with midi-qol: creatures with Evasion count as its *Super Saver* on Dexterity saves, so midi-qol computes the damage. |
 | **Death Ward Automation** | **Works** with midi-qol damage application, which has no Death Ward handling of its own. midi-qol's damage card may still show 0 HP for the creature. |
 | **Retroactive Advantage / Disadvantage** | Not offered on midi-qol workflow cards, since midi-qol wouldn't re-check hits and saves. |
 | **Mage Slayer Concentration** | **Fully compatible** with midi-qol damage workflows and its concentration checks. |

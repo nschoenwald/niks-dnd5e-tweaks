@@ -1907,6 +1907,17 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableEvasion",
+                            introduced: "14.108.0",
+                            docs: "evasion-automation",
+                            keywords: ["Rogue", "Monk", "Dexterity", "save", "half damage", "no damage", "Super Saver"],
+                            name: "Evasion Automation",
+                            hint: "Creatures with Evasion take no damage on a successful Dexterity save against damage a save halves, and half damage on a failed one. Not while Incapacitated. Also works with midi-qol.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableDeathWard",
                             introduced: "14.66.0",
                             docs: "death-ward-automation",

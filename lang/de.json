@@ -224,6 +224,8 @@
   "ND5T.UndeadFortitude.SkippedRadiant": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen gleißenden Schaden.",
   "ND5T.UndeadFortitude.SkippedCritical": "{name} fällt auf 0 TP. {feature} wirkt nicht gegen einen kritischen Treffer.",
 
+  "ND5T.Evasion.PromptFailed": " (Entrinnen, Rettungswurf misslungen)",
+  "ND5T.Evasion.PromptSaved": " (Entrinnen, gerettet)",
   "ND5T.DeathWard.Triggered": "Todesschutz: {name} fällt auf 1 TP statt auf 0, und der Zauber endet.",
 
   "ND5T.CompanionLevelSync.Updated": "{companion} wurde an {summoner} angepasst.",

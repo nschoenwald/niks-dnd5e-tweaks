@@ -4,6 +4,7 @@
  * Advantage, and take no damage instead of half when they succeed on such a save.
  *
  * @introduced v14.105.0
+ * @updated v14.108.1 (midi-qol: failed saves keep full damage, using Semi Super Saver instead of Super Saver)
  */
 import { MODULE_ID, getSetting, debug, log } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -23,7 +24,8 @@ import { resolveSaveSource, classifyMagicSource } from "./magic-resistance.js";
  *  - DamageApplicationElement#getMergedOptions (6.0.6 and 6.1, public): when the damage tray would halve the
  *    damage of a magical source for a successful save, the multiplier becomes 0 for creatures with the effect.
  *    A multiplier the user picked by hand (whole tray or one target) is left alone.
- *  - midi-qol computes damage itself: the effect gets midi's `superSaver.all` flag instead (preCreateActiveEffect).
+ *  - midi-qol computes damage itself: the effect gets midi's `semiSuperSaver.all` flag instead (preCreateActiveEffect).
+ *    Not `superSaver`, which would also halve damage on a failed save (that is Evasion's rule, not this spell's).
  *
  * Versions without the region behavior (homebrew or imported items, matched by identifier): when the spell places
  * its area, the active GM attaches this module's own region behavior, a subclass of dnd5e's that creates the
@@ -186,11 +188,11 @@ function _wrapGetMergedOptions(wrapped, uuid, ...args) {
 
 // ── midi-qol ──────────────────────────────────────────────────────────
 
-/** midi-qol change: no damage instead of half on a successful save. */
-const MIDI_SUPER_SAVER = { key: "flags.midi-qol.superSaver.all", type: "override", value: "1", priority: 20 };
+/** midi-qol change: no damage instead of half on a successful save, full damage on a failed one. */
+const MIDI_SEMI_SUPER_SAVER = { key: "flags.midi-qol.semiSuperSaver.all", type: "override", value: "1", priority: 20 };
 
 /**
- * preCreateActiveEffect — give the aura effect midi-qol's Super Saver flag when midi computes the damage.
+ * preCreateActiveEffect — give the aura effect midi-qol's Semi Super Saver flag when midi computes the damage.
  * @param {ActiveEffect5e} effect
  */
 function _onPreCreateActiveEffect(effect) {
@@ -198,8 +200,8 @@ function _onPreCreateActiveEffect(effect) {
         if (!isMidiActive() || !getSetting("enableCircleOfPower")) return;
         if (!(effect.parent instanceof Actor) || !_isCircleEffect(effect)) return;
         const changes = Array.from(effect.system?.changes ?? []);
-        if (changes.some(c => c.key === MIDI_SUPER_SAVER.key)) return;
-        effect.updateSource({ "system.changes": [...changes, { ...MIDI_SUPER_SAVER }] });
+        if (changes.some(c => c.key === MIDI_SEMI_SUPER_SAVER.key)) return;
+        effect.updateSource({ "system.changes": [...changes, { ...MIDI_SEMI_SUPER_SAVER }] });
     } catch (err) {
         console.error(`${MODULE_ID} | Circle of Power: error while adding the midi-qol flag`, err);
     }
@@ -221,7 +223,7 @@ export function registerCircleOfPowerTypes() {
     class CircleOfPowerRegionBehaviorType extends Base {
         /** @override */
         async _getEffectsToCreate(_actor, _effects) {
-            const changes = isMidiActive() ? [{ ...MIDI_SUPER_SAVER }] : [];
+            const changes = isMidiActive() ? [{ ...MIDI_SEMI_SUPER_SAVER }] : [];
             return [{
                 name: game.i18n.localize("ND5T.CircleOfPower.EffectName"),
                 img: EFFECT_IMG,

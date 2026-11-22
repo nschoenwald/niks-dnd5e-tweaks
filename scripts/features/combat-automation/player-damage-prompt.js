@@ -6,11 +6,13 @@
  * @updated v14.56.4 (Attack damage prompt no longer skipped when the damage roll isn't linked to the usage message)
  * @updated v14.57.0 (Canvas target fallback only uses the GM's targets for the GM's own rolls)
  * @updated v14.59.0 (Applies and previews the damage card's "ignore resistance" options from D&D 5e 6.1; preview uses dnd5e's own calculation)
+ * @updated v14.108.0 (Evasion: offers Half / None for creatures with the feature)
  * @updated v14.71.1 (Visibility wrapper always chains, fixing the libWrapper conflict warning with Nik's Foundry Tweaks)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { midiAutoAppliesDamage, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
+import { evasionAppliesToActivity } from "./evasion.js";
 
 /**
  * Player Damage Prompt
@@ -1043,6 +1045,7 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         ?? (damageMessage.getFlag("dnd5e", "item.uuid") ? fromUuidSync(damageMessage.getFlag("dnd5e", "item.uuid")) : null);
     
     let hasHalfDamage = false;
+    let evasion = false;
     if (activityType === "save") {
         let activity = null;
         try {
@@ -1056,10 +1059,11 @@ async function _processTarget(target, attackRoll, attackMessage, damageMessage, 
         })();
         if (activity?.damage?.onSave === "half") {
             hasHalfDamage = true;
+            evasion = evasionAppliesToActivity(actor, activity);
         }
     }
     
-    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details, originatingMessage ?? damageMessage, damageMessage);
+    await _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperTargets, false, activityType, sourceItem, hasHalfDamage, details, originatingMessage ?? damageMessage, damageMessage, evasion);
     debug(`Player Damage Prompt |    ✓ Whisper sent for ${actor.name}`);
 }
 
@@ -1534,7 +1538,7 @@ async function _handleGrazeMastery(targetActor, tokenDoc, targetName, attackRoll
  * @param {ChatMessage|null} [originatingMessage=null]  The usage message the prompt belongs to.
  * @param {ChatMessage|null} [damageMessage=null]       The damage roll message, for its application options.
  */
-async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null, damageMessage = null) {
+async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCritical, damageByType, effectiveDamage, traitText, rawDamages, whisperUsers, grazeMode = false, activityType = "attack", sourceItem = null, hasHalfDamage = false, details = [], originatingMessage = null, damageMessage = null, evasion = false) {
     // Guard against empty whisper recipients (prevents accidental public broadcast)
     if (!whisperUsers?.length) {
         debug(`Player Damage Prompt | ✗ Aborting _sendDamagePrompt: no whisper recipients for ${actor?.name}`);
@@ -1555,7 +1559,7 @@ async function _sendDamagePrompt(actor, tokenDoc, tokenName, attackTotal, isCrit
     const damagesJson = JSON.stringify(rawDamages).replace(/'/g, "&#39;");
 
     // Build buttons HTML (shared between both layouts)
-    const buttonsHtml = _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode);
+    const buttonsHtml = _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode, evasion);
 
     // Choose layout based on setting
     const layout = getSetting("damagePromptLayout");
@@ -1625,8 +1629,29 @@ function _getActionInfo(damageByType, allHealing, allTempHP) {
  * Build the buttons HTML shared between both layouts.
  * @returns {string} HTML string for the buttons.
  */
-function _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode) {
+function _buildButtonsHtml(actor, damagesJson, effectiveDamage, actionWord, actionKey, iconFull, iconHalf, activityType, hasHalfDamage, grazeMode, evasion = false) {
     let buttonsHtml = '';
+    if (evasion) {
+        // Evasion: half on a failed save, nothing on a successful one
+        const failedLabel = game.i18n.format(actionKey, { amount: Math.floor(effectiveDamage / 2) });
+        const savedLabel = game.i18n.format(actionKey, { amount: 0 });
+        return `
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="0.5">
+                <i class="fas ${iconFull}"></i>
+                ${failedLabel}${game.i18n.localize("ND5T.Evasion.PromptFailed")}
+            </button>
+            <button data-action="nd5t-apply-damage"
+                    data-actor-uuid="${actor.uuid}"
+                    data-damages='${damagesJson}'
+                    data-multiplier="0">
+                <i class="fas ${iconHalf}"></i>
+                ${savedLabel}${game.i18n.localize("ND5T.Evasion.PromptSaved")}
+            </button>
+        `;
+    }
     if (activityType === "save") {
         const fullLabel = game.i18n.format(actionKey, { amount: effectiveDamage });
         const fullSuffix = hasHalfDamage ? game.i18n.localize("ND5T.DamagePrompt.ApplyFullSuffix") : "";
@@ -1943,7 +1968,7 @@ function _setPromptStateApplied(message, prompt, flagData) {
         if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
         button.disabled = true;
 
-        if (button.dataset.multiplier === "1" || buttons.length === 1) {
+        if (button === buttons[0]) {
             button.innerHTML = `<i class="fas fa-check"></i> ${appliedText}`;
 
             if (canUndo) {

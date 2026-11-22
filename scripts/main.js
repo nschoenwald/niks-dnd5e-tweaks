@@ -43,6 +43,7 @@ import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
 import { initCircleOfPower, registerCircleOfPowerTypes } from "./features/combat-automation/circle-of-power.js";
 import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./features/combat-automation/holy-aura.js";
+import { initEvasion } from "./features/combat-automation/evasion.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
@@ -1676,6 +1677,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableEvasion", {
+        name: "Evasion Automation",
+        hint: "Creatures with Evasion take no damage on a successful Dexterity save against damage a save halves, and half damage on a failed one.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableDeathWard", {
         name: "Death Ward Automation",
         hint: "The first time a creature under Death Ward would drop to 0 HP, it drops to 1 HP instead and the spell ends.",
@@ -2060,6 +2071,7 @@ Hooks.once("setup", () => {
     initMagicResistance();
     initCircleOfPower();
     initHolyAura();
+    initEvasion();
     // Before Undead Fortitude: a creature with both keeps 1 HP from the ward without rolling
     initDeathWard();
     initCompanionLevelSync();
