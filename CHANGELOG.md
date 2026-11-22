@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.106.3] - 2026-11-22
+### Changed
+- **French translation**: 15 more strings reviewed by Kameleau, including Reckless Attack, Genie's Wrath and the Sneak Attack reasons. Four Damage Emanation texts show in English until their updated French has been reviewed.
+
 ## [14.106.2] - 2026-11-21
 ### Changed
 - **Faster loading**: The module now ships as one compact script file instead of 87 separate ones, so the game loads a little faster, most noticeably for players connecting over the internet.
