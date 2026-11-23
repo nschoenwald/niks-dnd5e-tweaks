@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.109.0] - 2026-11-23
+### Added
+- **Level Change Resources**: Leveling up now follows the rules. New spell slots are ready to use instead of starting expended, new casters no longer need a Long Rest before their first spell, and HP gained from Constitution or Tough is added to current HP. Losing a level removes spent slots, Hit Dice and uses first, keeps damage taken, and no longer knocks a conscious character to 0 HP. On by default.
+
 ## [14.108.1] - 2026-11-23
 ### Fixed
 - **Circle of Power Automation**: With midi-qol, creatures in the aura wrongly took half damage on a failed save. They now take full damage, and still take none on a success. Creatures already in an aura get the fix when they re-enter it or the spell is cast again.

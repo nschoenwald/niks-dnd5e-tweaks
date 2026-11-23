@@ -1940,6 +1940,17 @@ export function getSettingsSchema() {
                             scope: "world"
                         },
                         {
+                            key: "enableLevelChangeResources",
+                            introduced: "14.109.0",
+                            docs: "level-change-resources",
+                            keywords: ["level up", "level down", "spell slots", "Pact Magic", "hit points", "Hit Dice", "uses", "Constitution", "Tough", "advancement"],
+                            name: "Level Change Resources",
+                            hint: "When a character gains or loses levels, new spell slots are ready to use, HP gained from the level, Constitution or Tough is added to current HP, and spent resources stay spent. Lost levels remove spent slots, Hit Dice and uses first, keep damage taken and never drop a conscious character to 0 HP.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
                             key: "enableSummonFullHp",
                             introduced: "14.87.0",
                             docs: "summon-at-full-hp",

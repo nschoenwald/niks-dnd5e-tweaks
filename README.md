@@ -99,6 +99,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Evasion Automation](#evasion-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Death Ward Automation](#death-ward-automation)** | Conditions & Effects | ✅ Enabled | No |
 | **[Companion Level Sync](#companion-level-sync)** | Conditions & Effects | ✅ Enabled | No |
+| **[Level Change Resources](#level-change-resources)** | Conditions & Effects | ✅ Enabled | No |
 | **[Summon at Full HP](#summon-at-full-hp)** | Conditions & Effects | ✅ Enabled | No |
 | **[Auto-End Concentration](#auto-end-concentration--class-features)** | Conditions & Effects | ✅ Enabled | No |
 | **[Damage Emanation Automation](#damage-emanation-automation)** | Conditions & Effects | ✅ Prompt Caster | No |
@@ -615,6 +616,14 @@ D&D 5e works out a summoned companion's bonuses (from the summoner's level, abil
 * **Spells aren't changed**: summons from spells such as *Find Steed* scale with the level the spell was cast at, which only the cast knows.
 * **Left as they are**: temporary hit points, the size and creature type picked when summoning, bonuses that roll dice, and bonus AC on companions with a flat AC value. Summon the companion again to update those.
 * **Permissions**: the update is made by the player or GM whose change triggered it, and only for companions they own.
+
+### Level Change Resources
+D&D 5e left new spell slots expended after a level-up, so a caster at 3 / 3 became 3 / 4 and a new character had no slots until a Long Rest. The 2024 DMG says a character leveling up outside a Long Rest gains the new slots and HP without regaining what was already expended. This tweak applies that to every level change.
+* **Gaining levels**: new spell slots and Pact Magic slots are ready to use. Expended slots stay expended, so 1 / 3 becomes 2 / 4.
+* **Hit points**: current HP rises by as much as maximum HP, including retroactive gains from Constitution and Tough. Damage taken stays.
+* **Losing levels**: spent slots, Hit Dice and limited uses are removed first, so 3 / 5 becomes 3 / 4. Damage taken stays, and a conscious character never drops to 0 HP from losing a level.
+* **Temporary slots** above the maximum are kept. Slot counts changed by hand aren't touched.
+* **When**: the level-up window, a class level changed directly, and classes or subclasses added or removed, including with advancements disabled.
 
 ### Summon at Full HP
 Companions that keep one actor between summons (linked actors, such as the Player's Handbook Primal Companions and Otherworldly Steeds) used to arrive with whatever hit points that actor had. A Primal Companion's first summon showed 5 / 20 HP, because D&D 5e raised its maximum but not its current hit points, and a companion summoned again kept the damage from last time. Now every summon arrives at full hit points, including the HP its summon adds.

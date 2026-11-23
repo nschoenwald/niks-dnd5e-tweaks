@@ -46,6 +46,7 @@ import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./featur
 import { initEvasion } from "./features/combat-automation/evasion.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
+import { initLevelChangeResources } from "./features/utilities/level-change-resources.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
@@ -1717,6 +1718,16 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableLevelChangeResources", {
+        name: "Level Change Resources",
+        hint: "When a character gains or loses levels, new spell slots and hit points are available, expended resources stay expended and damage taken stays.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableAutoEndConcentration", {
         name: "Auto-End Concentration",
         hint: "Automatically ends all concentration effects from a token when it becomes incapacitated, unconscious, dead, paralyzed, petrified, or stunned.",
@@ -2075,6 +2086,7 @@ Hooks.once("setup", () => {
     // Before Undead Fortitude: a creature with both keeps 1 HP from the ward without rolling
     initDeathWard();
     initCompanionLevelSync();
+    initLevelChangeResources();
     initUndeadFortitude();
     initSelfEffectApplication();
     initSaveGatedEffects();
