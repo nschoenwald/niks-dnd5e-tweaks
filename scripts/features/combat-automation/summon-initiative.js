@@ -24,6 +24,23 @@
  *
  * Manual override: a GM typing a different number releases the creature (flag `summonInitiativeReleased`), so it stays
  * where it was put and can roll. Resetting its initiative makes it follow again.
+ *
+ * @updated v14.111.0 (Shared Companion Turns)
+ *
+ * Shared Companion Turns (`getSharedTurnLeader`): companions whose rules say they act *during* the summoner's turn
+ * (`sharedTurnItems`) don't get a turn of their own. Both combatants stay in `Combat#turns`, so turn numbers never
+ * shift, and the summoner stays `combat.combatant`:
+ * - Turn changes that land on the companion are redirected in `preUpdateCombat` (covers Next Turn, Previous Turn,
+ *   rounds and direct updates). A defeated summoner gets skipped by core, so its companion then has a normal turn.
+ * - Core walks over skipped turns and would fire the companion's start and end together when the summoner's turn
+ *   ends, ending e.g. its Dodge at once. Those calls are dropped, and `_onStartTurn` / `_onEndTurn` of the summoner run
+ *   the companion's events and region events right after its own.
+ * - dnd5e's "start/end of the target's or source's turn" expiries compare against `combat.combatant`, which is never
+ *   the companion. `isExpiryEvent` falls back to the summoner's turn edge. Core's own expiries already work: effects
+ *   applied during the shared turn record the summoner as their start combatant.
+ * - Turn marker, tracker row and `nextCombatant` follow. `isSharedTurn` is the check for "whose turn" code here.
+ * - midi-qol counts an attack made outside `combat.combatant`'s turn as an opportunity attack that spends the Reaction,
+ *   so the companion's non-reaction attacks during the shared turn pass its `notReaction` option.
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -40,27 +57,60 @@ export const DEFAULT_SUMMON_INITIATIVE_ITEMS = [
     "summon-plant", "summon-undead", "vestige-companion", "yellow-elemental-gem"
 ].join(", ");
 
+/** Official items whose rules say the creature acts during the summoner's turn. */
+export const DEFAULT_SHARED_TURN_ITEMS = "primal-companion, reanimated-companion, steel-defender, vestige-companion";
+
 const RELEASED_FLAG = "summonInitiativeReleased";
 const SYNC_OPTION = "nd5tSummonInitiative";
+const SHARED_CONTEXT = "nd5tSharedTurn";
+const BODY_CLASS = "nd5t-shared-companion-turns";
 
-let _listSource = null;
-let _listIds = new Set();
+/** @type {Map<string, {source: string, ids: Set<string>}>} Parsed list settings. */
+const _lists = new Map();
 
 /** @type {Set<Combat>} Combats waiting for a sync. */
 const _pendingSyncs = new Set();
 let _syncChain = Promise.resolve();
 
 /**
- * The configured item identifiers.
+ * The item identifiers of a list setting.
+ * @param {string} key
  * @returns {Set<string>}
  */
-function _followerItems() {
-    const source = getSetting("summonInitiativeItems") ?? "";
-    if (source !== _listSource) {
-        _listSource = source;
-        _listIds = new Set(String(source).split(",").map(s => s.trim().toLowerCase()).filter(Boolean));
+function _itemList(key) {
+    const source = String(getSetting(key) ?? "");
+    let list = _lists.get(key);
+    if (list?.source !== source) {
+        list = { source, ids: new Set(source.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)) };
+        _lists.set(key, list);
     }
-    return _listIds;
+    return list.ids;
+}
+
+/**
+ * The item that summoned this combatant's actor.
+ * @param {Combatant} combatant
+ * @returns {Item5e|null}
+ */
+function _summonItem(combatant) {
+    const origin = combatant.actor?.getFlag("dnd5e", "summon.origin");
+    if (typeof origin !== "string") return null;
+    try {
+        const item = fromUuidSync(origin, { strict: false });
+        return item?.documentName === "Item" ? item : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Whether an item's summons share the summoner's turn.
+ * @param {Item5e} item
+ * @returns {boolean}
+ */
+function _isSharedItem(item) {
+    return Boolean(getSetting("enableSharedCompanionTurns"))
+        && _itemList("sharedTurnItems").has(item.identifier?.toLowerCase());
 }
 
 /**
@@ -81,16 +131,9 @@ export function getSummonLeader(combatant) {
     if (!getSetting("enableSummonInitiative") || !_isEligible(combatant)) return null;
     if (combatant.getFlag(MODULE_ID, RELEASED_FLAG)) return null;
 
-    const origin = combatant.actor.getFlag("dnd5e", "summon.origin");
-    if (typeof origin !== "string") return null;
-
-    let item;
-    try {
-        item = fromUuidSync(origin, { strict: false });
-    } catch {
-        return null;
-    }
-    if (item?.documentName !== "Item" || !_followerItems().has(item.identifier?.toLowerCase())) return null;
+    const item = _summonItem(combatant);
+    if (!item) return null;
+    if (!_itemList("summonInitiativeItems").has(item.identifier?.toLowerCase()) && !_isSharedItem(item)) return null;
 
     const summoner = item.actor;
     if (!summoner || summoner === combatant.actor) return null;
@@ -107,6 +150,68 @@ export function getSummonLeader(combatant) {
     if (summoner.isToken) return null;
     const copies = others.filter(c => (c.actorId === summoner.id) && !c.token?.actorLink);
     return copies.length === 1 ? copies[0] : null;
+}
+
+/**
+ * The combatant whose turn this companion shares. Null while that combatant is defeated: core skips its turn then, so
+ * the companion acts on a turn of its own.
+ * @param {Combatant} combatant
+ * @returns {Combatant|null}
+ */
+export function getSharedTurnLeader(combatant) {
+    if (!combatant || !getSetting("enableSummonInitiative") || !getSetting("enableSharedCompanionTurns")) return null;
+    const item = _summonItem(combatant);
+    if (!item || !_isSharedItem(item)) return null;
+    const leader = getSummonLeader(combatant);
+    return (leader && !leader.isDefeated) ? leader : null;
+}
+
+/**
+ * The companions sharing a combatant's turn, including companions of those companions.
+ * @param {Combat} combat
+ * @param {Combatant} leader
+ * @returns {Combatant[]}
+ */
+export function getSharedTurnFollowers(combat, leader) {
+    if (!leader || !getSetting("enableSummonInitiative") || !getSetting("enableSharedCompanionTurns")) return [];
+    const followers = [];
+    const seen = new Set([leader.id]);
+    const collect = id => {
+        for (const combatant of combat.turns ?? []) {
+            if (seen.has(combatant.id) || (getSharedTurnLeader(combatant)?.id !== id)) continue;
+            seen.add(combatant.id);
+            followers.push(combatant);
+            collect(combatant.id);
+        }
+    };
+    collect(leader.id);
+    return followers;
+}
+
+/**
+ * The companion of this actor that is acting in the current shared turn.
+ * @param {Combat} combat
+ * @param {Actor5e} actor
+ * @param {TokenDocument|null} [token]
+ * @returns {Combatant|null}
+ */
+export function getSharedTurnCombatant(combat, actor, token = null) {
+    if (!combat?.started || !combat.combatant || !actor) return null;
+    return getSharedTurnFollowers(combat, combat.combatant).find(c => {
+        if (token?.id && c.tokenId) return c.tokenId === token.id;
+        return (c.actor === actor) || (c.actor?.uuid === actor.uuid);
+    }) ?? null;
+}
+
+/**
+ * Whether this actor is a companion acting in the current shared turn.
+ * @param {Combat} combat
+ * @param {Actor5e} actor
+ * @param {TokenDocument|null} [token]
+ * @returns {boolean}
+ */
+export function isSharedTurn(combat, actor, token = null) {
+    return Boolean(getSharedTurnCombatant(combat, actor, token));
 }
 
 /**
@@ -201,12 +306,30 @@ function _wrapRollInitiative(wrapped, ids, ...args) {
     const kept = requested.filter(id => !getSummonLeader(this.combatants.get(id)));
     if (kept.length === requested.length) return wrapped(ids, ...args);
 
-    if (requested.length === 1) {
+    // Nothing left to roll: say why, or the button (Carolingian UI keeps Roll NPCs visible for these) seems dead
+    if (!kept.length) {
         const combatant = this.combatants.get(requested[0]);
         _notifyBlocked(combatant, getSummonLeader(combatant));
+        return Promise.resolve(this);
     }
-    if (!kept.length) return Promise.resolve(this);
     return wrapped(kept, ...args);
+}
+
+/**
+ * Wrapper for Combatant5e#getGroupingKey and #getInitiativeGroupingKey. dnd5e groups matching unlinked tokens wherever
+ * they are in the order and draws the group at its first member (Carolingian UI flattens it there too), which could
+ * pull a summon away from its summoner. An independent copy could also take its initiative from a follower. Followers
+ * therefore only group with followers of the same leader.
+ * @this {Combatant}
+ * @param {Function} wrapped
+ * @param {...*} args
+ * @returns {string|null}
+ */
+function _wrapGroupingKey(wrapped, ...args) {
+    const key = wrapped(...args);
+    if ((key === null) || (key === undefined) || this.group) return key;
+    const leader = getSummonLeader(this);
+    return leader ? `${key}:follows:${leader.id}` : key;
 }
 
 /**
@@ -322,22 +445,307 @@ function _onRenderCombatTracker(app, element) {
         icon.setAttribute("aria-label", label);
         button.replaceWith(icon);
     }
+
+    // Shared turns: nested under the summoner, active together
+    const shared = Boolean(getSetting("enableSummonInitiative") && getSetting("enableSharedCompanionTurns"));
+    document.body.classList.toggle(BODY_CLASS, shared);
+    if (shared) _refreshSharedRows(element, combat);
+}
+
+/**
+ * Mark companion rows. Uses its own class rather than core's `.active`: Carolingian UI's carousel moves a single
+ * `.active` between cards (a second one would stay behind) and resizes the card that has it. It also skips tracker
+ * renders while animating and shows cloned cards (`data-clone-source-id`), so this runs on turn changes too.
+ * @param {ParentNode} root
+ * @param {Combat} combat
+ */
+function _refreshSharedRows(root, combat) {
+    const acting = new Set(getSharedTurnFollowers(combat, combat.combatant).map(c => c.id));
+    for (const row of root.querySelectorAll("li.combatant")) {
+        const id = row.dataset.combatantId ?? row.dataset.cloneSourceId;
+        if (!id) continue;
+        const isShared = Boolean(getSharedTurnLeader(combat.combatants.get(id)));
+        row.classList.toggle("nd5t-shared-turn", isShared);
+        row.classList.toggle("nd5t-shared-active", isShared && combat.started && acting.has(id));
+    }
+}
+
+/**
+ * Wrapper for Combat#nextTurn: when only companions are left in the round, start the next round properly, so its hooks
+ * and midi-qol's initiative reroll run. Redirecting the turn in preUpdateCombat would come too late for those.
+ * @this {Combat}
+ * @param {Function} wrapped
+ * @param {...*} args
+ * @returns {Promise<Combat>}
+ */
+function _wrapNextTurn(wrapped, ...args) {
+    if ((this.round === 0) || !this.turns?.length) return wrapped(...args);
+    const remaining = this.turns.slice((this.turn ?? -1) + 1)
+        .filter(c => !(this.settings.skipDefeated && c.isDefeated));
+    if (remaining.length && remaining.every(c => getSharedTurnLeader(c))) return this.nextRound();
+    return wrapped(...args);
+}
+
+/**
+ * Keep turn changes off companions that share a turn.
+ * @param {Combat} combat
+ * @param {object} changed
+ * @param {object} options
+ */
+function _onPreUpdateCombat(combat, changed, options) {
+    try {
+        if ((typeof changed.turn !== "number") || ((changed.round ?? combat.round) === 0)) return;
+        const leader = getSharedTurnLeader(combat.turns?.[changed.turn]);
+        if (!leader) return;
+
+        const round = changed.round ?? combat.round;
+        const roundDelta = round - (combat.round ?? 0);
+        const direction = options.direction ?? (roundDelta || ((changed.turn >= (combat.turn ?? 0)) ? 1 : -1));
+
+        // Going back, or arriving in a new round: the shared turn itself
+        if ((direction < 0) || (roundDelta > 0)) changed.turn = combat.turns.indexOf(leader);
+        else {
+            const usable = c => !getSharedTurnLeader(c) && !(combat.settings.skipDefeated && c.isDefeated);
+            let next = -1;
+            for (let i = changed.turn + 1; i < combat.turns.length; i++) {
+                if (usable(combat.turns[i])) {
+                    next = i;
+                    break;
+                }
+            }
+            if (next < 0) {
+                changed.round = round + 1;
+                next = Math.max(combat.turns.findIndex(usable), 0);
+            }
+            changed.turn = next;
+        }
+
+        if (options.worldTime) {
+            options.worldTime.delta = combat.getTimeDelta(combat.round, combat.turn, changed.round ?? round, changed.turn);
+        }
+    } catch (err) {
+        console.error(`${MODULE_ID} | Shared Companion Turns: failed to redirect the turn:`, err);
+    }
+}
+
+/**
+ * Run a turn event for the companions of the combatant it just ran for.
+ * @param {Combat} combat
+ * @param {Combatant} leader
+ * @param {object} context
+ * @param {"_onStartTurn"|"_onEndTurn"} method
+ * @param {string} regionEvent
+ */
+async function _runSharedEvents(combat, leader, context, method, regionEvent) {
+    for (const follower of getSharedTurnFollowers(combat, leader)) {
+        if (combat.settings.skipDefeated && follower.isDefeated) continue;
+        const sharedContext = { ...context, [SHARED_CONTEXT]: true };
+        try {
+            await combat[method](follower, sharedContext);
+            const token = follower.token;
+            if (!token) continue;
+            await Promise.allSettled(Array.from(token.regions ?? [], region => region._triggerEvent(regionEvent, {
+                token, combatant: follower, combat, ...sharedContext
+            })));
+        } catch (err) {
+            console.error(`${MODULE_ID} | Shared Companion Turns: ${method} failed for ${follower.name}:`, err);
+        }
+    }
+}
+
+/**
+ * Wrapper for Combat#_onStartTurn.
+ * @this {Combat}
+ * @param {Function} wrapped
+ * @param {Combatant} combatant
+ * @param {object} [context]
+ * @param {...*} args
+ */
+async function _wrapOnStartTurn(wrapped, combatant, context = {}, ...args) {
+    if (!context[SHARED_CONTEXT] && getSharedTurnLeader(combatant)) return;
+    await wrapped(combatant, context, ...args);
+    if (!context[SHARED_CONTEXT]) {
+        await _runSharedEvents(this, combatant, context, "_onStartTurn", CONST.REGION_EVENTS.TOKEN_TURN_START);
+    }
+}
+
+/**
+ * Wrapper for Combat#_onEndTurn.
+ * @this {Combat}
+ * @param {Function} wrapped
+ * @param {Combatant} combatant
+ * @param {object} [context]
+ * @param {...*} args
+ */
+async function _wrapOnEndTurn(wrapped, combatant, context = {}, ...args) {
+    if (!context[SHARED_CONTEXT] && getSharedTurnLeader(combatant)) return;
+    await wrapped(combatant, context, ...args);
+    if (!context[SHARED_CONTEXT]) {
+        await _runSharedEvents(this, combatant, context, "_onEndTurn", CONST.REGION_EVENTS.TOKEN_TURN_END);
+    }
+}
+
+/**
+ * Wrapper for RegionDocument#_triggerEvent: drops core's turn events for a companion, which ran with its summoner.
+ * @this {RegionDocument}
+ * @param {Function} wrapped
+ * @param {string} eventName
+ * @param {object} eventData
+ * @param {...*} args
+ * @returns {Promise<void>}
+ */
+function _wrapRegionEvent(wrapped, eventName, eventData, ...args) {
+    const isTurnEvent = (eventName === CONST.REGION_EVENTS.TOKEN_TURN_START)
+        || (eventName === CONST.REGION_EVENTS.TOKEN_TURN_END);
+    if (isTurnEvent && !eventData?.[SHARED_CONTEXT] && getSharedTurnLeader(eventData?.combatant)) {
+        return Promise.resolve();
+    }
+    return wrapped(eventName, eventData, ...args);
+}
+
+/**
+ * Wrapper for ActiveEffect5e#isExpiryEvent: "start/end of its turn" expiries of a companion follow the shared turn.
+ * @this {ActiveEffect5e}
+ * @param {Function} wrapped
+ * @param {string} event
+ * @param {object} [context]
+ * @returns {boolean}
+ */
+function _wrapIsExpiryEvent(wrapped, event, context = {}) {
+    const result = wrapped(event, context);
+    if (result) return result;
+    const special = this.specialDuration;
+    if (!special || !this.start?.combat) return result;
+
+    const isStart = special.endsWith("Start");
+    if (event !== (isStart ? "turnStart" : "turnEnd")) return result;
+    const combat = context.combat ?? game.combat;
+    if (combat !== this.start.combat) return result;
+
+    const origin = special.startsWith("target") ? this.actor : this.getSourceActor();
+    const [combatant] = combat.getCombatantsByActor(origin);
+    const leader = getSharedTurnLeader(combatant);
+    if (!leader) return result;
+
+    // Core also refreshes for each skipped turn, so only the summoner's own turn number counts
+    const onLeaderEdge = isStart ? (combat.combatant === leader) : (combat.previous?.combatantId === leader.id);
+    if (!onLeaderEdge || (context.turn !== combat.turns.indexOf(leader))) return result;
+    return (this.start.round !== context.round) || (this.start.turn !== context.turn);
+}
+
+/**
+ * Wrapper for the Combat#nextCombatant getter.
+ * @this {Combat}
+ * @param {Function} wrapped
+ * @param {...*} args
+ * @returns {Combatant|null}
+ */
+function _wrapNextCombatant(wrapped, ...args) {
+    const next = wrapped(...args);
+    if (!getSharedTurnLeader(next)) return next;
+    const turn = this.turn ?? -1;
+    for (let i = 1; i <= this.turns.length; i++) {
+        const candidate = this.turns[(turn + i) % this.turns.length];
+        if (getSharedTurnLeader(candidate)) continue;
+        if (!this.settings.skipDefeated || !candidate.isDefeated) return candidate;
+    }
+    return next;
+}
+
+/**
+ * Wrapper for Combat#_updateTurnMarkers: refresh the markers of companions in the current turn.
+ * @this {Combat}
+ * @param {Function} wrapped
+ * @param {...*} args
+ * @returns {*}
+ */
+function _wrapUpdateTurnMarkers(wrapped, ...args) {
+    const result = wrapped(...args);
+    if (canvas.ready && this.isView) {
+        for (const follower of getSharedTurnFollowers(this, this.combatant)) {
+            follower.token?.object?.renderFlags.set({ refreshTurnMarker: true });
+        }
+    }
+    return result;
+}
+
+/**
+ * Wrapper for Token#_refreshTurnMarker: core shows the marker for the current combatant's token, so that combatant
+ * briefly reports the companion's token (the approach Legendary Action Placeholders uses too).
+ * @this {Token}
+ * @param {Function} wrapped
+ * @param {...*} args
+ * @returns {*}
+ */
+function _wrapRefreshTurnMarker(wrapped, ...args) {
+    const combat = game.combat;
+    const current = combat?.combatant;
+    if (!combat?.started || !current || (current.tokenId === this.id)
+        || !getSharedTurnFollowers(combat, current).some(c => c.tokenId === this.id)) return wrapped(...args);
+
+    const descriptor = Object.getOwnPropertyDescriptor(current, "tokenId");
+    Object.defineProperty(current, "tokenId", { value: this.id, configurable: true, writable: true });
+    try {
+        return wrapped(...args);
+    } finally {
+        if (descriptor) Object.defineProperty(current, "tokenId", descriptor);
+        else delete current.tokenId;
+    }
+}
+
+/**
+ * Wrapper for the attack activity's use with midi-qol: a companion's attack in its shared turn isn't a reaction.
+ * @this {Activity}
+ * @param {Function} wrapped
+ * @param {object} [usage]
+ * @param {...*} args
+ * @returns {Promise<*>}
+ */
+function _wrapAttackUse(wrapped, usage = {}, ...args) {
+    if ((this.activation?.type !== "reaction") && isSharedTurn(game.combat, this.actor, this.actor?.token ?? null)) {
+        usage = {
+            ...usage,
+            midiOptions: {
+                ...usage.midiOptions,
+                workflowOptions: { ...usage.midiOptions?.workflowOptions, notReaction: true }
+            }
+        };
+    }
+    return wrapped(usage, ...args);
 }
 
 export function initSummonInitiative() {
     patchMethod("CONFIG.Combat.documentClass.prototype.setupTurns", _wrapSetupTurns, "WRAPPER");
     patchMethod("CONFIG.Combat.documentClass.prototype.rollInitiative", _wrapRollInitiative, "MIXED");
     patchMethod("CONFIG.Actor.documentClass.prototype.rollInitiativeDialog", _wrapRollInitiativeDialog, "MIXED");
+    patchMethod("CONFIG.Combatant.documentClass.prototype.getGroupingKey", _wrapGroupingKey, "WRAPPER");
+    patchMethod("CONFIG.Combatant.documentClass.prototype.getInitiativeGroupingKey", _wrapGroupingKey, "WRAPPER");
+    patchMethod("CONFIG.Combat.documentClass.prototype._onStartTurn", _wrapOnStartTurn, "MIXED");
+    patchMethod("CONFIG.Combat.documentClass.prototype._onEndTurn", _wrapOnEndTurn, "MIXED");
+    patchMethod("CONFIG.Combat.documentClass.prototype.nextCombatant#get", _wrapNextCombatant, "WRAPPER");
+    patchMethod("Combat.prototype.nextTurn", _wrapNextTurn, "MIXED");
+    patchMethod("Combat.prototype._updateTurnMarkers", _wrapUpdateTurnMarkers, "MIXED");
+    patchMethod("CONFIG.Token.objectClass.prototype._refreshTurnMarker", _wrapRefreshTurnMarker, "WRAPPER");
+    patchMethod("CONFIG.ActiveEffect.documentClass.prototype.isExpiryEvent", _wrapIsExpiryEvent, "WRAPPER");
+    patchMethod("CONFIG.Region.documentClass.prototype._triggerEvent", _wrapRegionEvent, "MIXED");
+
+    // Before Legendary Action Placeholders' hook, which may move the turn on from where this one lands
+    Hooks.on("preUpdateCombat", _onPreUpdateCombat);
 
     Hooks.on("createCombatant", combatant => _queueSync(combatant.parent));
     Hooks.on("deleteCombatant", combatant => _queueSync(combatant.parent));
     Hooks.on("updateCombatant", _onUpdateCombatant);
     Hooks.on("updateCombat", (combat, changed) => {
         if (changed.combatants) _queueSync(combat); // midi-qol's per-round reroll
+        if (combat.isView && (("turn" in changed) || ("round" in changed))) _refreshSharedRows(document, combat);
     });
     Hooks.on("combatStart", combat => _queueSync(combat));
     Hooks.on("renderCombatTracker", _onRenderCombatTracker);
     Hooks.once("ready", () => {
+        // midi-qol swaps the activity classes before this point
+        if (game.modules.get("midi-qol")?.active) {
+            patchMethod("CONFIG.DND5E.activityTypes.attack.documentClass.prototype.use", _wrapAttackUse, "WRAPPER");
+        }
         for (const combat of game.combats) _queueSync(combat);
     });
 

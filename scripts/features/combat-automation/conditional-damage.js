@@ -24,6 +24,7 @@
  *   Beyond, Power Surge, Dreaded Necrosis, Perfect Poisoner; healing rolls and feature damage rolls are considered)
  * @updated v14.104.0 (World of Warcraft: Fury of the Small, Touch of the Grave, Death and Decay, Touch of the Void,
  *   Havoc, Rain of Fire, Combo Strikes with a per-target melee hit counter)
+ * @updated v14.111.0 (a companion sharing its summoner's turn counts as attacking on its own turn)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -32,6 +33,7 @@ import { isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
 import { areTokensWithin } from "../../utils/token-distance.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
 import { isActorReckless } from "./reckless-attack.js";
+import { isSharedTurn } from "./summon-initiative.js";
 
 /**
  * Registry of static conditional damage bonus definitions.
@@ -970,6 +972,11 @@ export function isAttackerCombatTurn(actor, token = null) {
 
         const currentCombatant = combat.combatant;
         if (!currentCombatant) return false;
+
+        // A companion acting in its summoner's turn
+        if (isSharedTurn(combat, actor, (token instanceof foundry.documents.TokenDocument) ? token : (token?.document ?? null))) {
+            return true;
+        }
 
         const tokenDoc = (token instanceof foundry.documents.TokenDocument)
             ? token

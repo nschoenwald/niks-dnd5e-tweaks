@@ -19,7 +19,7 @@
 import { DEFAULT_HIDDEN_STATUSES, isSystemCondition } from "./features/canvas-tokens/condition-hud.js";
 import { overrideSchemaChoices } from "./utils/personal-override.js";
 import { findLanguageKey, getLanguageGroups } from "./features/utilities/language-filter.js";
-import { DEFAULT_SUMMON_INITIATIVE_ITEMS } from "./features/combat-automation/summon-initiative.js";
+import { DEFAULT_SUMMON_INITIATIVE_ITEMS, DEFAULT_SHARED_TURN_ITEMS } from "./features/combat-automation/summon-initiative.js";
 
 /**
  * @returns {object[]} The tabs of this module's dashboard schema.
@@ -1089,6 +1089,29 @@ export function getSettingsSchema() {
                             default: DEFAULT_SUMMON_INITIATIVE_ITEMS,
                             scope: "world",
                             parentKey: "enableSummonInitiative"
+                        },
+                        {
+                            key: "enableSharedCompanionTurns",
+                            introduced: "14.111.0",
+                            docs: "summon-initiative",
+                            keywords: ["Beast Master", "Primal Companion", "Steel Defender", "shared turn", "combat tracker"],
+                            name: "Shared Companion Turns",
+                            hint: "Companions whose rules say they act during your turn share it instead of getting their own: one Next Turn moves past both, and both show the turn marker. If the summoner is defeated, the companion gets its own turn.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableSummonInitiative"
+                        },
+                        {
+                            key: "sharedTurnItems",
+                            introduced: "14.111.0",
+                            name: "Companions That Share a Turn",
+                            list: true,
+                            hint: "Identifiers of the features whose summoned creatures act during their summoner's turn. Add homebrew companions here.",
+                            type: "String",
+                            default: DEFAULT_SHARED_TURN_ITEMS,
+                            scope: "world",
+                            parentKey: "enableSharedCompanionTurns"
                         },
                         {
                             key: "enableLegendaryActionPlaceholders",

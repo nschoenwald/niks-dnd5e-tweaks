@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.111.0] - 2026-11-23
+### Added
+- **Shared Companion Turns**: Companions that act during your turn, such as a Beast Master's Primal Companion or an Artificer's Steel Defender, now share your turn instead of getting their own. One Next Turn moves past both, both tokens show the turn marker, and the companion's start and end of turn effects happen with yours. If the summoner is defeated, the companion gets its own turn again. Works with the Carolingian UI combat tracker. On by default.
+
+### Fixed
+- **Summon Initiative**: A summon no longer gets grouped with a matching creature elsewhere in the tracker, which could pull it away from its summoner. Carolingian UI's carousel now shows a centered link icon on summons waiting for their summoner's initiative, and Roll NPCs explains why nothing rolled when only those summons are left.
+
 ## [14.110.0] - 2026-11-23
 ### Added
 - **Summon Initiative**: Summons and companions that act with their summoner, such as the Summon spells, Animate Objects, Find Steed, Primal Companion and Steel Defender, now use their summoner's initiative and take their turn right after them. This works for creatures summoned during combat and those already on the scene. They no longer roll their own initiative, including through Roll All. GMs can add homebrew summons to the list, or type a different number in the tracker to release a creature. On by default.

@@ -46,7 +46,7 @@ import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./featur
 import { initEvasion } from "./features/combat-automation/evasion.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
-import { initSummonInitiative, DEFAULT_SUMMON_INITIATIVE_ITEMS } from "./features/combat-automation/summon-initiative.js";
+import { initSummonInitiative, DEFAULT_SUMMON_INITIATIVE_ITEMS, DEFAULT_SHARED_TURN_ITEMS } from "./features/combat-automation/summon-initiative.js";
 import { initLevelChangeResources } from "./features/utilities/level-change-resources.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
@@ -1726,6 +1726,26 @@ Hooks.once("init", () => {
         config: false,
         type: String,
         default: DEFAULT_SUMMON_INITIATIVE_ITEMS,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "enableSharedCompanionTurns", {
+        name: "Shared Companion Turns",
+        hint: "Companions that act during their summoner's turn share that turn instead of having their own.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "sharedTurnItems", {
+        name: "Companions That Share a Turn",
+        hint: "Identifiers of the items whose summoned creatures act during their summoner's turn.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: DEFAULT_SHARED_TURN_ITEMS,
         restricted: true
     });
 

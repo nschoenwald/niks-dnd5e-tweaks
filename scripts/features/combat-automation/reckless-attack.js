@@ -12,11 +12,13 @@
  * @updated v14.80.1 (dnd5e's "start of next turn" effect expiry; the effect is also added out of combat)
  * @updated v14.85.0 (exports isActorReckless for Frenzy)
  * @updated v14.102.0 (attacking recklessly again removes the actor's expired Reckless effects)
+ * @updated v14.111.0 (a companion sharing its summoner's turn counts as acting on its own turn)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
+import { isSharedTurn } from "./summon-initiative.js";
 
 /**
  * How it works
@@ -150,7 +152,8 @@ function _combatOf(actor) {
  */
 function _isOwnTurn(combat, actor) {
     const current = combat?.combatant?.actor;
-    return Boolean(current && actor && ((current === actor) || (current.uuid === actor.uuid)));
+    if (current && actor && ((current === actor) || (current.uuid === actor.uuid))) return true;
+    return isSharedTurn(combat, actor);
 }
 
 /**

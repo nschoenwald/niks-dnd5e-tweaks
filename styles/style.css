@@ -3542,6 +3542,31 @@ button.nd5t-attunement-badge.nd5t-attuned:hover {
 }
 
 /* ==========================================================================
+   Shared Companion Turns
+   ========================================================================== */
+
+body.nd5t-shared-companion-turns {
+    --nd5t-shared-turn-line: color-mix(in srgb, currentColor 40%, transparent);
+    --nd5t-shared-turn-active: var(--color-border-highlight, #ff6400);
+}
+
+/* Nested under the summoner. Not in Carolingian UI's popout: its carousel positions cards itself */
+body.nd5t-shared-companion-turns:not(.crlngn-ui) .combat-tracker li.combatant.nd5t-shared-turn,
+body.nd5t-shared-companion-turns.crlngn-ui #combat .combat-tracker li.combatant.nd5t-shared-turn {
+    margin-inline-start: 1.25rem;
+    border-inline-start: 2px solid var(--nd5t-shared-turn-line);
+}
+
+body.nd5t-shared-companion-turns .combat-tracker li.combatant.nd5t-shared-active {
+    border-inline-start-color: var(--nd5t-shared-turn-active);
+    box-shadow: inset 0 0 0 1px var(--nd5t-shared-turn-active);
+}
+
+.combat-tracker .nd5t-summon-initiative {
+    opacity: 0.7;
+}
+
+/* ==========================================================================
    Carolingian UI Theme Harmony (crlngn-ui)
    ========================================================================== */
 
@@ -3586,6 +3611,37 @@ body.crlngn-ui.nft-crlngn-theme-active #combat-popout li.combatant.nd5t-legendar
     padding: 14px;
     object-fit: contain !important;
     filter: drop-shadow(0 0 6px var(--color-highlights, rgba(68, 147, 173, 0.6))) !important;
+}
+
+/* ── 3b. Shared Companion Turns in Combat Carousel ────────────────────────── */
+
+body.crlngn-ui.nd5t-shared-companion-turns {
+    --nd5t-shared-turn-active: var(--color-warm-2, var(--color-border-highlight, #ff6400));
+}
+
+body.crlngn-ui.nd5t-shared-companion-turns #combat-popout li.combatant.nd5t-shared-active {
+    border-color: var(--nd5t-shared-turn-active);
+    border-width: 2px;
+    box-shadow: none;
+    opacity: 1;
+}
+
+body.crlngn-ui.nd5t-shared-companion-turns #combat-popout li.combatant.nd5t-shared-active > .token-image {
+    filter: saturate(1);
+}
+
+/* The link icon replaces the d20, which the carousel centers on the card */
+body.crlngn-ui.crlngn-combat-tracker #combat-popout li.combatant > .token-initiative > .nd5t-summon-initiative {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-light-1, #ffffff);
+    font-size: calc(1.5em * var(--carousel-scale, 1));
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    opacity: 0.85;
+    cursor: help;
 }
 
 /* ── 4. Chat Card Action Buttons Harmonization (Option 1A) ────────────────── */

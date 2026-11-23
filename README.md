@@ -357,7 +357,9 @@ The D&D 5e side of Nik's Foundry Tweaks' *Enhanced Teleport Targeting UI* (banne
 Summons and companions that act with their summoner use the summoner's initiative and take their turn directly after them, whether they were summoned during combat or were already on the scene.
 * **Who follows**: Items in the *Summons That Follow* list, recognized by identifier. It includes the Summon spells, Animate Objects, Find Steed, Giant Insect, Primal Companion, Steel Defender and the official magic items with this rule. Add homebrew summons there. Creatures with their own initiative, such as Find Familiar, are left alone.
 * **No separate rolls**: These creatures can't roll from the tracker, their sheet, Roll All or Roll NPCs. The tracker shows a link icon until the summoner has rolled, and their initiative updates whenever the summoner's changes.
+* **Shared Companion Turns**: Companions whose rules say they act *during* your turn (Primal Companion, Steel Defender, Vestige Companion, Reanimated Companion) share it. They appear under their summoner in the tracker, both tokens show the turn marker, one Next Turn moves past both, and the companion's start and end of turn effects happen with the summoner's. If the summoner is defeated, the companion gets its own turn. Add homebrew companions to *Companions That Share a Turn*. The Carolingian UI carousel highlights both cards.
 * **Manual override**: A GM can type a different number in the tracker to release a creature. Resetting its initiative makes it follow again.
+* **Tracker groups**: A summon only groups with other summons of the same summoner, so it stays right after them.
 * **Not linked**: Creatures in a combatant group, and summons whose summoner can't be identified because several unlinked copies are in the combat, roll normally.
 
 ### Legendary Action Placeholders
@@ -734,7 +736,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | Feature | Behavior with midi-qol |
 |---|---|
 | **Auto-Open Damage for Saves** | **Disabled** (midi-qol handles save damage workflows). |
-| **Summon Initiative** | **Compatible**. With midi-qol's *Auto Reroll Initiative*, followers are put back on their summoner's initiative after each reroll. |
+| **Summon Initiative** | **Compatible**. With midi-qol's *Auto Reroll Initiative*, followers are put back on their summoner's initiative after each reroll. A companion's attacks in a shared turn don't count as opportunity attacks, but midi-qol's action-used marker isn't set for the companion. |
 | **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
 | **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
 | **Effects Only on Failed Saves** | **Disabled** (midi-qol applies save effects only to creatures that failed). |

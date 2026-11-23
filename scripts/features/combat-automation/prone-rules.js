@@ -13,6 +13,7 @@
  * @updated v14.67.6 (Standing up no longer charged twice in the drag ruler)
  * @updated v14.75.0 (Token distance moved to utils/token-distance.js, shared with Sneak Attack)
  * @updated v14.80.0 (Steps aside for midi-qol's Condition Rules; attacker / target lookup moved to utils/attack-context.js, shared with Condition Advantage & Disadvantage)
+ * @updated v14.111.0 (a companion sharing its summoner's turn counts as acting on its own turn)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -20,6 +21,7 @@ import { getMidiWorkflow, isAc5eActive, midiHandlesConditionRules } from "../../
 import { convertLength } from "../../utils/dnd5e-compat.js";
 import { tokenDistance, feetToSceneUnits } from "../../utils/token-distance.js";
 import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
+import { getSharedTurnCombatant } from "./summon-initiative.js";
 
 /**
  * How it works
@@ -166,7 +168,9 @@ function _ownTurnToken(actor) {
     if (!combat?.started || !actor) return null;
     const token = combat.combatant?.token;
     if (!token?.actor) return null;
-    return token.actor.uuid === actor.uuid ? token : null;
+    if (token.actor.uuid === actor.uuid) return token;
+    // A companion acting in its summoner's turn
+    return getSharedTurnCombatant(combat, actor)?.token ?? null;
 }
 
 /**
