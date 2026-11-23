@@ -69,6 +69,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Remove Instantaneous Templates on Turn Change](#remove-instantaneous-templates-on-turn-change)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Prompt for Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ✅ Players | Yes |
 | **[Auto-Roll Initiative](#prompt--auto-roll-initiative)** | Combat Flow | ❌ Disabled | Yes |
+| **[Summon Initiative](#summon-initiative)** | Combat Flow | ✅ Enabled | No |
 | **[Prompt for Death Saves](#prompt-for-death-saves)** | Combat Flow | ✅ Enabled | Yes |
 | **[Legendary Action Placeholders](#legendary-action-placeholders)** | Combat Flow | ✅ Enabled | No |
 | **[Undead Fortitude Automation](#undead-fortitude-automation)** | Combat Flow | ✅ Enabled | No |
@@ -351,6 +352,13 @@ The D&D 5e side of Nik's Foundry Tweaks' *Enhanced Teleport Targeting UI* (banne
 ### Prompt / Auto-Roll Initiative
 * **Prompt for Initiative**: Prompts players with initiative dialogs when added to combat (with whispered cards for offline players).
 * **Auto-Roll Initiative**: Automatically rolls initiative immediately on combat join.
+
+### Summon Initiative
+Summons and companions that act with their summoner use the summoner's initiative and take their turn directly after them, whether they were summoned during combat or were already on the scene.
+* **Who follows**: Items in the *Summons That Follow* list, recognized by identifier. It includes the Summon spells, Animate Objects, Find Steed, Giant Insect, Primal Companion, Steel Defender and the official magic items with this rule. Add homebrew summons there. Creatures with their own initiative, such as Find Familiar, are left alone.
+* **No separate rolls**: These creatures can't roll from the tracker, their sheet, Roll All or Roll NPCs. The tracker shows a link icon until the summoner has rolled, and their initiative updates whenever the summoner's changes.
+* **Manual override**: A GM can type a different number in the tracker to release a creature. Resetting its initiative makes it follow again.
+* **Not linked**: Creatures in a combatant group, and summons whose summoner can't be identified because several unlinked copies are in the combat, roll normally.
 
 ### Legendary Action Placeholders
 Inserts placeholder turns in the initiative tracker so legendary actions can be tracked. A legendary creature can take a legendary action after another creature's turn, so when a combat starts with at least one legendary creature, a placeholder follows every creature after whose turn a legendary creature may act: with one legendary creature, every turn except its own; with several, every turn. Creatures that act together get one placeholder after the whole group instead of one each: members of the same combatant group in the tracker, and consecutive creatures with the same initiative count and token disposition (for example an adult dragon and three young dragons all at initiative 15). A creature counts as legendary if it has a Legendary Actions count, or if it has no such count (such as a player character) but has a feature whose activation is set to Legendary Action. For those features, remaining uses are read from their limited uses or what they consume; a feature without limited uses counts as always available. Placeholders after hidden creatures stay hidden from players. Also includes automatic tie-breaking, native Foundry core combat turn markers on the legendary creatures that can act during a placeholder turn and still have uses, and auto-skipping of placeholders where none of them has uses left or the creature before the placeholder is defeated.
@@ -726,6 +734,7 @@ When [midi-qol](https://gitlab.com/tposney/midi-qol) is detected, features that 
 | Feature | Behavior with midi-qol |
 |---|---|
 | **Auto-Open Damage for Saves** | **Disabled** (midi-qol handles save damage workflows). |
+| **Summon Initiative** | **Compatible**. With midi-qol's *Auto Reroll Initiative*, followers are put back on their summoner's initiative after each reroll. |
 | **Prompt / Auto-Roll Attack Damage** | **Disabled** (use midi-qol's *Auto Roll Damage*). Auto-rolling static damage without a dialog still works. |
 | **Auto-Roll Concentration Saves** | **Bypassed** when midi-qol's *Force a concentration save* is set to *Chat Message + Auto Roll* or *Roll Concentration Item*. With *Chat Message Only* or *Never*, this feature rolls the save as usual. Prompts are no longer redirected to players while midi-qol handles concentration, and concentration isn't ended twice when midi-qol's *Remove concentration on failed save* is on. Boon of the Iron Mind still skips the save. |
 | **Effects Only on Failed Saves** | **Disabled** (midi-qol applies save effects only to creatures that failed). |

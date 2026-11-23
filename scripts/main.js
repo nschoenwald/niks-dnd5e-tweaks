@@ -46,6 +46,7 @@ import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./featur
 import { initEvasion } from "./features/combat-automation/evasion.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
+import { initSummonInitiative, DEFAULT_SUMMON_INITIATIVE_ITEMS } from "./features/combat-automation/summon-initiative.js";
 import { initLevelChangeResources } from "./features/utilities/level-change-resources.js";
 import { initUndeadFortitude } from "./features/combat-automation/undead-fortitude.js";
 import { initProneRules } from "./features/combat-automation/prone-rules.js";
@@ -1708,6 +1709,26 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableSummonInitiative", {
+        name: "Summon Initiative",
+        hint: "Summoned creatures that act with their summoner use the summoner's initiative, take their turn right after them and don't roll their own.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "summonInitiativeItems", {
+        name: "Summons That Follow",
+        hint: "Identifiers of the items whose summoned creatures follow their summoner.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: DEFAULT_SUMMON_INITIATIVE_ITEMS,
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableSummonFullHp", {
         name: "Summon at Full HP",
         hint: "Companions that keep one actor between summons (Primal Companion, Find Steed, …) arrive at full hit points, including the HP their summon adds, and lose Dead and Unconscious.",
@@ -2063,6 +2084,7 @@ Hooks.once("setup", () => {
 
     // Register settings for features that manage their own state
     initAutoRollInitiative();
+    initSummonInitiative();
     initDeathSavePrompt();
     initAutoStatusZeroHP();
     initLegendaryActionPlaceholders();

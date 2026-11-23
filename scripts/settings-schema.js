@@ -19,6 +19,7 @@
 import { DEFAULT_HIDDEN_STATUSES, isSystemCondition } from "./features/canvas-tokens/condition-hud.js";
 import { overrideSchemaChoices } from "./utils/personal-override.js";
 import { findLanguageKey, getLanguageGroups } from "./features/utilities/language-filter.js";
+import { DEFAULT_SUMMON_INITIATIVE_ITEMS } from "./features/combat-automation/summon-initiative.js";
 
 /**
  * @returns {object[]} The tabs of this module's dashboard schema.
@@ -1066,6 +1067,28 @@ export function getSettingsSchema() {
                                 { value: "none", label: "For None" }
                             ],
                             scope: "world"
+                        },
+                        {
+                            key: "enableSummonInitiative",
+                            introduced: "14.110.0",
+                            docs: "summon-initiative",
+                            keywords: ["summon", "companion", "Primal Companion", "Steel Defender", "Find Steed", "turn order", "combat tracker"],
+                            name: "Summon Initiative",
+                            hint: "Summoned creatures that act with their summoner use the summoner's initiative, take their turn right after them and don't roll their own, whether summoned during combat or already on the scene. Typing another number in the tracker releases a creature until its initiative is reset.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
+                        },
+                        {
+                            key: "summonInitiativeItems",
+                            introduced: "14.110.0",
+                            name: "Summons That Follow",
+                            list: true,
+                            hint: "Identifiers of the spells, features and items whose summoned creatures follow their summoner. Add homebrew summons here.",
+                            type: "String",
+                            default: DEFAULT_SUMMON_INITIATIVE_ITEMS,
+                            scope: "world",
+                            parentKey: "enableSummonInitiative"
                         },
                         {
                             key: "enableLegendaryActionPlaceholders",

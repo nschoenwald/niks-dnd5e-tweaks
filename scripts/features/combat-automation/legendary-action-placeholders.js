@@ -34,9 +34,11 @@
  * at least one member. The placeholder stores all members in `flags.niks-dnd5e-tweaks.afterCombatantIds` (and the last
  * one in `afterCombatantId` for older code paths). Core combatant groups count as one unit for the tie breakers: their
  * shared initiative is changed on the CombatantGroup, not on its members.
+ * @updated v14.110.0 (A summon following its summoner shares the summoner's tie breaker)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { getSummonLeader } from "./summon-initiative.js";
 
 const DEFAULT_ICON = "icons/svg/combat.svg";
 const PLACEHOLDER_OFFSET = 0.0001;
@@ -897,7 +899,9 @@ export function initLegendaryActionPlaceholders() {
             for (const c of creatures) {
                 const last = units.at(-1);
                 const group = _coreGroup(c);
+                const summoner = group ? null : getSummonLeader(c);
                 if (group && (last?.group === group)) last.members.push(c);
+                else if (summoner && last?.members.includes(summoner)) last.members.push(c);
                 else units.push({ group, members: [c], initiative: group?.initiative ?? c.initiative });
             }
 

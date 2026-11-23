@@ -8,6 +8,10 @@
   "ND5T.AutoRollConcentration.EndingConcentration": "Ending Concentration...",
   "ND5T.AutoRollConcentration.ConcentratingOn": "Concentrating on:",
 
+  "ND5T.SummonInitiative.Follows": "Uses {name}'s initiative",
+  "ND5T.SummonInitiative.FollowsHidden": "Uses its summoner's initiative",
+  "ND5T.SummonInitiative.Blocked": "{creature} uses {name}'s initiative and doesn't roll its own.",
+  "ND5T.SummonInitiative.BlockedHidden": "{creature} uses its summoner's initiative and doesn't roll its own.",
   "ND5T.AutoRollInitiative.PromptMessage": "{name} was added to combat. Please roll initiative.",
   "ND5T.AutoRollInitiative.RollInitiative": "Roll Initiative",
   "ND5T.AutoRollInitiative.InitiativeRolled": "Initiative Rolled",

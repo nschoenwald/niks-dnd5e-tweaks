@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.110.0] - 2026-11-23
+### Added
+- **Summon Initiative**: Summons and companions that act with their summoner, such as the Summon spells, Animate Objects, Find Steed, Primal Companion and Steel Defender, now use their summoner's initiative and take their turn right after them. This works for creatures summoned during combat and those already on the scene. They no longer roll their own initiative, including through Roll All. GMs can add homebrew summons to the list, or type a different number in the tracker to release a creature. On by default.
+
 ## [14.109.0] - 2026-11-23
 ### Added
 - **Level Change Resources**: Leveling up now follows the rules. New spell slots are ready to use instead of starting expended, new casters no longer need a Long Rest before their first spell, and HP gained from Constitution or Tough is added to current HP. Losing a level removes spent slots, Hit Dice and uses first, keeps damage taken, and no longer knocks a conscious character to 0 HP. On by default.
