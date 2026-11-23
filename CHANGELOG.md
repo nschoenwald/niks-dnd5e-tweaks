@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.111.1] - 2026-11-23
+### Fixed
+- **Auto-Roll / Prompt Concentration Saves**: A creature reduced to 0 HP is no longer asked for a concentration save. This also applies with midi-qol.
+- **Auto-End Class Features**: Bladesong now ends when the Bladesinger gains Unconscious or another Incapacitating condition. Heroes of Faerûn's Bladework weapon enchantments end with it.
+- **Auto-End Class Features**: Now also ends Cloak of Shadows, Superior Defense, Unbreakable Majesty, Elemental Attunement, Draconic Flight, Divine Sense, Animated Shield, Form of Dread, Wrath of the Wild, Eerie Token's Remote Viewing, Boon of the Bright Sun, Shadowform.
+- **Auto-End Class Features**: Rage and Wrath of the Sea's Stormborn no longer stay active when they were turned on through Auto-Apply Effects. A 2014 Rage now only ends on Unconscious or Dead, as its rules say.
+
 ## [14.111.0] - 2026-11-23
 ### Added
 - **Shared Companion Turns**: Companions that act during your turn, such as a Beast Master's Primal Companion or an Artificer's Steel Defender, now share your turn instead of getting their own. One Next Turn moves past both, both tokens show the turn marker, and the companion's start and end of turn effects happen with yours. If the summoner is defeated, the companion gets its own turn again. Works with the Carolingian UI combat tracker. On by default.

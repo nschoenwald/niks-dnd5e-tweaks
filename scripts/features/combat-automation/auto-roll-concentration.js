@@ -9,6 +9,7 @@
  * @updated v14.67.5 (End Concentration buttons follow the actor's live concentration state on every client)
  * @updated v14.77.1 (Removes D&D 5e 6.1's labelled Break button from save cards too)
  * @updated v14.106.1 (Boon of the Iron Mind is only looked up for updates that change HP)
+ * @updated v14.111.1 (No concentration prompt or roll when the damage leaves the creature at 0 HP)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -25,6 +26,7 @@ import { midiHandlesConcentration, midiEndsConcentrationOnFailure } from "../../
 export function initAutoRollConcentration() {
     _patchChallengeConcentration();
     _patchRollConcentration();
+    _patchPreUpdateForMidi();
 
     Hooks.on("preUpdateActor", _onPreUpdateActor);
     // `updateActor` instead of `dnd5e.damageActor`: the latter receives the change delta but not the
@@ -62,6 +64,15 @@ export function initAutoRollConcentration() {
 function _isActorConcentrating(actor) {
     const concStatus = CONFIG.specialStatusEffects?.CONCENTRATING ?? "concentrating";
     return (actor?.concentration?.effects?.size > 0) || !!actor?.statuses?.has?.(concStatus);
+}
+
+/**
+ * Whether a hit point value means the creature is down. Actors without numeric HP never are.
+ * @param {*} value
+ * @returns {boolean}
+ */
+function _isZeroHP(value) {
+    return Number.isFinite(value) && (value <= 0);
 }
 
 /**
@@ -289,6 +300,12 @@ function _patchChallengeConcentration() {
                 return null;
             }
 
+            // Checked per actor: update options are shared by every actor in a batch update
+            if (_isZeroHP(this.system?.attributes?.hp?.value)) {
+                debug(`Auto-Roll Concentration | ${this.name} is at 0 HP — skipping concentration challenge prompt.`);
+                return null;
+            }
+
             const connectedOwners = midiHandlesConcentration()
                 ? []
                 : game.users.filter(u => !u.isGM && u.active && this.testUserPermission(u, "OWNER"));
@@ -342,6 +359,29 @@ function _patchRollConcentration() {
         }
         return wrapped(...args);
     }, "MIXED");
+}
+
+/**
+ * midi-qol's "chat" and "item" modes decide in its own preUpdateActor hook, and its challengeConcentration
+ * wrapper may run before ours, so the 0 HP check there has to reach midi through the update option.
+ * `_preUpdate` runs before every preUpdateActor hook, whatever the module load order. Limited to these
+ * modes because the option is shared by all actors of a batch update (midi already treats it that way).
+ */
+function _patchPreUpdateForMidi() {
+    patchMethod("CONFIG.Actor.documentClass.prototype._preUpdate", function patchedPreUpdate(wrapped, changes, options, user) {
+        try {
+            if (getSetting("enableAutoRollConcentration") && midiHandlesConcentration()
+                && foundry.utils.hasProperty(changes, "system.attributes.hp")
+                && (this.concentration?.effects?.size > 0)) {
+                const next = foundry.utils.getProperty(changes, "system.attributes.hp.value")
+                    ?? this.system?.attributes?.hp?.value;
+                if (_isZeroHP(next)) foundry.utils.setProperty(options, "dnd5e.concentrationCheck", false);
+            }
+        } catch (err) {
+            console.error("Nik's DnD5e Tweaks | Error in _preUpdate for Auto-Roll Concentration:", err);
+        }
+        return wrapped(changes, options, user);
+    }, "WRAPPER");
 }
 
 /**
@@ -407,7 +447,7 @@ function _onUpdateActor(actor, changed, options, userId) {
         if (options.dnd5e.concentrationCheck === false) return;
 
         const curr = actor.system?.attributes?.hp;
-        if (!curr) return;
+        if (!curr || _isZeroHP(curr.value)) return;
         const changes = { hp: curr.value - prev.value, temp: curr.temp - prev.temp };
         changes.total = changes.hp + changes.temp;
         if (!Number.isInteger(changes.total) || changes.total >= 0) return;

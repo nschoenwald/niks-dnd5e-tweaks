@@ -1890,9 +1890,9 @@ export function getSettingsSchema() {
                             key: "enableAutoEndRage",
                             introduced: "14.11.4",
                             docs: "auto-end-concentration--class-features",
-                            keywords: ["Rage", "Wrath of the Sea", "Starry Form", "incapacitated"],
+                            keywords: ["Rage", "Wrath of the Sea", "Starry Form", "Bladesong", "Cloak of Shadows", "Superior Defense", "Unbreakable Majesty", "Elemental Attunement", "Draconic Flight", "Divine Sense", "Animated Shield", "Form of Dread", "Wrath of the Wild", "Eerie Token", "Bright Sun", "Shadowform", "incapacitated"],
                             name: "Auto-End Class Features",
-                            hint: "Automatically terminates Rage, Wrath of the Sea, and Starry Form on incapacitation.",
+                            hint: "Automatically ends Rage, Bladesong, Starry Form, Cloak of Shadows, Draconic Flight and other self-buffs on incapacitation.",
                             type: "Boolean",
                             default: true,
                             scope: "world"

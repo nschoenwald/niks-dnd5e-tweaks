@@ -1781,7 +1781,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "enableAutoEndRage", {
         name: "Auto-End Class Features",
-        hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers: Barbarian Rage (respecting Persistent Rage at level 15+), Circle of the Sea's Wrath of the Sea, and Circle of the Stars' Starry Form. Identifies each feature by item identifier or effect name.",
+        hint: "Automatically ends ongoing class feature effects when a token gains an incapacitating condition. Covers Rage (respecting Persistent Rage and the 2014 rules), Wrath of the Sea, Starry Form, Bladesong, Cloak of Shadows, Superior Defense, Unbreakable Majesty, Elemental Attunement, Draconic Flight, Divine Sense, Animated Shield, Form of Dread, Wrath of the Wild, Eerie Token's Remote Viewing, Boon of the Bright Sun, Shadowform. Identifies each feature by item identifier or effect.",
         scope: "world",
         config: false,
         type: Boolean,
