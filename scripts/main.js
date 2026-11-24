@@ -16,6 +16,7 @@ import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse
 
 // Canvas & Tokens
 import { enableProneRotation, disableProneRotation } from "./features/canvas-tokens/prone-rotation.js";
+import { initFastestMovementAction, refreshFastestMovementActions } from "./features/canvas-tokens/fastest-movement-action.js";
 import { initConditionHud, refreshConditionHud, DEFAULT_HIDDEN_STATUSES } from "./features/canvas-tokens/condition-hud.js";
 import { initTemplateGridSnap } from "./features/canvas-tokens/template-grid-snap.js";
 import { initGridConeRules, refreshGridCones } from "./features/canvas-tokens/grid-cone-rules.js";
@@ -813,6 +814,17 @@ Hooks.once("init", () => {
             if (value) enableProneRotation();
             else disableProneRotation();
         }
+    });
+
+    game.settings.register(MODULE_ID, "enableFastestMovementAction", {
+        name: "Fastest Movement Action",
+        hint: "Tokens whose movement action is left on Default use the actor's fastest way of moving, such as Fly for a creature that flies faster than it walks, and switch back when the speed is gone.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        onChange: () => refreshFastestMovementActions()
     });
 
     game.settings.register(MODULE_ID, "enableTemplateGridSnap", {
@@ -2172,6 +2184,7 @@ Hooks.once("setup", () => {
     initPreventGroupActorRolls();
     initWeaponMasteries();
     initProneRules();
+    initFastestMovementAction();
     initConditionRollModes();
     initRangedCloseCombat();
     initRecklessAttack();

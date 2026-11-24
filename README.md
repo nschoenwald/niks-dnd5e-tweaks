@@ -62,6 +62,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 | **[Summoning Permission Notice](#summoning-permission-notice)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Teleport Targeting](#teleport-targeting)** | Canvas & Tokens | ✅ Enabled (Nik's Foundry Tweaks setting) | Yes (Nik's Foundry Tweaks setting) |
 | **[Token HUD Condition Palette](#token-hud-condition-palette)** | Canvas & Tokens | ✅ Enabled | Yes, on or off¹ |
+| **[Fastest Movement Action](#fastest-movement-action)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Snap Templates to Grid Intersections](#snap-templates-to-grid-intersections)** | Canvas & Tokens | ✅ Enabled | Yes |
 | **[Rules-Accurate Cones on Square Grids](#rules-accurate-cones-on-square-grids)** | Canvas & Tokens | ✅ Enabled | No |
 | **[Grid-Based Templates](#grid-based-templates)** | Canvas & Tokens | ✅ Enabled | No |
@@ -266,6 +267,15 @@ Replaces the Token HUD's grid of small status icons with a labelled list:
 * **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
 * Players can choose the labelled list or the original icon grid for themselves under Personal Preferences (**Use World Setting** / **On** / **Off**); with the icon grid, hidden statuses stay visible for them too.
 * **Monk's Little Details**: While the palette is on, Monk's "Alter Token HUD Status" layout (labels, colours, columns, Clear All) and its sorting are switched off so the two don't overlap. With the palette off, Monk's version shows as usual.
+
+### Fastest Movement Action
+Tokens whose movement action is left on **Default** (token sheet or Token HUD) move the way the creature moves fastest:
+* **Fly** when its flying speed is faster than its walking speed. A tie stays on Walk.
+* **Swim, Climb or Burrow** only for a creature without a walking speed, e.g. a shark swims. A crocodile on a land map keeps walking even though it swims faster.
+* **Follows the actor**: When the creature gains a faster speed (the *Fly* spell, a magic item, Wild Shape), its tokens switch to it, and they go back to walking when the speed is gone. Conditions that take away the flying speed (Grappled, Restrained, Prone) also switch back to walking, and to flying once they end.
+* **Your choice is kept**: An action picked on the Token HUD or token sheet stays until you pick Default again (or click the active action on the Token HUD). The token sheet shows the current choice as *Default (Fly)*.
+* Works with **Prone Rules**: a Prone token crawls, and returns to its fastest action when it stands up.
+* Nothing is saved on the token, so turning the setting off returns every Default token to walking.
 
 ### Template Placement Controls HUD & Scroll Rotation
 A floating glassmorphic banner appears during spell and item template placement:

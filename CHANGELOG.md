@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.112.0] - 2026-11-24
+### Added
+- **Fastest Movement Action**: Tokens left on the Default movement action now fly when the creature flies faster than it walks, or swim, climb or burrow if it has no walking speed. They switch when the creature gains or loses a speed, e.g. when the Fly spell ends, and walk again while Grappled, Restrained or Prone. An action you pick on the Token HUD is kept. On by default.
+
 ## [14.111.1] - 2026-11-23
 ### Fixed
 - **Auto-Roll / Prompt Concentration Saves**: A creature reduced to 0 HP is no longer asked for a concentration save. This also applies with midi-qol.

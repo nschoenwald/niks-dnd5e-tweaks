@@ -831,6 +831,17 @@ export function getSettingsSchema() {
                             default: DEFAULT_HIDDEN_STATUSES,
                             scope: "world",
                             parentKey: "enableConditionHud"
+                        },
+                        {
+                            key: "enableFastestMovementAction",
+                            introduced: "14.112.0",
+                            docs: "fastest-movement-action",
+                            keywords: ["movement action", "fly", "flying", "swim", "burrow", "climb", "speed", "default", "token hud"],
+                            name: "Fastest Movement Action",
+                            hint: "Tokens whose movement action is left on Default use the actor's fastest way of moving: Fly when it flies faster than it walks, or Swim, Climb or Burrow for a creature without a walking speed. Follows the actor when it gains or loses a speed (e.g. the Fly spell ends) or a condition stops it flying. An action picked on the Token HUD or token sheet is kept.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world"
                         }
                     ]
                 },
