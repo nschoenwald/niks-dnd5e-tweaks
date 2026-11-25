@@ -4739,3 +4739,51 @@ body.nd5t-condition-hud #token-hud .nd5t-status-count {
     font-size: var(--font-size-12, 12px);
     color: var(--color-form-hint, var(--nd5t-scb-muted));
 }
+
+/* ── Brutal Strike: effect picker ─────────────────────────────────────── */
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker {
+    --nd5t-brutal-border: var(--color-border, rgb(0 0 0 / 25%));
+    --nd5t-brutal-hint: var(--color-text-secondary, inherit);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker p {
+    margin: 0;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-target {
+    color: var(--nd5t-brutal-hint);
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--nd5t-brutal-border);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-option:has(input:disabled) {
+    opacity: 0.6;
+    cursor: default;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-option input {
+    flex: none;
+    margin-top: 0.125rem;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+body.nd5t-brutal-strike .nd5t-brutal-strike-picker .nd5t-brutal-hint {
+    font-size: var(--font-size-12, 0.75rem);
+    color: var(--nd5t-brutal-hint);
+}

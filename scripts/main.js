@@ -54,6 +54,7 @@ import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
 import { initRangedCloseCombat } from "./features/combat-automation/ranged-close-combat.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
+import { initBrutalStrike, brutalStrikeSocketMessage } from "./features/combat-automation/brutal-strike.js";
 import { initIndomitableMight } from "./features/combat-automation/indomitable-might.js";
 import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
@@ -234,6 +235,24 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "clientEnableRecklessAttack", {
         name: "Reckless Attack Choice (Personal)",
         hint: "Offers the Reckless Attack choice (dialog checkbox or prompt) on your first attack of the turn (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableBrutalStrike", {
+        name: "Brutal Strike Choice (Personal)",
+        hint: "Offers Brutal Strike at the attack roll (dialog checkbox or prompt) and asks for its effect after a hit. When off, Brutal Strike stays a toggle in the damage roll dialog (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "brutalStrikeFollowPrompt", {
+        name: "Brutal Strike Prompt on Later Attacks",
+        hint: "When the attack roll dialog is skipped, asks before each later Strength attack of your turn whether to use Brutal Strike, while it is still unused.",
         scope: "client",
         config: false,
         type: Boolean,
@@ -1399,6 +1418,17 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableBrutalStrike", {
+        name: "Brutal Strike Automation",
+        hint: "A Barbarian with Brutal Strike (2024 rules) chooses it at the attack roll, next to Reckless Attack: the roll forgoes Advantage, a hit adds the extra damage (1d10, 2d10 at level 17) of the weapon's type, and the player (the GM when the player is offline) picks the effect: Forceful Blow (a chat reminder, tokens are moved by hand), Hamstring Blow, and from level 13 Staggering Blow and Sundering Blow; two different ones at level 17. Replaces the Brutal Strike toggle in the damage roll dialog. Also works with midi-qol. Changing it reloads the game.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
     game.settings.register(MODULE_ID, "enableIndomitableMight", {
         name: "Indomitable Might Automation",
         hint: "A creature with Indomitable Might (Barbarian level 18) uses its Strength score in place of the total of a Strength check or Strength saving throw when the total is lower. The chat card names the feature when it applies. Also works with midi-qol.",
@@ -2188,6 +2218,8 @@ Hooks.once("setup", () => {
     initConditionRollModes();
     initRangedCloseCombat();
     initRecklessAttack();
+    // After Reckless Attack: its hooks must run first, and Brutal Strike plugs into its dialog and prompt
+    initBrutalStrike();
     initIndomitableMight();
     initBladesongBladework();
     // Actors were prepared before this patch existed
@@ -2222,6 +2254,7 @@ Hooks.once("ready", async () => {
             weaponMasterySocketMessage(data);
             return;
         }
+        if (brutalStrikeSocketMessage(data)) return;
         if (data?.action === "holyAuraSave") {
             holyAuraSocketMessage(data);
             return;

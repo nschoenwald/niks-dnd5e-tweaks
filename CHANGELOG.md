@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.113.0] - 2026-11-26
+### Added
+- **Brutal Strike Automation**: Barbarians now choose Brutal Strike at the attack roll, next to Reckless Attack: a checkbox in the attack dialog, or an extra answer in the Reckless prompt when the dialog is skipped. The attack gives up Advantage as the rules require. A hit adds the extra damage (2d10 from level 17), then the player picks the effect. The GM picks when the player is offline. Hamstring, Staggering and Sundering Blow are applied to the target, and two different effects can be picked from level 17. Forceful Blow posts a reminder, and tokens are moved by hand. Works with midi-qol. On by default.
+
+### Changed
+- **Conditional Damage Bonuses**: The Brutal Strike toggle in the damage dialog only appears when Brutal Strike Automation is off.
+
 ## [14.112.0] - 2026-11-24
 ### Added
 - **Fastest Movement Action**: Tokens left on the Default movement action now fly when the creature flies faster than it walks, or swim, climb or burrow if it has no walking speed. They switch when the creature gains or loses a speed, e.g. when the Fly spell ends, and walk again while Grappled, Restrained or Prone. An action you pick on the Token HUD is kept. On by default.

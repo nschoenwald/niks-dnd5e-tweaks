@@ -126,6 +126,26 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnableBrutalStrike",
+                            introduced: "14.113.0",
+                            pairedWith: "enableBrutalStrike",
+                            name: "Brutal Strike Choice",
+                            hint: "Offers Brutal Strike at the attack roll (dialog checkbox or prompt) and asks for its effect after a hit. When off, Brutal Strike stays a toggle in the damage roll dialog (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
+                            key: "brutalStrikeFollowPrompt",
+                            introduced: "14.113.0",
+                            name: "Prompt on Later Attacks",
+                            hint: "When the attack roll dialog is skipped, asks before each later Strength attack of your turn whether to use Brutal Strike, while it is still unused.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client",
+                            parentKey: "clientEnableBrutalStrike"
+                        },
+                        {
                             key: "clientEnableBladesongBladework",
                             introduced: "14.94.0",
                             pairedWith: "enableBladesongBladework",
@@ -1425,6 +1445,18 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "enableBrutalStrike",
+                            introduced: "14.113.0",
+                            docs: "brutal-strike-automation",
+                            keywords: ["Brutal Strike", "Improved Brutal Strike", "Barbarian", "Reckless Attack", "Forceful Blow", "Hamstring Blow", "Staggering Blow", "Sundering Blow"],
+                            name: "Brutal Strike Automation",
+                            hint: "A Barbarian with Brutal Strike (2024 rules) chooses it at the attack roll, next to Reckless Attack: the roll forgoes Advantage, a hit adds the extra damage (1d10, 2d10 at level 17) of the weapon's type, and the player (the GM when the player is offline) picks the effect: Forceful Blow (a chat reminder, tokens are moved by hand), Hamstring Blow, and from level 13 Staggering Blow and Sundering Blow; two different ones at level 17. Replaces the Brutal Strike toggle in the damage roll dialog. Also works with midi-qol. Changing it reloads the game.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            requiresReload: true
                         },
                         {
                             key: "enableIndomitableMight",

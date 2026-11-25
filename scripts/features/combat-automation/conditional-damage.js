@@ -25,6 +25,7 @@
  * @updated v14.104.0 (World of Warcraft: Fury of the Small, Touch of the Grave, Death and Decay, Touch of the Void,
  *   Havoc, Rain of Fire, Combo Strikes with a per-target melee hit counter)
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as attacking on its own turn)
+ * @updated v14.113.0 (no Brutal Strike toggle while Brutal Strike automation adds that damage itself)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -486,6 +487,18 @@ export function actorHasGreatWeaponMaster(actor) {
             || id.includes("great_weapon_master")
             || name.includes("great weapon master");
     });
+}
+
+/**
+ * Whether Brutal Strike automation handles Brutal Strike for this user (it then adds the damage itself).
+ * @returns {boolean}
+ */
+function _brutalStrikeAutomated() {
+    try {
+        return isFeatureActive("enableBrutalStrike", "clientEnableBrutalStrike");
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -3175,7 +3188,8 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     }
 
     // --- 5. Brutal Strike (2024 Modern Rules: @scale.barbarian.brutal-strike on Barbarian's turn, once per turn) ---
-    if (isModernRules() && actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor) && isMyTurn) {
+    // Not offered while Brutal Strike automation (brutal-strike.js) adds the damage to the attacks it was chosen on
+    if (isModernRules() && !_brutalStrikeAutomated() && actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor) && isMyTurn) {
         const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "brutalStrike", turnKey);
         if (!hasUsedThisTurn) {
             const brutalFormulaDisplay = getBrutalStrikeFormula(actor);

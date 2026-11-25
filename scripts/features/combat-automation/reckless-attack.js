@@ -13,6 +13,7 @@
  * @updated v14.85.0 (exports isActorReckless for Frenzy)
  * @updated v14.102.0 (attacking recklessly again removes the actor's expired Reckless effects)
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as acting on its own turn)
+ * @updated v14.113.0 (extension points for Brutal Strike: a dialog field, a third prompt answer, a prompt on later attacks)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -58,6 +59,29 @@ import { isSharedTurn } from "./summon-initiative.js";
 const IDENTIFIER = "reckless-attack";
 const FLAG = "reckless";
 const FIELD = "nd5tReckless";
+
+/** Name of the Reckless Attack field in the attack roll dialog and on roll options. */
+export const RECKLESS_FIELD = FIELD;
+
+/**
+ * Features built on Reckless Attack (Brutal Strike). Each may define:
+ *  - `appliesTo(actor)`: cheap check whether the extension can act for this attacker at all.
+ *  - `dialogFields(app, context)`: add fields to the attack roll dialog (runs on every render).
+ *  - `promptChoice(actor, activity, choices)`: an extra answer for the Reckless prompt of a skipped dialog,
+ *    `{ action, label, apply(config) }` or null. Choosing it also attacks recklessly.
+ *  - `skippedPrompt(activity, config, choices)`: async, runs before a skipped-dialog attack that got no Reckless
+ *    prompt.
+ * @type {object[]}
+ */
+const _extensions = [];
+
+/**
+ * Register a feature built on Reckless Attack.
+ * @param {object} extension
+ */
+export function registerRecklessExtension(extension) {
+    if (extension) _extensions.push(extension);
+}
 
 /** Turn key of the last attack roll per actor UUID, on this client. */
 const _lastAttackTurn = new Map();
@@ -296,20 +320,35 @@ function _onPreRollAttack(config) {
 async function _wrapPrepareConfigurationContext(wrapped, context, options) {
     context = await wrapped(context, options);
     try {
-        if (!this.config?.nd5tRecklessOffer) return context;
-        const feature = _feature(this.config.subject?.actor);
-        const label = feature?.name || game.i18n.localize("ND5T.RecklessAttack.Label");
-        const checked = this.form?.querySelector(`input[name="${FIELD}"]`)?.checked ?? false;
-        context.fields ??= [];
-        context.fields.push({
-            field: new foundry.data.fields.BooleanField({ label }),
-            name: FIELD,
-            value: checked
-        });
+        if (this.config?.nd5tRecklessOffer) _addRecklessField(this, context);
     } catch (err) {
         console.error(`${MODULE_ID} | Reckless Attack: adding the dialog checkbox failed`, err);
     }
+    for (const extension of _extensions) {
+        try {
+            extension.dialogFields?.(this, context);
+        } catch (err) {
+            console.error(`${MODULE_ID} | Reckless Attack: an extension's dialog field failed`, err);
+        }
+    }
     return context;
+}
+
+/**
+ * Add the Reckless Attack checkbox to the dialog's configuration fields.
+ * @param {AttackRollConfigurationDialog} app
+ * @param {object} context
+ */
+function _addRecklessField(app, context) {
+    const feature = _feature(app.config.subject?.actor);
+    const label = feature?.name || game.i18n.localize("ND5T.RecklessAttack.Label");
+    const checked = app.form?.querySelector(`input[name="${FIELD}"]`)?.checked ?? false;
+    context.fields ??= [];
+    context.fields.push({
+        field: new foundry.data.fields.BooleanField({ label }),
+        name: FIELD,
+        value: checked
+    });
 }
 
 /**
@@ -380,7 +419,7 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
  * @param {object} dialog
  * @returns {boolean}
  */
-function _dialogSkipped(config, dialog) {
+export function dialogSkipped(config, dialog) {
     if (dialog?.configure === false) return true;
     if (dialog?.configure === true) return false;
     const probe = {};
@@ -394,7 +433,7 @@ function _dialogSkipped(config, dialog) {
  * @param {object} config
  * @returns {{ability: string|undefined, attackMode: string|undefined}}
  */
-function _attackChoices(activity, config) {
+export function attackChoices(activity, config) {
     let ability = config.ability ?? activity.item?.getFlag("dnd5e", `last.${activity.id}.ability`);
     const abilityOptions = activity._getAbilityOptions?.() ?? [];
     if (abilityOptions.length && !abilityOptions.find(a => a.value === ability)) ability = abilityOptions[0]?.value;
@@ -406,21 +445,33 @@ function _attackChoices(activity, config) {
 }
 
 /**
- * Ask whether to attack recklessly.
+ * Ask whether to attack recklessly. Extensions may add answers between Yes and No.
  * @param {Actor5e} actor
  * @param {Item5e} feature
  * @param {"2014"|"2024"} rules
- * @returns {Promise<boolean>}
+ * @param {object[]} [choices]  Extra answers (`{ action, label, apply }`).
+ * @returns {Promise<boolean|object>}  true for Yes, the chosen extra answer, or false.
  */
-async function _prompt(actor, feature, rules) {
+async function _prompt(actor, feature, rules, choices = []) {
     const content = `<p>${game.i18n.format(`ND5T.RecklessAttack.Prompt${rules}`, { name: foundry.utils.escapeHTML(actor.name) })}</p>`;
-    const result = await foundry.applications.api.DialogV2.confirm({
-        window: { title: feature.name || game.i18n.localize("ND5T.RecklessAttack.Label"), icon: "fa-solid fa-face-angry" },
+    const window = { title: feature.name || game.i18n.localize("ND5T.RecklessAttack.Label"), icon: "fa-solid fa-face-angry" };
+    if (!choices.length) {
+        const result = await foundry.applications.api.DialogV2.confirm({ window, content, rejectClose: false, modal: true });
+        return result === true;
+    }
+    const result = await foundry.applications.api.DialogV2.wait({
+        window,
         content,
         rejectClose: false,
-        modal: true
+        modal: true,
+        buttons: [
+            { action: "yes", label: game.i18n.localize("Yes"), icon: "fa-solid fa-check", default: true },
+            ...choices.map(c => ({ action: c.action, label: c.label, icon: c.icon })),
+            { action: "no", label: game.i18n.localize("No"), icon: "fa-solid fa-xmark" }
+        ]
     });
-    return result === true;
+    if (result === "yes") return true;
+    return choices.find(c => c.action === result) ?? false;
 }
 
 /**
@@ -430,15 +481,23 @@ async function _prompt(actor, feature, rules) {
 async function _wrapRollAttack(wrapped, config = {}, dialog = {}, message = {}) {
     try {
         config ??= {};
-        if (_worldActive() && !config[FIELD] && !config.midiOptions?.isDummy) {
-            const actor = this.actor;
-            const offer = actor ? _offer(actor) : null;
+        const actor = this.actor;
+        const offer = (actor && _worldActive() && !config[FIELD]) ? _offer(actor) : null;
+        // Nothing to ask (no Reckless offer, no extension for this actor): skip the keybinding probe
+        if (actor && (offer || _extensions.some(e => e.appliesTo?.(actor) ?? true)) && !config.midiOptions?.isDummy && dialogSkipped(config, dialog)) {
+            const choices = attackChoices(this, config);
             // Out of combat there is no first attack of a turn, so no prompt there
-            if (offer?.combat && _dialogSkipped(config, dialog)) {
-                const { ability, attackMode } = _attackChoices(this, config);
-                if (_qualifies(offer.rules, ability, this.getActionType?.(attackMode))) {
-                    if (await _prompt(actor, offer.feature, offer.rules)) config[FIELD] = true;
+            if (offer?.combat && _qualifies(offer.rules, choices.ability, this.getActionType?.(choices.attackMode))) {
+                const extra = [];
+                for (const extension of _extensions) {
+                    const choice = extension.promptChoice?.(actor, this, choices);
+                    if (choice) extra.push(choice);
                 }
+                const answer = await _prompt(actor, offer.feature, offer.rules, extra);
+                if (answer) config[FIELD] = true;
+                if (answer && (answer !== true)) answer.apply?.(config);
+            } else {
+                for (const extension of _extensions) await extension.skippedPrompt?.(this, config, choices);
             }
         }
     } catch (err) {
