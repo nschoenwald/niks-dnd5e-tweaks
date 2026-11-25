@@ -177,8 +177,8 @@ Clicking the `+` button on character sheets (Items, Spells, or Features) present
 <img width="448" height="156" alt="image" src="https://github.com/user-attachments/assets/0e6ddd89-f26a-4254-a740-aa97595ca6b0" />
 
 ### Roll Mode Highlight
-Persistently highlights the recommended roll mode button (Advantage or Disadvantage) in d20 roll dialogs based on system conditions and features.
-* *Sub-settings*: **Highlight Style** (Glow, Border, Badge, Fill), **Highlight Normal Mode Too**, **Highlight Color** (default gold `#c9a227`).
+Persistently highlights the recommended roll mode button (Advantage, Normal or Disadvantage) in d20 roll dialogs based on system conditions and features. The highlight stays when you interact with other fields of the dialog. When the roll's modes conflict, no button is highlighted.
+* *Sub-settings*: **Highlight Style** (Glow, Border, Badge, Fill), **Highlight Color** (default gold `#c9a227`).
 
 ### Dragging Items Between Actors
 Dragging an inventory item from one actor's sheet to another (for example from a player character to the party group, or onto a group member) now **moves** it instead of leaving a copy behind. Choose between:
@@ -442,7 +442,7 @@ Players can turn the choice off for themselves in their personal settings. The A
 
 ### Brutal Strike Automation
 A Barbarian with **Brutal Strike** (2024 rules, level 9) chooses it at the attack roll, together with Reckless Attack, instead of ticking a damage bonus afterwards:
-* **In the attack roll dialog**, a **Brutal Strike** checkbox appears below Reckless Attack. It can be ticked on a Strength attack when the Barbarian is Reckless or ticks Reckless Attack on the same roll, the roll has no Disadvantage, and there is at most one target. Ticking it gives up Advantage: **Normal** becomes the default button, and the roll is made without Advantage whichever button is clicked.
+* **In the attack roll dialog**, a **Brutal Strike** checkbox appears below Reckless Attack. It can be ticked on a Strength attack when the Barbarian is already Reckless or can attack recklessly on this roll, the roll has no Disadvantage, and there is at most one target. Since Brutal Strike needs Reckless Attack, ticking it also ticks **Reckless Attack** (the Barbarian becomes Reckless as usual), and unticking Reckless Attack unticks Brutal Strike. Ticking it gives up Advantage: **Normal** becomes the default button, and the roll is made without Advantage whichever button is clicked.
 * **When the dialog is skipped** (for example with midi-qol fast-forward), the Reckless Attack prompt of the first attack gets a third answer, **Reckless + Brutal Strike**. On later Strength attacks of the turn, while Brutal Strike is still unused, a short Yes / No prompt asks. Players can turn that prompt off in their personal settings.
 * Brutal Strike is offered on the Barbarian's own turn, once per turn, and is used up by the chosen attack even when it misses. It is never offered on a later attack if the Barbarian isn't Reckless by then. Out of combat it is offered whenever the Barbarian is Reckless. If the roll ends up with Disadvantage, Brutal Strike isn't used and a notice says so.
 

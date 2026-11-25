@@ -10,6 +10,9 @@
  *              Sundering Blow, each until the start of the attacker's next turn.
  *
  * @introduced v14.113.0
+ * @updated v14.114.0 (ticking Brutal Strike also ticks Reckless Attack; own copy of the damage roll data; debug
+ *   lines from the damage roll to the picker; the hit is remembered before the attack's chat card exists, so damage
+ *   rolled from that card (Prompt / Auto-Roll Attack Damage) gets the extra damage and the picker)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -29,12 +32,16 @@ import { getBrutalStrikeFormula } from "./conditional-damage.js";
  * Choosing (client of the attacker): offered on the attacker's own turn, once per turn (any turn out of combat),
  * when the actor is Reckless or Reckless Attack is offered on this roll. dnd5e.preRollAttack marks the process
  * (`nd5tBrutalOffer`); the Reckless extension adds the checkbox. dnd5e.postBuildAttackRollConfig enables it only for
- * Strength attacks with Reckless (already, or ticked), no Disadvantage and at most one target, marks the roll
+ * Strength attacks with Reckless (already, or offered on this roll), no Disadvantage and at most one target. Ticking
+ * it ticks Reckless Attack too (which then creates its effect as usual); unticking Reckless unticks it. It marks the roll
  * (`options.nd5tBrutalStrike`) and moves the default button to Normal. dnd5e.postAttackRollConfiguration makes the
  * final roll a normal d20 roll, or drops the mark when the roll has Disadvantage after all.
  *
- * After the attack (dnd5e.rollAttack): the turn counts as used, hit or miss. A hit (or an unknown result: no AC
- * known) leaves a pending record per actor for the attack's activity, kept 10 minutes on this client.
+ * Remembering the attack: dnd5e.postAttackRollConfiguration (before evaluation, and before dnd5e creates the chat card
+ * that Prompt / Auto-Roll Attack Damage rolls damage from) leaves a pending record per actor for the attack's activity
+ * and its roll, kept 10 minutes on this client. Whether it hit is read from that roll once evaluated (crit, fumble,
+ * total against the target's AC; unknown without an AC). dnd5e.rollAttack counts the turn as used, hit or miss, and
+ * drops the record on a miss.
  * dnd5e.preRollDamage adds the extra damage as its own roll (scale value, weapon damage type, no extra crit dice);
  * with midi-qol only when the workflow hit something. dnd5e.rollDamage then opens the picker, on this client or,
  * through the socket, on the client of the actor's player (the active GM when no player owner is online).
@@ -307,8 +314,13 @@ function _advantageMode(process, rollConfig, reckless) {
     return ADV.NORMAL;
 }
 
+/** Dialog → the Brutal Strike / Reckless Attack checkbox states of its last build. */
+const _dialogState = new WeakMap();
+
 /**
  * dnd5e.postBuildAttackRollConfig: follow the checkbox when the dialog (re)builds a roll. Runs after Reckless Attack's.
+ * Brutal Strike needs Reckless Attack: ticking it also ticks Reckless Attack (when that is offered on this roll), and
+ * unticking Reckless Attack unticks it.
  * @param {object} process
  * @param {object} config
  * @param {number} index
@@ -322,9 +334,11 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
         const actor = process.subject?.actor;
         const rollConfig = process.rolls?.[index];
         const ability = config.options?.ability ?? process.ability;
-        const recklessTicked = formData?.object?.[RECKLESS_FIELD] === true;
+        const recklessInput = app.form?.querySelector(`input[name="${RECKLESS_FIELD}"]`) ?? null;
+        const recklessOffered = Boolean(process.nd5tRecklessOffer && recklessInput && !recklessInput.disabled);
+        const alreadyReckless = !process.nd5tRecklessOffer && isActorReckless(actor);
         const disadvantage = Boolean(rollConfig?.options?.disadvantage || process.disadvantage);
-        const eligible = (ability === "str") && (recklessTicked || isActorReckless(actor))
+        const eligible = (ability === "str") && (alreadyReckless || recklessOffered)
             && !disadvantage && _targetsAllowed(process);
 
         const input = app.form?.querySelector(`input[name="${FIELD}"]`);
@@ -332,7 +346,26 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
             input.disabled = !eligible;
             input.closest(".form-group")?.classList.toggle("disabled", !eligible);
         }
-        const checked = eligible && (formData?.object?.[FIELD] === true);
+
+        let checked = eligible && (formData?.object?.[FIELD] === true);
+        let recklessTicked = recklessOffered && (formData?.object?.[RECKLESS_FIELD] === true);
+        if (checked && recklessOffered && !recklessTicked) {
+            // Reckless Attack was just unticked while Brutal Strike stayed ticked: Brutal Strike goes too.
+            // Otherwise Brutal Strike was just ticked: Reckless Attack comes with it.
+            const previous = _dialogState.get(app);
+            if (previous?.brutal && previous.reckless) {
+                checked = false;
+                if (input) input.checked = false;
+            } else {
+                recklessTicked = true;
+                recklessInput.checked = true;
+                // Reckless Attack's hook already ran for this build without the tick: mark the roll here
+                config.options ??= {};
+                config.options[RECKLESS_FIELD] = true;
+            }
+        }
+        if (index === 0) _dialogState.set(app, { brutal: checked, reckless: recklessTicked });
+
         config.options ??= {};
         if (checked) config.options[FIELD] = true;
         else delete config.options[FIELD];
@@ -350,11 +383,42 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
 }
 
 /**
+ * Whether a Brutal Strike attack roll hit: true, false, or null while it isn't evaluated or no AC is known.
+ * @param {D20Roll|null} roll
+ * @returns {boolean|null}
+ */
+function _hitOf(roll) {
+    if (!roll?._evaluated) return null;
+    if (roll.isCritical) return true;
+    if (roll.isFumble) return false;
+    return Number.isFinite(roll.options?.target) ? roll.total >= roll.options.target : null;
+}
+
+/**
+ * Remember a Brutal Strike attack for its damage roll, before it is evaluated. dnd5e creates the attack's chat card
+ * before `dnd5e.rollAttack`, and Prompt / Auto-Roll Attack Damage (or another module) can start the damage roll
+ * from that card, so waiting for `dnd5e.rollAttack` is too late. Whether it hit is read from the roll later.
+ * @param {AttackActivity|null} activity
+ * @param {D20Roll} roll
+ */
+function _remember(activity, roll) {
+    const actor = activity?.actor;
+    if (!actor) return;
+    _pending.set(actor.uuid, {
+        activityUuid: activity.uuid,
+        roll,
+        targets: Array.from(game.user.targets, t => t.document?.uuid).filter(Boolean),
+        time: Date.now(),
+        damage: false
+    });
+}
+
+/**
  * dnd5e.postAttackRollConfiguration: a Brutal Strike roll is a normal roll, whatever button was clicked. A roll
  * with Disadvantage can't be chosen: the mark is dropped.
  * @param {D20Roll[]} rolls
  */
-function _onPostAttackRollConfiguration(rolls) {
+function _onPostAttackRollConfiguration(rolls, config) {
     try {
         const ADV = CONFIG.Dice.D20Roll.ADV_MODE;
         for (const roll of rolls ?? []) {
@@ -365,10 +429,12 @@ function _onPostAttackRollConfiguration(rolls) {
                 continue;
             }
             roll.options.advantage = false;
-            if (roll.options.advantageMode === ADV.NORMAL) continue;
-            roll.options.advantageMode = ADV.NORMAL;
-            roll.d20?.applyAdvantage(ADV.NORMAL);
-            roll.resetFormula();
+            if (roll.options.advantageMode !== ADV.NORMAL) {
+                roll.options.advantageMode = ADV.NORMAL;
+                roll.d20?.applyAdvantage(ADV.NORMAL);
+                roll.resetFormula();
+            }
+            _remember(config?.subject, roll);
         }
     } catch (err) {
         console.error(`${MODULE_ID} | Brutal Strike: postAttackRollConfiguration failed`, err);
@@ -435,22 +501,17 @@ function _onRollAttack(rolls, { subject } = {}) {
         const combat = _combatOf(actor);
         if (combat) _usedTurn.set(actor.uuid, _turnKey(combat));
 
-        let hit = null;
-        if (roll.isCritical) hit = true;
-        else if (roll.isFumble) hit = false;
-        else if (Number.isFinite(roll.options.target)) hit = roll.total >= roll.options.target;
+        const hit = _hitOf(roll);
         if (hit === false) {
             _pending.delete(actor.uuid);
             debug(`Brutal Strike | ${actor.name} missed: Brutal Strike is used up`);
             return;
         }
-        _pending.set(actor.uuid, {
-            activityUuid: subject.uuid,
-            targets: Array.from(game.user.targets, t => t.document?.uuid).filter(Boolean),
-            time: Date.now(),
-            damage: false
-        });
-        debug(`Brutal Strike | ${actor.name} ${hit ? "hit" : "attacked (no AC known)"}: waiting for the damage roll`);
+        // Remembered in postAttackRollConfiguration; a damage roll may already have used it (auto-rolled damage)
+        const pending = _pending.get(actor.uuid);
+        if (pending?.activityUuid === subject.uuid) pending.roll = roll;
+        else _remember(subject, roll);
+        debug(`Brutal Strike | ${actor.name} ${hit ? "hit" : "attacked (no AC known)"}${pending?.damage ? ", extra damage already added" : ": waiting for the damage roll"}`);
     } catch (err) {
         console.error(`${MODULE_ID} | Brutal Strike: rollAttack failed`, err);
     }
@@ -483,6 +544,10 @@ function _onPreRollDamage(config) {
         const pending = _pendingFor(activity);
         if (!pending || pending.damage) return;
         const actor = activity.actor;
+        if (_hitOf(pending.roll) === false) {
+            _pending.delete(actor.uuid);
+            return;
+        }
 
         const workflow = getMidiWorkflow(config);
         if (workflow) {
@@ -511,7 +576,9 @@ function _onPreRollDamage(config) {
             [FIELD]: true
         };
         if (config.isCritical) options.isCritical = true;
-        config.rolls.push({ parts: [`${formula}[${flavor}]`], data: { ...(base.data ?? {}) }, options });
+        // Own copy of the roll data: dnd5e writes this roll's damage type into `data.roll.damage`, which a shallow
+        // copy would share with the weapon's roll
+        config.rolls.push({ parts: [`${formula}[${flavor}]`], data: foundry.utils.deepClone(base.data ?? {}), options });
         pending.damage = true;
         debug(`Brutal Strike | +${formula} ${type ?? ""} damage for ${actor.name}`);
     } catch (err) {
@@ -527,9 +594,14 @@ function _onPreRollDamage(config) {
  */
 function _onRollDamage(rolls, { subject } = {}) {
     try {
-        if (!_pending.size) return;
-        const pending = _pendingFor(subject);
-        if (!pending?.damage || !rolls?.some(r => r.options?.[FIELD])) return;
+        const marked = Boolean(rolls?.some(r => r.options?.[FIELD]));
+        const pending = _pending.size ? _pendingFor(subject) : null;
+        if (!pending) {
+            if (marked) debug(`Brutal Strike | Damage with Brutal Strike for ${subject?.actor?.name}, but no remembered hit for ${subject?.uuid}`);
+            return;
+        }
+        debug(`Brutal Strike | Damage rolled for ${subject.actor.name}: extra damage added ${pending.damage}, marked roll ${marked}`);
+        if (!pending.damage || !marked) return;
         _pending.delete(subject.actor.uuid);
         _requestPicker(subject.actor, pending.targets);
     } catch (err) {
@@ -558,6 +630,7 @@ function _requestPicker(actor, targets) {
     const user = _pickerUser(actor);
     const data = { actorUuid: actor.uuid, targets };
     if (!user || user.isSelf) {
+        debug(`Brutal Strike | Opening the effect picker here for ${actor.name} (${targets.length} target(s))`);
         _openPicker(data);
         return;
     }
@@ -583,7 +656,10 @@ async function _openPicker({ actorUuid, targets = [] }) {
     try {
         const actor = fromUuidSync(actorUuid, { strict: false });
         const feature = _brutal(actor);
-        if (!feature) return;
+        if (!feature) {
+            debug(`Brutal Strike | No effect picker: ${actor?.name ?? actorUuid} has no usable Brutal Strike`);
+            return;
+        }
         const kinds = KINDS.filter(k => feature.tier >= KIND_TIER[k]);
         const max = feature.tier >= 3 ? 2 : 1;
         const last = _lastChoice.get(actor.uuid) ?? [];
@@ -632,6 +708,7 @@ async function _openPicker({ actorUuid, targets = [] }) {
                 limit();
             }
         });
+        debug(`Brutal Strike | Effect picker closed for ${actor.name}`, picked);
         if (!Array.isArray(picked) || !picked.length) return;
         const chosen = KINDS.filter(k => picked.includes(k) && kinds.includes(k)).slice(0, max);
         _lastChoice.set(actor.uuid, chosen);

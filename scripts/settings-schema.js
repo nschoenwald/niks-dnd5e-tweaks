@@ -673,16 +673,6 @@ export function getSettingsSchema() {
                             parentKey: "enableRollModeHighlight"
                         },
                         {
-                            key: "rollModeHighlightNormal",
-                            introduced: "14.25.0",
-                            name: "Highlight Normal Mode Too",
-                            hint: "When the system's calculated mode is Normal (no advantage or disadvantage), also highlight the Normal button. Off by default since Normal is already the obvious fallback.",
-                            type: "Boolean",
-                            default: false,
-                            scope: "world",
-                            parentKey: "enableRollModeHighlight"
-                        },
-                        {
                             key: "rollModeHighlightColor",
                             introduced: "14.25.0",
                             name: "Highlight Color",

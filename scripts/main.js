@@ -532,16 +532,6 @@ Hooks.once("init", () => {
         restricted: true
     });
 
-    game.settings.register(MODULE_ID, "rollModeHighlightNormal", {
-        name: "↳ Highlight Normal Mode Too",
-        hint: "When the system's calculated mode is Normal (no advantage or disadvantage), also apply the highlight to the Normal button. Disabled by default since Normal is already the obvious default.",
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-        restricted: true
-    });
-
     game.settings.register(MODULE_ID, "rollModeHighlightColor", {
         name: "↳ Highlight Color",
         hint: "Custom color for the calculated roll mode highlight. Defaults to the gold tone used for the Advantage button. This overrides the per-mode color for whichever button is highlighted.",

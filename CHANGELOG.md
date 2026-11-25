@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.114.0] - 2026-11-26
+### Changed
+- **Roll Mode Highlight**: The Normal button is now highlighted too when Normal is the recommended mode, just like Advantage and Disadvantage. The "Highlight Normal Mode Too" option is gone.
+
+- **Brutal Strike Automation**: Ticking Brutal Strike in the attack dialog now also ticks Reckless Attack, which it needs, so the Barbarian becomes Reckless with it. Unticking Reckless Attack unticks Brutal Strike.
+
+### Fixed
+- **Brutal Strike Automation**: When the damage is rolled straight from the attack card, e.g. with Prompt / Auto-Roll Attack Damage, the extra damage is now added and the effect picker opens.
+- **Brutal Strike Automation**: Changing the damage type of the Brutal Strike line in the damage dialog no longer changes the type the weapon's own damage line uses for damage bonuses from effects.
+
 ## [14.113.0] - 2026-11-26
 ### Added
 - **Brutal Strike Automation**: Barbarians now choose Brutal Strike at the attack roll, next to Reckless Attack: a checkbox in the attack dialog, or an extra answer in the Reckless prompt when the dialog is skipped. The attack gives up Advantage as the rules require. A hit adds the extra damage (2d10 from level 17), then the player picks the effect. The GM picks when the player is offline. Hamstring, Staggering and Sundering Blow are applied to the target, and two different effects can be picked from level 17. Forceful Blow posts a reminder, and tokens are moved by hand. Works with midi-qol. On by default.

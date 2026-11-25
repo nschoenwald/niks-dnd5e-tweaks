@@ -4,6 +4,7 @@
  *
  * @introduced v14.25.0
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
+ * @updated v14.114.0 (Normal is always highlighted like Advantage and Disadvantage; "Highlight Normal Mode Too" removed)
  */
 import { getSetting, debug } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -108,11 +109,10 @@ function _applyHighlight(app, element) {
         const style = getSetting("rollModeHighlightStyle");
         if (style === "none") return;
 
-        const highlightNormal = getSetting("rollModeHighlightNormal");
         const customColor     = getSetting("rollModeHighlightColor");
         const calculatedAction = _getAc5eAction(element) ?? _getCalculatedAction(app);
 
-        debug(`Roll Mode Highlight | Calculated action: ${calculatedAction}, style: ${style}, highlightNormal: ${highlightNormal}, color: ${customColor}`);
+        debug(`Roll Mode Highlight | Calculated action: ${calculatedAction}, style: ${style}, color: ${customColor}`);
 
         // Clear any previously applied marks so re-renders start clean
         for (const btn of element.querySelectorAll("[data-nd5t-calculated-mode]")) {
@@ -128,9 +128,6 @@ function _applyHighlight(app, element) {
 
         // No clear recommendation → nothing to highlight
         if (!calculatedAction) return;
-
-        // Normal mode: only highlight if the user has opted in
-        if (calculatedAction === "normal" && !highlightNormal) return;
 
         // Apply style class to the dialog root element
         element.classList.add(`nd5t-highlight-${style}`);
