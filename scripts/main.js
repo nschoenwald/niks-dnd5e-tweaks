@@ -85,6 +85,7 @@ import { initFixDamageTrayGroupingKey } from "./features/patches/fix-damage-tray
 import { initFixTokenHPBarAnimation } from "./features/patches/fix-token-hp-bar-animation.js";
 import { initFixFreeCastSpellScaling } from "./features/patches/fix-free-cast-spell-scaling.js";
 import { initFixUntypedHealing } from "./features/patches/fix-untyped-healing.js";
+import { initFixRegionEffectDeletedToken } from "./features/patches/fix-region-effect-deleted-token.js";
 import { initFixRollDialogOffscreen } from "./features/patches/fix-roll-dialog-offscreen.js";
 import { initFixTooltipRace } from "./features/patches/fix-tooltip-race.js";
 
@@ -2245,6 +2246,7 @@ Hooks.once("setup", () => {
     initFixTokenHPBarAnimation();
     initFixFreeCastSpellScaling();
     initFixUntypedHealing();
+    initFixRegionEffectDeletedToken();
     initFixRollDialogOffscreen();
     initFixTooltipRace();
 
