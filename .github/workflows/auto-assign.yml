@@ -1,0 +1,21 @@
+name: Auto-assign issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    if: join(github.event.issue.assignees.*.login, '') == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign the repository owner
+        run: gh issue edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
