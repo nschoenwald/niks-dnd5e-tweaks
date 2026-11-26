@@ -127,7 +127,7 @@ function patchBaseActorSheetPrepareItemSpell() {
 }
 
 /**
- * Patch DnD5e 6.0.6 MovementField and SensesField shims to prevent
+ * Patch D&D 5e's MovementField and SensesField shims (still non-configurable in 6.1.2) to prevent
  * "TypeError: Cannot redefine property: walk" if actor.prepareData()
  * is called repeatedly on NPCData.
  */

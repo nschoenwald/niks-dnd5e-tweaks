@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.116.0] - 2026-11-27
+### Changed
+- **Requirements**: Now needs Foundry VTT 14.371 and D&D 5e 6.1.2 or later. Support for D&D 5e 6.0 and 6.1.0 / 6.1.1 was dropped, along with fixes that only those versions needed.
+- **Rich Tooltip Race**: Removed. D&D 5e fixed this itself in 6.1.1.
+
+### Fixed
+- **Template Placement Controls HUD**: A self emanation (such as *Spirit Guardians*) cast by a hidden token no longer stays hidden after the GM reveals the token.
+- **Damage Emanation Automation**: Revealing a hidden caster no longer triggers their emanation on the creatures already standing in it.
+
 ## [14.115.6] - 2026-11-26
 ### Changed
 - **Region Effects on Deleted Tokens**: The fix for Foundry's own region effect moved to Nik's Foundry Tweaks 14.21.0, so it works in every game system. This module keeps the fix for D&D 5e's version of the effect (such as *Spirit Guardians*). Update Nik's Foundry Tweaks to keep both.

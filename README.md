@@ -1,7 +1,7 @@
 # Nik's DnD5e Tweaks
 
 [![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-V14-orange.svg)](https://foundryvtt.com)
-[![DnD5e System](https://img.shields.io/badge/DnD5e-6.0%2B-blue.svg)](https://github.com/foundryvtt/dnd5e)
+[![DnD5e System](https://img.shields.io/badge/DnD5e-6.1.2%2B-blue.svg)](https://github.com/foundryvtt/dnd5e)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/nschoenwald/niks-dnd5e-tweaks?color=purple)](https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest)
 
@@ -738,14 +738,13 @@ Stops D&D 5e from ending and deleting Active Effects on its own (out of combat, 
  
 Patches are zero-configuration, always-on fixes for confirmed upstream system or core bugs:
 * **Skill Tooltip Overlap**: Fixes character sheet skill and tool list reference tooltips appearing directly on top of neighboring rows, ensuring clickable links remain unobstructed.
-* **Free Cast Spell Level Picker**: Spells that are never cast with a spell slot (e.g. *Mystic Arcanum*, feat or innate spells cast with item uses) no longer show the **Cast at Level** choice in the usage dialog and are cast at their base level. Follow-up activities of spells cast with a slot (e.g. *Moonbeam*'s damage) keep it, so you can pick the level the spell was cast at. On D&D 5e below 6.1.0, the misleading "no available spell slots" warning is also removed from any spell activity that doesn't use a slot (fixed upstream in 6.1.0).
+* **Free Cast Spell Level Picker**: Spells that are never cast with a spell slot (e.g. *Mystic Arcanum*, feat or innate spells cast with item uses) no longer show the **Cast at Level** choice in the usage dialog and are cast at their base level. Follow-up activities of spells cast with a slot (e.g. *Moonbeam*'s damage) keep it, so you can pick the level the spell was cast at.
 * **Pact Magic Formula Scaling**: Dynamically corrects damage and healing formulas for Pact Magic spells to reflect the caster's pact slot level in sheet inventory rows and activity tables.
 * **Damage Application Tray Grouping**: Prevents an upstream D&D 5e system TypeError (`token.getGroupingKey is not a function`) when rendering damage application trays for targets resolved via actor UUID or unplaced tokens.
 * **Animated HP Bars**: Foundry VTT V14 smoothly animates token resource bars when their values change, but the D&D 5e HP bar skipped the animation and jumped straight to the new value. HP bars (including temporary HP and temporary max HP) now slide to their new value and colour like every other bar.
 * **Untyped Healing**: A heal activity whose healing part has no type selected (common on imported or hand-made items) was rolled as untyped, and D&D 5e treated it as damage: the tray offered **Apply Damage** and hurt the target. Such healing now rolls as Healing. Healing rolls already in chat are fixed too and apply as healing.
 * **Roll Dialogs Off-Screen**: Roll dialogs open where you click. When a dialog grew after opening (for example once its dice images loaded), its buttons could end up below the bottom of the screen until you dragged it up. Dialogs that grow are now moved back up so they stay fully visible. A dialog you dragged somewhere stays where you put it.
 * **Region Effects on Deleted Tokens**: Deleting an unlinked token (such as a slain enemy) that stood in an area applying an effect, like the halved speed of *Spirit Guardians*, showed the error "undefined id [...] does not exist in the EmbeddedCollection collection". D&D 5e tried to remove the effect from the token after it was already deleted. Unlinked tokens are now skipped there; linked tokens still lose the effect as before. The same fix for Foundry's own Apply Active Effect behavior is in Nik's Foundry Tweaks.
-* **Rich Tooltip Race**: Item, spell and other rich tooltips load after you hover. When the cursor swept quickly across many rows (Compendium Browser, inventories, spell lists), every row you passed started loading its tooltip, and whichever finished last was shown: the tooltip kept changing after you stopped and could show the wrong item. Tooltips that finish loading after you have moved on are now ignored, so the tooltip always shows the item under the cursor. Fixed upstream in D&D 5e 6.1.1; the patch only runs on older versions.
 
 ---
 
@@ -843,9 +842,9 @@ https://github.com/nschoenwald/niks-dnd5e-tweaks/releases/latest/download/module
 ```
 
 ### Requirements
-* **Foundry VTT**: Version 14 (maximum 14)
+* **Foundry VTT**: Version 14.371 or later (maximum 14)
 * **[Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)**: 14.0.0 or later (Foundry offers to install it along with this module)
-* **DnD5e System**: Version 6.0.0 to 6.1.x (verified with 6.1.0, 6.0.x still supported)
+* **DnD5e System**: Version 6.1.2 to 6.1.x (verified with 6.1.2)
 
 ---
 

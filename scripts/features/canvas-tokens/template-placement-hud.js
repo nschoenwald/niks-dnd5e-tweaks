@@ -5,6 +5,7 @@
  * @introduced v14.35.0
  * @updated v14.71.2 (Scroll stepping: first event of a scroll always rotates once; rule cones at most one wedge per event)
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
+ * @updated v14.116.0 (Self emanations attached to a hidden token no longer stay hidden after it is revealed, Foundry 14.371)
  */
 import { debug, log, isFeatureActive } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -470,10 +471,11 @@ function _autoAttachSelfEmanation(activity, data, options) {
             });
         }
 
+        // No `hidden`: since Foundry 14.371 an attached region is effectively hidden while its token is, and its own
+        // hidden flag no longer follows the token. Copying the token's state would keep the region hidden for good.
         document.updateSource({
             elevation,
             levels: [source.level],
-            hidden: Boolean(source.hidden),
             attachment: { token: tokenDoc.id }
         });
 

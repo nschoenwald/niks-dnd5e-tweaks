@@ -19,6 +19,7 @@
  * Foundry-planned movement exists). Several tokens (Dimension Door with a companion) keep dnd5e's own flow.
  *
  * @introduced v14.101.0
+ * @updated v14.116.0 (Length conversion uses only the D&D 5e 6.1 signature)
  */
 import { MODULE_ID, debug } from "../../context.js";
 import { coreApi } from "../../core-integration.js";
@@ -141,7 +142,6 @@ function toSceneUnits(value, units) {
     if (!(units in movementUnits) || !(sceneUnits in movementUnits)) return value;
     const convert = globalThis.dnd5e?.utils?.convertLength;
     if (typeof convert !== "function") return value;
-    if (foundry.utils.isNewerVersion("6.1.0", game.system.version)) return convert(value, units, sceneUnits);
     return convert(value, units, { to: sceneUnits, legacy: false }).value;
 }
 

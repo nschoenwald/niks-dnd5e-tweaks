@@ -20,6 +20,8 @@
  * @updated v14.104.0 (World of Warcraft: Consecration, Hand of Gul'dan, Rain of Fire, Starfall)
  * @updated v14.115.3 (Exclude Allies also covers dnd5e's own effect and difficult terrain behaviors, e.g. the
  *   speed reduction of Spirit Guardians)
+ * @updated v14.116.0 (Revealing a hidden caster doesn't trigger their attached emanation on the creatures already in it,
+ *   Foundry 14.371)
  */
 import { patchMethod } from "../../utils/patch-helper.js";
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
@@ -331,6 +333,7 @@ export function initDamageEmanation() {
     Hooks.on("dnd5e.createMeasuredTemplate", _onCreateMeasuredTemplate);
     Hooks.on("createRegion", _onCreateRegion);
     Hooks.on("updateRegion", _onUpdateRegion);
+    Hooks.on("updateToken", _onUpdateToken);
     Hooks.on("deleteRegion", _onDeleteRegion);
     Hooks.on("createRegionBehavior", _onCreateRegionBehavior);
     Hooks.on("updateRegionBehavior", _onUpdateRegionBehavior);
@@ -817,6 +820,20 @@ async function _attachPendingEmanation(region) {
 function _onUpdateRegion(region, changes) {
     if (changes.hidden !== false) return;
     for (const behavior of _getEmanationBehaviors(region)) _suppressTokensInside(behavior);
+}
+
+/**
+ * Same for emanations attached to a token that was revealed. Since Foundry 14.371 revealing the token doesn't update
+ * the attached region; core fires the "enter" events right after this hook (`RegionDocument._onHiddenChange`).
+ * @param {TokenDocument} token
+ * @param {object} changes
+ */
+function _onUpdateToken(token, changes) {
+    if (changes.hidden !== false) return;
+    for (const region of token.attachments?.regions ?? []) {
+        if (region.hidden) continue;
+        for (const behavior of _getEmanationBehaviors(region)) _suppressTokensInside(behavior);
+    }
 }
 
 /**
