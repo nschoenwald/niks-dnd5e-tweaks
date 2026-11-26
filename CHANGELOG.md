@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.3] - 2026-11-26
+### Fixed
+- **Damage Emanation Automation**: With **Exclude Allies** on, the halved speed of *Spirit Guardians* no longer hits the caster's allies. Effects and difficult terrain that D&D 5e itself attaches to the area of a spell where the caster chooses who is affected now skip creatures with the caster's token disposition, like the saves and damage already did. Areas placed before the update keep their old behavior until cast again.
+
 ## [14.115.2] - 2026-11-26
 ### Fixed
 - **Chat Card Styling Improvements**: Save buttons on chat cards show their DC again, e.g. **DC 15 DEX Save**. The DC follows D&D 5e's *Challenge Visibility* setting: GMs and the player who made the card always see it, everyone else only when the setting allows. Otherwise the button reads **DEX Save**.

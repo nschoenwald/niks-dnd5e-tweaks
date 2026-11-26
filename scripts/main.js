@@ -1940,7 +1940,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "damageEmanationExcludeAllies", {
         name: "↳ Exclude Allies",
-        hint: "Creatures with the same token disposition as the caster are never affected by emanations centered on the caster, or by spells that let the caster choose who is affected. Placed areas such as Moonbeam and Cloudkill still affect everyone inside, as written.",
+        hint: "Creatures with the same token disposition as the caster are never affected by emanations centered on the caster, or by spells that let the caster choose who is affected (including effects D&D 5e attaches to the area, such as the halved speed of Spirit Guardians). Placed areas such as Moonbeam and Cloudkill still affect everyone inside, as written.",
         scope: "world",
         config: false,
         type: Boolean,

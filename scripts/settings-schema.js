@@ -2173,7 +2173,7 @@ export function getSettingsSchema() {
                             key: "damageEmanationExcludeAllies",
                             introduced: "14.54.0",
                             name: "Exclude Allies",
-                            hint: "Creatures with the caster's token disposition are never affected by emanations centered on the caster or spells that let the caster choose. Placed areas (Moonbeam, Cloudkill) affect everyone inside.",
+                            hint: "Creatures with the caster's token disposition are never affected by emanations centered on the caster or spells that let the caster choose, including D&D 5e's area effects (Spirit Guardians' halved speed). Placed areas (Moonbeam, Cloudkill) affect everyone inside.",
                             type: "Boolean",
                             default: true,
                             scope: "world",
