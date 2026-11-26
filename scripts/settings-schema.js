@@ -126,6 +126,31 @@ export function getSettingsSchema() {
                             scope: "client"
                         },
                         {
+                            key: "clientEnableNoTargetWarning",
+                            introduced: "14.115.0",
+                            pairedWith: "enableNoTargetWarning",
+                            name: "No-Target Warning",
+                            hint: "Warns in roll dialogs when your attack, damage or healing has no target (if enabled by the GM).",
+                            type: "Boolean",
+                            default: true,
+                            scope: "client"
+                        },
+                        {
+                            key: "noTargetWarningSkipped",
+                            introduced: "14.115.0",
+                            name: "When the Dialog Is Skipped",
+                            hint: "What happens when you roll without the dialog (e.g. Shift-click) and nothing is targeted. Ask before rolling only applies to rolls you start yourself: damage rolled automatically, and rolls with midi-qol, get the notification.",
+                            type: "Select",
+                            default: "notify",
+                            choices: [
+                                { value: "notify", label: "Notification" },
+                                { value: "confirm", label: "Ask before rolling" },
+                                { value: "none", label: "Nothing" }
+                            ],
+                            scope: "client",
+                            parentKey: "clientEnableNoTargetWarning"
+                        },
+                        {
                             key: "clientEnableBrutalStrike",
                             introduced: "14.113.0",
                             pairedWith: "enableBrutalStrike",
@@ -1435,6 +1460,63 @@ export function getSettingsSchema() {
                             type: "Boolean",
                             default: true,
                             scope: "world"
+                        },
+                        {
+                            key: "enableNoTargetWarning",
+                            introduced: "14.115.0",
+                            docs: "no-target-warning",
+                            keywords: ["target", "no target", "warning", "attack", "damage", "healing", "roll dialog", "AC"],
+                            name: "No-Target Warning",
+                            hint: "Warns in the attack and damage / healing roll dialogs when nothing is targeted. Targeting a token while the dialog is open removes the warning, and the roll then uses that target (its AC for the hit check, and the chat card's targets). When the dialog is skipped, a notification or, by personal choice, a confirmation takes its place. Activities that affect Self are skipped. With midi-qol only the warning is shown: midi takes the targets when the activity is used, and has its own Requires Targets option. Changing it reloads the game.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            requiresReload: true
+                        },
+                        {
+                            key: "noTargetWarningAttack",
+                            introduced: "14.115.0",
+                            name: "Attack Rolls",
+                            hint: "Warn on attack rolls without a target.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableNoTargetWarning"
+                        },
+                        {
+                            key: "noTargetWarningDamage",
+                            introduced: "14.115.0",
+                            name: "Damage Rolls",
+                            hint: "Warn on damage rolls without a target.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableNoTargetWarning"
+                        },
+                        {
+                            key: "noTargetWarningHealing",
+                            introduced: "14.115.0",
+                            name: "Healing Rolls",
+                            hint: "Warn on healing rolls without a target. Healing that only affects Self (e.g. Second Wind) never warns.",
+                            type: "Boolean",
+                            default: true,
+                            scope: "world",
+                            parentKey: "enableNoTargetWarning"
+                        },
+                        {
+                            key: "noTargetWarningScene",
+                            introduced: "14.115.0",
+                            name: "When",
+                            hint: "Always, only when the scene has tokens (keeps theatre-of-the-mind scenes quiet), or only during combat.",
+                            type: "Select",
+                            default: "tokens",
+                            choices: [
+                                { value: "always", label: "Always" },
+                                { value: "tokens", label: "When the scene has tokens" },
+                                { value: "combat", label: "Only in combat" }
+                            ],
+                            scope: "world",
+                            parentKey: "enableNoTargetWarning"
                         },
                         {
                             key: "enableBrutalStrike",

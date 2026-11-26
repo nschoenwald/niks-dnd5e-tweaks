@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.0] - 2026-11-26
+### Added
+- **No-Target Warning**: Attack, damage and healing roll dialogs show a warning while nothing is targeted. Target a token while the dialog is open and the warning goes away: the roll then uses that target for the hit check and the chat card, also when you switch targets with the dialog open. When the dialog is skipped, a notification appears instead, or, by personal choice, a "Roll Anyway / Cancel" question. Activities that affect Self never warn. By default it only warns in scenes with tokens. On by default.
+
 ## [14.114.1] - 2026-11-26
 ### Fixed
 - **Reckless Attack** / **Brutal Strike Automation**: Ending a combat no longer shows errors that an effect "does not exist". Both features tried to remove their effects at combat end while D&D 5e was already removing the same effects.

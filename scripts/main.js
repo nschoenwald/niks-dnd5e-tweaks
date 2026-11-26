@@ -55,6 +55,7 @@ import { initConditionRollModes } from "./features/combat-automation/condition-r
 import { initRangedCloseCombat } from "./features/combat-automation/ranged-close-combat.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
 import { initBrutalStrike, brutalStrikeSocketMessage } from "./features/combat-automation/brutal-strike.js";
+import { initNoTargetWarning } from "./features/combat-automation/no-target-warning.js";
 import { initIndomitableMight } from "./features/combat-automation/indomitable-might.js";
 import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
 import { initAutoEndConcentration } from "./features/combat-automation/auto-end-concentration.js";
@@ -239,6 +240,29 @@ Hooks.once("init", () => {
         config: false,
         type: Boolean,
         default: true
+    });
+
+    game.settings.register(MODULE_ID, "clientEnableNoTargetWarning", {
+        name: "No-Target Warning (Personal)",
+        hint: "Shows the no-target warning on your client (if enabled by the GM).",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: true
+    });
+
+    game.settings.register(MODULE_ID, "noTargetWarningSkipped", {
+        name: "No-Target Warning: Skipped Dialog",
+        hint: "What happens when you roll without the dialog (e.g. Shift-click) and nothing is targeted.",
+        scope: "client",
+        config: false,
+        type: String,
+        default: "notify",
+        choices: {
+            notify: "Notification",
+            confirm: "Ask before rolling",
+            none: "Nothing"
+        }
     });
 
     game.settings.register(MODULE_ID, "clientEnableBrutalStrike", {
@@ -1408,6 +1432,43 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableNoTargetWarning", {
+        name: "No-Target Warning",
+        hint: "Warns in the attack and damage / healing roll dialogs when nothing is targeted. Targeting a token while the dialog is open removes the warning, and the roll then uses that target. When the dialog is skipped, a notification (or a confirmation, by personal choice) takes its place. Activities that affect Self are skipped. Changing it reloads the game.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true,
+        requiresReload: true
+    });
+
+    for (const [key, name] of [["noTargetWarningAttack", "Attack Rolls"], ["noTargetWarningDamage", "Damage Rolls"], ["noTargetWarningHealing", "Healing Rolls"]]) {
+        game.settings.register(MODULE_ID, key, {
+            name: `No-Target Warning: ${name}`,
+            scope: "world",
+            config: false,
+            type: Boolean,
+            default: true,
+            restricted: true
+        });
+    }
+
+    game.settings.register(MODULE_ID, "noTargetWarningScene", {
+        name: "No-Target Warning: When",
+        hint: "Always, only when the scene has tokens (quiet in theatre-of-the-mind scenes), or only during combat.",
+        scope: "world",
+        config: false,
+        type: String,
+        default: "tokens",
+        choices: {
+            always: "Always",
+            tokens: "When the scene has tokens",
+            combat: "Only in combat"
+        },
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "enableBrutalStrike", {
         name: "Brutal Strike Automation",
         hint: "A Barbarian with Brutal Strike (2024 rules) chooses it at the attack roll, next to Reckless Attack: the roll forgoes Advantage, a hit adds the extra damage (1d10, 2d10 at level 17) of the weapon's type, and the player (the GM when the player is offline) picks the effect: Forceful Blow (a chat reminder, tokens are moved by hand), Hamstring Blow, and from level 13 Staggering Blow and Sundering Blow; two different ones at level 17. Replaces the Brutal Strike toggle in the damage roll dialog. Also works with midi-qol. Changing it reloads the game.",
@@ -2210,6 +2271,7 @@ Hooks.once("setup", () => {
     initRecklessAttack();
     // After Reckless Attack: its hooks must run first, and Brutal Strike plugs into its dialog and prompt
     initBrutalStrike();
+    initNoTargetWarning();
     initIndomitableMight();
     initBladesongBladework();
     // Actors were prepared before this patch existed
