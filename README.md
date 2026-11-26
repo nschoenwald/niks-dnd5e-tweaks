@@ -13,7 +13,7 @@ A consolidated, modular collection of quality-of-life enhancements and smart com
 > **Requires [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks)** (from 14.70.0). The system-independent tweaks (Readable Text Size, Sheet Pop-out Button, Context Menu Styling, Clear Targets, Toolbar Limitation, the teleport UI and more) and the settings dashboard moved there, so they work in any game system. Your settings for them are copied over automatically.
 
 > [!TIP]
-> **Modular by Design**: Every single tweak can be toggled independently. GMs configure global world defaults, while players have their own **Personal Preferences** tab to customize prompts, auto-rolls, and visuals for their own screen.
+> **Modular by Design**: Every single tweak can be toggled independently. GMs configure global world defaults, while players customize prompts, auto-rolls, and visuals for their own screen right inside each feature (**On your screen**).
 
 ---
 
@@ -266,8 +266,8 @@ Replaces the Token HUD's grid of small status icons with a labelled list:
 * **Grouped and sorted**: The system's conditions (Blinded to Unconscious) come first, other effects (Bleeding, Concentrating, Dead, Flying, …) below them. Both groups are sorted A–Z by name in your language, including statuses added by other modules.
 * **Active at a glance**: Active statuses are highlighted. Leveled conditions show their level (e.g. Exhaustion **2**), and statuses shown as a large overlay on the token get a small mark. The palette button shows how many statuses are active.
 * **Same controls**: Click a row (icon or name) to toggle the status; right-click to show it as an overlay or lower its level, as before.
-* **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
-* Players can choose the labelled list or the original icon grid for themselves under Personal Preferences (**Use World Setting** / **On** / **Off**); with the icon grid, hidden statuses stay visible for them too.
+* **Hidden Statuses**: The GM chooses statuses to leave out of the palette for everyone in a small picker (Settings Dashboard → Canvas & Tokens → Token HUD Condition Palette → Hidden Statuses → *Choose*, or the gear at the bottom of the palette). Dehydration, Malnutrition and Suffocation are hidden by default. A hidden status still appears while a token has it, so it can always be removed.
+* Players can choose the labelled list or the original icon grid for themselves under **On your screen** in the feature (**Use World Setting** / **On** / **Off**); with the icon grid, hidden statuses stay visible for them too.
 * **Monk's Little Details**: While the palette is on, Monk's "Alter Token HUD Status" layout (labels, colours, columns, Clear All) and its sorting are switched off so the two don't overlap. With the palette off, Monk's version shows as usual.
 
 ### Fastest Movement Action
@@ -425,7 +425,7 @@ Some features let a character attack with **Intelligence** instead of Strength o
 * **Automatic, only when better**: If Strength or Dexterity is higher, that stays. The attack roll dialog lists Intelligence as an option too, so you can still pick another ability.
 * **Enchanted weapons**: Heroes of Faerûn itself enchants every weapon the character is proficient with (Unarmed Strike included) with *Bladework* while Bladesong is active, which always forces Intelligence. Weapons with that enchantment, or with Battle Ready's *Arcane Empowerment*, still use Strength or Dexterity when they're higher, since both features say you *can* use Intelligence.
 * **Which attacks**: Weapon attacks that use Strength or Dexterity. Not Unarmed Strikes, natural weapons, spell attacks, or weapons set to use a spellcasting ability (e.g. a Pact Weapon).
-* Works with midi-qol, which rolls with the same ability. Players can turn it off for themselves in their personal preferences.
+* Works with midi-qol, which rolls with the same ability. Players can turn it off for themselves (**On your screen** in the feature).
 
 ### Reckless Attack Automation
 A creature with the **Reckless Attack** feature decides on its first attack roll of its turn without using the feature from its sheet:
@@ -727,7 +727,7 @@ Players often still have an enemy targeted from their last attack when they use 
 * If the user's token isn't on the viewed scene, the cards list no targets.
 * Bypassed while midi-qol is active (midi-qol already targets the user's own token for these abilities).
 * *Sub-setting*: **Show Notification** (default on): tells the user when their targets were replaced.
-* Players can turn it off for themselves in **Personal Preferences**.
+* Players can turn it off for themselves (**On your screen** in the feature).
 
 ### Disable Active Effect Expiry
 Stops D&D 5e from ending and deleting Active Effects on its own (out of combat, at the end of combat, on a rest, and at turn-based expiry). Effects stay until you turn them off or remove them. Off by default.
@@ -750,12 +750,12 @@ Patches are zero-configuration, always-on fixes for confirmed upstream system or
 
 ## ⚙️ Settings Dashboard & Personal Preferences
 
-All features are managed in the shared **Settings Dashboard** of [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks#️-settings-dashboard--personal-preferences), opened from *Configure Settings → Nik's Foundry Tweaks → Configure Module*. Nik's DnD5e Tweaks has no section of its own in Configure Settings any more. The dashboard holds the settings of both modules in one window; settings from this module carry a small **5e** badge. Rolls & Damage and Conditions & Effects are tabs of their own; everything else joins the shared UI & Visuals, Canvas & Tokens, Combat Flow and Personal Preferences tabs.
+All features are managed in the shared **Settings Dashboard** of [Nik's Foundry Tweaks](https://github.com/nschoenwald/niks-foundry-tweaks#️-settings-dashboard--personal-preferences), opened from *Configure Settings → Nik's Foundry Tweaks → Configure Module*. Nik's DnD5e Tweaks has no section of its own in Configure Settings any more. The dashboard holds the features of both modules in one window, one row per feature; the open feature panel says which module it comes from. Rolls & Damage and Conditions & Effects are categories of their own; everything else joins the shared UI & Visuals, Canvas & Tokens and Combat Flow categories. Each player's own choices sit inside the feature under **On your screen**.
 
 * **Personal settings that override the GM's**: For Chat Card Styling Improvements, Item Sheet Attunement Tag (and its tooltip option), Item / Spell Add: Choice Dialog, Spell Slots Expend Left to Right, Roll Mode Highlight, Cursor Keyboard Hints, Template Placement Controls HUD, Enhanced Summoning Placement HUD and Token HUD Condition Palette, each player chooses **Use World Setting** (default), **On** or **Off**, so they can also turn these on when the GM left them off. All other personal settings only turn a feature off for that player, because the GM's choice matters for the whole table (rules, automation, shared templates, or what players learn about NPCs).
-* **Search, filters, New badges, linked world and personal settings, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
+* **Search, filters, New badges, personal choices, Export / Import**: see the dashboard description in Nik's Foundry Tweaks. Exports made before 14.70.0 can still be imported; the settings that moved are restored in Nik's Foundry Tweaks.
 * **Deep links**: Some features link straight to their settings, e.g. the gear in the Token HUD's status palette. Macros can do the same with `game.modules.get("niks-dnd5e-tweaks").api.openSettings("settingKey")`.
-* **Unavailable Settings**: Settings for features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation), Automated Conditions 5e or midi-qol's Condition Rules (Prone Attack Rolls, Condition Advantage & Disadvantage), and Automated Conditions 5e or midi-qol's Nearby Foe rule (Ranged Attacks in Close Combat). Your stored choice is kept for when that module is turned off.
+* **Unavailable Settings**: Features that turn themselves off because another module handles the job are greyed out and locked, with a badge naming that module. This covers midi-qol (template auto-targeting, template grid snapping, attack damage prompts / auto-rolls, auto-open damage for saves), Automated Masteries 5e (Weapon Mastery Automation), Automated Conditions 5e or midi-qol's Condition Rules (Prone Attack Rolls, Condition Advantage & Disadvantage), and Automated Conditions 5e or midi-qol's Nearby Foe rule (Ranged Attacks in Close Combat). Your stored choice is kept for when that module is turned off.
 * **Debug Mode**: One switch in Nik's Foundry Tweaks (Utilities & Debug) turns on diagnostic logging for both modules.
 
 ---

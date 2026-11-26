@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.1] - 2026-11-26
+### Changed
+- **Settings Dashboard**: The README now describes the redesigned dashboard of Nik's Foundry Tweaks 14.19.0: one row per feature, with each player's own choices inside the feature under "On your screen".
+
 ## [14.115.0] - 2026-11-26
 ### Added
 - **No-Target Warning**: Attack, damage and healing roll dialogs show a warning while nothing is targeted. Target a token while the dialog is open and the warning goes away: the roll then uses that target for the hit check and the chat card, also when you switch targets with the dialog open. When the dialog is skipped, a notification appears instead, or, by personal choice, a "Roll Anyway / Cancel" question. Activities that affect Self never warn. By default it only warns in scenes with tokens. On by default.
