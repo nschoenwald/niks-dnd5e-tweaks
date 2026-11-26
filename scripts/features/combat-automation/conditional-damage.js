@@ -26,6 +26,7 @@
  *   Havoc, Rain of Fire, Combo Strikes with a per-target melee hit counter)
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as attacking on its own turn)
  * @updated v14.113.0 (no Brutal Strike toggle while Brutal Strike automation adds that damage itself)
+ * @updated v14.114.1 (replacing the Entropic Embrace marker tolerates it being removed meanwhile)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -33,6 +34,7 @@ import { patchMethod } from "../../utils/patch-helper.js";
 import { isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
 import { areTokensWithin } from "../../utils/token-distance.js";
 import { convertLength } from "../../utils/dnd5e-compat.js";
+import { deleteEffects } from "../../utils/effect-deletion.js";
 import { isActorReckless } from "./reckless-attack.js";
 import { isSharedTurn } from "./summon-initiative.js";
 
@@ -4176,7 +4178,7 @@ async function _onEntropicEmbraceCast(activity) {
         const actor = activity.actor;
         const level = Number(item.system?.level ?? 1) + Number(item.getFlag?.("dnd5e", "scaling") ?? 0);
         const old = actor.effects.filter(e => e.getFlag?.(MODULE_ID, "entropicEmbrace")).map(e => e.id);
-        if (old.length) await actor.deleteEmbeddedDocuments("ActiveEffect", old);
+        if (old.length) await deleteEffects(actor, old);
         await actor.createEmbeddedDocuments("ActiveEffect", [{
             name: item.name,
             img: item.img,

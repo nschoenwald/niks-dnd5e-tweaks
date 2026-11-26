@@ -14,10 +14,12 @@
  * @updated v14.102.0 (attacking recklessly again removes the actor's expired Reckless effects)
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as acting on its own turn)
  * @updated v14.113.0 (extension points for Brutal Strike: a dialog field, a third prompt answer, a prompt on later attacks)
+ * @updated v14.114.1 (combat-end cleanup leaves combatants to dnd5e; deletions tolerate effects removed meanwhile)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
 import { patchMethod } from "../../utils/patch-helper.js";
+import { deleteEffects } from "../../utils/effect-deletion.js";
 import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
 import { isSharedTurn } from "./summon-initiative.js";
 
@@ -531,7 +533,7 @@ async function _onRollAttack(rolls, { subject } = {}) {
             .filter(e => e.getFlag(MODULE_ID, FLAG)
                 || (e.duration?.expired && feature?.uuid && (e.origin === feature.uuid)))
             .map(e => e.id);
-        if (stale.length) await actor.deleteEmbeddedDocuments("ActiveEffect", stale);
+        if (stale.length) await deleteEffects(actor, stale);
         await actor.createEmbeddedDocuments("ActiveEffect", [{
             name: feature?.name || game.i18n.localize("ND5T.RecklessAttack.Label"),
             img: feature?.img || "icons/svg/combat.svg",
@@ -548,18 +550,20 @@ async function _onRollAttack(rolls, { subject } = {}) {
 }
 
 /**
- * deleteCombat: remove Reckless effects left over from that combat.
+ * deleteCombat: remove Reckless effects left over from that combat. dnd5e's combat exit already deletes every
+ * "start of next turn" effect of the combatants, so deleting them here too made one of the two deletions fail
+ * ("does not exist"). Only when Disable Active Effect Expiry stops dnd5e's cleanup do we remove them ourselves.
  * @param {Combat} combat
  */
 async function _onDeleteCombat(combat) {
     try {
-        if (!game.users.activeGM?.isSelf) return;
+        if (!game.users.activeGM?.isSelf || !getSetting("disableActiveEffectExpiry")) return;
         for (const combatant of combat.combatants ?? []) {
             const actor = combatant.actor;
             const ids = (actor?.effects ?? [])
                 .filter(e => e.getFlag(MODULE_ID, FLAG)?.combatId === combat.id)
                 .map(e => e.id);
-            if (ids.length) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+            if (ids.length) await deleteEffects(actor, ids);
         }
     } catch (err) {
         console.error(`${MODULE_ID} | Reckless Attack: cleanup after combat failed`, err);

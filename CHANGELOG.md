@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.114.1] - 2026-11-26
+### Fixed
+- **Reckless Attack** / **Brutal Strike Automation**: Ending a combat no longer shows errors that an effect "does not exist". Both features tried to remove their effects at combat end while D&D 5e was already removing the same effects.
+- **Reckless Attack**, **Brutal Strike Automation**, **Conditional Damage Bonuses**, **Self Effect Application**, **Auto-End Class Features**: Removing an effect that was already removed elsewhere no longer fails, and no longer stops the new Reckless or Brutal Strike effect from being applied.
+
 ## [14.114.0] - 2026-11-26
 ### Changed
 - **Roll Mode Highlight**: The Normal button is now highlighted too when Normal is the recommended mode, just like Advantage and Disadvantage. The "Highlight Normal Mode Too" option is gone.

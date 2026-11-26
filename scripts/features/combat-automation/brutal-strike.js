@@ -13,9 +13,11 @@
  * @updated v14.114.0 (ticking Brutal Strike also ticks Reckless Attack; own copy of the damage roll data; debug
  *   lines from the damage roll to the picker; the hit is remembered before the attack's chat card exists, so damage
  *   rolled from that card (Prompt / Auto-Roll Attack Damage) gets the extra damage and the picker)
+ * @updated v14.114.1 (combat-end cleanup leaves combatants to dnd5e; deletions tolerate effects removed meanwhile)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
+import { deleteEffect, deleteEffects } from "../../utils/effect-deletion.js";
 import { addRollModes, attackTargets, singleAttackTarget } from "../../utils/attack-context.js";
 import { isActorReckless, registerRecklessExtension, RECKLESS_FIELD } from "./reckless-attack.js";
 import { isSharedTurn } from "./summon-initiative.js";
@@ -844,7 +846,7 @@ async function _applyOnActor(actor, effectData) {
             if ((kind === "hamstring") || (flag.source === source) || effect.duration?.expired) replace.add(effect.id);
         }
     }
-    if (replace.size) await actor.deleteEmbeddedDocuments("ActiveEffect", [...replace]);
+    if (replace.size) await deleteEffects(actor, [...replace]);
     await actor.createEmbeddedDocuments("ActiveEffect", effectData);
     debug(`Brutal Strike | ${effectData.map(e => e.name).join(", ")} on ${actor.name}`);
 }
@@ -856,13 +858,8 @@ async function _applyOnActor(actor, effectData) {
 async function _removeEffectByUuid(uuid) {
     const effect = fromUuidSync(uuid, { strict: false });
     if (!effect || !(effect.parent instanceof Actor)) return;
-    if (effect.isOwner) {
-        try {
-            await effect.delete();
-        } catch {
-            // Already removed
-        }
-    } else {
+    if (effect.isOwner) await deleteEffect(effect);
+    else {
         game.socket.emit(SOCKET, { action: "brutalStrikeRemove", uuid });
     }
 }
@@ -976,11 +973,17 @@ async function _onDeleteCombat(combat) {
     try {
         for (const [key, turn] of _usedTurn) if (turn.startsWith(`${combat.id}:`)) _usedTurn.delete(key);
         if (!game.users.activeGM?.isSelf) return;
+        // dnd5e's combat exit deletes the "start of next turn" effects of every combatant itself (unless Disable
+        // Active Effect Expiry is on); deleting them here too made one of the two deletions fail
+        const combatants = getSetting("disableActiveEffectExpiry")
+            ? new Set()
+            : new Set((combat.combatants ?? []).map(c => c.actor?.uuid).filter(Boolean));
         for (const [actorUuid, ids] of [..._applied]) {
+            if (combatants.has(actorUuid)) continue;
             const actor = fromUuidSync(actorUuid, { strict: false });
             if (!actor) continue;
             const stale = [...ids.keys()].filter(id => actor.effects.get(id)?.flags?.[MODULE_ID]?.[FLAG]?.combatId === combat.id);
-            if (stale.length) await actor.deleteEmbeddedDocuments("ActiveEffect", stale);
+            if (stale.length) await deleteEffects(actor, stale);
         }
     } catch (err) {
         console.error(`${MODULE_ID} | Brutal Strike: cleanup after combat failed`, err);

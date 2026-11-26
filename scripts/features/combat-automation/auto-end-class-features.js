@@ -7,8 +7,10 @@
  * @updated v14.67.3 (Debounce keyed by actor UUID so unlinked tokens of the same actor are each handled)
  * @updated v14.81.1 (Starry Form from PHB content 3.0: ends the form by deleting its self-enchantment)
  * @updated v14.111.1 (Bladesong and 12 more self-buffs from the official books; the 2014 Rage only ends on Unconscious)
+ * @updated v14.114.1 (deleting a self-enchantment tolerates it being removed meanwhile)
  */
 import { getSetting, debug } from "../../context.js";
+import { deleteEffects } from "../../utils/effect-deletion.js";
 import { getBreakingConditionName } from "./auto-end-concentration.js";
 import { isModernRules } from "./conditional-damage.js";
 
@@ -334,7 +336,7 @@ async function _checkAndEndClassFeatures(actor, effectName) {
             // effects that depend on them. A disabled enchantment would only be removed (not reapplied) by the
             // next use of the activity with the same profile.
             for (const [item, effects] of enchantments) {
-                await item.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
+                await deleteEffects(item, effects.map(e => e.id));
             }
         } catch (e) {
             console.error(`Nik's DnD5e Tweaks | Failed to end ${feature.id} for ${actor.name}:`, e);

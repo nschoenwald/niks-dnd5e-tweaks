@@ -8,9 +8,11 @@
  * @updated v14.60.2 (Re-enabled effects keep the conditions of their changes and of the effect)
  * @updated v14.92.1 (The usage card's effect tray is collapsed whenever the self-effect message is posted)
  * @updated v14.107.0 (Automatically Apply Effects sub-setting turns direct application on or off)
+ * @updated v14.114.1 (removing duplicates and undoing tolerate effects removed meanwhile)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
+import { deleteEffect } from "../../utils/effect-deletion.js";
 
 /**
  * Self Effect Application
@@ -906,7 +908,7 @@ async function _createEffectOnActor(actor, {
         );
         if (duplicateEffect) {
             debug(`Self Effect Application | Cleaning up stale duplicate effect "${duplicateEffect.name}" (${duplicateEffect.id}) on ${actor.name}`);
-            await duplicateEffect.delete();
+            await deleteEffect(duplicateEffect);
         }
     } else {
         // Find existing non-transfer effect on actor:
@@ -1171,7 +1173,7 @@ async function _handleUndoClick(message, applyButton, undoButton, prompt, actorU
             // Guard: Never touch or remove a concentration effect on undo
             if (!_isConcentrationEffect(effect)) {
                 if (effect.parent === actor && !effect.transfer) {
-                    await effect.delete();
+                    await deleteEffect(effect);
                     debug(`Self Effect Application | ✓ Deleted effect ${createdId} on "${actor?.name ?? actorUuid}"`);
                 } else {
                     await effect.update({ disabled: true });
