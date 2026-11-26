@@ -14,6 +14,8 @@
  *   lines from the damage roll to the picker; the hit is remembered before the attack's chat card exists, so damage
  *   rolled from that card (Prompt / Auto-Roll Attack Damage) gets the extra damage and the picker)
  * @updated v14.114.1 (combat-end cleanup leaves combatants to dnd5e; deletions tolerate effects removed meanwhile)
+ * @updated v14.115.5 (Staggered stays until the start of the attacker's next turn after the save; only the
+ *   Disadvantage is used up)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -51,7 +53,8 @@ import { getBrutalStrikeFormula } from "./conditional-damage.js";
  * Effects: copied from the Brutal Strike item (the activity's effects, then the PHB effect ids, then the English
  * effect name), or built from our own definition when missing. Each gets a flag (`kind`, `source`, `combatId`) and
  * dnd5e's `sourceStart` expiry. A registry of actor UUID → our effect ids, kept by create / delete hooks, lets the
- * save and attack hooks skip every actor without them. Staggered: Disadvantage on the next save, then removed.
+ * save and attack hooks skip every actor without them. Staggered: Disadvantage on the next save, which then marks
+ * the effect (`saveUsed`); the effect itself stays until its expiry (no Opportunity Attacks until then).
  * Sundered: +5 on the next attack against the creature by anyone but its source, then removed. A new Hamstring
  * replaces the old one. Writes go through the owner, or the active GM via the socket.
  */
@@ -110,6 +113,9 @@ const _pending = new Map();
 
 /** Actor UUID → Map(effect id → kind) of our effects on that actor. */
 const _applied = new Map();
+
+/** UUIDs of Staggered effects whose Disadvantage was used on this client (before the flag update arrives). */
+const _staggerUsed = new Set();
 
 /** Actor UUID → kinds last picked on this client (preselected next time). */
 const _lastChoice = new Map();
@@ -852,6 +858,25 @@ async function _applyOnActor(actor, effectData) {
 }
 
 /**
+ * Mark a Staggered effect's Disadvantage as used (owner, or the active GM through the socket). The effect stays:
+ * it still bars Opportunity Attacks until the start of the attacker's next turn.
+ * @param {string} uuid
+ */
+async function _markStaggerUsed(uuid) {
+    _staggerUsed.add(uuid);
+    const effect = fromUuidSync(uuid, { strict: false });
+    if (!effect || !(effect.parent instanceof Actor)) return;
+    if (effect.isOwner) {
+        try {
+            await effect.setFlag(MODULE_ID, `${FLAG}.saveUsed`, true);
+        } catch (err) {
+            // The effect may have expired meanwhile
+            if (effect.parent?.effects.has(effect.id)) throw err;
+        }
+    } else game.socket.emit(SOCKET, { action: "brutalStrikeStaggerUsed", uuid });
+}
+
+/**
  * Remove one of our effects (owner, or the active GM through the socket).
  * @param {string} uuid
  */
@@ -880,7 +905,9 @@ function _track(effect, present) {
     if (present) {
         if (!ids) _applied.set(key, ids = new Map());
         ids.set(effect.id, kind);
-    } else if (ids) {
+    } else {
+        _staggerUsed.delete(effect.uuid);
+        if (!ids) return;
         ids.delete(effect.id);
         if (!ids.size) _applied.delete(key);
     }
@@ -942,7 +969,8 @@ function _addSunderingBonus(config, attacker) {
 function _onPreRollSavingThrow(config) {
     try {
         if (!_applied.size) return;
-        const effect = _activeEffect(config.subject, "staggering");
+        const effect = _activeEffect(config.subject, "staggering",
+            e => !e.flags[MODULE_ID][FLAG].saveUsed && !_staggerUsed.has(e.uuid));
         if (!effect) return;
         addRollModes(config, { disadvantage: true });
         for (const roll of config.rolls ?? []) {
@@ -957,12 +985,12 @@ function _onPreRollSavingThrow(config) {
 }
 
 /**
- * dnd5e.rollSavingThrow: Staggered ends after that save.
+ * dnd5e.rollSavingThrow: Staggered's Disadvantage is used up by that save (the effect stays until its expiry).
  * @param {D20Roll[]} rolls
  */
 function _onRollSavingThrow(rolls) {
     const uuid = rolls?.find(r => r.options?.nd5tStaggered)?.options.nd5tStaggered;
-    if (uuid) _removeEffectByUuid(uuid);
+    if (uuid) _markStaggerUsed(uuid).catch(err => console.error(`${MODULE_ID} | Brutal Strike: marking Staggered failed`, err));
 }
 
 /**
@@ -1008,6 +1036,9 @@ export function brutalStrikeSocketMessage(data) {
             if (actor instanceof Actor) _applyOnActor(actor, data.effects ?? []).catch(err => console.error(`${MODULE_ID} | Brutal Strike: applying effects failed`, err));
             return true;
         }
+        case "brutalStrikeStaggerUsed":
+            if (game.users.activeGM?.isSelf) _markStaggerUsed(data.uuid).catch(err => console.error(`${MODULE_ID} | Brutal Strike: marking Staggered failed`, err));
+            return true;
         case "brutalStrikeRemove":
             if (game.users.activeGM?.isSelf) _removeEffectByUuid(data.uuid);
             return true;

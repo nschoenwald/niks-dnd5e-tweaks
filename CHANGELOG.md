@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.5] - 2026-11-26
+### Fixed
+- **Brutal Strike**: *Staggered* no longer disappears as soon as the target makes its saving throw. The Disadvantage still applies only to that first save, but the effect now stays until the start of the Barbarian's next turn, since the target can't make Opportunity Attacks until then.
+
 ## [14.115.4] - 2026-11-26
 ### Fixed
 - **Region Effects on Deleted Tokens**: Deleting an unlinked token (such as a slain enemy) that stands in an area applying an effect, like the halved speed of *Spirit Guardians*, no longer shows the error "undefined id [...] does not exist in the EmbeddedCollection collection".

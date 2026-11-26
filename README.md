@@ -450,7 +450,7 @@ A Barbarian with **Brutal Strike** (2024 rules, level 9) chooses it at the attac
 On a hit, the damage roll gets the extra damage on its own line: **1d10**, or **2d10** from level 17 (Improved Brutal Strike (2)), of the weapon's damage type. It is doubled on a critical hit. Then the player picks the Brutal Strike effect. When the player isn't logged in, the GM gets the choice. A chat message names the effect and the target.
 * **Forceful Blow**: the chat message reminds the table that the target is pushed 15 feet and the Barbarian may follow up to half Speed without provoking Opportunity Attacks. Tokens are moved by hand.
 * **Hamstring Blow**: the target's Speed drops by 15 feet. A new Hamstring Blow replaces the old one, whoever made it.
-* **Staggering Blow** (from level 13): Disadvantage on the target's next saving throw, after which the effect ends. The effect text says it can't make Opportunity Attacks.
+* **Staggering Blow** (from level 13): Disadvantage on the target's next saving throw. The effect stays after that save until the start of the Barbarian's next turn, as a reminder that the target can't make Opportunity Attacks.
 * **Sundering Blow** (from level 13): the next attack roll against the target by another creature gets **+5**, after which the effect ends.
 * At level 17 the player picks two different effects.
 
