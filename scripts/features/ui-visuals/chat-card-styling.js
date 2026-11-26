@@ -10,6 +10,7 @@
  * @updated v14.71.4 (Personal setting: Use World Setting / On / Off, can turn it on when the GM left it off)
  * @updated v14.77.1 (Action button styling also covers D&D 5e 6.1's labelled buttons)
  * @updated v14.78.0 (Apply Healing / Apply Temp HP buttons coloured like their roll results; untyped parts of healing rolls count as healing)
+ * @updated v14.115.2 (Save buttons show their DC again, e.g. "DC 15 DEX Save", when the viewer may see it)
  */
 import { log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -443,7 +444,20 @@ function _tagMessageElement(message, root) {
                 btn.dataset.ability = ablLower;
                 const abilityConfig = CONFIG.DND5E?.abilities?.[ablLower];
                 const abbr = (abilityConfig?.abbreviation ?? ablLower).toUpperCase();
-                const shortLabel = `${abbr} Save`;
+                // Show the save DC on the button (dnd5e puts it in `data-dc`) only if this viewer may see it.
+                // `shouldDisplayChallenge` is dnd5e's own rule (GM, the card's author, else the world setting
+                // "Challenge Visibility"), the same one that picks its "DC 15 Dexterity Saving Throw" label.
+                // This runs in the render hook on each client, so every viewer gets their own label. A message
+                // without the getter (not a ChatMessage5e) shows the DC to GMs only.
+                const dc = Number(btn.dataset.dc);
+                const mayShowDc = typeof message.shouldDisplayChallenge === "boolean"
+                    ? message.shouldDisplayChallenge
+                    : game.user.isGM;
+                const showDc = Number.isFinite(dc) && (dc > 0) && mayShowDc;
+                const shortLabel = showDc
+                    ? `${game.i18n.format("DND5E.SaveDC", { dc, ability: abbr })} Save`
+                    : `${abbr} Save`;
+                btn.dataset.nd5tLabel = shortLabel;
                 if (!btn.dataset.originalAriaLabel && btn.hasAttribute("aria-label")) {
                     btn.dataset.originalAriaLabel = btn.getAttribute("aria-label");
                 }
@@ -856,6 +870,7 @@ export function disableChatCardStyling() {
 
         // Restore save button attributes
         for (const btn of msgEl.querySelectorAll('button:is([data-action="rollSave"], [data-forward-action="rollSave"])')) {
+            delete btn.dataset.nd5tLabel;
             if (btn.dataset.originalAriaLabel !== undefined) {
                 btn.setAttribute("aria-label", btn.dataset.originalAriaLabel);
                 delete btn.dataset.originalAriaLabel;

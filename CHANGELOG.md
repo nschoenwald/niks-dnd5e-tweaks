@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.2] - 2026-11-26
+### Fixed
+- **Chat Card Styling Improvements**: Save buttons on chat cards show their DC again, e.g. **DC 15 DEX Save**. The DC follows D&D 5e's *Challenge Visibility* setting: GMs and the player who made the card always see it, everyone else only when the setting allows. Otherwise the button reads **DEX Save**.
+
 ## [14.115.1] - 2026-11-26
 ### Changed
 - **Settings Dashboard**: The README now describes the redesigned dashboard of Nik's Foundry Tweaks 14.19.0: one row per feature, with each player's own choices inside the feature under "On your screen".

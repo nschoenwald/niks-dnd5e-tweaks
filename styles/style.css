@@ -804,6 +804,13 @@ body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-mes
     content: "CHA Save" !important;
 }
 
+/* Full label built in JS: the ability and, where the viewer may see it, the DC ("DC 15 DEX Save"). Same
+   specificity as the ability rules above and placed after them, so it wins; those stay as the fallback. */
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-nd5t-label]::after,
+body.nd5t-chat-card-styling :is(.chat-log, .chat-popout) :is(.message, .chat-message) .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-nd5t-label]::after {
+    content: attr(data-nd5t-label) !important;
+}
+
 body.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
 body.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after {
     content: "Check";
@@ -3696,6 +3703,11 @@ body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .mess
 body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after,
 body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-ability="cha" i]::after {
     content: "CHA Save" !important;
+}
+
+body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-nd5t-label]::after,
+body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollSave"], [data-forward-action="rollSave"])[data-nd5t-label]::after {
+    content: attr(data-nd5t-label) !important;
 }
 
 body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-log .message.compact .icon-row>ul>li>button:is(.icon, .labelled):is([data-action="rollCheck"], [data-forward-action="rollCheck"])::after,
