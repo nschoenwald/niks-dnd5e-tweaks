@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.115.6] - 2026-11-26
+### Changed
+- **Region Effects on Deleted Tokens**: The fix for Foundry's own region effect moved to Nik's Foundry Tweaks 14.21.0, so it works in every game system. This module keeps the fix for D&D 5e's version of the effect (such as *Spirit Guardians*). Update Nik's Foundry Tweaks to keep both.
+
 ## [14.115.5] - 2026-11-26
 ### Fixed
 - **Brutal Strike**: *Staggered* no longer disappears as soon as the target makes its saving throw. The Disadvantage still applies only to that first save, but the effect now stays until the start of the Barbarian's next turn, since the target can't make Opportunity Attacks until then.
