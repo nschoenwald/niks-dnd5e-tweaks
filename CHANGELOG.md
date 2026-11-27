@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.116.1] - 2026-11-27
+### Fixed
+- **Heroes of Faerûn Bladesong**: Turning Bladesong on or off no longer makes the game stutter. Heroes of Faerûn enchants every weapon of the Bladesinger with *Bladework* one at a time, and the character sheet redrew after each one. All weapons are now enchanted (and freed again) in one go.
+
 ## [14.116.0] - 2026-11-27
 ### Changed
 - **Requirements**: Now needs Foundry VTT 14.371 and D&D 5e 6.1.2 or later. Support for D&D 5e 6.0 and 6.1.0 / 6.1.1 was dropped, along with fixes that only those versions needed.
