@@ -4,7 +4,7 @@
  *              Brutal Strike (2) (17). The choice is made at the attack roll, next to Reckless Attack: a checkbox
  *              in the attack roll dialog, a third answer in the Reckless prompt, or a Yes / No prompt on later
  *              attacks of the turn when the dialog is skipped. The chosen roll forgoes Advantage (not offered with
- *              Disadvantage or several targets). On a hit, the damage roll gets the extra damage in the weapon's
+ *              Disadvantage or several targets). The damage roll gets the extra damage in the weapon's
  *              damage type, and the attacker's player (the GM when that player is offline) picks the effect(s):
  *              Forceful Blow (a chat reminder only, no token movement), Hamstring Blow, Staggering Blow and
  *              Sundering Blow, each until the start of the attacker's next turn.
@@ -16,6 +16,8 @@
  * @updated v14.114.1 (combat-end cleanup leaves combatants to dnd5e; deletions tolerate effects removed meanwhile)
  * @updated v14.115.5 (Staggered stays until the start of the attacker's next turn after the save; only the
  *   Disadvantage is used up)
+ * @updated v14.118.0 (no hit check: any damage roll of the Brutal Strike attack gets the extra damage and the picker,
+ *   for attacks that hit although Foundry thinks they missed; a later attack without Brutal Strike drops the record)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -43,12 +45,13 @@ import { getBrutalStrikeFormula } from "./conditional-damage.js";
  *
  * Remembering the attack: dnd5e.postAttackRollConfiguration (before evaluation, and before dnd5e creates the chat card
  * that Prompt / Auto-Roll Attack Damage rolls damage from) leaves a pending record per actor for the attack's activity
- * and its roll, kept 10 minutes on this client. Whether it hit is read from that roll once evaluated (crit, fumble,
- * total against the target's AC; unknown without an AC). dnd5e.rollAttack counts the turn as used, hit or miss, and
- * drops the record on a miss.
+ * and its roll, kept 10 minutes on this client. There is no hit check: rolling damage means the attack hit (Foundry's
+ * view can be wrong: cover, forgotten bonuses). dnd5e.rollAttack counts the turn as used, hit or miss; an attack of
+ * the same actor without Brutal Strike drops the record.
  * dnd5e.preRollDamage adds the extra damage as its own roll (scale value, weapon damage type, no extra crit dice);
- * with midi-qol only when the workflow hit something. dnd5e.rollDamage then opens the picker, on this client or,
- * through the socket, on the client of the actor's player (the active GM when no player owner is online).
+ * the targets are midi-qol's hit targets when it has any, else the attack's targets. dnd5e.rollDamage then opens the
+ * picker, on this client or, through the socket, on the client of the actor's player (the active GM when no player
+ * owner is online).
  *
  * Effects: copied from the Brutal Strike item (the activity's effects, then the PHB effect ids, then the English
  * effect name), or built from our own definition when missing. Each gets a flag (`kind`, `source`, `combatId`) and
@@ -108,7 +111,7 @@ const _features = new Map();
 /** Actor UUID → turn key of the turn Brutal Strike was used on. */
 const _usedTurn = new Map();
 
-/** Actor UUID → pending Brutal Strike hit waiting for its damage roll. */
+/** Actor UUID → pending Brutal Strike attack waiting for its damage roll. */
 const _pending = new Map();
 
 /** Actor UUID → Map(effect id → kind) of our effects on that actor. */
@@ -391,21 +394,9 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
 }
 
 /**
- * Whether a Brutal Strike attack roll hit: true, false, or null while it isn't evaluated or no AC is known.
- * @param {D20Roll|null} roll
- * @returns {boolean|null}
- */
-function _hitOf(roll) {
-    if (!roll?._evaluated) return null;
-    if (roll.isCritical) return true;
-    if (roll.isFumble) return false;
-    return Number.isFinite(roll.options?.target) ? roll.total >= roll.options.target : null;
-}
-
-/**
  * Remember a Brutal Strike attack for its damage roll, before it is evaluated. dnd5e creates the attack's chat card
  * before `dnd5e.rollAttack`, and Prompt / Auto-Roll Attack Damage (or another module) can start the damage roll
- * from that card, so waiting for `dnd5e.rollAttack` is too late. Whether it hit is read from the roll later.
+ * from that card, so waiting for `dnd5e.rollAttack` is too late.
  * @param {AttackActivity|null} activity
  * @param {D20Roll} roll
  */
@@ -493,7 +484,7 @@ async function _skippedPrompt(activity, config, choices) {
 // ── After the attack ──────────────────────────────────────────────────
 
 /**
- * dnd5e.rollAttack: use up Sundered, count the turn, and remember a hit for its damage roll.
+ * dnd5e.rollAttack: use up Sundered, count the turn, and remember the attack for its damage roll, hit or miss.
  * @param {D20Roll[]} rolls
  * @param {object} data
  * @param {AttackActivity|null} data.subject
@@ -503,23 +494,22 @@ function _onRollAttack(rolls, { subject } = {}) {
         const roll = rolls?.[0];
         if (!roll) return;
         if (roll.options?.nd5tSundered) _removeEffectByUuid(roll.options.nd5tSundered);
-        if (!roll.options?.[FIELD]) return;
         const actor = subject?.actor;
         if (!actor) return;
+        if (!roll.options?.[FIELD]) {
+            // A new attack without Brutal Strike: its damage must not pick up an earlier Brutal Strike
+            _pending.delete(actor.uuid);
+            return;
+        }
         const combat = _combatOf(actor);
         if (combat) _usedTurn.set(actor.uuid, _turnKey(combat));
 
-        const hit = _hitOf(roll);
-        if (hit === false) {
-            _pending.delete(actor.uuid);
-            debug(`Brutal Strike | ${actor.name} missed: Brutal Strike is used up`);
-            return;
-        }
+        // No hit check: the attack may hit although Foundry thinks it missed (cover, forgotten bonuses)
         // Remembered in postAttackRollConfiguration; a damage roll may already have used it (auto-rolled damage)
         const pending = _pending.get(actor.uuid);
         if (pending?.activityUuid === subject.uuid) pending.roll = roll;
         else _remember(subject, roll);
-        debug(`Brutal Strike | ${actor.name} ${hit ? "hit" : "attacked (no AC known)"}${pending?.damage ? ", extra damage already added" : ": waiting for the damage roll"}`);
+        debug(`Brutal Strike | ${actor.name} attacked${pending?.damage ? ", extra damage already added" : ": waiting for the damage roll"}`);
     } catch (err) {
         console.error(`${MODULE_ID} | Brutal Strike: rollAttack failed`, err);
     }
@@ -542,7 +532,7 @@ function _pendingFor(activity) {
 }
 
 /**
- * dnd5e.preRollDamage: add the extra damage to the damage roll of a Brutal Strike hit.
+ * dnd5e.preRollDamage: add the extra damage to the damage roll of a Brutal Strike attack (hit or not by Foundry's count).
  * @param {object} config  Damage roll process configuration.
  */
 function _onPreRollDamage(config) {
@@ -552,19 +542,12 @@ function _onPreRollDamage(config) {
         const pending = _pendingFor(activity);
         if (!pending || pending.damage) return;
         const actor = activity.actor;
-        if (_hitOf(pending.roll) === false) {
-            _pending.delete(actor.uuid);
-            return;
-        }
 
+        // midi-qol's hit targets when it has any; otherwise the attack's targets (damage rolled on a "miss")
         const workflow = getMidiWorkflow(config);
         if (workflow) {
             const hits = Array.from(workflow.hitTargets ?? [], t => (t?.document ?? t)?.uuid).filter(Boolean);
-            if (!hits.length) {
-                _pending.delete(actor.uuid);
-                return;
-            }
-            pending.targets = hits;
+            if (hits.length) pending.targets = hits;
         }
 
         const base = config.rolls?.[0];
@@ -595,7 +578,7 @@ function _onPreRollDamage(config) {
 }
 
 /**
- * dnd5e.rollDamage: after the damage of a Brutal Strike hit, ask for the effect(s).
+ * dnd5e.rollDamage: after the damage of a Brutal Strike attack, ask for the effect(s).
  * @param {DamageRoll[]} rolls
  * @param {object} data
  * @param {Activity|null} data.subject
@@ -605,7 +588,7 @@ function _onRollDamage(rolls, { subject } = {}) {
         const marked = Boolean(rolls?.some(r => r.options?.[FIELD]));
         const pending = _pending.size ? _pendingFor(subject) : null;
         if (!pending) {
-            if (marked) debug(`Brutal Strike | Damage with Brutal Strike for ${subject?.actor?.name}, but no remembered hit for ${subject?.uuid}`);
+            if (marked) debug(`Brutal Strike | Damage with Brutal Strike for ${subject?.actor?.name}, but no remembered attack for ${subject?.uuid}`);
             return;
         }
         debug(`Brutal Strike | Damage rolled for ${subject.actor.name}: extra damage added ${pending.damage}, marked roll ${marked}`);

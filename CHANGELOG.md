@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.118.0] - 2026-11-27
+### Changed
+- **Brutal Strike**: No longer checks whether the attack hit. Whenever damage is rolled for a Brutal Strike attack, the extra damage and the effect choice are there, so an attack that hits although Foundry counts it as a miss (cover set wrong, a forgotten bonus) still gets Brutal Strike. Just don't roll damage on a real miss.
+
 ## [14.117.0] - 2026-11-27
 ### Changed
 - **Auto-Target Tokens in Spell Templates**: Works together with Nik's Aura Effects. When the area of Circle of Power or another spell that puts an aura on its caster is placed, only the caster is targeted, since the aura already reaches everyone in range. Needs Nik's Aura Effects 14.8.1 or later.
