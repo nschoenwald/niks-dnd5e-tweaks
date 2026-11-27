@@ -27,6 +27,7 @@
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as attacking on its own turn)
  * @updated v14.113.0 (no Brutal Strike toggle while Brutal Strike automation adds that damage itself)
  * @updated v14.114.1 (replacing the Entropic Embrace marker tolerates it being removed meanwhile)
+ * @updated v14.119.0 (Combo Strikes counts melee attacks whose damage was rolled, no AC check)
  */
 
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
@@ -1318,53 +1319,45 @@ function _recordAttackRoll(actor, roll, { activityId, itemId, messageId, targets
 }
 
 /**
- * Melee attack hits per attacker, target and combat turn (Fists of Fury's Combo Strikes).
+ * Melee hits per attacker, target and combat turn (Fists of Fury's Combo Strikes).
  * Keyed by `${actorKey}|${targetUuid}` → { turnKey, count }.
  * @type {Map<string, {turnKey: string, count: number}>}
  */
 const _meleeHits = new Map();
 
-/** The target of each attacker's latest melee hit: actorKey → { targetUuid, turnKey }. */
-const _lastMeleeHit = new Map();
-
 /**
- * Count a melee attack roll that hit its single target (total ≥ AC, or a natural 20; a natural 1 misses), in combat.
- * Called once per attack roll, from dnd5e.rollAttack.
+ * Count a melee hit on a single target, in combat: an attack whose damage was rolled. There is no AC check, since
+ * rolling damage means the attack hit (Foundry's view can be wrong: cover, forgotten bonuses). Called from
+ * dnd5e.rollDamage before the cached attack is marked as used, so each attack counts once.
  * @param {Actor5e} actor
- * @param {D20Roll} roll
  * @param {Activity} activity
+ * @param {DamageRoll[]} rolls
  */
-function _recordMeleeHit(actor, roll, activity) {
+function _recordMeleeHit(actor, activity, rolls) {
     const combat = getActiveCombat(actor);
     const turnKey = getCombatTurnKey(combat, actor);
-    if (!turnKey || !roll) return;
-    const actionType = activity?.getActionType?.(roll.options?.attackMode) ?? activity?.actionType;
+    if (!turnKey || !activity) return;
+    const cached = _getCachedAttack(actor, { activity });
+    if (!cached || (cached.targets.length !== 1)) return;
+    const actionType = activity.getActionType?.(rolls?.[0]?.data?.roll?.attackMode) ?? activity.actionType;
     if (actionType !== "mwak") return;
-    const targets = Array.from(game.user?.targets ?? []);
-    if (targets.length !== 1) return;
-    const target = targets[0].document ?? targets[0];
-    const ac = Number(target.actor?.system?.attributes?.ac?.value);
-    const d20 = roll.d20?.total ?? roll.dice?.find(d => d.faces === 20)?.total;
-    const hit = (d20 === 20) || ((d20 !== 1) && Number.isFinite(ac) && (Number(roll.total) >= ac));
-    if (!hit) return;
-    const key = `${actor.uuid || actor.id}|${target.uuid}`;
+    const targetUuid = cached.targets[0];
+    const key = `${actor.uuid || actor.id}|${targetUuid}`;
     const entry = _meleeHits.get(key);
     _meleeHits.set(key, { turnKey, count: (entry?.turnKey === turnKey) ? entry.count + 1 : 1 });
-    _lastMeleeHit.set(actor.uuid || actor.id, { targetUuid: target.uuid, turnKey });
 }
 
 /**
- * Melee hits on a target this turn before the current attack.
+ * Melee hits on a target this turn before the current damage roll (which is counted once it is rolled).
  * @param {Actor5e} actor
  * @param {string} targetUuid
  * @param {string|null} turnKey
- * @param {boolean} currentHit  Whether the attack behind this damage roll was one of them.
  * @returns {number}
  */
-function _previousMeleeHits(actor, targetUuid, turnKey, currentHit) {
+function _previousMeleeHits(actor, targetUuid, turnKey) {
     const entry = _meleeHits.get(`${actor.uuid || actor.id}|${targetUuid}`);
     if (!turnKey || (entry?.turnKey !== turnKey)) return 0;
-    return Math.max(0, entry.count - (currentHit ? 1 : 0));
+    return entry.count;
 }
 
 /**
@@ -2472,11 +2465,7 @@ function _addFeatureAttackBonuses(ctx, out) {
     if (unarmed && turnKey && feature(["fists-of-fury"], /^fists of fury$/i)) {
         const targets = _resolveTargetDocs(actor, { config, dialog, message, activity });
         if (targets.length === 1) {
-            const target = targets[0];
-            const last = _lastMeleeHit.get(actor.uuid || actor.id);
-            const currentHit = Boolean(_getCachedAttack(actor, { config, activity }))
-                && (last?.targetUuid === target.uuid) && (last?.turnKey === turnKey);
-            const combo = _previousMeleeHits(actor, target.uuid, turnKey, currentHit);
+            const combo = _previousMeleeHits(actor, targets[0].uuid, turnKey);
             if (combo > 0) {
                 add({
                     id: "comboStrikes",
@@ -4215,11 +4204,6 @@ export function initConditionalDamage() {
             itemId: subject?.item?.id,
             targets: Array.from(game.user?.targets ?? [], t => t.document?.uuid)
         });
-        try {
-            _recordMeleeHit(actor, roll, subject);
-        } catch (err) {
-            debug("Conditional Damage | Could not count the melee hit", err);
-        }
     });
 
     Hooks.on("createChatMessage", (message) => {
@@ -4264,6 +4248,12 @@ export function initConditionalDamage() {
             ?? (rolls?.[0]?.options?.actor ? game.actors?.get(rolls[0].options.actor) : null)
             ?? (typeof rolls?.[0]?.parent?.getAssociatedActor === "function" ? rolls[0].parent.getAssociatedActor() : null);
         if (!actor) return;
+        // Count the melee hit before the cached attack is marked as used
+        try {
+            _recordMeleeHit(actor, subject, rolls);
+        } catch (err) {
+            debug("Conditional Damage | Could not count the melee hit", err);
+        }
         const actorKey = actor.uuid || actor.id;
         const cached = _lastAttackRollsByActor.get(actorKey);
         if (cached) cached.damageRolled = true;

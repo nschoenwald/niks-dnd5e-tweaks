@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.119.0] - 2026-11-28
+### Changed
+- **Combo Strikes** (Conditional Damage Bonuses): A melee attack now counts as a hit once its damage is rolled, instead of comparing the attack with the target's AC. An attack that hits although Foundry counts it as a miss (cover set wrong, a forgotten bonus) now counts too.
+- **Holy Aura Automation**: The Fiend or Undead's save is now rolled when the damage of its melee attack is rolled, instead of comparing the attack with the target's AC. An attack that hits although Foundry counts it as a miss now triggers the save as well.
+
 ## [14.118.1] - 2026-11-27
 ### Fixed
 - **Damage Emanation Automation**: When the GM triggers an emanation, the damage roll opens for the caster's player again. Since 14.92.0 the request never reached the player, so damage-only spells rolled no damage at all and spells with a save didn't open the damage dialog (the card's Damage button still worked).

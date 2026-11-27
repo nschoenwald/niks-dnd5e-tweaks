@@ -6,6 +6,7 @@
  *
  * @introduced v14.105.0
  * @updated v14.118.1 (socket requests are checked against the sender)
+ * @updated v14.119.0 (the save is triggered by the melee attack's damage roll, no AC check)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { getMidiWorkflow, isMidiActive } from "../../utils/module-compat.js";
@@ -20,8 +21,11 @@ import { singleAttackTarget, addRollModes } from "../../utils/attack-context.js"
  *
  *  - dnd5e.preRollAttack: attacks against a single target with the effect have Disadvantage, unless the attacker
  *    is protected by the same casting. midi-qol attacks go through this hook too.
- *  - dnd5e.rollAttack: a Fiend or Undead hitting a protected target with a melee attack (natural 20, or total ≥ AC
- *    without a natural 1) triggers the spell's save activity ("Fiend/Undead Save") against the attacker. The active
+ *  - dnd5e.postAttackRollConfiguration / dnd5e.rollDamage: a Fiend or Undead hitting a protected target with a melee attack triggers
+ *    the spell's save activity ("Fiend/Undead Save") against the attacker. A hit is a damage roll of the attack (the
+ *    target remembered from the attack roll), with no AC check, since Foundry's view can be wrong (cover, forgotten
+ *    bonuses); each attack triggers once. The attack is remembered before dnd5e creates its chat card, since damage
+ *    can be rolled from that card (Prompt / Auto-Roll Attack Damage) before dnd5e.rollAttack. The active
  *    GM uses it without consumption (socket from other clients); the attacker rolls from the card and the Blinded
  *    effect is applied from it as usual.
  *  - dnd5e.preRollSavingThrow: Advantage on every save, for versions whose effect has no changes (harmless when
@@ -190,30 +194,53 @@ function _onPreRollAttack(config) {
     }
 }
 
+/** Actor UUID → the latest melee attack against a protected target: `{ activityUuid, targetUuid, time }`. */
+const _pendingAttacks = new Map();
+const PENDING_TTL = 10 * 60 * 1000;
+
 /**
- * dnd5e.rollAttack — a Fiend or Undead hitting a protected creature with a melee attack makes the spell's save.
+ * dnd5e.postAttackRollConfiguration — remember a Fiend's or Undead's melee attack against a protected creature for
+ * its damage roll. Any other attack of the same actor drops the record.
  * @param {D20Roll[]} rolls
- * @param {{subject?: Activity}} data
+ * @param {{subject?: Activity}} config
  */
-function _onRollAttack(rolls, { subject } = {}) {
+function _onPostAttackRollConfiguration(rolls, { subject } = {}) {
     try {
+        const attacker = subject?.actor;
+        if (!attacker) return;
+        _pendingAttacks.delete(attacker.uuid);
         if (!getSetting("enableHolyAura")) return;
         const roll = rolls?.[0];
-        const attacker = subject?.actor;
-        if (!roll || !attacker || !TRIGGER_TYPES.has(_creatureType(attacker))) return;
+        if (!roll || !TRIGGER_TYPES.has(_creatureType(attacker))) return;
         const actionType = subject.getActionType?.(roll.options?.attackMode) ?? subject.actionType;
         if (!MELEE_ACTION_TYPES.has(actionType)) return;
 
         const targets = Array.from(game.user?.targets ?? []);
         if (targets.length !== 1) return;
         const target = targets[0].document ?? targets[0];
-        const protection = getHolyAuraProtection(target.actor);
-        if (!protection?.item) return;
+        if (!getHolyAuraProtection(target.actor)) return;
+        _pendingAttacks.set(attacker.uuid, { activityUuid: subject.uuid, targetUuid: target.uuid, time: Date.now() });
+        debug(`Holy Aura | ${attacker.name} attacked ${target.name} in melee — save on the damage roll`);
+    } catch (err) {
+        console.error(`${MODULE_ID} | Holy Aura: error while checking a melee attack`, err);
+    }
+}
 
-        const ac = Number(target.actor.system?.attributes?.ac?.value);
-        const d20 = roll.d20?.total ?? roll.dice?.find(d => d.faces === 20)?.total;
-        const hit = (d20 === 20) || ((d20 !== 1) && Number.isFinite(ac) && (Number(roll.total) >= ac));
-        if (!hit) return;
+/**
+ * dnd5e.rollDamage — the damage roll of a remembered melee attack is a hit: the attacker makes the spell's save.
+ * @param {DamageRoll[]} rolls
+ * @param {{subject?: Activity}} data
+ */
+function _onRollDamage(rolls, { subject } = {}) {
+    try {
+        const attacker = subject?.actor;
+        const pending = attacker ? _pendingAttacks.get(attacker.uuid) : null;
+        if (!pending || (pending.activityUuid !== subject.uuid)) return;
+        _pendingAttacks.delete(attacker.uuid);
+        if (!getSetting("enableHolyAura") || ((Date.now() - pending.time) > PENDING_TTL)) return;
+        const target = _safeFromUuid(pending.targetUuid);
+        const protection = getHolyAuraProtection(target?.actor);
+        if (!protection?.item) return;
 
         const attackerToken = subject.getUsageToken?.() ?? attacker.token ?? attacker.getActiveTokens?.(false, true)?.[0];
         if (!attackerToken?.uuid) return;
@@ -307,6 +334,7 @@ export function onSocketMessage(data, senderId) {
 export function initHolyAura() {
     Hooks.on("dnd5e.preRollSavingThrow", _onPreRollSavingThrow);
     Hooks.on("dnd5e.preRollAttack", _onPreRollAttack);
-    Hooks.on("dnd5e.rollAttack", _onRollAttack);
+    Hooks.on("dnd5e.postAttackRollConfiguration", _onPostAttackRollConfiguration);
+    Hooks.on("dnd5e.rollDamage", _onRollDamage);
     debug("Holy Aura | Initialized");
 }
