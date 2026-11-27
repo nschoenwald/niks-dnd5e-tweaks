@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.117.0] - 2026-11-27
+### Changed
+- **Auto-Target Tokens in Spell Templates**: Works together with Nik's Aura Effects. When the area of Circle of Power or another spell that puts an aura on its caster is placed, only the caster is targeted, since the aura already reaches everyone in range. Needs Nik's Aura Effects 14.8.1 or later.
+
 ## [14.116.1] - 2026-11-27
 ### Fixed
 - **Heroes of Faerûn Bladesong**: Turning Bladesong on or off no longer makes the game stutter. Heroes of Faerûn enchants every weapon of the Bladesinger with *Bladework* one at a time, and the character sheet redrew after each one. All weapons are now enchanted (and freed again) in one go.

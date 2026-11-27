@@ -299,6 +299,7 @@ Automatically selects and targets tokens inside spell templates during placement
 * **Skips Non-Targets**: Dead and defeated creatures, party and encounter tokens, tokens without an actor and Item Piles are never targeted. Unconscious creatures are, so healing reaches them.
 * **Chat Synchronization**: Updates targets directly on spell chat cards for subsequent saving throws and damage application.
 * **GM Privacy**: Non-GM players only target tokens visible to them. Areas placed by the GM skip hidden tokens unless the caster is hidden too.
+* **Spell Auras**: With Nik's Aura Effects, spells that put an aura on the caster (Circle of Power, Holy Aura, Aura of Life and others) only target the caster when their area is placed: the aura already reaches everyone in range. Spirit Guardians targets as usual. Other modules can adjust targeting through the `niks-dnd5e-tweaks.templateTargetFilter` hook.
 
 ### Snap Templates to Grid Intersections
 Snaps circle, ring and square spell templates to grid intersections instead of cell centers. On hex grids, circles and rings snap to hex centers and squares keep the default Foundry snapping. Cones, lines and emanations are not affected. Hold <kbd>Shift</kbd> while placing to override snapping.

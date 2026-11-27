@@ -6,8 +6,9 @@
  * @updated v14.46.7 (Exclude source/origin tokens for emanation templates)
  * @updated v14.48.4 (Heal activities target allies only, "Choose Targets" damage activities target opponents only)
  * @updated v14.62.0 (Respect the activity's Affects type, skip dead, non-creature and GM-hidden tokens, Secret tokens always targeted, "Choose Targets" saves target opponents, GM selection no longer treated as caster, per-placement caching, no duplicate final targeting)
+ * @updated v14.117.0 (Hook `niks-dnd5e-tweaks.templateTargetFilter` lets other modules adjust whom an area targets)
  */
-import { debug, log, isFeatureActive } from "../../context.js";
+import { MODULE_ID, debug, log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isMidiActive } from "../../utils/module-compat.js";
 
@@ -569,8 +570,27 @@ function _getSourceTokenDocument(activity) {
  * @returns {{side: number|null, selfOnly: boolean, creaturesOnly: boolean, sourceToken: TokenDocument|null}}
  */
 function _getTemplateTargetFilter(regionDocs) {
-    const filter = { side: null, selfOnly: false, creaturesOnly: false, sourceToken: null };
     const activity = _getPlacementActivity(regionDocs);
+    const filter = _computeTemplateTargetFilter(activity);
+    /**
+     * Lets other modules adjust whom an area targets, e.g. Nik's Aura Effects for spells whose aura already reaches
+     * everyone in range (only the caster is targeted). Called once per placement and for the final regions.
+     * @function niks-dnd5e-tweaks.templateTargetFilter
+     * @param {Activity|null} activity  The activity placing the area, if known.
+     * @param {{side: number|null, selfOnly: boolean, creaturesOnly: boolean, sourceToken: TokenDocument|null}} filter
+     *   Modify in place: `selfOnly` targets only `sourceToken`, `side` limits to a token disposition.
+     */
+    Hooks.callAll(`${MODULE_ID}.templateTargetFilter`, activity, filter);
+    return filter;
+}
+
+/**
+ * The target filter from the activity's Affects type, healing and "Choose Targets".
+ * @param {Activity|null} activity
+ * @returns {{side: number|null, selfOnly: boolean, creaturesOnly: boolean, sourceToken: TokenDocument|null}}
+ */
+function _computeTemplateTargetFilter(activity) {
+    const filter = { side: null, selfOnly: false, creaturesOnly: false, sourceToken: null };
     if (!activity) return filter;
 
     const actor = activity.actor ?? activity.item?.actor;
