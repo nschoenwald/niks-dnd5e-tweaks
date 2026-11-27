@@ -11,6 +11,7 @@
  * @updated v14.77.1 (Action button styling also covers D&D 5e 6.1's labelled buttons)
  * @updated v14.78.0 (Apply Healing / Apply Temp HP buttons coloured like their roll results; untyped parts of healing rolls count as healing)
  * @updated v14.115.2 (Save buttons show their DC again, e.g. "DC 15 DEX Save", when the viewer may see it)
+ * @updated v14.118.1 (A card from a compendium item no longer stops the styling with an error)
  */
 import { log } from "../../context.js";
 import { isFeatureOnForUser } from "../../utils/personal-override.js";
@@ -225,9 +226,9 @@ function _getHealingSubtype(message) {
     let activity = null;
     try {
         activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
-            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+            ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
     } catch {
-        activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null;
+        activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null;
     }
     const healingTypes = activity?.healing?.types;
     if (healingTypes) {
@@ -401,9 +402,9 @@ function _tagMessageElement(message, root) {
         let activity = null;
         try {
             activity = (typeof message.getAssociatedActivity === "function" ? message.getAssociatedActivity() : null)
-                ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null);
+                ?? (message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null);
         } catch {
-            activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid) : null;
+            activity = message.system?.activity?.uuid ? fromUuidSync(message.system.activity.uuid, { strict: false }) : null;
         }
         for (const btn of saveButtons) {
             let saveAbility = btn.dataset.ability;

@@ -5,6 +5,7 @@
  * Constitution save or be Blinded.
  *
  * @introduced v14.105.0
+ * @updated v14.118.1 (socket requests are checked against the sender)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { getMidiWorkflow, isMidiActive } from "../../utils/module-compat.js";
@@ -282,11 +283,19 @@ async function _runSave(itemUuid, tokenUuid) {
 }
 
 /**
- * Socket handler: the active GM uses the save activity for another client.
+ * Socket handler: the active GM uses the save activity for another client. Only for a Holy Aura spell, and only
+ * when the sender (from the server, not the payload) owns the caster or the creature making the save.
  * @param {object} data
+ * @param {string} senderId
  */
-export function onSocketMessage(data) {
+export function onSocketMessage(data, senderId) {
     if ((data?.action !== SOCKET_ACTION) || (data.userId !== game.user.id)) return;
+    const sender = game.users.get(senderId);
+    const item = _safeFromUuid(data.itemUuid);
+    const token = _safeFromUuid(data.tokenUuid);
+    if (!sender || !(item instanceof Item) || !_isHolyAuraItem(item) || !token?.actor) return;
+    const owns = actor => Boolean(actor && (sender.isGM || actor.testUserPermission(sender, "OWNER")));
+    if (!owns(item.actor) && !owns(token.actor)) return;
     _runSave(data.itemUuid, data.tokenUuid).catch(err => console.error(`${MODULE_ID} | Holy Aura: save failed`, err));
 }
 

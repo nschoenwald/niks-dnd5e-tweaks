@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.118.1] - 2026-11-27
+### Fixed
+- **Damage Emanation Automation**: When the GM triggers an emanation, the damage roll opens for the caster's player again. Since 14.92.0 the request never reached the player, so damage-only spells rolled no damage at all and spells with a save didn't open the damage dialog (the card's Damage button still worked).
+- **Combat Experience Tracker** and **Legendary Action Placeholders**: Now also work when a second or assistant GM starts the combat. Before, nothing was tracked and no placeholders were created unless the main GM pressed Begin Combat.
+- **Prompt for Death Saves**: A character shared by several players opens the death save dialog for only one of them (the player whose character it is), not for everyone.
+- **Weapon Masteries**, **Brutal Strike**, **Holy Aura**, **Damage Emanation Automation**, **Player Damage Prompt**, **Self Effect Application**, **Mage Slayer** and **Retroactive Advantage**: Requests that players send to the GM's client are now checked: the GM only applies effects, saves and card changes for players who own the creatures involved, and builds the Weapon Mastery and Brutal Strike effects itself.
+- **Detailed Roll Breakdown Overlay**: A damage roll with nothing to break down is no longer rendered again on every mouse-over.
+- **Chat Card Styling**: A card from an item in a compendium no longer stops the card styling with an error.
+- **Weapon Masteries**: Looking up the attack roll of a damage roll only searches the most recent chat messages, not the whole log.
+
 ## [14.118.0] - 2026-11-27
 ### Changed
 - **Brutal Strike**: No longer checks whether the attack hit. Whenever damage is rolled for a Brutal Strike attack, the extra damage and the effect choice are there, so an attack that hits although Foundry counts it as a miss (cover set wrong, a forgotten bonus) still gets Brutal Strike. Just don't roll damage on a real miss.

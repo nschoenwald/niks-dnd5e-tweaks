@@ -9,6 +9,7 @@
  * @updated v14.92.1 (The usage card's effect tray is collapsed whenever the self-effect message is posted)
  * @updated v14.107.0 (Automatically Apply Effects sub-setting turns direct application on or off)
  * @updated v14.114.1 (removing duplicates and undoing tolerate effects removed meanwhile)
+ * @updated v14.118.1 (socket requests are checked against the sender)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
@@ -1325,7 +1326,7 @@ async function _writeEffectsAppliedFlag(messageId, effectsApplied) {
  * Called by the central socket dispatcher in main.js.
  * @param {object} data  The socket payload.
  */
-export function onSocketMessage(data) {
+export function onSocketMessage(data, senderId) {
     if (data?.type !== "selfEffectApplied") return;
 
     const msg = game.messages.get(data.messageId);
@@ -1334,6 +1335,13 @@ export function onSocketMessage(data) {
     // Only the message author or the active GM should write the flag.
     const authorId = msg.author?.id ?? msg.user?.id;
     if (game.user.id !== authorId && !game.user.isActiveGM) return;
+
+    // The sender (from the server, not the payload) must be able to apply the card's effects: its author, a GM or
+    // an owner of the card's actor.
+    const sender = game.users.get(senderId);
+    const actor = ChatMessage.getSpeakerActor(msg.speaker);
+    const mayApply = sender && (sender.isGM || (sender.id === authorId) || actor?.testUserPermission(sender, "OWNER"));
+    if (!mayApply || !data.effectsApplied || (typeof data.effectsApplied !== "object")) return;
 
     debug("Self Effect Application | Socket received: selfEffectApplied for message", data.messageId, data.effectsApplied);
     _writeEffectsAppliedFlag(data.messageId, data.effectsApplied);

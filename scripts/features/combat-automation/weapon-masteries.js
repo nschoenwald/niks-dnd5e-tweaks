@@ -38,6 +38,8 @@
  * @updated v14.86.0 (Vex; Sap, Slow, Topple and Vex step aside for characters set up with midi-qol's own weapon
  *   mastery automation)
  * @updated v14.106.1 (Finds the attack roll of a damage roll through dnd5e's message index before searching the chat)
+ * @updated v14.118.1 (Socket requests are checked against the sender; the GM builds Sap and Slow itself;
+ *   the chat search for an attack roll stops after the last 100 messages)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
@@ -135,42 +137,14 @@ function _actorHasMastery(actor, weapon, masteryName) {
 }
 
 /**
- * Apply a weapon mastery ActiveEffect (Sap or Slow) to a target actor.
- * Prevents duplicates so a creature is never sapped or slowed more than once simultaneously.
- *
+ * The Sap or Slow effect an attacker's weapon puts on its target. Built by whoever creates it, so the active GM
+ * never creates effect data sent over the socket.
  * @param {"sap"|"slow"} mastery
- * @param {Actor5e} targetActor
  * @param {Actor5e} attackerActor
  * @param {Item5e} [weapon]
+ * @returns {object}
  */
-export async function applyMasteryEffect(mastery, targetActor, attackerActor, weapon) {
-    if (!targetActor || !attackerActor) return;
-    if (_catHandlesMasteries(attackerActor)) {
-        debug(`Weapon Mastery | midi-qol's weapon mastery automation handles ${mastery} for ${attackerActor.name}`);
-        return;
-    }
-
-    // Check if target actor already has an active effect for this mastery (prevent duplicates)
-    // Expired effects stay on the actor (marked expired, inactive) until dnd5e cleans them up, so skip them
-    const existing = targetActor.effects.find(e => {
-        if (!e.active || e.duration?.expired) return false;
-        if (e.flags?.[MODULE_ID]?.mastery === mastery) return true;
-        if (e.flags?.dnd5e?.rules === mastery) return true;
-        const nameLower = (e.name || "").toLowerCase();
-        if (mastery === "sap") {
-            return nameLower === "sapped (weapon mastery)" || nameLower === "sapped" || nameLower === "sap" || nameLower === "weapon mastery: sap";
-        }
-        if (mastery === "slow") {
-            return nameLower === "slowed (weapon mastery)" || nameLower === "slowed" || nameLower === "slow" || nameLower === "weapon mastery: slow";
-        }
-        return false;
-    });
-
-    if (existing) {
-        debug(`Weapon Mastery | ${mastery.toUpperCase()} already present on ${targetActor.name}, skipping duplicate`);
-        return;
-    }
-
+function _buildMasteryEffectData(mastery, attackerActor, weapon) {
     const sapIconSetting = getSetting("masterySapIcon") || DEFAULT_SAP_ICON;
     const slowIconSetting = getSetting("masterySlowIcon") || DEFAULT_SLOW_ICON;
 
@@ -228,6 +202,48 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
         effectData.description = "<p>Speed is reduced by 10 feet until the start of the attacker's next turn.</p>";
     }
 
+    return effectData;
+}
+
+/**
+ * Apply a weapon mastery ActiveEffect (Sap or Slow) to a target actor.
+ * Prevents duplicates so a creature is never sapped or slowed more than once simultaneously.
+ *
+ * @param {"sap"|"slow"} mastery
+ * @param {Actor5e} targetActor
+ * @param {Actor5e} attackerActor
+ * @param {Item5e} [weapon]
+ */
+export async function applyMasteryEffect(mastery, targetActor, attackerActor, weapon) {
+    if (!targetActor || !attackerActor) return;
+    if (_catHandlesMasteries(attackerActor)) {
+        debug(`Weapon Mastery | midi-qol's weapon mastery automation handles ${mastery} for ${attackerActor.name}`);
+        return;
+    }
+
+    // Check if target actor already has an active effect for this mastery (prevent duplicates)
+    // Expired effects stay on the actor (marked expired, inactive) until dnd5e cleans them up, so skip them
+    const existing = targetActor.effects.find(e => {
+        if (!e.active || e.duration?.expired) return false;
+        if (e.flags?.[MODULE_ID]?.mastery === mastery) return true;
+        if (e.flags?.dnd5e?.rules === mastery) return true;
+        const nameLower = (e.name || "").toLowerCase();
+        if (mastery === "sap") {
+            return nameLower === "sapped (weapon mastery)" || nameLower === "sapped" || nameLower === "sap" || nameLower === "weapon mastery: sap";
+        }
+        if (mastery === "slow") {
+            return nameLower === "slowed (weapon mastery)" || nameLower === "slowed" || nameLower === "slow" || nameLower === "weapon mastery: slow";
+        }
+        return false;
+    });
+
+    if (existing) {
+        debug(`Weapon Mastery | ${mastery.toUpperCase()} already present on ${targetActor.name}, skipping duplicate`);
+        return;
+    }
+
+    const effectData = _buildMasteryEffectData(mastery, attackerActor, weapon);
+
     if (targetActor.isOwner) {
         await ActiveEffect.createDocuments([effectData], { parent: targetActor });
         debug(`Weapon Mastery | ✓ Created ${mastery.toUpperCase()} effect on ${targetActor.name}`);
@@ -236,7 +252,9 @@ export async function applyMasteryEffect(mastery, targetActor, attackerActor, we
         game.socket.emit(`module.${MODULE_ID}`, {
             action: "applyWeaponMasteryEffect",
             targetActorUuid: targetActor.uuid,
-            effectData
+            mastery,
+            attackerActorUuid: attackerActor.uuid,
+            weaponUuid: weapon?.uuid ?? null
         });
     }
 }
@@ -427,12 +445,16 @@ function _findAttackMessage(message, originatingMessage) {
     // history (newest first) for messages it doesn't index, such as ones linked by the older originatingMessage flag
     const associated = originatingMessage.getAssociatedRolls?.("attack")?.filter(m => m !== message);
     if (associated?.length) return associated.at(-1);
-    return game.messages.contents.findLast(m => {
-        if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") return false;
+    // Newest first, and only the recent part of the log: the attack is rolled shortly before its damage
+    const messages = game.messages.contents;
+    for (let i = messages.length - 1, checked = 0; (i >= 0) && (checked < 100); i--, checked++) {
+        const m = messages[i];
+        if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") continue;
         const origin = m.system?.origin;
         const originId = origin instanceof ChatMessage ? origin.id : (origin ?? m.getFlag("dnd5e", "originatingMessage"));
-        return originId === originatingMessage.id;
-    }) ?? null;
+        if (originId === originatingMessage.id) return m;
+    }
+    return null;
 }
 
 /**
@@ -1010,59 +1032,78 @@ async function _onDeleteCombat(combat) {
     }
 }
 
+/** Mastery effects the socket may create or remove. */
+const SOCKET_MASTERIES = new Set(["sap", "slow", "vex"]);
+
+/**
+ * Resolve an actor (or a token's actor) from a UUID sent over the socket.
+ * @param {string} uuid
+ * @returns {Actor5e|null}
+ */
+function _socketActor(uuid) {
+    const doc = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+    const actor = doc?.actor ?? doc;
+    return (actor instanceof Actor) ? actor : null;
+}
+
+/**
+ * Whether a user owns an actor (GMs own everything).
+ * @param {User} user
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+function _owns(user, actor) {
+    return Boolean(user && actor && (user.isGM || actor.testUserPermission(user, "OWNER")));
+}
+
 /**
  * Handle incoming socket messages on GM client for applying/removing weapon mastery effects.
+ * The sender id comes from the server, never from the payload: the active GM only acts for a user who owns
+ * the attacker (Sap, Slow), the saving creature (Topple) or one side of the effect (removal), and builds
+ * the effect data itself.
  * @param {object} data
+ * @param {string} senderId
  */
-export async function weaponMasterySocketMessage(data) {
+export async function weaponMasterySocketMessage(data, senderId) {
     if (data?.action === "openToppleSaveDialog") {
-        if (data.userId === game.user.id) await _openToppleSaveDialog(data.messageId);
+        if ((data.userId === game.user.id) && game.users.get(senderId)) await _openToppleSaveDialog(data.messageId);
         return;
     }
     if (!game.user.isActiveGM) return;
+    const sender = game.users.get(senderId);
+    if (!sender) return;
 
     try {
-        if (data?.action === "applyWeaponMasteryEffect" && data.targetActorUuid && data.effectData) {
-            const target = fromUuidSync(data.targetActorUuid, { strict: false });
-            const actor = target?.actor ?? target;
-            if (!actor || !(actor instanceof Actor)) return;
-
-            const mastery = data.effectData?.flags?.[MODULE_ID]?.mastery;
-            const existing = actor.effects.find(e => {
-                if (e.flags?.[MODULE_ID]?.mastery === mastery) return true;
-                if (e.flags?.dnd5e?.rules === mastery) return true;
-                const nameLower = (e.name || "").toLowerCase();
-                if (mastery === "sap") {
-                    return nameLower === "sapped (weapon mastery)" || nameLower === "sapped" || nameLower === "sap" || nameLower === "weapon mastery: sap";
-                }
-                if (mastery === "slow") {
-                    return nameLower === "slowed (weapon mastery)" || nameLower === "slowed" || nameLower === "slow" || nameLower === "weapon mastery: slow";
-                }
-                return false;
-            });
-            if (existing) {
-                debug(`Weapon Mastery Socket | ${mastery} already present on ${actor.name}, skipping`);
+        if (data?.action === "applyWeaponMasteryEffect") {
+            const actor = _socketActor(data.targetActorUuid);
+            const attacker = _socketActor(data.attackerActorUuid);
+            if (!actor || !["sap", "slow"].includes(data.mastery)) return;
+            if (!_owns(sender, attacker)) {
+                debug(`Weapon Mastery Socket | Ignored ${data.mastery} from ${sender.name}: not the attacker's owner`);
                 return;
             }
-
-            await ActiveEffect.createDocuments([data.effectData], { parent: actor });
-            debug(`Weapon Mastery Socket | GM created ${mastery} effect on ${actor.name}`);
-        } else if (data?.action === "resolveToppleSave" && data.targetActorUuid) {
-            const target = fromUuidSync(data.targetActorUuid, { strict: false });
-            const actor = target?.actor ?? target;
-            if (!actor || !(actor instanceof Actor)) return;
+            const weapon = data.weaponUuid ? fromUuidSync(data.weaponUuid, { strict: false }) : null;
+            const ownWeapon = (weapon instanceof Item) && (weapon.actor === attacker) ? weapon : null;
+            await applyMasteryEffect(data.mastery, actor, attacker, ownWeapon);
+        } else if (data?.action === "resolveToppleSave") {
+            const actor = _socketActor(data.targetActorUuid);
+            const message = game.messages.get(data.messageId);
+            const topple = message?.getFlag(MODULE_ID, "topple");
+            if (!actor || !topple || topple.result || !_owns(sender, actor)) return;
+            const toppled = _socketActor(topple.targetActorUuid);
+            if (toppled !== actor) return;
             if (data.failed) await _applyProne(actor);
-            await game.messages.get(data.messageId)?.setFlag(MODULE_ID, "topple.result", data.failed ? "prone" : "saved");
-        } else if (data?.action === "removeWeaponMasteryEffect" && data.targetActorUuid && data.effectId) {
-            const target = fromUuidSync(data.targetActorUuid, { strict: false });
-            const actor = target?.actor ?? target;
-            if (!actor || !(actor instanceof Actor)) return;
-
-            const effect = actor.effects.get(data.effectId);
-            if (effect) {
-                await _safeDeleteEffect(effect, actor);
-                debug(`Weapon Mastery Socket | GM removed effect ${data.effectId} on ${actor.name}`);
-            }
+            await message.setFlag(MODULE_ID, "topple.result", data.failed ? "prone" : "saved");
+        } else if (data?.action === "removeWeaponMasteryEffect" && data.effectId) {
+            const actor = _socketActor(data.targetActorUuid);
+            const effect = actor?.effects.get(data.effectId);
+            if (!effect) return;
+            const mastery = effect.flags?.[MODULE_ID]?.mastery ?? effect.flags?.dnd5e?.rules;
+            if (!SOCKET_MASTERIES.has(mastery)) return;
+            const source = _socketActor(effect.flags?.[MODULE_ID]?.sourceActorUuid);
+            if (!_owns(sender, actor) && !_owns(sender, source)) return;
+            await _safeDeleteEffect(effect, actor);
+            debug(`Weapon Mastery Socket | GM removed effect ${data.effectId} on ${actor.name}`);
         }
     } catch (err) {
         console.error("Weapon Mastery | Error handling socket message:", err);

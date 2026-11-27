@@ -2303,24 +2303,26 @@ Hooks.once("ready", async () => {
     // feature handler by payload type.  This avoids the fragile pattern
     // of each feature registering its own game.socket.on() listener,
     // which can't be cleanly de-registered if a feature is hot-toggled.
-    game.socket.on(`module.${MODULE_ID}`, (data) => {
+    // The server passes the real sender's id as the second argument; handlers authorize with it, never with
+    // ids in the payload.
+    game.socket.on(`module.${MODULE_ID}`, (data, senderId) => {
         if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave" || data?.action === "openToppleSaveDialog") {
-            weaponMasterySocketMessage(data);
+            weaponMasterySocketMessage(data, senderId);
             return;
         }
-        if (brutalStrikeSocketMessage(data)) return;
+        if (brutalStrikeSocketMessage(data, senderId)) return;
         if (data?.action === "holyAuraSave") {
-            holyAuraSocketMessage(data);
+            holyAuraSocketMessage(data, senderId);
             return;
         }
-        if (data?.action === "damageEmanationResolve" || data?.action === "damageEmanationClaimResult") {
-            damageEmanationSocketMessage(data);
+        if (data?.action?.startsWith?.("damageEmanation")) {
+            damageEmanationSocketMessage(data, senderId);
             return;
         }
-        damagePromptSocketMessage(data);
-        selfEffectSocketMessage(data);
-        mageSlayerSocketMessage(data);
-        retroactiveAdvantageSocketMessage(data);
+        damagePromptSocketMessage(data, senderId);
+        selfEffectSocketMessage(data, senderId);
+        mageSlayerSocketMessage(data, senderId);
+        retroactiveAdvantageSocketMessage(data, senderId);
     });
     log("Central socket dispatcher registered");
 

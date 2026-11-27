@@ -18,6 +18,7 @@
  *   Disadvantage is used up)
  * @updated v14.118.0 (no hit check: any damage roll of the Brutal Strike attack gets the extra damage and the picker,
  *   for attacks that hit although Foundry thinks they missed; a later attack without Brutal Strike drops the record)
+ * @updated v14.118.1 (socket requests are checked against the sender; the GM builds the effects itself)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -814,7 +815,7 @@ async function _applyChoice(attacker, feature, kinds, targets) {
         const actor = token.actor;
         if (!actor) continue;
         if (actor.isOwner) await _applyOnActor(actor, effectData);
-        else game.socket.emit(SOCKET, { action: "brutalStrikeApply", actorUuid: actor.uuid, effects: effectData });
+        else game.socket.emit(SOCKET, { action: "brutalStrikeApply", actorUuid: actor.uuid, attackerUuid: attacker.uuid, kinds: applied });
     }
 }
 
@@ -1004,26 +1005,76 @@ async function _onDeleteCombat(combat) {
 // ── Socket ────────────────────────────────────────────────────────────
 
 /**
- * Socket messages: open the picker for its user, and (active GM) write effects other users can't.
+ * Resolve an actor (or a token's actor) from a UUID sent over the socket.
+ * @param {string} uuid
+ * @returns {Actor5e|null}
+ */
+function _socketActor(uuid) {
+    const doc = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+    const actor = doc?.actor ?? doc;
+    return (actor instanceof Actor) ? actor : null;
+}
+
+/**
+ * Whether a user owns an actor (GMs own everything).
+ * @param {User|undefined} user
+ * @param {Actor5e|null} actor
+ * @returns {boolean}
+ */
+function _owns(user, actor) {
+    return Boolean(user && actor && (user.isGM || actor.testUserPermission(user, "OWNER")));
+}
+
+/**
+ * Whether a user may have the active GM change one of our effects: it must be a Brutal Strike effect, and the
+ * user must own the creature that has it or the attacker who caused it.
+ * @param {User|undefined} user
+ * @param {string} uuid
+ * @returns {boolean}
+ */
+function _mayChangeOurEffect(user, uuid) {
+    const effect = fromUuidSync(uuid, { strict: false });
+    const flag = effect?.flags?.[MODULE_ID]?.[FLAG];
+    if (!flag || !(effect.parent instanceof Actor)) return false;
+    return _owns(user, effect.parent) || _owns(user, _socketActor(flag.source));
+}
+
+/**
+ * Socket messages: open the picker for its user, and (active GM) write effects other users can't. The active GM
+ * checks the sender (from the server, not the payload) against the attacker or the effect's actors.
  * @param {object} data
+ * @param {string} senderId
  * @returns {boolean}  Whether the message was a Brutal Strike message.
  */
-export function brutalStrikeSocketMessage(data) {
+export function brutalStrikeSocketMessage(data, senderId) {
+    const sender = game.users.get(senderId);
     switch (data?.action) {
         case "brutalStrikePicker":
-            if (data.userId === game.user.id) _openPicker(data);
+            if ((data.userId === game.user.id) && sender) _openPicker(data);
             return true;
         case "brutalStrikeApply": {
             if (!game.users.activeGM?.isSelf) return true;
-            const actor = fromUuidSync(data.actorUuid, { strict: false });
-            if (actor instanceof Actor) _applyOnActor(actor, data.effects ?? []).catch(err => console.error(`${MODULE_ID} | Brutal Strike: applying effects failed`, err));
+            const target = fromUuidSync(data.actorUuid, { strict: false });
+            const actor = target?.actor ?? target;
+            const attacker = _socketActor(data.attackerUuid);
+            const feature = attacker ? _brutal(attacker) : null;
+            if (!(actor instanceof Actor) || !feature || !_owns(sender, attacker)) return true;
+            // Rebuilt here from the attacker's own feature: effect data from the socket is never created
+            const kinds = (data.kinds ?? []).filter(k => (k !== "forceful") && (k in KIND_KEY));
+            if (!kinds.length) return true;
+            const effectData = kinds.map(k => _effectData(k, attacker, feature));
+            _applyOnActor(actor, effectData).catch(err => console.error(`${MODULE_ID} | Brutal Strike: applying effects failed`, err));
             return true;
         }
         case "brutalStrikeStaggerUsed":
-            if (game.users.activeGM?.isSelf) _markStaggerUsed(data.uuid).catch(err => console.error(`${MODULE_ID} | Brutal Strike: marking Staggered failed`, err));
+            if (game.users.activeGM?.isSelf && _mayChangeOurEffect(sender, data.uuid)) {
+                _markStaggerUsed(data.uuid).catch(err => console.error(`${MODULE_ID} | Brutal Strike: marking Staggered failed`, err));
+            }
             return true;
         case "brutalStrikeRemove":
-            if (game.users.activeGM?.isSelf) _removeEffectByUuid(data.uuid);
+            if (game.users.activeGM?.isSelf && _mayChangeOurEffect(sender, data.uuid)) {
+                _removeEffectByUuid(data.uuid).catch(err => console.error(`${MODULE_ID} | Brutal Strike: removing an effect failed`, err));
+            }
             return true;
         default:
             return false;

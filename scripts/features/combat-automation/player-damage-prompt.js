@@ -8,6 +8,7 @@
  * @updated v14.59.0 (Applies and previews the damage card's "ignore resistance" options from D&D 5e 6.1; preview uses dnd5e's own calculation)
  * @updated v14.108.0 (Evasion: offers Half / None for creatures with the feature)
  * @updated v14.71.1 (Visibility wrapper always chains, fixing the libWrapper conflict warning with Nik's Foundry Tweaks)
+ * @updated v14.118.1 (socket requests are checked against the sender)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -2191,14 +2192,47 @@ function _requestUnmarkApplied(messageId) {
 }
 
 /**
+ * Whether a damage prompt's Apply buttons are for this actor.
+ * @param {ChatMessage} message
+ * @param {string} actorUuid
+ * @returns {boolean}
+ */
+function _promptNamesActor(message, actorUuid) {
+    if (!actorUuid || (typeof actorUuid !== "string")) return false;
+    const template = document.createElement("template");
+    template.innerHTML = message.content ?? "";
+    return Array.from(template.content.querySelectorAll('button[data-action="nd5t-apply-damage"]'))
+        .some(button => button.dataset.actorUuid === actorUuid);
+}
+
+/**
+ * Whether a socket sender is a GM or owns the actor.
+ * @param {string} senderId  From the server, not the payload.
+ * @param {string} actorUuid
+ * @returns {boolean}
+ */
+function _senderOwns(senderId, actorUuid) {
+    const sender = game.users.get(senderId);
+    if (!sender) return false;
+    if (sender.isGM) return true;
+    const doc = actorUuid ? fromUuidSync(actorUuid, { strict: false }) : null;
+    const actor = doc?.actor ?? doc;
+    return (actor instanceof Actor) && actor.testUserPermission(sender, "OWNER");
+}
+
+/**
  * Handle incoming socket messages for this module.
  * Called by the central socket dispatcher in main.js.
  * @param {object} data  The socket payload.
  */
-export function onSocketMessage(data) {
+export function onSocketMessage(data, senderId) {
     if (data?.type === "damagePromptApplied") {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;
+        // The sender (from the server) must own the creature the prompt is for, and the undo data must name it
+        const actorUuid = data.deltas?.actorUuid;
+        if (!_promptNamesActor(msg, actorUuid) || !_senderOwns(senderId, actorUuid)) return;
+        if (!Number.isFinite(data.deltas.hp) || !Number.isFinite(data.deltas.temp)) return;
         const authorId = msg.author?.id ?? msg.user?.id;
         const activeGM = game.users.activeGM;
         if (activeGM) {
@@ -2215,6 +2249,7 @@ export function onSocketMessage(data) {
     if (data?.type === "damagePromptUnapplied") {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;
+        if (!_senderOwns(senderId, msg.getFlag(MODULE_ID, "damageApplied")?.actorUuid)) return;
         const authorId = msg.author?.id ?? msg.user?.id;
         const activeGM = game.users.activeGM;
         if (activeGM) {

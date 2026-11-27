@@ -22,6 +22,8 @@
  *   speed reduction of Spirit Guardians)
  * @updated v14.116.0 (Revealing a hidden caster doesn't trigger their attached emanation on the creatures already in it,
  *   Foundry 14.371)
+ * @updated v14.118.1 (the caster's player gets the delegated damage roll again; socket requests are checked
+ *   against the sender)
  */
 import { patchMethod } from "../../utils/patch-helper.js";
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
@@ -1791,10 +1793,15 @@ async function _applyPromptResolution({ messageId, affected, resolvedBy }) {
 }
 
 /**
- * Socket handler: resolve a prompt on behalf of another user, and tell them whether their click won.
+ * Socket handler: resolve a prompt on behalf of another user, and tell them whether their click won. A prompt is
+ * only resolved for a sender (from the server, not the payload) who is a GM or owns the caster, and only for the
+ * creatures on the card.
  * @param {object} data
+ * @param {string} senderId
  */
-export function onSocketMessage(data) {
+export function onSocketMessage(data, senderId) {
+    const sender = game.users.get(senderId);
+    if (!sender) return;
     if (data?.action === "damageEmanationRollDamage") {
         if (data.userId === game.user.id) {
             _rollDelegatedDamage(data).catch(err => console.error("Nik's DnD5e Tweaks | Damage Emanation: Failed to roll the damage", err));
@@ -1808,7 +1815,15 @@ export function onSocketMessage(data) {
     if (data?.action !== "damageEmanationResolve") return;
     const message = game.messages.get(data.messageId);
     if (!message || !_getPromptAuthority(message)?.isSelf) return;
-    _applyPromptResolution(data)
+    const prompt = message.getFlag(MODULE_ID, "damageEmanationPrompt");
+    const caster = _getBehaviorActivity(fromUuidSync(prompt?.behaviorUuid, { strict: false }))?.actor;
+    const mayResolve = sender.isGM || Boolean(caster?.testUserPermission(sender, "OWNER"));
+    const onCard = new Set((prompt?.entries ?? []).map(e => e.tokenUuid));
+    const affected = Array.isArray(data.affected) ? data.affected.filter(uuid => onCard.has(uuid)) : [];
+    const resolution = mayResolve
+        ? _applyPromptResolution({ messageId: data.messageId, affected, resolvedBy: sender.name })
+        : Promise.resolve(false);
+    resolution
         .catch(err => {
             console.error("Nik's DnD5e Tweaks | Damage Emanation: Failed to resolve prompt", err);
             return false;
@@ -1816,7 +1831,7 @@ export function onSocketMessage(data) {
         .then(granted => {
             if (!data.requestId) return;
             game.socket.emit(`module.${MODULE_ID}`, {
-                action: "damageEmanationClaimResult", requestId: data.requestId, userId: data.userId, granted
+                action: "damageEmanationClaimResult", requestId: data.requestId, userId: sender.id, granted
             });
         });
 }

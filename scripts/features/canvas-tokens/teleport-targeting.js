@@ -20,6 +20,7 @@
  *
  * @introduced v14.101.0
  * @updated v14.116.0 (Length conversion uses only the D&D 5e 6.1 signature)
+ * @updated v14.118.1 (Unit matcher: English units only)
  */
 import { MODULE_ID, debug } from "../../context.js";
 import { coreApi } from "../../core-integration.js";
@@ -123,7 +124,7 @@ function getTeleportRange(activity) {
         const match = text.match(pattern);
         if (!match) continue;
         const value = Number(match[1].replace(",", "."));
-        const unit = /^(m|meter|metern|meters|metres?)$/i.test(match[2]) ? "m" : "ft";
+        const unit = /^(m|meters?|metres?)$/i.test(match[2]) ? "m" : "ft";
         if (value > 0) return toSceneUnits(value, unit);
     }
     return null;

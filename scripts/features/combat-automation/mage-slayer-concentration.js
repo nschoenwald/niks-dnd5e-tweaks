@@ -4,6 +4,7 @@
  *
  * @introduced v14.12.1
  * @updated v14.67.1 (Pending disadvantage is cleared on every client after the save; entries expire after 2 minutes)
+ * @updated v14.118.1 (socket flags are checked against the sender and the attacker's Mage Slayer)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 
@@ -218,6 +219,7 @@ function _processDamageForMageSlayer(defenderActor, amount, options) {
         // Sync flag to other clients so the player client has it when rolling
         game.socket.emit(`module.${MODULE_ID}`, {
             type: "mageSlayerConcentrationDisadvantage",
+            attackerUuid: attackerActor.uuid,
             actorId: defenderActor.id,
             actorUuid: defenderActor.uuid,
             isToken: defenderActor.isToken ?? false,
@@ -335,17 +337,30 @@ export function initMageSlayerConcentration() {
 }
 
 /**
- * Handle incoming socket messages for Mage Slayer concentration disadvantage.
+ * Handle incoming socket messages for Mage Slayer concentration disadvantage. A flag is only accepted when the
+ * attacker has Mage Slayer and the sender (from the server, not the payload) is a GM or owns the attacker or the
+ * defender, and it is timed by this client's clock.
  * @param {object} data
+ * @param {string} senderId
  */
-export function onSocketMessage(data) {
+export function onSocketMessage(data, senderId) {
     if (data?.type === "mageSlayerConcentrationCleared") {
         _clearPending(data.actorUuid, data.actorId, data.isToken);
         debug(`Mage Slayer | Received socket clear for actor ${data.actorUuid || data.actorId}`);
         return;
     }
     if (data?.type !== "mageSlayerConcentrationDisadvantage") return;
-    const now = data.timestamp || Date.now();
+    const sender = game.users.get(senderId);
+    const resolve = uuid => {
+        const doc = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+        const actor = doc?.actor ?? doc;
+        return (actor instanceof Actor) ? actor : null;
+    };
+    const attacker = resolve(data.attackerUuid);
+    const defender = resolve(data.actorUuid);
+    const owns = actor => Boolean(actor && (sender.isGM || actor.testUserPermission(sender, "OWNER")));
+    if (!sender || !attacker || !_hasMageSlayer(attacker) || (!owns(attacker) && !owns(defender))) return;
+    const now = Date.now();
     if (data.actorUuid) _pendingMageSlayerDisadvantage.set(data.actorUuid, now);
     if (data.actorId && !data.isToken) _pendingMageSlayerDisadvantage.set(data.actorId, now);
     debug(`Mage Slayer | Received socket disadvantage flag for actor ${data.actorUuid || data.actorId}`);

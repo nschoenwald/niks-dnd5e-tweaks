@@ -3,6 +3,7 @@
  * Description: Tracks hostile NPCs involved in combat encounters and whispers an XP tally to the GM upon encounter conclusion with an even distribution button.
  *
  * @introduced v14.10.0
+ * @updated v14.118.1 (Tracks the combat when any GM starts it, not only the active GM)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 
@@ -72,7 +73,9 @@ async function _setFlag(combat, data) {
  */
 async function _onCombatStart(combat) {
     try {
-        if (!game.users.activeGM?.isSelf) return;
+        // combatStart only runs on the client that started the combat (Combat#startCombat), which isn't
+        // necessarily the active GM, so any GM records the snapshot here
+        if (!game.user.isGM) return;
         if (!getSetting("enableCombatExpTracker")) return;
 
         const npcs = {};

@@ -35,6 +35,7 @@
  * one in `afterCombatantId` for older code paths). Core combatant groups count as one unit for the tie breakers: their
  * shared initiative is changed on the CombatantGroup, not on its members.
  * @updated v14.110.0 (A summon following its summoner shares the summoner's tie breaker)
+ * @updated v14.118.1 (Placeholders are created when any GM starts the combat, not only the active GM)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -856,9 +857,9 @@ export function initLegendaryActionPlaceholders() {
     Hooks.on("combatStart", async (combat) => {
         try {
             _invalidateLegendaryCache(combat);
-            // Only run for the primary GM
-            const activeGM = game.users.activeGM;
-            if (!activeGM?.isSelf) return;
+            // combatStart only runs on the client that started the combat (Combat#startCombat), which isn't
+            // necessarily the active GM, so any GM may create the placeholders here
+            if (!game.user.isGM) return;
 
             // Check if the setting is enabled
             if (!getSetting("enableLegendaryActionPlaceholders")) return;

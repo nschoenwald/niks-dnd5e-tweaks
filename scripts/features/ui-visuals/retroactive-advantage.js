@@ -4,6 +4,7 @@
  *
  * @introduced v14.29.0
  * @updated v14.49.0 (Theme observer watches theme containers instead of the whole chat subtree)
+ * @updated v14.118.1 (socket requests are authorized by the sender id from the server)
  */
 import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -181,23 +182,24 @@ export async function requestAdvantageChange(message, mode, rollIndex) {
  *
  * @param {object} data
  */
-export async function onSocketMessage(data) {
+export async function onSocketMessage(data, senderId) {
     if (data?.action !== "retroactiveAdvantageUpdate") return;
     if (!game.users.activeGM?.isSelf) return;
 
     const message = game.messages.get(data.messageId);
     if (!message) return;
 
-    const sender = game.users.get(data.userId);
+    // The sender id comes from the server; the payload's userId could name anyone
+    const sender = game.users.get(senderId);
     if (!sender) return;
 
     // Validate that sender is authorized to change this roll
     const isAuthorized = sender.isGM
-        || (message.author?.id === data.userId)
+        || (message.author?.id === sender.id)
         || (message.actor?.testUserPermission(sender, "OWNER"));
 
-    if (!isAuthorized) {
-        log(`Rejected unauthorized retroactive advantage request for message ${data.messageId} from user ${data.userId}`);
+    if (!isAuthorized || ![-1, 0, 1].includes(data.mode)) {
+        log(`Rejected unauthorized retroactive advantage request for message ${data.messageId} from user ${sender.id}`);
         return;
     }
 

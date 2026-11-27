@@ -383,7 +383,7 @@ Inserts placeholder turns in the initiative tracker so legendary actions can be 
 Configurable status overlays (Unconscious, Dead, None) and combat tracker actions (Mark Defeated, Remove from Combat) when dropping to 0 HP. Important NPCs fall unconscious and are never removed from combat. Dead and Unconscious replace each other: when a creature gets one, the other is removed, also when it is set by hand from the token HUD or by another module.
 
 ### Prompt for Death Saves
-Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. Whispers a fallback card to the GM if the player is offline.
+Automatically prompts the owning player with the death save dialog at the start of their turn when at 0 HP. If several players own the character, only one gets the dialog: the player whose character it is, otherwise one of the owners. Whispers a fallback card to the GM if no owner is online.
 
 ### Undead Fortitude Automation
 When damage would reduce a creature with **Undead Fortitude** (Zombies, Ogre Zombies and the like) to 0 HP, it rolls a Constitution saving throw with a DC of 5 + the damage taken. On a success it stays at 1 HP; on a failure it drops to 0 HP. Radiant damage and critical hits skip the save, and the GM gets a whispered note saying why.

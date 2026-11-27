@@ -10,6 +10,7 @@
  * @updated v14.59.0 (Missing-actor fallback in the damage tray includes the D&D 5e 6.1 `potential` changes)
  * @updated v14.72.1 (Short labels for midi-qol's long flavor tags in the breakdown and midi-qol's formula; ammunition bonus labelled AMMO)
  * @updated v14.72.2 (Attack bonus labelled ATK)
+ * @updated v14.118.1 (A damage roll with nothing to break down isn't rendered again on every hover)
  */
 import { log, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
@@ -2226,7 +2227,11 @@ export async function enhanceDamageChatMessageBreakdown(message, html, targetPop
     }
 
     const rendered = await _renderDamageBreakdown(message, damageRolls);
-    if (!rendered) return;
+    if (!rendered) {
+        // Nothing to show: don't render it again on every hover
+        breakdownEl._nd5tBreakdownSkipped = true;
+        return;
+    }
     message._nd5tBreakdownHtml = rendered;
     breakdownEl.innerHTML = rendered;
 }

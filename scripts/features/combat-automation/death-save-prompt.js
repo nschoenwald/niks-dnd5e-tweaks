@@ -4,6 +4,7 @@
  *
  * @introduced v13.0.1
  * @updated v14.57.0 (Active GM check uses the V14 API)
+ * @updated v14.118.1 (Only one connected owner gets the dialog)
  */
 import { debug, isFeatureActive } from "../../context.js";
 
@@ -98,10 +99,15 @@ async function handleDeathSavePrompt(combat) {
 
     debug(`Death Save Prompt | ${actor.name} needs a death save (round ${combat.round}).`);
 
-    // ── Path 1: owning player client → open roll dialog directly ──────────────
-    // actor.isOwner is true for the actor's owning player(s) and always true for GMs.
-    // We exclude GMs here so they don't auto-pop a dialog for every player actor.
-    if (actor.isOwner && !game.user.isGM) {
+    // Connected non-GM owners. Only one of them gets the dialog: the player whose character it is, otherwise
+    // the first by id, so an actor shared by several players isn't rolled for twice.
+    const connectedOwners = game.users
+        .filter(u => !u.isGM && u.active && actor.testUserPermission(u, "OWNER"))
+        .sort((a, b) => a.id.localeCompare(b.id));
+    const roller = connectedOwners.find(u => u.character?.id === actor.id) ?? connectedOwners[0] ?? null;
+
+    // ── Path 1: the rolling player's client → open roll dialog directly ───────
+    if (roller?.isSelf) {
         debug(`Death Save Prompt | Opening death save dialog for ${actor.name} on owning client.`);
         queueMicrotask(async () => {
             try {
@@ -118,11 +124,7 @@ async function handleDeathSavePrompt(combat) {
     // Check whether any non-GM owner of this actor is currently connected.
     // If an owner is online, their client will handle Path 1 — no card needed.
     if (!game.user.isActiveGM) return;
-
-    const hasConnectedOwner = game.users.some(u =>
-        !u.isGM && u.active && actor.testUserPermission(u, "OWNER")
-    );
-    if (hasConnectedOwner) return; // Owner client is handling it via Path 1
+    if (roller) return; // That player's client is handling it via Path 1
 
     debug(`Death Save Prompt | No connected owner for ${actor.name}. Sending GM fallback chat card.`);
     queueMicrotask(async () => {
