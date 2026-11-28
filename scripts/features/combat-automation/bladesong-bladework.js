@@ -14,7 +14,7 @@
  */
 import { isFeatureActive, log, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
-import { isModernRules } from "./conditional-damage.js";
+import { isModernRules } from "./conditional-damage/index.js";
 
 /**
  * Bladesong Bladework

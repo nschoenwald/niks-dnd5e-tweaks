@@ -7,10 +7,12 @@
  * @introduced v14.105.0
  * @updated v14.118.1 (socket requests are checked against the sender)
  * @updated v14.119.0 (the save is triggered by the melee attack's damage roll, no AC check)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { getMidiWorkflow, isMidiActive } from "../../utils/module-compat.js";
 import { singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * Holy Aura
@@ -315,7 +317,7 @@ async function _runSave(itemUuid, tokenUuid) {
  * @param {object} data
  * @param {string} senderId
  */
-export function onSocketMessage(data, senderId) {
+function onSocketMessage(data, senderId) {
     if ((data?.action !== SOCKET_ACTION) || (data.userId !== game.user.id)) return;
     const sender = game.users.get(senderId);
     const item = _safeFromUuid(data.itemUuid);
@@ -338,3 +340,5 @@ export function initHolyAura() {
     Hooks.on("dnd5e.rollDamage", _onRollDamage);
     debug("Holy Aura | Initialized");
 }
+
+registerSocketHandlers("Holy Aura", [SOCKET_ACTION], onSocketMessage);

@@ -19,6 +19,7 @@
  * @updated v14.118.0 (no hit check: any damage roll of the Brutal Strike attack gets the extra damage and the picker,
  *   for attacks that hit although Foundry thinks they missed; a later attack without Brutal Strike drops the record)
  * @updated v14.118.1 (socket requests are checked against the sender; the GM builds the effects itself)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -26,7 +27,8 @@ import { deleteEffect, deleteEffects } from "../../utils/effect-deletion.js";
 import { addRollModes, attackTargets, singleAttackTarget } from "../../utils/attack-context.js";
 import { isActorReckless, registerRecklessExtension, RECKLESS_FIELD } from "./reckless-attack.js";
 import { isSharedTurn } from "./summon-initiative.js";
-import { getBrutalStrikeFormula } from "./conditional-damage.js";
+import { getBrutalStrikeFormula } from "./conditional-damage/index.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * How it works
@@ -1046,7 +1048,7 @@ function _mayChangeOurEffect(user, uuid) {
  * @param {string} senderId
  * @returns {boolean}  Whether the message was a Brutal Strike message.
  */
-export function brutalStrikeSocketMessage(data, senderId) {
+function brutalStrikeSocketMessage(data, senderId) {
     const sender = game.users.get(senderId);
     switch (data?.action) {
         case "brutalStrikePicker":
@@ -1113,3 +1115,5 @@ export function initBrutalStrike() {
     document.body.classList.add("nd5t-brutal-strike");
     debug("Brutal Strike | Initialized");
 }
+
+registerSocketHandlers("Brutal Strike", ["brutalStrikePicker", "brutalStrikeApply", "brutalStrikeStaggerUsed", "brutalStrikeRemove"], brutalStrikeSocketMessage);

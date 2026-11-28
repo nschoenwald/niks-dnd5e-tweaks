@@ -5,10 +5,12 @@
  * @introduced v14.29.0
  * @updated v14.49.0 (Theme observer watches theme containers instead of the whole chat subtree)
  * @updated v14.118.1 (socket requests are authorized by the sender id from the server)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, log, debug, isFeatureActive } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { isMidiMessage } from "../../utils/module-compat.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * Check if the current user has permission to change the advantage mode on this message.
@@ -182,7 +184,7 @@ export async function requestAdvantageChange(message, mode, rollIndex) {
  *
  * @param {object} data
  */
-export async function onSocketMessage(data, senderId) {
+async function onSocketMessage(data, senderId) {
     if (data?.action !== "retroactiveAdvantageUpdate") return;
     if (!game.users.activeGM?.isSelf) return;
 
@@ -459,3 +461,4 @@ export function initRetroactiveAdvantage() {
     });
 }
 
+registerSocketHandlers("Retroactive Advantage", ["retroactiveAdvantageUpdate"], onSocketMessage);

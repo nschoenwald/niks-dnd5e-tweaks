@@ -9,11 +9,13 @@
  * @updated v14.108.0 (Evasion: offers Half / None for creatures with the feature)
  * @updated v14.71.1 (Visibility wrapper always chains, fixing the libWrapper conflict warning with Nik's Foundry Tweaks)
  * @updated v14.118.1 (socket requests are checked against the sender)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { midiAutoAppliesDamage, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 import { evasionAppliesToActivity } from "./evasion.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * Player Damage Prompt
@@ -2222,10 +2224,10 @@ function _senderOwns(senderId, actorUuid) {
 
 /**
  * Handle incoming socket messages for this module.
- * Called by the central socket dispatcher in main.js.
+ * Registered with the socket router (see the end of this file).
  * @param {object} data  The socket payload.
  */
-export function onSocketMessage(data, senderId) {
+function onSocketMessage(data, senderId) {
     if (data?.type === "damagePromptApplied") {
         const msg = game.messages.get(data.messageId);
         if (!msg) return;
@@ -2305,3 +2307,5 @@ async function _unmarkMessageApplied(messageId) {
     await message.unsetFlag(MODULE_ID, "damageApplied");
     debug("Player Damage Prompt | ✓ Message flagged as damage unapplied:", messageId);
 }
+
+registerSocketHandlers("Player Damage Prompt", ["damagePromptApplied", "damagePromptUnapplied"], onSocketMessage);

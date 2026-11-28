@@ -7,7 +7,7 @@
  * @introduced v14.83.0
  */
 import { isFeatureActive, log, debug } from "../../context.js";
-import { isModernRules } from "./conditional-damage.js";
+import { isModernRules } from "./conditional-damage/index.js";
 
 /**
  * Great Weapon Fighting

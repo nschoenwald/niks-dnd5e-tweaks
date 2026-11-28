@@ -11,7 +11,7 @@
  * @introduced v14.104.0
  */
 import { MODULE_ID, isFeatureActive, log, debug } from "../../context.js";
-import { getActiveCombat, getCombatTurnKey, hasUsedBonusThisTurn, markBonusUsedThisTurn } from "./conditional-damage.js";
+import { getActiveCombat, getCombatTurnKey, hasUsedBonusThisTurn, markBonusUsedThisTurn } from "./conditional-damage/index.js";
 
 /**
  * Automatic Damage Rules

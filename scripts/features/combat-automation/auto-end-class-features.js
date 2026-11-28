@@ -12,7 +12,7 @@
 import { getSetting, debug } from "../../context.js";
 import { deleteEffects } from "../../utils/effect-deletion.js";
 import { getBreakingConditionName } from "./auto-end-concentration.js";
-import { isModernRules } from "./conditional-damage.js";
+import { isModernRules } from "./conditional-damage/index.js";
 
 const BREAK_CONCENTRATION_STATUSES = new Set([
     "incapacitated",

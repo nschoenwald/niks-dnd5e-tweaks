@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.120.0] - 2026-11-28
+### Changed
+- **Area Spell Automation** (formerly Damage Emanation Automation): Renamed, since it also handles areas that aren't emanations (*Moonbeam*, *Web*, walls) and spells that deal no damage (*Grease*, *Stinking Cloud*). The spell list is now called **Area Spells** and the region behavior **Area Spell Trigger**. Your settings and areas already on the map keep working.
+- **Area Spell Automation**: *Remember Damage Type* now also works when the GM is looking at another scene than the one with the area.
+- **Area Spell Automation**: Drifting areas (*Cloudkill* and similar) also move when the caster takes over the current turn because a combatant was removed or the order changed.
+
+### Fixed
+- **Area Spell Automation**: Jumping ahead in the combat tracker no longer makes the creatures whose turns were passed over save against areas they're standing in, as if they had ended their turn there.
+- **Area Spell Automation**: An area now uses the combat running on its own scene, not one running somewhere else.
+- **Area Spell Automation**: A player's client only rolls an area's damage when the request comes from whoever posted that save card.
+
 ## [14.119.0] - 2026-11-28
 ### Changed
 - **Combo Strikes** (Conditional Damage Bonuses): A melee attack now counts as a hit once its damage is rolled, instead of comparing the attack with the target's AC. An attack that hits although Foundry counts it as a miss (cover set wrong, a forgotten bonus) now counts too.

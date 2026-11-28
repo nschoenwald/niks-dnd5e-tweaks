@@ -5,8 +5,10 @@
  * @introduced v14.12.1
  * @updated v14.67.1 (Pending disadvantage is cleared on every client after the save; entries expire after 2 minutes)
  * @updated v14.118.1 (socket flags are checked against the sender and the attacker's Mage Slayer)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * Mage Slayer — Concentration Breaker
@@ -343,7 +345,7 @@ export function initMageSlayerConcentration() {
  * @param {object} data
  * @param {string} senderId
  */
-export function onSocketMessage(data, senderId) {
+function onSocketMessage(data, senderId) {
     if (data?.type === "mageSlayerConcentrationCleared") {
         _clearPending(data.actorUuid, data.actorId, data.isToken);
         debug(`Mage Slayer | Received socket clear for actor ${data.actorUuid || data.actorId}`);
@@ -365,3 +367,5 @@ export function onSocketMessage(data, senderId) {
     if (data.actorId && !data.isToken) _pendingMageSlayerDisadvantage.set(data.actorId, now);
     debug(`Mage Slayer | Received socket disadvantage flag for actor ${data.actorUuid || data.actorId}`);
 }
+
+registerSocketHandlers("Mage Slayer", ["mageSlayerConcentrationCleared", "mageSlayerConcentrationDisadvantage"], onSocketMessage);

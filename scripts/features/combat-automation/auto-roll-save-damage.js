@@ -42,7 +42,7 @@ function _onPostUseActivity(activity, usageConfig, results) {
     // Only act on Save-type activities that actually have damage parts
     if (activity.type !== "save") return;
 
-    // Damage Emanation asked the caster's player to roll this damage instead
+    // Area Spell Automation asked the caster's player to roll this damage instead
     if (usageConfig?.nd5tEmanationDamageDelegated) return;
     if (!activity.damage?.parts?.length) return;
 

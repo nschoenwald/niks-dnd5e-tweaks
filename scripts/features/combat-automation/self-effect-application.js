@@ -10,10 +10,12 @@
  * @updated v14.107.0 (Automatically Apply Effects sub-setting turns direct application on or off)
  * @updated v14.114.1 (removing duplicates and undoing tolerate effects removed meanwhile)
  * @updated v14.118.1 (socket requests are checked against the sender)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, debug, isFeatureActive } from "../../context.js";
 import { midiAppliesItemEffects } from "../../utils/module-compat.js";
 import { deleteEffect } from "../../utils/effect-deletion.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 /**
  * Self Effect Application
@@ -1323,10 +1325,10 @@ async function _writeEffectsAppliedFlag(messageId, effectsApplied) {
 
 /**
  * Handle incoming socket messages relevant to self-effect application.
- * Called by the central socket dispatcher in main.js.
+ * Registered with the socket router (see the end of this file).
  * @param {object} data  The socket payload.
  */
-export function onSocketMessage(data, senderId) {
+function onSocketMessage(data, senderId) {
     if (data?.type !== "selfEffectApplied") return;
 
     const msg = game.messages.get(data.messageId);
@@ -1346,3 +1348,5 @@ export function onSocketMessage(data, senderId) {
     debug("Self Effect Application | Socket received: selfEffectApplied for message", data.messageId, data.effectsApplied);
     _writeEffectsAppliedFlag(data.messageId, data.effectsApplied);
 }
+
+registerSocketHandlers("Self Effect Application", ["selfEffectApplied"], onSocketMessage);

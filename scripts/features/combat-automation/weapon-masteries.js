@@ -40,10 +40,12 @@
  * @updated v14.106.1 (Finds the attack roll of a damage roll through dnd5e's message index before searching the chat)
  * @updated v14.118.1 (Socket requests are checked against the sender; the GM builds Sap and Slow itself;
  *   the chat search for an attack roll stops after the last 100 messages)
+ * @updated v14.120.0 (socket messages registered with the socket router)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
 import { singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
+import { registerSocketHandlers } from "../../utils/socket-router.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
@@ -1064,7 +1066,7 @@ function _owns(user, actor) {
  * @param {object} data
  * @param {string} senderId
  */
-export async function weaponMasterySocketMessage(data, senderId) {
+async function weaponMasterySocketMessage(data, senderId) {
     if (data?.action === "openToppleSaveDialog") {
         if ((data.userId === game.user.id) && game.users.get(senderId)) await _openToppleSaveDialog(data.messageId);
         return;
@@ -1132,3 +1134,5 @@ export function initWeaponMasteries() {
 
     log("Weapon Mastery automation initialized (Slow, Sap, Topple & Vex)");
 }
+
+registerSocketHandlers("Weapon Masteries", ["applyWeaponMasteryEffect", "removeWeaponMasteryEffect", "resolveToppleSave", "openToppleSaveDialog"], weaponMasterySocketMessage);

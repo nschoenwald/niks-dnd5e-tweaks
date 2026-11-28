@@ -11,7 +11,7 @@ import { initCompendiumBrowserColumns, refreshCompendiumBrowsers } from "./featu
 import { initRollModeHighlight } from "./features/ui-visuals/roll-mode-highlight.js";
 import { initChatCardStyling, enableChatCardStyling, disableChatCardStyling } from "./features/ui-visuals/chat-card-styling.js";
 import { initRollBreakdownDetails } from "./features/ui-visuals/roll-breakdown-details.js";
-import { initRetroactiveAdvantage, onSocketMessage as retroactiveAdvantageSocketMessage } from "./features/ui-visuals/retroactive-advantage.js";
+import { initRetroactiveAdvantage } from "./features/ui-visuals/retroactive-advantage.js";
 import { initAutoCollapseDamageTrays } from "./features/ui-visuals/auto-collapse-damage-trays.js";
 
 // Canvas & Tokens
@@ -32,18 +32,18 @@ import { initAutoRollInitiative } from "./features/combat-automation/auto-roll-i
 import { initLegendaryActionPlaceholders } from "./features/combat-automation/legendary-action-placeholders.js";
 import { initAutoRollSaveDamage } from "./features/combat-automation/auto-roll-save-damage.js";
 import { initAutoRollAttackDamage } from "./features/combat-automation/auto-roll-attack-damage.js";
-import { initPlayerDamagePrompt, onSocketMessage as damagePromptSocketMessage } from "./features/combat-automation/player-damage-prompt.js";
+import { initPlayerDamagePrompt } from "./features/combat-automation/player-damage-prompt.js";
 import { initHealingContextMenu } from "./features/combat-automation/healing-context-menu.js";
 import { initSaveGatedEffects } from "./features/combat-automation/save-gated-effects.js";
 import { initPlayersRollOwnSaves, refreshPlayersRollOwnSavesMarks } from "./features/combat-automation/players-roll-own-saves.js";
-import { initSelfEffectApplication, onSocketMessage as selfEffectSocketMessage } from "./features/combat-automation/self-effect-application.js";
+import { initSelfEffectApplication } from "./features/combat-automation/self-effect-application.js";
 import { initSelfTargetCorrection } from "./features/combat-automation/self-target-correction.js";
 import { initRemoveInstantaneousTemplates } from "./features/combat-automation/remove-instantaneous-templates.js";
 import { initAutoRollConcentration } from "./features/combat-automation/auto-roll-concentration.js";
-import { initMageSlayerConcentration, onSocketMessage as mageSlayerSocketMessage } from "./features/combat-automation/mage-slayer-concentration.js";
+import { initMageSlayerConcentration } from "./features/combat-automation/mage-slayer-concentration.js";
 import { initMagicResistance } from "./features/combat-automation/magic-resistance.js";
 import { initCircleOfPower, registerCircleOfPowerTypes } from "./features/combat-automation/circle-of-power.js";
-import { initHolyAura, onSocketMessage as holyAuraSocketMessage } from "./features/combat-automation/holy-aura.js";
+import { initHolyAura } from "./features/combat-automation/holy-aura.js";
 import { initEvasion } from "./features/combat-automation/evasion.js";
 import { initDeathWard } from "./features/combat-automation/death-ward.js";
 import { initCompanionLevelSync } from "./features/combat-automation/companion-level-sync.js";
@@ -54,7 +54,7 @@ import { initProneRules } from "./features/combat-automation/prone-rules.js";
 import { initConditionRollModes } from "./features/combat-automation/condition-roll-modes.js";
 import { initRangedCloseCombat } from "./features/combat-automation/ranged-close-combat.js";
 import { initRecklessAttack } from "./features/combat-automation/reckless-attack.js";
-import { initBrutalStrike, brutalStrikeSocketMessage } from "./features/combat-automation/brutal-strike.js";
+import { initBrutalStrike } from "./features/combat-automation/brutal-strike.js";
 import { initNoTargetWarning } from "./features/combat-automation/no-target-warning.js";
 import { initIndomitableMight } from "./features/combat-automation/indomitable-might.js";
 import { initBladesongBladework, refreshBladesongActors } from "./features/combat-automation/bladesong-bladework.js";
@@ -67,12 +67,12 @@ import { initSuppressBloodiedDead, isActorDead, removeBloodiedEffect } from "./f
 import { initCombatExpTracker } from "./features/combat-automation/combat-exp-tracker.js";
 import { initPreventGroupActorRolls } from "./features/combat-automation/prevent-group-actor-rolls.js";
 import { initAggregateShortRestRolls } from "./features/combat-automation/aggregate-short-rest-rolls.js";
-import { initWeaponMasteries, weaponMasterySocketMessage } from "./features/combat-automation/weapon-masteries.js";
-import { initConditionalDamage } from "./features/combat-automation/conditional-damage.js";
+import { initWeaponMasteries } from "./features/combat-automation/weapon-masteries.js";
+import { initConditionalDamage } from "./features/combat-automation/conditional-damage/index.js";
 import { initGreatWeaponFighting } from "./features/combat-automation/great-weapon-fighting.js";
 import { initElementalAdept } from "./features/combat-automation/elemental-adept.js";
 import { initAutomaticDamageRules } from "./features/combat-automation/automatic-damage-rules.js";
-import { registerDamageEmanationTypes, initDamageEmanation, onSocketMessage as damageEmanationSocketMessage } from "./features/combat-automation/damage-emanation.js";
+import { registerAreaSpellTypes, initAreaSpells } from "./features/combat-automation/area-spells/index.js";
 
 // Utilities
 import { initActorItemDragBehavior } from "./features/utilities/actor-item-drag-behavior.js";
@@ -94,6 +94,7 @@ import { coreApi, registerWithCore, warnIfCoreMissing } from "./core-integration
 
 // Module context
 import { MODULE_ID, log, debug, getSetting, isFeatureActive, clearSettingsCache } from "./context.js";
+import { initSocketRouter } from "./utils/socket-router.js";
 import { OVERRIDE_CHOICES, isFeatureOnForUser, migratePersonalOptOuts } from "./utils/personal-override.js";
 
 // Re-exported for backwards compatibility. Feature files import these from context.js.
@@ -1895,8 +1896,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "enableDamageEmanation", {
-        name: "Damage Emanation Automation",
-        hint: "Emanation and area spells such as Spirit Guardians, Moonbeam, Cloudkill, Web, Stinking Cloud and Wall of Fire make their saving throw and/or damage happen automatically when a creature enters the area, the area moves into a creature's space, or a creature starts or ends its turn inside it, as the spell describes. Each creature is affected only once per turn, and creatures inside the area when it is cast are left to the casting activity. The area is removed when the caster stops concentrating.",
+        name: "Area Spell Automation",
+        hint: "Spell areas such as Spirit Guardians, Moonbeam, Cloudkill, Web, Stinking Cloud and Wall of Fire make their saving throw and/or damage happen automatically when a creature enters the area, the area moves into a creature's space, or a creature starts or ends its turn inside it, as the spell describes. Each creature is affected only once per turn, and creatures inside the area when it is cast are left to the casting activity. The area is removed when the caster stops concentrating.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -1920,8 +1921,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "damageEmanationSpells", {
-        name: "↳ Emanation Spells",
-        hint: "A comma-separated list of spell identifiers (or names) that get Damage Emanation Automation. Other spells can use it through the \"Damage Emanation\" entry in an activity's Behaviors tab, or a \"Damage Emanation\" behavior added to a region by hand.",
+        name: "↳ Area Spells",
+        hint: "A comma-separated list of spell identifiers (or names) that get Area Spell Automation. Other spells can use it through the \"Area Spell Trigger\" entry in an activity's Behaviors tab, or an \"Area Spell Trigger\" behavior added to a region by hand.",
         scope: "world",
         config: false,
         type: String,
@@ -1931,7 +1932,7 @@ Hooks.once("init", () => {
 
     game.settings.register(MODULE_ID, "damageEmanationCombatOnly", {
         name: "↳ Only During Combat",
-        hint: "Only trigger emanations while a combat encounter is running on the scene.",
+        hint: "Only trigger spell areas while a combat encounter is running on the scene.",
         scope: "world",
         config: false,
         type: Boolean,
@@ -2188,7 +2189,7 @@ Hooks.once("init", () => {
     initFixPactSpellScaling();
 
     // Region / activity behavior types must be registered before data models are prepared
-    registerDamageEmanationTypes();
+    registerAreaSpellTypes();
     registerCircleOfPowerTypes();
 });
 
@@ -2284,7 +2285,7 @@ Hooks.once("setup", () => {
     initElementalAdept();
     initAutomaticDamageRules();
     initConditionalDamage();
-    initDamageEmanation();
+    initAreaSpells();
 });
 
 Hooks.once("ready", async () => {
@@ -2298,33 +2299,8 @@ Hooks.once("ready", async () => {
     if (game.settings.get(MODULE_ID, "enableProneRotation")) enableProneRotation();
     if (isFeatureOnForUser("enableChatCardStyling", "clientChatCardStyling", { refresh: true })) enableChatCardStyling();
 
-    // ── Central socket dispatcher ──────────────────────────────────────
-    // A single listener routes incoming socket messages to the correct
-    // feature handler by payload type.  This avoids the fragile pattern
-    // of each feature registering its own game.socket.on() listener,
-    // which can't be cleanly de-registered if a feature is hot-toggled.
-    // The server passes the real sender's id as the second argument; handlers authorize with it, never with
-    // ids in the payload.
-    game.socket.on(`module.${MODULE_ID}`, (data, senderId) => {
-        if (data?.action === "applyWeaponMasteryEffect" || data?.action === "removeWeaponMasteryEffect" || data?.action === "resolveToppleSave" || data?.action === "openToppleSaveDialog") {
-            weaponMasterySocketMessage(data, senderId);
-            return;
-        }
-        if (brutalStrikeSocketMessage(data, senderId)) return;
-        if (data?.action === "holyAuraSave") {
-            holyAuraSocketMessage(data, senderId);
-            return;
-        }
-        if (data?.action?.startsWith?.("damageEmanation")) {
-            damageEmanationSocketMessage(data, senderId);
-            return;
-        }
-        damagePromptSocketMessage(data, senderId);
-        selfEffectSocketMessage(data, senderId);
-        mageSlayerSocketMessage(data, senderId);
-        retroactiveAdvantageSocketMessage(data, senderId);
-    });
-    log("Central socket dispatcher registered");
+    // Socket router: features register the messages they handle themselves (scripts/utils/socket-router.js)
+    initSocketRouter();
 
 });
 
@@ -2394,9 +2370,9 @@ async function runMigrations() {
         log("Migration 2 complete.");
     }
 
-    // Migration 3: Add Moonbeam, Cloudkill and Doomtide to a stored Damage Emanation spell list
+    // Migration 3: Add Moonbeam, Cloudkill and Doomtide to a stored Area Spells list
     if (currentVersion < 3) {
-        log("Running migration 3: adding new spells to the Damage Emanation spell list...");
+        log("Running migration 3: adding new spells to the Area Spells list...");
         // Worlds that never saved the list use the new default already
         const worldStorage = game.settings.storage.get("world");
         if (worldStorage.getSetting(`${MODULE_ID}.damageEmanationSpells`)) {
@@ -2407,7 +2383,7 @@ async function runMigrations() {
             if (added.length) {
                 const merged = [...current, ...added].sort((a, b) => a.localeCompare(b)).join(", ");
                 await game.settings.set(MODULE_ID, "damageEmanationSpells", merged);
-                log(`  Added ${added.join(", ")} to the Damage Emanation spell list.`);
+                log(`  Added ${added.join(", ")} to the Area Spells list.`);
             }
         }
         await game.settings.set(MODULE_ID, "migrationVersion", 3);
