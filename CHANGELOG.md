@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.120.2] - 2026-11-28
+### Fixed
+- **Prompt / Auto-Roll Attack Damage**: Damage rolled automatically or from the prompt now belongs to the spell's or weapon's card, like damage rolled with the card's Damage button. With D&D 5e's *Chat Card Summary* setting it is now folded into that card instead of showing as a separate card, and the card's effects tray opens for the targets.
+- **Player Damage Prompt**: A damage roll that isn't linked to an attack (rolled from the character sheet, for example) no longer takes the attack total, critical hit or Graze from an earlier attack with the same weapon.
+
 ## [14.120.1] - 2026-11-28
 ### Changed
 - **Settings**: Behind the scenes, every setting is now defined in one place instead of two. Nothing should change for you: your settings keep their values and work as before. If a setting looks reset or stops reacting right away when you change it, please report it.

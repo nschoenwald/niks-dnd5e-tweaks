@@ -29,6 +29,7 @@
  * @updated v14.114.1 (replacing the Entropic Embrace marker tolerates it being removed meanwhile)
  * @updated v14.119.0 (Combo Strikes counts melee attacks whose damage was rolled, no AC check)
  * @updated v14.120.0 (split into modules, no change in behavior)
+ * @updated v14.120.2 (attack lookup through the shared attack-lookup helper)
  */
 import { log, debug } from "../../../context.js";
 import { lastAttackRollsByActor, meleeHits, pruneStaleAttackRolls, recordAttackRoll, recordMeleeHit } from "./attack-cache.js";

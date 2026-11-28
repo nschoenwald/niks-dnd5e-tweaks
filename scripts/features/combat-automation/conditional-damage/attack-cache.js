@@ -4,6 +4,7 @@
  */
 import { getMidiWorkflow } from "../../../utils/module-compat.js";
 import { getActiveCombat, getCombatTurnKey } from "./combat-turn.js";
+import { getAttackD20, getAttackForMessage, getOriginForDamageRoll, getUsageCard } from "../../../utils/attack-lookup.js";
 
 /**
  * In-memory map of the most recent attack roll evaluated for each actor,
@@ -146,33 +147,15 @@ export function isRollD20Natural20(roll) {
 }
 
 /**
- * Whether a chat message is a damage message.
- *
- * @param {ChatMessage5e} msg
- * @returns {boolean}
- */
-function _isDamageMessage(msg) {
-    return msg?.type === "damage"
-        || msg?.system?.constructor?.name === "DamageMessageData"
-        || Boolean(CONFIG.ChatMessage?.dataModels?.damage && msg?.system instanceof CONFIG.ChatMessage.dataModels.damage);
-}
-
-/**
- * Find the attack message (one with a d20 roll) that belongs to a chat message: its latest associated attack
- * roll, or the message itself when it holds the attack roll.
+ * The attack message (one with a d20 roll) that belongs to a chat message: the message itself when it is the attack,
+ * otherwise the newest attack made from the same usage card.
  *
  * @param {ChatMessage5e|null} msg
  * @returns {ChatMessage5e|null}
  */
 function _attackMessageFor(msg) {
-    if (!msg) return null;
-    let candidate = null;
-    if (typeof msg.getAssociatedRolls === "function") {
-        candidate = msg.getAssociatedRolls("attack")?.at?.(-1) ?? null;
-    }
-    if (!candidate && !_isDamageMessage(msg)) candidate = msg;
-    const hasD20 = (candidate?.rolls ?? []).some(r => (r.dice ?? []).some(d => d.faces === 20));
-    return hasD20 ? candidate : null;
+    const candidate = getAttackForMessage(msg);
+    return getAttackD20(candidate) ? candidate : null;
 }
 
 /**
@@ -245,7 +228,7 @@ export function resolveAttackForDamage(actor, { config, dialog, message, activit
     const fromMessage = (msg, source) => {
         const attackMessage = _attackMessageFor(msg);
         if (!attackMessage) return null;
-        const roll = attackMessage.rolls?.find(r => (r.dice ?? []).some(d => d.faces === 20)) ?? null;
+        const roll = getAttackD20(attackMessage);
         return {
             roll,
             advantageMode: roll?.options?.advantageMode ?? null,
@@ -256,16 +239,8 @@ export function resolveAttackForDamage(actor, { config, dialog, message, activit
     };
 
     // 3. Direct message origin (authoritative: a found origin attack must not fall through to the cache)
-    const rawOrigin = message?.system?.origin
-        ?? message?.data?.system?.origin
-        ?? (typeof message?.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
-        ?? config?.event?.target?.closest?.("[data-message-id]")?.dataset?.messageId
-        ?? dialog?.options?.originatingMessage;
-
-    const originMessage = (rawOrigin instanceof foundry.documents.BaseChatMessage || (rawOrigin && typeof rawOrigin === "object" && rawOrigin.id))
-        ? rawOrigin
-        : (typeof rawOrigin === "string" ? game.messages?.get(rawOrigin) : null);
-
+    const originMessage = ((message instanceof ChatMessage) ? (getUsageCard(message) ?? message) : null)
+        ?? getOriginForDamageRoll(config, dialog, message);
     const fromOrigin = fromMessage(originMessage, "origin");
     if (fromOrigin) return fromOrigin;
 

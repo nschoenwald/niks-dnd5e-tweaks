@@ -10,12 +10,14 @@
  * @updated v14.71.1 (Visibility wrapper always chains, fixing the libWrapper conflict warning with Nik's Foundry Tweaks)
  * @updated v14.118.1 (socket requests are checked against the sender)
  * @updated v14.120.0 (socket messages registered with the socket router)
+ * @updated v14.120.2 (attack lookup through the shared attack-lookup helper; no guessing an attack for unlinked damage)
  */
 import { MODULE_ID, getSetting, debug } from "../../context.js";
 import { patchMethod } from "../../utils/patch-helper.js";
 import { midiAutoAppliesDamage, isMidiMessage, isWm5eActive } from "../../utils/module-compat.js";
 import { evasionAppliesToActivity } from "./evasion.js";
 import { registerSocketHandlers } from "../../utils/socket-router.js";
+import { getAttackForMessage, getUsageCard } from "../../utils/attack-lookup.js";
 
 /**
  * Player Damage Prompt
@@ -212,27 +214,17 @@ async function _onCreateChatMessage(message) {
             "| Activity ID:", message.system?.activity?.id ?? message.getFlag("dnd5e", "activity.id"),
             "| Settings: playerPrompt=", playerPromptEnabled, "gmPrompt=", gmPromptEnabled);
 
-        // Find the originating (usage) message to get original targets
-        let originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
-            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
-            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-        const originatingId = originatingMessage?.id ?? message.system?.origin ?? message.getFlag("dnd5e", "originatingMessage");
+        // The usage card the damage was rolled from (like dnd5e's getOriginatingMessage: the message itself if none)
+        const originatingMessage = getUsageCard(message) ?? message;
         debug("Player Damage Prompt | Originating message:",
-            originatingId ? `ID ${originatingId}` : "(none)",
-            "| Found:", !!originatingMessage);
+            (originatingMessage !== message) ? `ID ${originatingMessage.id}` : "(none)");
 
-        // Find the attack roll message (shares the same originatingMessage or recent context)
+        // The attack roll made from the same usage card
         let attackMessage = null;
         let attackRoll = null;
 
         if (activityType === "attack" || !activityType) {
-            attackMessage = _findAttackMessage(originatingId, message, originatingMessage);
-            if (!originatingMessage && attackMessage) {
-                const attackOrigin = (typeof attackMessage.getOriginatingMessage === "function" ? attackMessage.getOriginatingMessage() : null)
-                    ?? (attackMessage.system?.origin ? game.messages.get(attackMessage.system.origin) : null)
-                    ?? (attackMessage.getFlag("dnd5e", "originatingMessage") ? game.messages.get(attackMessage.getFlag("dnd5e", "originatingMessage")) : null);
-                originatingMessage = attackOrigin ?? attackMessage;
-            }
+            attackMessage = getAttackForMessage(message);
             if (attackMessage) {
                 attackRoll = _getAttackD20Roll(attackMessage);
                 debug("Player Damage Prompt | Found attack roll message:", attackMessage.id,
@@ -362,9 +354,7 @@ async function _onCreateChatMessage_Attack(message) {
             "| Mastery:", rollMastery);
 
         // Find the originating (usage) message to get original targets
-        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
-            ?? (message.system?.origin ? game.messages.get(message.system.origin) : null)
-            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
+        const originatingMessage = getUsageCard(message) ?? message;
 
         // Prefer targets from the originating (usage) message, fall back to the attack message
         const originTargets = originatingMessage?.system?.targets ?? originatingMessage?.getFlag("dnd5e", "targets");
@@ -460,79 +450,6 @@ async function _onCreateChatMessage_Attack(message) {
 }
 
 // ── Message helpers ──────────────────────────────────────────────────
-
-/**
- * Search recent messages for the attack roll that corresponds to this damage roll.
- * Checks associated rolls, originatingMessage, direct message reference, and falls back to
- * matching recent attack messages by speaker/activity.
- * @param {string|null} originatingId  ID of the originating usage message.
- * @param {ChatMessage|null} [damageMessage=null] The damage message for contextual matching.
- * @param {ChatMessage|null} [originatingMessage=null] The originating message if already resolved.
- * @returns {ChatMessage|null}
- */
-function _findAttackMessage(originatingId, damageMessage = null, originatingMessage = null) {
-    // 1. If we have the originating message, check its associated rolls (official DnD5e method)
-    const originDoc = originatingMessage ?? (originatingId ? game.messages.get(originatingId) : null);
-    if (originDoc && typeof originDoc.getAssociatedRolls === "function") {
-        const attacks = originDoc.getAssociatedRolls("attack");
-        if (attacks?.length) return attacks[attacks.length - 1];
-    }
-
-    const messages = game.messages.contents;
-    const startIdx = Math.max(0, messages.length - 30);
-
-    // 2. Direct check if originatingId points directly to an attack message
-    if (originatingId) {
-        const directMsg = originDoc ?? game.messages.get(originatingId);
-        if (directMsg?.type === "attack" || directMsg?.getFlag("dnd5e", "roll.type") === "attack") {
-            return directMsg;
-        }
-
-        // 3. Search for attack roll sharing the same originatingMessage / system.origin
-        for (let i = messages.length - 1; i >= startIdx; i--) {
-            const msg = messages[i];
-            const isAttack = msg.type === "attack" || msg.getFlag("dnd5e", "roll.type") === "attack";
-            const originMatch = (msg.system?.origin === originatingId)
-                || (msg.getFlag("dnd5e", "originatingMessage") === originatingId);
-            if (isAttack && originMatch) {
-                return msg;
-            }
-        }
-    }
-
-    // 4. Fallback: match recent attack roll by same actor/subject and activity/item
-    if (damageMessage) {
-        const speakerActor = damageMessage.speaker?.actor;
-        const subjectUuid = damageMessage.system?.item?.uuid
-            ?? damageMessage.getFlag("dnd5e", "subject.uuid");
-        const activityId = damageMessage.system?.activity?.id
-            ?? damageMessage.getFlag("dnd5e", "activity.id");
-        const itemUuid = damageMessage.system?.item?.uuid
-            ?? damageMessage.getFlag("dnd5e", "item.uuid");
-
-        for (let i = messages.length - 1; i >= startIdx; i--) {
-            const msg = messages[i];
-            if (msg.id === damageMessage.id) continue;
-            const isAttack = msg.type === "attack" || msg.getFlag("dnd5e", "roll.type") === "attack";
-            if (!isAttack) continue;
-
-            // Match speaker / subject
-            const matchesActor = (speakerActor && msg.speaker?.actor === speakerActor)
-                || (subjectUuid && (msg.system?.item?.uuid === subjectUuid || msg.getFlag("dnd5e", "subject.uuid") === subjectUuid));
-            if (!matchesActor) continue;
-
-            // Match activity or item
-            const matchesActivity = activityId && (msg.system?.activity?.id === activityId || msg.getFlag("dnd5e", "activity.id") === activityId);
-            const matchesItem = itemUuid && (msg.system?.item?.uuid === itemUuid || msg.getFlag("dnd5e", "item.uuid") === itemUuid);
-
-            if (matchesActivity || matchesItem || (!activityId && !itemUuid)) {
-                return msg;
-            }
-        }
-    }
-
-    return null;
-}
 
 /**
  * Extract the D20Roll from an attack roll message.  The system stores

@@ -3,9 +3,11 @@
  * Description: Prompts for or automatically rolls damage when an attack roll hits target AC, and automatically rolls damage or healing without dialog if the formula contains only static/flat values.
  *
  * @introduced v14.19.0
+ * @updated v14.120.2 (damage rolls belong to the usage card, like dnd5e's Damage button)
  */
 import { getSetting, debug } from "../../context.js";
 import { isMidiActive } from "../../utils/module-compat.js";
+import { getUsageCard } from "../../utils/attack-lookup.js";
 
 /**
  * Auto-Prompt & Auto-Roll Attack Damage on Hit
@@ -297,12 +299,8 @@ async function _onCreateChatMessage(message, options, userId) {
 
         // Resolve targets — attack message targets take precedence, fall back to originating message
         const attackTargets = message.system?.targets ?? message.getFlag("dnd5e", "targets");
-        const originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null)
-            ?? (message.system?.origin ? (message.system.origin instanceof ChatMessage ? message.system.origin : game.messages.get(message.system.origin)) : null)
-            ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-        const originTargets = (originatingMessage && originatingMessage !== message)
-            ? (originatingMessage.system?.targets ?? originatingMessage.getFlag("dnd5e", "targets"))
-            : null;
+        const originatingMessage = getUsageCard(message);
+        const originTargets = originatingMessage?.system?.targets ?? null;
         const targets = (attackTargets?.length ? attackTargets : null)
             || (originTargets?.length ? originTargets : null)
             || [];
@@ -422,7 +420,9 @@ async function _onCreateChatMessage(message, options, userId) {
         const messageConfig = {
             data: {
                 system: {
-                    origin: message.id,
+                    // The usage card, like dnd5e's own Damage button: the damage then joins the card's summary and
+                    // opens its effect tray. Only an attack without a usage card links to the attack itself.
+                    origin: originatingMessage?.id ?? message.id,
                     targets: targets
                 }
             }

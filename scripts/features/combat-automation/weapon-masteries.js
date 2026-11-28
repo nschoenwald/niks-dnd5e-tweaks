@@ -41,11 +41,13 @@
  * @updated v14.118.1 (Socket requests are checked against the sender; the GM builds Sap and Slow itself;
  *   the chat search for an attack roll stops after the last 100 messages)
  * @updated v14.120.0 (socket messages registered with the socket router)
+ * @updated v14.120.2 (attack lookup through the shared attack-lookup helper)
  */
 import { MODULE_ID, getSetting, debug, log, isFeatureActive } from "../../context.js";
 import { isMidiActive, isMidiMessage, isWm5eActive, getMidiWorkflow } from "../../utils/module-compat.js";
 import { singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
 import { registerSocketHandlers } from "../../utils/socket-router.js";
+import { getAttackForMessage, getUsageCard } from "../../utils/attack-lookup.js";
 
 const DEFAULT_SAP_ICON = "icons/skills/melee/sword-damaged-broken-glow-red.webp";
 const DEFAULT_SLOW_ICON = "icons/creatures/invertebrates/snail-movement-green.webp";
@@ -421,57 +423,17 @@ export async function removeSapFromActor(actor) {
 }
 
 /**
- * Resolve the originating (usage card) message of a roll message, if any.
- * @param {ChatMessage} message
- * @returns {ChatMessage|null}
- */
-function _getOriginatingMessage(message) {
-    let originatingMessage = null;
-    try {
-        originatingMessage = (typeof message.getOriginatingMessage === "function" ? message.getOriginatingMessage() : null);
-    } catch {}
-    originatingMessage ??= (message.system?.origin ? (message.system.origin instanceof ChatMessage ? message.system.origin : game.messages.get(message.system.origin)) : null)
-        ?? (message.getFlag("dnd5e", "originatingMessage") ? game.messages.get(message.getFlag("dnd5e", "originatingMessage")) : null);
-    return (originatingMessage && originatingMessage !== message) ? originatingMessage : null;
-}
-
-/**
- * Find the most recent attack roll made from a usage card.
- * @param {ChatMessage} message                   The message to exclude (the damage roll itself).
- * @param {ChatMessage|null} originatingMessage   The usage card.
- * @returns {ChatMessage|null}
- */
-function _findAttackMessage(message, originatingMessage) {
-    if (!originatingMessage) return null;
-    // dnd5e indexes the rolls made from a usage card by `system.origin`; only fall back to searching the chat
-    // history (newest first) for messages it doesn't index, such as ones linked by the older originatingMessage flag
-    const associated = originatingMessage.getAssociatedRolls?.("attack")?.filter(m => m !== message);
-    if (associated?.length) return associated.at(-1);
-    // Newest first, and only the recent part of the log: the attack is rolled shortly before its damage
-    const messages = game.messages.contents;
-    for (let i = messages.length - 1, checked = 0; (i >= 0) && (checked < 100); i--, checked++) {
-        const m = messages[i];
-        if (m === message || (m.type ?? m.getFlag("dnd5e", "roll.type")) !== "attack") continue;
-        const origin = m.system?.origin;
-        const originId = origin instanceof ChatMessage ? origin.id : (origin ?? m.getFlag("dnd5e", "originatingMessage"));
-        if (originId === originatingMessage.id) return m;
-    }
-    return null;
-}
-
-/**
  * Resolve the mastery used for a damage roll.
  * Prefers the mastery chosen on the most recent attack roll from the same usage card, then the
  * last mastery dnd5e remembered for the activity, then the weapon's own mastery if the actor qualifies.
  * @param {ChatMessage} message           The damage roll message.
- * @param {ChatMessage|null} originatingMessage
  * @param {Activity|null} activity
  * @param {Actor5e} attackerActor
  * @param {Item5e} weapon
  * @returns {string|null}
  */
-function _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon) {
-    const attackMessage = _findAttackMessage(message, originatingMessage);
+function _resolveDamageMastery(message, activity, attackerActor, weapon) {
+    const attackMessage = getAttackForMessage(message);
     if (attackMessage) {
         return attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
     }
@@ -559,8 +521,8 @@ async function _onCreateChatMessage(message, options, userId) {
         weapon ??= (message.system?.item?.uuid ? fromUuidSync(message.system.item.uuid, { strict: false }) : null);
         if (!weapon || weapon.type !== "weapon") return;
 
-        const originatingMessage = _getOriginatingMessage(message);
-        const activeMastery = _resolveDamageMastery(message, originatingMessage, activity, attackerActor, weapon);
+        const originatingMessage = getUsageCard(message);
+        const activeMastery = _resolveDamageMastery(message, activity, attackerActor, weapon);
         if (!["sap", "slow", "vex"].includes(activeMastery)) return;
 
         // Vex needs damage to be dealt
@@ -750,8 +712,8 @@ async function _onApplyDamage(targetActor, amount, options = {}) {
         if (!attackerActor || attackerActor.type !== "character" || attackerActor === targetActor) return;
 
         // A damage roll points to its usage card; a usage card or midi item card is the card itself
-        const usageMessage = _getOriginatingMessage(message) ?? message;
-        const attackMessage = _findAttackMessage(message, usageMessage);
+        const usageMessage = getUsageCard(message) ?? message;
+        const attackMessage = getAttackForMessage(message);
 
         // midi-qol rolls the attack inside its workflow; the workflow lives on the attacker's client
         let midiAttackOptions = null;
@@ -764,7 +726,7 @@ async function _onApplyDamage(targetActor, amount, options = {}) {
         let mastery;
         if (attackMessage) mastery = attackMessage.system?.mastery || attackMessage.rolls?.[0]?.options?.mastery || null;
         else if (midiAttackOptions?.mastery) mastery = midiAttackOptions.mastery;
-        else mastery = _resolveDamageMastery(message, usageMessage, activity, attackerActor, weapon);
+        else mastery = _resolveDamageMastery(message, activity, attackerActor, weapon);
         if (mastery !== "topple") return;
         if (_catHandlesMasteries(attackerActor)) {
             debug(`Weapon Mastery | midi-qol's weapon mastery automation handles Topple for ${attackerActor.name}`);

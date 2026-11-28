@@ -406,6 +406,7 @@ Tallies hostile NPC XP at the end of combat with a one-click button for the GM t
 * **Prompt for Attack Damage**: Opens the damage roll dialog when an attack hits target AC.
 * **Auto-Roll Attack Damage**: Immediately rolls damage on hit without opening a dialog.
 * **Auto-Roll Flat / Static Damage**: Automatically rolls flat bonuses without opening dialogs if formulas have no dice.
+* **Same as the Damage Button**: The damage belongs to the spell's or weapon's card, just like a roll from its Damage button: with D&D 5e's **Chat Card Summary** setting it is folded into that card, and the card's effects tray opens for the targets.
 
 ### Auto-Open Damage Dialog for Saves
 Automatically opens the damage roll dialog when using Save-type activities that deal damage (like *Fireball*). For spells that place an area, the damage roll targets the creatures inside the newly placed area, even if other creatures were still targeted when the spell was cast. Automatically bypassed when midi-qol is active.
@@ -547,7 +548,7 @@ Offers seamless toggles in damage roll configuration dialogs for conditional dam
 Prevents players controlling group or exploration party tokens from accidentally rolling as the group actor. Automatically redirects the roll context to their assigned character sheet with accurate ability modifiers and proficiency.
 
 ### Player Damage Prompt
-Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP. The breakdown uses the system's own damage calculation, so it matches what is applied, including magical weapons bypassing resistance. On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability (or turn immunity into resistance) are respected by both the breakdown and the Apply button.
+Whispers a breakdown of damage resistance, vulnerability, and immunity per 2024 rules with an interactive Apply button. Supports Graze weapon mastery, saving throw half-damage, healing, and temp HP. The breakdown uses the system's own damage calculation, so it matches what is applied, including magical weapons bypassing resistance. The attack total and critical hit come from the attack rolled from the same card; a damage roll that isn't linked to an attack (rolled from the sheet, for example) shows no attack. On D&D 5e 6.1, effects that let an attack ignore resistance, immunity or vulnerability (or turn immunity into resistance) are respected by both the breakdown and the Apply button.
 
 ### Healing Roll Context Menu
 Adds **Apply Damage**, **Apply Healing** and **Apply Temp HP** to the right-click menu of healing roll chat cards. Takes effect after reloading.
