@@ -116,6 +116,32 @@ export function isActorRaging(actor) {
 }
 
 /**
+ * Tooltip texts for the reasons a bonus starts unticked (`blocked`), used when a key is missing from the language
+ * file. Keys: `ND5T.ConditionalDamage.Blocked.<reason>` (UsedThisTurn: `ND5T.ConditionalDamage.UsedThisTurn`).
+ */
+export const BLOCKED_REASON_FALLBACKS = Object.freeze({
+    UsedThisTurn: "Already used this turn.",
+    NotYourTurn: "It isn't your turn.",
+    NoUses: "No uses left.",
+    NoFocus: "No Focus Points left.",
+    NoPactSlot: "No Pact Magic slot left.",
+    NotStrength: "This attack doesn't use Strength.",
+    NotMoved: "You haven't moved at least 10 feet this turn.",
+    NotNatural20: "The attack roll wasn't a natural 20, or wasn't found.",
+    NotRaging: "You aren't raging.",
+    NotReckless: "You haven't attacked recklessly this turn.",
+    NotAttuned: "Elemental Attunement isn't active.",
+    NotBloodied: "You aren't Bloodied.",
+    NotTransformed: "Celestial Revelation isn't active.",
+    NotFormOfDread: "Form of Dread isn't active.",
+    NotHavoc: "You aren't in the Havoc form.",
+    NotCursed: "The target isn't cursed by your Death and Decay.",
+    NotLarger: "The target isn't larger than you.",
+    NotOutlined: "The target isn't outlined by your Faerie Fire.",
+    NotInRain: "The target isn't inside your Rain of Fire."
+});
+
+/**
  * Whether an activity is an attack (weapon, unarmed or spell attack).
  *
  * @param {Activity|null} activity

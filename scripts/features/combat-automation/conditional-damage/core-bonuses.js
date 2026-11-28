@@ -602,20 +602,22 @@ export function getBoonOfIrresistibleOffenseScore(actor, featItem = null) {
 }
 
 /**
- * Determine whether an attack is eligible for Brutal Strike.
- * Under 2024 PHB rules, Brutal Strike applies to a Strength-based attack roll
- * dealt by a weapon or Unarmed Strike. Spells, non-weapon items, and ranged weapons
- * that cannot be thrown with Strength (e.g. bows, crossbows) do NOT qualify.
+ * Whether an attack qualifies for Brutal Strike and Frenzy, a Strength-based attack with a weapon or Unarmed Strike
+ * (2024 PHB). Spells, non-weapon items, and ranged weapons that can't be thrown with Strength (bows, crossbows) don't.
+ * Why an attack doesn't qualify:
+ *  - "kind": not a weapon or Unarmed Strike, or a spell attack (the bonus isn't offered at all);
+ *  - "strength": a weapon attack that doesn't use Strength (offered, but unticked);
+ *  - null: it qualifies.
  *
  * @param {Item5e|null} item
  * @param {Activity|null} [activity=null]
  * @param {DamageRollProcessConfiguration|null} [config=null]
  * @param {Actor5e|null} [actor=null]
- * @returns {boolean}
+ * @returns {"kind"|"strength"|null}
  */
-export function isEligibleBrutalStrikeAttack(item, activity = null, config = null, actor = null) {
-    if (!item) return false;
-    if (item.type === "spell") return false;
+export function strengthAttackCheck(item, activity = null, config = null, actor = null) {
+    if (!item) return "kind";
+    if (item.type === "spell") return "kind";
 
     // Must be a weapon or unarmed strike
     const isWeapon = item.type === "weapon";
@@ -623,11 +625,11 @@ export function isEligibleBrutalStrikeAttack(item, activity = null, config = nul
         || item.identifier === "unarmed-strike"
         || (item.system?.identifier || "").includes("unarmed-strike")
         || (item.name || "").toLowerCase().includes("unarmed strike");
-    if (!isWeapon && !isUnarmed) return false;
+    if (!isWeapon && !isUnarmed) return "kind";
 
     // Disallow spell attacks
     const actionType = activity?.getActionType?.(config?.attackMode) ?? activity?.actionType ?? item.system?.actionType;
-    if (actionType === "msak" || actionType === "rsak") return false;
+    if (actionType === "msak" || actionType === "rsak") return "kind";
 
     // Check weapon type: ranged weapons (simpleR, martialR) must have thrown property to use Strength
     const weaponType = item.system?.type?.value;
@@ -639,7 +641,7 @@ export function isEligibleBrutalStrikeAttack(item, activity = null, config = nul
         const hasThrown = Array.isArray(props)
             ? (props.includes("thr") || props.includes("thrown"))
             : (props instanceof Set ? (props.has("thr") || props.has("thrown")) : Boolean(props?.thr || props?.thrown));
-        if (!hasThrown) return false;
+        if (!hasThrown) return "strength";
     }
 
     // Check explicit ability: if set to something other than "str" or default, not Strength-based
@@ -649,7 +651,7 @@ export function isEligibleBrutalStrikeAttack(item, activity = null, config = nul
         ?? activity?.attack?.ability
         ?? item.system?.ability;
     if (abilityKey && abilityKey !== "default" && abilityKey !== "str") {
-        return false;
+        return "strength";
     }
 
     // With the default ability, finesse weapons use the better of STR/DEX (dnd5e). Brutal Strike needs a
@@ -665,11 +667,11 @@ export function isEligibleBrutalStrikeAttack(item, activity = null, config = nul
         if (hasFinesse && owner) {
             const strMod = Number(owner.system?.abilities?.str?.mod ?? 0);
             const dexMod = Number(owner.system?.abilities?.dex?.mod ?? 0);
-            if (dexMod > strMod) return false;
+            if (dexMod > strMod) return "strength";
         }
     }
 
-    return true;
+    return null;
 }
 
 /**

@@ -20,12 +20,17 @@
  *   for attacks that hit although Foundry thinks they missed; a later attack without Brutal Strike drops the record)
  * @updated v14.118.1 (socket requests are checked against the sender; the GM builds the effects itself)
  * @updated v14.120.0 (socket messages registered with the socket router)
+ * @updated v14.121.0 (the checkbox is never disabled or hidden for the turn: off-turn, after Brutal Strike was used,
+ *   without Strength, Reckless, or with Disadvantage or several targets it stays unticked with the reason as its hint,
+ *   and a tick is taken as the player's correction; Disadvantage no longer drops the choice; combats on other scenes
+ *   count)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
 import { deleteEffect, deleteEffects } from "../../utils/effect-deletion.js";
 import { addRollModes, attackTargets, singleAttackTarget } from "../../utils/attack-context.js";
-import { isActorReckless, registerRecklessExtension, RECKLESS_FIELD } from "./reckless-attack.js";
+import { isActorReckless, registerRecklessExtension, RECKLESS_FIELD, setDialogFieldHint } from "./reckless-attack.js";
+import { getActiveCombat } from "../../utils/combat-lookup.js";
 import { isSharedTurn } from "./summon-initiative.js";
 import { getBrutalStrikeFormula } from "./conditional-damage/index.js";
 import { registerSocketHandlers } from "../../utils/socket-router.js";
@@ -38,13 +43,16 @@ import { registerSocketHandlers } from "../../utils/socket-router.js";
  * items and items automated by midi-qol macros or Chris's Premades are ignored. The result is cached per actor and
  * cleared when one of its feats changes, so actors without Brutal Strike cost one Map lookup per roll.
  *
- * Choosing (client of the attacker): offered on the attacker's own turn, once per turn (any turn out of combat),
- * when the actor is Reckless or Reckless Attack is offered on this roll. dnd5e.preRollAttack marks the process
- * (`nd5tBrutalOffer`); the Reckless extension adds the checkbox. dnd5e.postBuildAttackRollConfig enables it only for
- * Strength attacks with Reckless (already, or offered on this roll), no Disadvantage and at most one target. Ticking
- * it ticks Reckless Attack too (which then creates its effect as usual); unticking Reckless unticks it. It marks the roll
- * (`options.nd5tBrutalStrike`) and moves the default button to Normal. dnd5e.postAttackRollConfiguration makes the
- * final roll a normal d20 roll, or drops the mark when the roll has Disadvantage after all.
+ * Choosing (client of the attacker): the checkbox is in the attack roll dialog whenever the actor is Reckless or
+ * Reckless Attack is offered on this roll. dnd5e.preRollAttack marks the process (`nd5tBrutalOffer`); the Reckless
+ * extension adds the checkbox. The rules expect it on the attacker's own turn, once per turn (any turn out of
+ * combat), for a Strength attack with Reckless (already, or offered on this roll), without Disadvantage and with at
+ * most one target. When that isn't the case dnd5e.postBuildAttackRollConfig writes the reasons into the checkbox's
+ * hint; it stays unticked but can be ticked (the player knows better: a misjudged ability, a forgotten choice).
+ * Ticking it ticks Reckless Attack too when that is offered (which then creates its effect as usual); unticking
+ * Reckless unticks it. It marks the roll (`options.nd5tBrutalStrike`) and moves the default button to Normal
+ * (Disadvantage stays). dnd5e.postAttackRollConfiguration makes the final roll a normal d20 roll unless it has
+ * Disadvantage. The prompts for skipped dialogs only ask when the rules expect the choice.
  *
  * Remembering the attack: dnd5e.postAttackRollConfiguration (before evaluation, and before dnd5e creates the chat card
  * that Prompt / Auto-Roll Attack Damage rolls damage from) leaves a pending record per actor for the attack's activity
@@ -217,9 +225,7 @@ function _onItemChange(item) {
  * @returns {Combat|null}
  */
 function _combatOf(actor) {
-    const combat = game.combat;
-    if (!combat?.started || !actor) return null;
-    return combat.getCombatantsByActor?.(actor)?.length ? combat : null;
+    return actor ? getActiveCombat(actor) : null;
 }
 
 /**
@@ -242,16 +248,59 @@ function _turnKey(combat) {
 }
 
 /**
- * Whether Brutal Strike may be chosen now, ignoring the attack itself and Reckless Attack.
+ * Why the rules don't expect Brutal Strike now, ignoring the attack itself and Reckless Attack: "NotYourTurn",
+ * "UsedThisTurn", or null.
+ * @param {Actor5e} actor
+ * @returns {string|null}
+ */
+function _turnReason(actor) {
+    const combat = _combatOf(actor);
+    if (!combat) return null;
+    if (!_isOwnTurn(combat, actor)) return "NotYourTurn";
+    if (_usedTurn.get(actor.uuid) === _turnKey(combat)) return "UsedThisTurn";
+    return null;
+}
+
+/**
+ * The actor's Brutal Strike when this user chooses it with the automation (the dialog offers it at any time).
  * @param {Actor5e} actor
  * @returns {{item: Item5e, tier: number, sources: object}|null}
  */
 function _offer(actor) {
     const feature = _brutal(actor);
-    if (!feature || !_clientActive()) return null;
-    const combat = _combatOf(actor);
-    if (combat && (!_isOwnTurn(combat, actor) || (_usedTurn.get(actor.uuid) === _turnKey(combat)))) return null;
-    return feature;
+    return (feature && _clientActive()) ? feature : null;
+}
+
+/**
+ * The actor's Brutal Strike when the rules expect the choice now (own turn, not used this turn): for the prompts of
+ * skipped dialogs, which shouldn't ask otherwise.
+ * @param {Actor5e} actor
+ * @returns {{item: Item5e, tier: number, sources: object}|null}
+ */
+function _expectedOffer(actor) {
+    const feature = _offer(actor);
+    return (feature && !_turnReason(actor)) ? feature : null;
+}
+
+/**
+ * Why the rules don't expect Brutal Strike on this roll, as hint text ("" when they do).
+ * @param {object} process  The dialog's roll process configuration.
+ * @param {object} state
+ * @param {string} state.ability
+ * @param {boolean} state.reckless      Reckless already, or Reckless Attack offered on this roll.
+ * @param {boolean} state.disadvantage
+ * @returns {string}
+ */
+function _brutalHint(process, { ability, reckless, disadvantage }) {
+    const actor = process?.subject?.actor;
+    const reasons = [
+        _turnReason(actor),
+        (ability !== "str") && "NotStrength",
+        !reckless && "NotReckless",
+        disadvantage && "Disadvantage",
+        !_targetsAllowed(process) && "SeveralTargets"
+    ].filter(Boolean);
+    return reasons.map(r => game.i18n.localize(`ND5T.BrutalStrike.Reason.${r}`)).join(" ");
 }
 
 /**
@@ -305,7 +354,7 @@ function _dialogFields(app, context) {
     context.fields.push({
         field: new foundry.data.fields.BooleanField({
             label: feature.item.name || game.i18n.localize("ND5T.BrutalStrike.Label"),
-            hint: game.i18n.localize("ND5T.BrutalStrike.DialogHint")
+            hint: app.nd5tBrutalHint ?? game.i18n.localize("ND5T.BrutalStrike.DialogHint")
         }),
         name: FIELD,
         value: checked
@@ -352,16 +401,15 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
         const recklessOffered = Boolean(process.nd5tRecklessOffer && recklessInput && !recklessInput.disabled);
         const alreadyReckless = !process.nd5tRecklessOffer && isActorReckless(actor);
         const disadvantage = Boolean(rollConfig?.options?.disadvantage || process.disadvantage);
-        const eligible = (ability === "str") && (alreadyReckless || recklessOffered)
-            && !disadvantage && _targetsAllowed(process);
-
-        const input = app.form?.querySelector(`input[name="${FIELD}"]`);
-        if (input) {
-            input.disabled = !eligible;
-            input.closest(".form-group")?.classList.toggle("disabled", !eligible);
+        // Never disabled: the reasons the rules don't expect it go into the hint, and a tick is the player's call
+        if (index === 0) {
+            const reasons = _brutalHint(process, { ability, reckless: alreadyReckless || recklessOffered, disadvantage });
+            app.nd5tBrutalHint = [game.i18n.localize("ND5T.BrutalStrike.DialogHint"), reasons].filter(Boolean).join(" ");
+            setDialogFieldHint(app, FIELD, app.nd5tBrutalHint);
         }
+        const input = app.form?.querySelector(`input[name="${FIELD}"]`);
 
-        let checked = eligible && (formData?.object?.[FIELD] === true);
+        let checked = formData?.object?.[FIELD] === true;
         let recklessTicked = recklessOffered && (formData?.object?.[RECKLESS_FIELD] === true);
         if (checked && recklessOffered && !recklessTicked) {
             // Reckless Attack was just unticked while Brutal Strike stayed ticked: Brutal Strike goes too.
@@ -386,7 +434,10 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
 
         if (!rollConfig) return;
         rollConfig.options ??= {};
-        const mode = checked ? CONFIG.Dice.D20Roll.ADV_MODE.NORMAL : _advantageMode(process, rollConfig, recklessTicked);
+        // Brutal Strike forgoes Advantage; Disadvantage from elsewhere stays
+        const mode = checked
+            ? (disadvantage ? CONFIG.Dice.D20Roll.ADV_MODE.DISADVANTAGE : CONFIG.Dice.D20Roll.ADV_MODE.NORMAL)
+            : _advantageMode(process, rollConfig, recklessTicked);
         if (rollConfig.options.advantageMode === mode) return;
         rollConfig.options.advantageMode = mode;
         const isOpen = () => app.state === foundry.applications.api.ApplicationV2.RENDER_STATES.RENDERED;
@@ -416,8 +467,8 @@ function _remember(activity, roll) {
 }
 
 /**
- * dnd5e.postAttackRollConfiguration: a Brutal Strike roll is a normal roll, whatever button was clicked. A roll
- * with Disadvantage can't be chosen: the mark is dropped.
+ * dnd5e.postAttackRollConfiguration: a Brutal Strike roll forgoes Advantage, whatever button was clicked. A roll
+ * with Disadvantage keeps it (and the choice: the player ticked it knowingly).
  * @param {D20Roll[]} rolls
  */
 function _onPostAttackRollConfiguration(rolls, config) {
@@ -425,13 +476,9 @@ function _onPostAttackRollConfiguration(rolls, config) {
         const ADV = CONFIG.Dice.D20Roll.ADV_MODE;
         for (const roll of rolls ?? []) {
             if (!roll.options?.[FIELD]) continue;
-            if ((roll.options.advantageMode === ADV.DISADVANTAGE) || roll.options.disadvantage) {
-                delete roll.options[FIELD];
-                ui.notifications.warn(game.i18n.localize("ND5T.BrutalStrike.Disadvantage"));
-                continue;
-            }
             roll.options.advantage = false;
-            if (roll.options.advantageMode !== ADV.NORMAL) {
+            const disadvantage = (roll.options.advantageMode === ADV.DISADVANTAGE) || roll.options.disadvantage;
+            if (!disadvantage && (roll.options.advantageMode !== ADV.NORMAL)) {
                 roll.options.advantageMode = ADV.NORMAL;
                 roll.d20?.applyAdvantage(ADV.NORMAL);
                 roll.resetFormula();
@@ -453,7 +500,7 @@ function _onPostAttackRollConfiguration(rolls, config) {
  * @returns {object|null}
  */
 function _promptChoice(actor, activity, choices) {
-    if ((choices.ability !== "str") || !_offer(actor) || !_targetsAllowed({})) return null;
+    if ((choices.ability !== "str") || !_expectedOffer(actor) || !_targetsAllowed({})) return null;
     return {
         action: "brutalStrike",
         label: game.i18n.localize("ND5T.BrutalStrike.PromptRecklessAndBrutal"),
@@ -473,7 +520,7 @@ async function _skippedPrompt(activity, config, choices) {
     const actor = activity.actor;
     // Out of combat there are no turns, so a "No" would be asked on every attack
     if (!_combatOf(actor) || !getSetting("brutalStrikeFollowPrompt")) return;
-    const feature = _offer(actor);
+    const feature = _expectedOffer(actor);
     if (!feature || !isActorReckless(actor) || !_targetsAllowed(config)) return;
     const result = await foundry.applications.api.DialogV2.confirm({
         window: { title: feature.item.name || game.i18n.localize("ND5T.BrutalStrike.Label"), icon: "fa-solid fa-hammer-crash" },

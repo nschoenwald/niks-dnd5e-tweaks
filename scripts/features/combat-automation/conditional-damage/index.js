@@ -11,6 +11,9 @@
  * scores a natural 20 attack roll with Boon of Irresistible Offense (+Ability Score bonus),
  * or hits with an attack roll on their turn with Genie's Wrath (+PB of the patron's damage type, once per turn).
  * Remembers choices per actor (except one-offs and once-per-turn bonuses).
+ * A bonus is hidden only when the actor lacks it or the roll is the wrong kind for it (wrong weapon, spell school,
+ * damage type; an active spell like Hex that isn't running). When its situational conditions fail (turn, uses,
+ * rage, form, target, movement, natural 20) it is offered unticked, with the reasons as the toggle's tooltip.
  * Sneak Attack starts on only when the attack qualifies: Advantage, an ally who isn't Incapacitated within
  * 5 ft of the target (without Disadvantage), or Rakish Audacity.
  *
@@ -30,6 +33,9 @@
  * @updated v14.119.0 (Combo Strikes counts melee attacks whose damage was rolled, no AC check)
  * @updated v14.120.0 (split into modules, no change in behavior)
  * @updated v14.120.2 (attack lookup through the shared attack-lookup helper)
+ * @updated v14.121.0 (bonuses whose situational conditions fail are offered unticked with the reasons as tooltip,
+ *   instead of being hidden: off-turn, already used this turn, no uses left, not raging / Reckless / transformed, no
+ *   natural 20, Charger movement, target conditions; Divine Fury needs a weapon or Unarmed Strike)
  */
 import { log, debug } from "../../../context.js";
 import { lastAttackRollsByActor, meleeHits, pruneStaleAttackRolls, recordAttackRoll, recordMeleeHit } from "./attack-cache.js";

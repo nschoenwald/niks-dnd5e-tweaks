@@ -149,18 +149,24 @@ function _applyGeniesWrathTooltip(app) {
 }
 
 /**
- * Show a bonus's own tooltip (e.g. why Colossus Slayer starts on or off) on its toggle.
+ * Show a bonus's tooltip on its toggle: why it starts unticked (`tooltipText`, built from its unmet conditions), or
+ * its own tooltip (e.g. why Colossus Slayer starts on or off). Bonuses that start unticked for a reason get the
+ * `nd5t-blocked` class.
  *
  * @param {DamageRollConfigurationDialog} app
  */
 function _applyBonusTooltips(app) {
     for (const bonus of app?.config?._nd5tConditionalBonuses ?? []) {
-        if (!bonus.tooltipKey || !app.element) continue;
+        if (!app.element) return;
+        const text = bonus.tooltipText
+            || (bonus.tooltipKey ? (game.i18n?.has(bonus.tooltipKey) ? game.i18n.localize(bonus.tooltipKey) : (bonus.tooltipFallback ?? "")) : "");
+        if (!text) continue;
         const input = app.element.querySelector(`input[name="nd5t.conditional.${bonus.id}"]`);
         const group = input?.closest(".form-group") ?? input?.parentElement;
         if (!group) continue;
-        group.dataset.tooltip = game.i18n?.has(bonus.tooltipKey) ? game.i18n.localize(bonus.tooltipKey) : (bonus.tooltipFallback ?? "");
+        group.dataset.tooltip = text;
         group.dataset.tooltipDirection = "UP";
+        group.classList.toggle("nd5t-blocked", Boolean(bonus.blocked?.length));
     }
 }
 
@@ -580,7 +586,7 @@ export function patchDamageRollConfigurationDialog() {
                         // choice is only the fallback for when eligibility can't be worked out.
                         const isTurnTracked = Boolean(bonus.turnKey)
                             || (bonus.id === "sneakAttack" && Boolean(bonus.eligibility) && bonus.eligibility.state !== "unknown");
-                        if (bonus.actor && !isTurnTracked && !bonus.oneOff && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense" && bonus.id !== "geniesWrath") {
+                        if (bonus.actor && !isTurnTracked && !bonus.oneOff && !bonus.blocked?.length && bonus.id !== "cleave" && bonus.id !== "brutalStrike" && bonus.id !== "charger" && bonus.id !== "savageAttacker" && bonus.id !== "boonOfIrresistibleOffense" && bonus.id !== "geniesWrath") {
                             if (bonus.id === "greatWeaponMaster" && !isChecked) {
                                 // GWM was disabled for this one roll (e.g. bonus action or reaction attack).
                                 // Automatically reset it back to enabled for subsequent rolls so the player doesn't have to re-enable it.

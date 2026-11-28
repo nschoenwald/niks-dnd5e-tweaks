@@ -4179,6 +4179,17 @@ body.crlngn-ui.nft-crlngn-theme-active.nd5t-chat-card-styling .chat-popout .mess
     justify-content: flex-end;
 }
 
+/* Conditional damage bonus that starts unticked for a reason (shown in its tooltip): an info icon after the label.
+   currentColor keeps it readable in light and dark themes. */
+.roll-configuration .form-group.nd5t-blocked > label::after {
+    content: "\f05a";
+    font-family: var(--font-awesome, "Font Awesome 7 Pro");
+    font-weight: 900;
+    margin-inline-start: 0.35em;
+    color: currentColor;
+    opacity: 0.55;
+}
+
 /* Inactive conditional damage bonus row in DamageRollConfigurationDialog */
 .dnd5e2.application.roll-configuration .formulas > li.nd5t-inactive-roll,
 .roll-configuration .formulas > li.nd5t-inactive-roll {

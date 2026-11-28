@@ -6,9 +6,9 @@ import { debug } from "../../../context.js";
 import { isWm5eActive } from "../../../utils/module-compat.js";
 import { didAttackRollNatural20 } from "./attack-cache.js";
 import { getActiveCombat, getCombatTurnKey, hasAttackerMovedChargerDistance, hasUsedBonusThisTurn, isAttackerCombatTurn } from "./combat-turn.js";
-import { GENIES_WRATH_DAMAGE_TYPES, actorHasBoonOfIrresistibleOffense, actorHasBrutalStrike, actorHasCharger, actorHasGeniesWrath, actorHasGreatWeaponMaster, actorHasSavageAttacker, brutalStrikeAutomated, getActorBoonOfIrresistibleOffenseFeat, getActorGeniesWrathType, getBoonOfIrresistibleOffenseAbility, getBoonOfIrresistibleOffenseScore, getBrutalStrikeFormula, getRogueData, getSneakAttackEligibility, getWeaponBaseDiceFormula, isEligibleBrutalStrikeAttack, isEligibleChargerAttack, isEligibleCleaveWeapon, isEligibleHeavyWeapon, isEligibleSavageAttackerAttack, isEligibleSneakAttackWeapon, isModernRules } from "./core-bonuses.js";
+import { GENIES_WRATH_DAMAGE_TYPES, actorHasBoonOfIrresistibleOffense, actorHasBrutalStrike, actorHasCharger, actorHasGeniesWrath, actorHasGreatWeaponMaster, actorHasSavageAttacker, brutalStrikeAutomated, getActorBoonOfIrresistibleOffenseFeat, getActorGeniesWrathType, getBoonOfIrresistibleOffenseAbility, getBoonOfIrresistibleOffenseScore, getBrutalStrikeFormula, getRogueData, getSneakAttackEligibility, getWeaponBaseDiceFormula, isEligibleChargerAttack, isEligibleCleaveWeapon, isEligibleHeavyWeapon, isEligibleSavageAttackerAttack, isEligibleSneakAttackWeapon, isModernRules, strengthAttackCheck } from "./core-bonuses.js";
 import { addFeatureAttackBonuses } from "./feature-bonuses.js";
-import { findFeature, isAttackActivity } from "./feature-helpers.js";
+import { BLOCKED_REASON_FALLBACKS, findFeature, isAttackActivity } from "./feature-helpers.js";
 import { addSpellBonuses } from "./spell-bonuses.js";
 
 /**
@@ -167,7 +167,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
 
     if (!isAttack) {
         addSpellBonuses(featureContext, activeBonuses);
-        _markUsedThisTurn(actor, activeBonuses);
+        _applyBlockedReasons(actor, activeBonuses);
         return activeBonuses;
     }
 
@@ -212,7 +212,8 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     }
 
     // --- 3. Great Weapon Master (2024 Modern Rules: +PB damage on heavy weapons on attacker's turn) ---
-    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item) && isMyTurn) {
+    // Off-turn attacks (Opportunity Attacks) get it unticked
+    if (isModernRules() && actorHasGreatWeaponMaster(actor) && isEligibleHeavyWeapon(item)) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         activeBonuses.push({
             id: "greatWeaponMaster",
@@ -223,6 +224,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
             flavor: "GWM",
             labelKey: "ND5T.ConditionalDamage.GreatWeaponMaster.Label",
             defaultLabel: `Great Weapon Master (+${pb})`,
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: true
         });
     }
@@ -248,46 +250,47 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     }
 
     // --- 5. Brutal Strike (2024 Modern Rules: @scale.barbarian.brutal-strike on Barbarian's turn, once per turn) ---
-    // Not offered while Brutal Strike automation (brutal-strike.js) adds the damage to the attacks it was chosen on
-    if (isModernRules() && !brutalStrikeAutomated() && actorHasBrutalStrike(actor) && isEligibleBrutalStrikeAttack(item, activity, config, actor) && isMyTurn) {
-        const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "brutalStrike", turnKey);
-        if (!hasUsedThisTurn) {
-            const brutalFormulaDisplay = getBrutalStrikeFormula(actor);
-            activeBonuses.push({
-                id: "brutalStrike",
-                spellName: "Brutal Strike",
-                formula: `${brutalFormulaDisplay}[Brutal Strike]`,
-                formulaDisplay: brutalFormulaDisplay,
-                damageType: baseDamageType,
-                flavor: "Brutal Strike",
-                turnKey,
-                labelKey: "ND5T.ConditionalDamage.BrutalStrike.Label",
-                defaultLabel: `Brutal Strike (+${brutalFormulaDisplay})`,
-                defaultActive: false
-            });
-        }
+    // Not offered while Brutal Strike automation (brutal-strike.js) adds the damage to the attacks it was chosen on.
+    // Off-turn, already used or not Strength-based: offered unticked, so a player can still correct a missed choice.
+    const brutalCheck = (isModernRules() && !brutalStrikeAutomated() && actorHasBrutalStrike(actor))
+        ? strengthAttackCheck(item, activity, config, actor)
+        : "kind";
+    if (brutalCheck !== "kind") {
+        const brutalFormulaDisplay = getBrutalStrikeFormula(actor);
+        activeBonuses.push({
+            id: "brutalStrike",
+            spellName: "Brutal Strike",
+            formula: `${brutalFormulaDisplay}[Brutal Strike]`,
+            formulaDisplay: brutalFormulaDisplay,
+            damageType: baseDamageType,
+            flavor: "Brutal Strike",
+            turnKey,
+            labelKey: "ND5T.ConditionalDamage.BrutalStrike.Label",
+            defaultLabel: `Brutal Strike (+${brutalFormulaDisplay})`,
+            blocked: [!isMyTurn && "NotYourTurn", (brutalCheck === "strength") && "NotStrength"],
+            defaultActive: false
+        });
     }
 
     // --- 6. Charger (2024 Modern Rules: +1d8 damage on melee attack after moving at least 10 ft on your turn, once per turn) ---
+    // In combat, off-turn or without the 10 ft of movement it's offered unticked (movement can be missed: teleports,
+    // forced movement, a token moved by hand)
     if (isModernRules() && actorHasCharger(actor) && isEligibleChargerAttack(item, activity, config)) {
-        const hasUsedThisTurn = inCombat && hasUsedBonusThisTurn(actor, "charger", turnKey);
-        const isEligibleTurnAndMovement = !inCombat
-            || (!hasUsedThisTurn && isMyTurn && hasAttackerMovedChargerDistance(actor, token, 10));
-
-        if (isEligibleTurnAndMovement) {
-            activeBonuses.push({
-                id: "charger",
-                spellName: "Charger",
-                formula: "1d8[Charger]",
-                formulaDisplay: "1d8",
-                damageType: baseDamageType,
-                flavor: "Charger",
-                turnKey,
-                labelKey: "ND5T.ConditionalDamage.Charger.Label",
-                defaultLabel: "Charger (+1d8)",
-                defaultActive: false
-            });
-        }
+        activeBonuses.push({
+            id: "charger",
+            spellName: "Charger",
+            formula: "1d8[Charger]",
+            formulaDisplay: "1d8",
+            damageType: baseDamageType,
+            flavor: "Charger",
+            turnKey,
+            labelKey: "ND5T.ConditionalDamage.Charger.Label",
+            defaultLabel: "Charger (+1d8)",
+            blocked: inCombat
+                ? [!isMyTurn && "NotYourTurn", isMyTurn && !hasAttackerMovedChargerDistance(actor, token, 10) && "NotMoved"]
+                : [],
+            defaultActive: false
+        });
     }
 
     // --- 7. Savage Attacker (2024 Modern Rules: Roll weapon damage dice twice and use either roll, once per turn) ---
@@ -317,7 +320,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     // --- 8. Genie's Wrath (Genie warlock: +PB on a hit with an attack roll, once during each of your turns) ---
     // The type depends on the patron's kind, which items don't reliably record: the roll offers the four types
     // in a dropdown and remembers the last pick.
-    if (isMyTurn && actorHasGeniesWrath(actor)) {
+    if (actorHasGeniesWrath(actor)) {
         const isAttack = activity?.type === "attack"
             || ["mwak", "rwak", "msak", "rsak"].includes(activity?.actionType ?? "");
         if (isAttack) {
@@ -336,6 +339,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
                 labelKey: "ND5T.ConditionalDamage.GeniesWrath.Label",
                 defaultLabel: `Genie's Wrath (+${pb})`,
                 turnKey,
+                blocked: [!isMyTurn && "NotYourTurn"],
                 defaultActive: !(inCombat && hasUsedBonusThisTurn(actor, "geniesWrath", turnKey))
             });
         }
@@ -346,7 +350,9 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
         const isAttack = activity?.type === "attack"
             || ["mwak", "rwak", "msak", "rsak"].includes(activity?.actionType ?? "");
 
-        if (isAttack && didAttackRollNatural20(actor, { config, dialog, message, activity })) {
+        // Offered unticked without a natural 20 found (an attack rolled outside Foundry, or not found)
+        if (isAttack) {
+            const natural20 = didAttackRollNatural20(actor, { config, dialog, message, activity });
             const featItem = getActorBoonOfIrresistibleOffenseFeat(actor);
             const abilityKey = getBoonOfIrresistibleOffenseAbility(actor, featItem);
             const scoreValue = getBoonOfIrresistibleOffenseScore(actor, featItem);
@@ -360,6 +366,7 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
                 flavor: "Boon of Irresistible Offense",
                 labelKey: "ND5T.ConditionalDamage.BoonOfIrresistibleOffense.Label",
                 defaultLabel: `Boon of Irresistible Offense (+${scoreValue})`,
+                blocked: [!natural20 && "NotNatural20"],
                 defaultActive: true,
                 abilityKey,
                 scoreValue
@@ -371,23 +378,41 @@ export function getActiveConditionalBonuses(actor, { item = null, activity = nul
     addFeatureAttackBonuses(featureContext, activeBonuses);
     addSpellBonuses(featureContext, activeBonuses);
 
-    _markUsedThisTurn(actor, activeBonuses);
+    _applyBlockedReasons(actor, activeBonuses);
     return activeBonuses;
 }
 
 /**
- * Explain on the toggle why a once-per-turn bonus starts off: it was already used this turn. Sneak Attack has its
- * own explanation.
+ * Bonuses whose conditions aren't met are still offered, unticked, so players can fix a misclick or a condition
+ * Foundry can't see. Each bonus lists its unmet conditions in `blocked` (reason keys, falsy entries ignored); a
+ * once-per-turn bonus already used this turn gets "UsedThisTurn". A blocked bonus starts unticked, its remembered
+ * choice is neither applied nor overwritten, and its toggle's tooltip lists the reasons (after its own tooltip, if
+ * it has one). Sneak Attack explains itself.
  *
  * @param {Actor5e} actor
  * @param {object[]} bonuses
  */
-function _markUsedThisTurn(actor, bonuses) {
+function _applyBlockedReasons(actor, bonuses) {
     for (const bonus of bonuses) {
-        if (!bonus.turnKey || (bonus.id === "sneakAttack") || bonus.defaultActive) continue;
-        if (!hasUsedBonusThisTurn(actor, bonus.usageId ?? bonus.id, bonus.turnKey)) continue;
-        bonus.tooltipKey = "ND5T.ConditionalDamage.UsedThisTurn";
-        bonus.tooltipFallback = "Already used this turn.";
+        const reasons = (bonus.blocked ?? []).filter(Boolean);
+        if (bonus.turnKey && (bonus.id !== "sneakAttack") && !reasons.includes("UsedThisTurn")
+            && hasUsedBonusThisTurn(actor, bonus.usageId ?? bonus.id, bonus.turnKey)) {
+            reasons.push("UsedThisTurn");
+        }
+        if (!reasons.length) {
+            delete bonus.blocked;
+            continue;
+        }
+        bonus.blocked = reasons;
+        bonus.defaultActive = false;
+        const texts = reasons.map(reason => {
+            const key = (reason === "UsedThisTurn") ? "ND5T.ConditionalDamage.UsedThisTurn" : `ND5T.ConditionalDamage.Blocked.${reason}`;
+            return game.i18n?.has(key) ? game.i18n.localize(key) : (BLOCKED_REASON_FALLBACKS[reason] ?? "");
+        });
+        if (bonus.tooltipKey) {
+            texts.unshift(game.i18n?.has(bonus.tooltipKey) ? game.i18n.localize(bonus.tooltipKey) : (bonus.tooltipFallback ?? ""));
+        }
+        bonus.tooltipText = texts.filter(Boolean).join(" ");
     }
 }
 

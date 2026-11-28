@@ -5,7 +5,7 @@
 import { isActorReckless } from "../reckless-attack.js";
 import { previousMeleeHits } from "./attack-cache.js";
 import { hasUsedBonusThisTurn } from "./combat-turn.js";
-import { isEligibleBrutalStrikeAttack } from "./core-bonuses.js";
+import { strengthAttackCheck } from "./core-bonuses.js";
 import { MARTIAL_ARTS_DIE, PSIONIC_ENERGY_DIE, RAGE_DAMAGE, activeFeatureEffects, classLevels, diceWithMod, effectsFrom, facesByLevel, findFeature, firstDieFacesOfType, identifierOf, isActorRaging, isBloodied, isPactWeapon, isUnarmedStrike, originalActor, resolveTargetDocs, resource, scaleDieFaces, usesText } from "./feature-helpers.js";
 import { getActorBonusType, getActorConditionalPreference } from "./preferences.js";
 
@@ -27,6 +27,9 @@ const LIFEDRINKER_TYPES = ["necrotic", "psychic", "radiant"];
  * @param {object[]} out
  */
 export function addFeatureAttackBonuses(ctx, out) {
+    // A bonus whose situational conditions fail (turn, uses, rage, form, target) is still offered, unticked, with the
+    // reasons in `blocked` (see _applyBlockedReasons in collect.js). Missing features and the wrong kind of attack
+    // hide it.
     const { actor, item, activity, config, dialog, message, baseDamageType, turnKey, isMyTurn } = ctx;
     const isWeapon = item?.type === "weapon";
     const unarmed = isUnarmedStrike(item, activity);
@@ -69,7 +72,7 @@ export function addFeatureAttackBonuses(ctx, out) {
     }
 
     // Divine Strike (Cleric Blessed Strikes): +1d8 (2d8 at 14) radiant or necrotic, once on each of your turns
-    if (isWeapon && isMyTurn && feature(["divine-strike"], /^(?:blessed strikes:\s*)?divine strike$/i)) {
+    if (isWeapon && feature(["divine-strike"], /^(?:blessed strikes:\s*)?divine strike$/i)) {
         const dice = levels("cleric") >= 14 ? "2d8" : "1d8";
         add({
             id: "divineStrike",
@@ -81,13 +84,13 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Divine Strike",
             labelKey: "ND5T.ConditionalDamage.DivineStrike.Label",
             defaultLabel: `Divine Strike (+${dice})`,
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("divineStrike")
         });
     }
 
     // Primal Strike (Druid Elemental Fury): +1d8 (2d8 at 15), weapon or Wild Shape attack, once on each of your turns
-    if ((isWeapon || actor.isPolymorphed) && isMyTurn
-        && feature(["primal-strike"], /^(?:elemental fury:\s*)?primal strike$/i)) {
+    if ((isWeapon || actor.isPolymorphed) && feature(["primal-strike"], /^(?:elemental fury:\s*)?primal strike$/i)) {
         const dice = levels("druid") >= 15 ? "2d8" : "1d8";
         add({
             id: "primalStrike",
@@ -100,12 +103,14 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Primal Strike",
             labelKey: "ND5T.ConditionalDamage.PrimalStrike.Label",
             defaultLabel: `Primal Strike (+${dice})`,
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("primalStrike")
         });
     }
 
-    // Divine Fury (Zealot): +1d6 + half Barbarian level on the first hit of each of your turns while raging
-    if (isMyTurn && feature(["divine-fury"], /^divine fury$/i) && isActorRaging(actor)) {
+    // Divine Fury (Zealot): +1d6 + half Barbarian level on the first weapon or Unarmed Strike hit of each of your
+    // turns while raging
+    if ((isWeapon || unarmed) && feature(["divine-fury"], /^divine fury$/i)) {
         const half = Math.floor(levels("barbarian") / 2);
         const { formula, display } = diceWithMod("1d6", half, "Divine Fury");
         add({
@@ -119,13 +124,14 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Divine Fury",
             labelKey: "ND5T.ConditionalDamage.DivineFury.Label",
             defaultLabel: `Divine Fury (+${display})`,
+            blocked: [!isMyTurn && "NotYourTurn", !isActorRaging(actor) && "NotRaging"],
             defaultActive: !used("divineFury")
         });
     }
 
     // Frenzy (Berserker): Rage Damage d6s on the first Strength-based hit of your turn, raging and Reckless
-    if (isMyTurn && feature(["frenzy"], /^frenzy$/i) && isActorRaging(actor) && isActorReckless(actor)
-        && isEligibleBrutalStrikeAttack(item, activity, config, actor)) {
+    const frenzyCheck = feature(["frenzy"], /^frenzy$/i) ? strengthAttackCheck(item, activity, config, actor) : "kind";
+    if (frenzyCheck !== "kind") {
         const count = Number(actor.system?.scale?.barbarian?.["rage-damage"]?.value
             ?? original?.system?.scale?.barbarian?.["rage-damage"]?.value)
             || facesByLevel(levels("barbarian"), RAGE_DAMAGE);
@@ -140,6 +146,12 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Frenzy",
             labelKey: "ND5T.ConditionalDamage.Frenzy.Label",
             defaultLabel: `Frenzy (+${dice})`,
+            blocked: [
+                !isMyTurn && "NotYourTurn",
+                !isActorRaging(actor) && "NotRaging",
+                !isActorReckless(actor) && "NotReckless",
+                (frenzyCheck === "strength") && "NotStrength"
+            ],
             defaultActive: !used("frenzy")
         });
     }
@@ -166,7 +178,7 @@ export function addFeatureAttackBonuses(ctx, out) {
     // Dread Ambusher (Gloom Stalker): +2d6 (2d8 at 11) psychic once per turn, Wisdom modifier uses per Long Rest
     const ambusher = isWeapon ? feature(["dread-ambusher"], /^dread ambusher$/i) : null;
     const ambusherRes = resource(ambusher);
-    if (ambusherRes?.available && !used("dreadAmbusher")) {
+    if (ambusherRes) {
         const dice = levels("ranger") >= 11 ? "2d8" : "2d6";
         add({
             id: "dreadAmbusher",
@@ -180,34 +192,34 @@ export function addFeatureAttackBonuses(ctx, out) {
             consume: ambusherRes.consume,
             labelKey: "ND5T.ConditionalDamage.DreadAmbusher.Label",
             defaultLabel: `Dread Ambusher (+${dice}, ${usesText({ usesLeft: ambusherRes.usesLeft, usesTracked: ambusherRes.tracked })})`,
+            blocked: [!ambusherRes.available && "NoUses"],
             defaultActive: false
         });
     }
 
     // Elemental Epitome (Monk 17): +1 Martial Arts die on an Unarmed Strike, once on each of your turns, while
     // Elemental Attunement is active
-    if (unarmed && isMyTurn && feature(["elemental-epitome"], /^elemental epitome$/i)) {
+    if (unarmed && feature(["elemental-epitome"], /^elemental epitome$/i)) {
         const attunement = feature(["elemental-attunement"], /^elemental attunement/i);
         const attuned = !attunement
             || (attunement.effects ?? []).some(e => (e.type === "enchantment") && !e.disabled && (e.isAppliedEnchantment === true))
             || /\(active\)/i.test(attunement.name ?? "");
-        if (attuned) {
-            const dice = `1d${scaleDieFaces(actor, "monk", "die", 0) || scaleDieFaces(original, "monk", "die", 0)
-                || facesByLevel(levels("monk"), MARTIAL_ARTS_DIE)}`;
-            add({
-                id: "elementalEpitome",
-                spellName: "Elemental Epitome",
-                formula: `${dice}[Elemental Epitome]`,
-                formulaDisplay: dice,
-                damageType: pickType("elementalEpitome", ELEMENTAL_EPITOME_TYPES),
-                damageTypes: [...ELEMENTAL_EPITOME_TYPES],
-                rememberType: true,
-                flavor: "Elemental Epitome",
-                labelKey: "ND5T.ConditionalDamage.ElementalEpitome.Label",
-                defaultLabel: `Elemental Epitome (+${dice})`,
-                defaultActive: !used("elementalEpitome")
-            });
-        }
+        const dice = `1d${scaleDieFaces(actor, "monk", "die", 0) || scaleDieFaces(original, "monk", "die", 0)
+            || facesByLevel(levels("monk"), MARTIAL_ARTS_DIE)}`;
+        add({
+            id: "elementalEpitome",
+            spellName: "Elemental Epitome",
+            formula: `${dice}[Elemental Epitome]`,
+            formulaDisplay: dice,
+            damageType: pickType("elementalEpitome", ELEMENTAL_EPITOME_TYPES),
+            damageTypes: [...ELEMENTAL_EPITOME_TYPES],
+            rememberType: true,
+            flavor: "Elemental Epitome",
+            labelKey: "ND5T.ConditionalDamage.ElementalEpitome.Label",
+            defaultLabel: `Elemental Epitome (+${dice})`,
+            blocked: [!isMyTurn && "NotYourTurn", !attuned && "NotAttuned"],
+            defaultActive: !used("elementalEpitome")
+        });
     }
 
     // Fire's Burn / Frost's Chill (Goliath Giant Ancestry): on a hit with an attack roll, Proficiency Bonus uses
@@ -217,7 +229,7 @@ export function addFeatureAttackBonuses(ctx, out) {
     ]) {
         const giantItem = feature(giant.ids, giant.pattern);
         const giantRes = resource(giantItem);
-        if (!giantRes?.available) continue;
+        if (!giantRes) continue;
         add({
             id: giant.id,
             spellName: giant.name,
@@ -231,12 +243,13 @@ export function addFeatureAttackBonuses(ctx, out) {
             labelKey: `ND5T.ConditionalDamage.${giant.key}.Label`,
             defaultLabel: `${giant.name} (+${giant.dice}, ${usesText({ usesLeft: giantRes.usesLeft, usesTracked: giantRes.tracked })})`,
             turnKey: null,
+            blocked: [!giantRes.available && "NoUses"],
             defaultActive: false
         });
     }
 
     // Lunar Form (Moon Druid 10): +2d10 radiant on a Wild Shape form's attack, once on each of your turns
-    if (actor.isPolymorphed && isMyTurn && feature(["lunar-form"], /^lunar form$/i)) {
+    if (actor.isPolymorphed && feature(["lunar-form"], /^lunar form$/i)) {
         add({
             id: "lunarForm",
             spellName: "Lunar Form",
@@ -246,16 +259,17 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Lunar Form",
             labelKey: "ND5T.ConditionalDamage.LunarForm.Label",
             defaultLabel: "Lunar Form (+2d10)",
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("lunarForm")
         });
     }
 
     // Psionic Strike (Psi Warrior): Psionic Energy Die + Intelligence modifier force, once on each of your turns
-    const psionic = isWeapon && isMyTurn
+    const psionic = isWeapon
         ? feature(["psionic-power"], /^psionic power$/i, i => Array.from(i.system?.activities ?? []).some(a => a.type === "damage"))
         : null;
     const psionicRes = resource(psionic);
-    if (psionicRes?.available && !used("psionicStrike")) {
+    if (psionicRes) {
         const faces = scaleDieFaces(actor, "psi-warrior", "die", 0) || scaleDieFaces(original, "psi-warrior", "die", 0)
             || facesByLevel(levels("fighter"), PSIONIC_ENERGY_DIE);
         const { formula, display } = diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.int?.mod ?? 0), "Psionic Strike");
@@ -271,15 +285,16 @@ export function addFeatureAttackBonuses(ctx, out) {
             consume: psionicRes.consume,
             labelKey: "ND5T.ConditionalDamage.PsionicStrike.Label",
             defaultLabel: `Psionic Strike (+${display}, ${usesText({ usesLeft: psionicRes.usesLeft, usesTracked: psionicRes.tracked })})`,
+            blocked: [!isMyTurn && "NotYourTurn", !psionicRes.available && "NoUses"],
             defaultActive: false
         });
     }
 
     // Hand of Harm (Warrior of Mercy): 1 Focus Point, Martial Arts die + Wisdom modifier necrotic, once per turn
-    if (unarmed && !used("handOfHarm") && feature(["hand-of-harm"], /^hand of harm$/i)) {
+    if (unarmed && feature(["hand-of-harm"], /^hand of harm$/i)) {
         const focus = feature(["monks-focus"], /^monk's focus$/i);
         const focusRes = resource(focus);
-        if (focusRes?.available) {
+        if (focusRes) {
             const faces = scaleDieFaces(actor, "monk", "die", 0) || scaleDieFaces(original, "monk", "die", 0)
                 || facesByLevel(levels("monk"), MARTIAL_ARTS_DIE);
             const { formula, display } = diceWithMod(`1d${faces}`, Number(actor.system?.abilities?.wis?.mod ?? 0), "Hand of Harm");
@@ -296,6 +311,7 @@ export function addFeatureAttackBonuses(ctx, out) {
                 consume: focusRes.consume,
                 labelKey: "ND5T.ConditionalDamage.HandOfHarm.Label",
                 defaultLabel: `Hand of Harm (+${display}, ${usesText({ usesLeft: focusRes.usesLeft, usesTracked: focusRes.tracked, usesUnit: "focus" })})`,
+                blocked: [!focusRes.available && "NoFocus"],
                 defaultActive: false
             });
         }
@@ -304,7 +320,7 @@ export function addFeatureAttackBonuses(ctx, out) {
     // Eldritch Smite (invocation): a Pact Magic slot, (1 + slot level)d8 force with the pact weapon, once per turn
     const pactWeapon = isWeapon && isPactWeapon(item, actor);
     const pact = actor.system?.spells?.pact;
-    if (pactWeapon && (Number(pact?.value ?? 0) > 0) && (Number(pact?.level ?? 0) > 0) && !used("eldritchSmite")
+    if (pactWeapon && (Number(pact?.level ?? 0) > 0)
         && feature(["eldritch-smite"], /^(?:eldritch invocation:\s*)?eldritch smite$/i)) {
         const dice = `${1 + Number(pact.level)}d8`;
         add({
@@ -318,6 +334,7 @@ export function addFeatureAttackBonuses(ctx, out) {
             consume: { type: "pactSlot" },
             labelKey: "ND5T.ConditionalDamage.EldritchSmite.Label",
             defaultLabel: `Eldritch Smite (+${dice}, uses a Pact slot)`,
+            blocked: [!(Number(pact.value ?? 0) > 0) && "NoPactSlot"],
             defaultActive: false
         });
     }
@@ -362,7 +379,7 @@ export function addFeatureAttackBonuses(ctx, out) {
     }
 
     // Power from Pain (Boon of Bloodshed): + Proficiency Bonus once per turn on an attack made while Bloodied
-    if (feature(["boon-of-bloodshed"], /^boon of bloodshed$/i) && isBloodied(actor)) {
+    if (feature(["boon-of-bloodshed"], /^boon of bloodshed$/i)) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         add({
             id: "powerFromPain",
@@ -375,6 +392,7 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Power from Pain",
             labelKey: "ND5T.ConditionalDamage.PowerFromPain.Label",
             defaultLabel: `Power from Pain (+${pb})`,
+            blocked: [!isBloodied(actor) && "NotBloodied"],
             defaultActive: !used("powerFromPain")
         });
     }
@@ -407,9 +425,9 @@ export function addFeatureAttackBonuses(ctx, out) {
     // Arcane Jolt (Battle Smith): +2d6 force (4d6 with Improved Defender) with a magic weapon, once per turn,
     // Intelligence modifier uses per Long Rest
     const magicWeapon = isWeapon && (Boolean(item.system?.properties?.has?.("mgc")) || (Number(item.system?.magicalBonus) > 0));
-    const jolt = magicWeapon && !used("arcaneJolt") ? feature(["arcane-jolt"], /^arcane jolt$/i) : null;
+    const jolt = magicWeapon ? feature(["arcane-jolt"], /^arcane jolt$/i) : null;
     const joltRes = resource(jolt);
-    if (joltRes?.available) {
+    if (joltRes) {
         const dice = feature(["improved-defender"], /^improved defender$/i) ? "4d6" : "2d6";
         add({
             id: "arcaneJolt",
@@ -423,12 +441,13 @@ export function addFeatureAttackBonuses(ctx, out) {
             consume: joltRes.consume,
             labelKey: "ND5T.ConditionalDamage.ArcaneJolt.Label",
             defaultLabel: `Arcane Jolt (+${dice}, ${usesText({ usesLeft: joltRes.usesLeft, usesTracked: joltRes.tracked })})`,
+            blocked: [!joltRes.available && "NoUses"],
             defaultActive: false
         });
     }
 
     // Lightning Launcher (Armorer, Infiltrator model): +1d6 lightning once on each of your turns with the launcher
-    if (isWeapon && isMyTurn && ((identifierOf(item) === "lightning-launcher") || /lightning launcher/i.test(item.name ?? ""))) {
+    if (isWeapon && ((identifierOf(item) === "lightning-launcher") || /lightning launcher/i.test(item.name ?? ""))) {
         add({
             id: "lightningLauncher",
             spellName: "Lightning Launcher",
@@ -438,14 +457,15 @@ export function addFeatureAttackBonuses(ctx, out) {
             flavor: "Lightning Launcher",
             labelKey: "ND5T.ConditionalDamage.LightningLauncher.Label",
             defaultLabel: "Lightning Launcher (+1d6)",
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("lightningLauncher")
         });
     }
 
     // Dreaded Necrosis (Undead Patron, Grave Touched): one extra damage die for necrotic damage while in Form of
     // Dread, once per turn
-    if (feature(["grave-touched"], /^grave touched$/i)
-        && activeFeatureEffects(actor, ["form-of-dread"], /^form of (?:superior )?dread\b/i).length) {
+    if (feature(["grave-touched"], /^grave touched$/i)) {
+        const inDread = activeFeatureEffects(actor, ["form-of-dread"], /^form of (?:superior )?dread\b/i).length > 0;
         const faces = firstDieFacesOfType(config, "necrotic");
         if (faces) {
             const dice = `1d${faces}`;
@@ -458,6 +478,7 @@ export function addFeatureAttackBonuses(ctx, out) {
                 flavor: "Dreaded Necrosis",
                 labelKey: "ND5T.ConditionalDamage.DreadedNecrosis.Label",
                 defaultLabel: `Dreaded Necrosis (+${dice})`,
+                blocked: [!inDread && "NotFormOfDread"],
                 defaultActive: !used("dreadedNecrosis")
             });
         }
@@ -465,8 +486,10 @@ export function addFeatureAttackBonuses(ctx, out) {
     // Death and Decay (World of Warcraft): attacks against a creature your Death and Decay cursed deal +1d6 necrotic
     if (feature(["death-and-decay"], null, i => i.type === "spell") || actor.items?.some(i => identifierOf(i) === "death-and-decay")) {
         const targets = resolveTargetDocs(actor, { config, dialog, message, activity });
-        const cursed = targets.some(doc => effectsFrom(doc.actor, /^cursed$/i, ["death-and-decay"], actor).length);
-        if (cursed) {
+        const isCursed = doc => Boolean(doc?.actor && effectsFrom(doc.actor, /^cursed$/i, ["death-and-decay"], actor).length);
+        const cursed = targets.some(isCursed);
+        // Offered while the spell has cursed someone on the scene; unticked when it isn't this target
+        if (cursed || canvas?.scene?.tokens?.some(isCursed)) {
             add({
                 id: "deathAndDecay",
                 spellName: "Death and Decay",
@@ -477,6 +500,7 @@ export function addFeatureAttackBonuses(ctx, out) {
                 labelKey: "ND5T.ConditionalDamage.DeathAndDecay.Label",
                 defaultLabel: "Death and Decay (+1d6)",
                 turnKey: null,
+                blocked: [!cursed && "NotCursed"],
                 defaultActive: true
             });
         }
@@ -484,7 +508,8 @@ export function addFeatureAttackBonuses(ctx, out) {
 
     // Metamorphosis: Havoc (World of Warcraft): +1d6 fire on melee weapon hits while in the Havoc form
     const meleeWeapon = isWeapon && ((activity?.getActionType?.(config?.attackMode) ?? activity?.actionType) === "mwak");
-    if (meleeWeapon && effectsFrom(actor, /^havoc$/i, ["metamorphosis"]).length) {
+    const inHavoc = meleeWeapon && (effectsFrom(actor, /^havoc$/i, ["metamorphosis"]).length > 0);
+    if (meleeWeapon && (inHavoc || feature(["metamorphosis"], /^metamorphosis\b/i))) {
         add({
             id: "havoc",
             spellName: "Havoc",
@@ -495,6 +520,7 @@ export function addFeatureAttackBonuses(ctx, out) {
             labelKey: "ND5T.ConditionalDamage.Havoc.Label",
             defaultLabel: "Havoc (+1d6)",
             turnKey: null,
+            blocked: [!inHavoc && "NotHavoc"],
             defaultActive: true
         });
     }

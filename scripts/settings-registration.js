@@ -5,7 +5,7 @@
  * Every setting is `config: false`: Foundry's Configure Settings never shows them, the dashboard of Nik's Foundry
  * Tweaks does. Name and hint are registered anyway (from the schema), since Foundry and other modules may show them.
  *
- * @introduced v14.121.0 (replaces the registrations written out in main.js)
+ * @introduced v14.120.1 (replaces the registrations written out in main.js)
  */
 import { MODULE_ID } from "./context.js";
 import { getSettingsSchema } from "./settings-schema.js";

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.121.0] - 2026-11-28
+### Changed
+- **Conditional Damage Bonuses**: A bonus whose conditions aren't met is no longer hidden. It's offered unticked with an info icon, and hovering it says why: not your turn, already used this turn, no uses left, not raging or Reckless, no natural 20, not enough movement for Charger, or a target that doesn't qualify. Tick it anyway to fix a misclick, or when Foundry can't see the condition. Bonuses your character doesn't have, or that don't fit the attack at all (a weapon bonus on a spell), stay hidden.
+- **Reckless Attack Automation**: The Reckless Attack checkbox stays in the attack dialog after the first attack of the turn and off your turn, unticked, with a hint saying why. If you forgot to tick it on your first attack, you can still choose it on the next one. Attacks that don't use Strength get the checkbox with a hint too, instead of greying it out.
+- **Brutal Strike Automation**: The Brutal Strike checkbox is no longer greyed out or missing. Off your turn, once used this turn, without Strength or Reckless Attack, with Disadvantage or several targets, it stays unticked and its hint says why, but you can tick it. With Disadvantage, Brutal Strike is now used and the roll keeps its Disadvantage.
+- **Reckless Attack Automation**, **Brutal Strike Automation**: A combat running on another scene now counts for turns, like the other features.
+
+### Fixed
+- **Divine Fury** (Conditional Damage Bonuses): Only offered on weapon and Unarmed Strike attacks, no longer on spell attacks.
+
 ## [14.120.2] - 2026-11-28
 ### Fixed
 - **Prompt / Auto-Roll Attack Damage**: Damage rolled automatically or from the prompt now belongs to the spell's or weapon's card, like damage rolled with the card's Damage button. With D&D 5e's *Chat Card Summary* setting it is now folded into that card instead of showing as a separate card, and the card's effects tray opens for the targets.

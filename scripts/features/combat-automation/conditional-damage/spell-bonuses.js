@@ -75,7 +75,7 @@ export function addSpellBonuses(ctx, out) {
     // Radiant Soul (Celestial Patron): + Charisma modifier to a radiant or fire spell, once on each of your turns
     const soulTypes = ["radiant", "fire"].filter(t => rollTypes.has(t));
     const chaMod = Number(actor.system?.abilities?.cha?.mod ?? 0);
-    if (isSpell && isDamage && isMyTurn && soulTypes.length && (chaMod > 0) && findFeature(actor, ["radiant-soul"], /^radiant soul$/i)) {
+    if (isSpell && isDamage && soulTypes.length && (chaMod > 0) && findFeature(actor, ["radiant-soul"], /^radiant soul$/i)) {
         out.push({
             id: "radiantSoul",
             spellName: "Radiant Soul",
@@ -89,33 +89,34 @@ export function addSpellBonuses(ctx, out) {
             flavor: "Radiant Soul",
             labelKey: "ND5T.ConditionalDamage.RadiantSoul.Label",
             defaultLabel: `Radiant Soul (+${chaMod})`,
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("radiantSoul")
         });
     }
 
     // Celestial Revelation (Aasimar): + Proficiency Bonus to an attack or spell, once on each of your turns, while
     // transformed. Necrotic Shroud deals necrotic damage, Heavenly Wings and Inner Radiance radiant.
-    if ((isAttack || isSpell) && isDamage && isMyTurn && findFeature(actor, ["celestial-revelation"], /^celestial revelation$/i)) {
+    // Offered unticked off-turn or while not transformed
+    if ((isAttack || isSpell) && isDamage && findFeature(actor, ["celestial-revelation"], /^celestial revelation$/i)) {
         const revelation = activeFeatureEffects(actor, ["celestial-revelation"],
             /^(?:heavenly wings|inner radiance|searing radiance|necrotic shroud)$/i);
-        if (revelation.length) {
-            const pb = Number(actor.system?.attributes?.prof ?? 2);
-            const necrotic = revelation.some(e => /necrotic shroud/i.test(e.name ?? ""));
-            out.push({
-                id: "celestialRevelation",
-                spellName: "Celestial Revelation",
-                formula: `${pb}[Celestial Revelation]`,
-                formulaDisplay: String(pb),
-                damageType: necrotic ? "necrotic" : "radiant",
-                flat: true,
-                oneOff: true,
-                turnKey,
-                flavor: "Celestial Revelation",
-                labelKey: "ND5T.ConditionalDamage.CelestialRevelation.Label",
-                defaultLabel: `Celestial Revelation (+${pb})`,
-                defaultActive: !used("celestialRevelation")
-            });
-        }
+        const pb = Number(actor.system?.attributes?.prof ?? 2);
+        const necrotic = revelation.some(e => /necrotic shroud/i.test(e.name ?? ""));
+        out.push({
+            id: "celestialRevelation",
+            spellName: "Celestial Revelation",
+            formula: `${pb}[Celestial Revelation]`,
+            formulaDisplay: String(pb),
+            damageType: necrotic ? "necrotic" : "radiant",
+            flat: true,
+            oneOff: true,
+            turnKey,
+            flavor: "Celestial Revelation",
+            labelKey: "ND5T.ConditionalDamage.CelestialRevelation.Label",
+            defaultLabel: `Celestial Revelation (+${pb})`,
+            blocked: [!isMyTurn && "NotYourTurn", !revelation.length && "NotTransformed"],
+            defaultActive: !used("celestialRevelation")
+        });
     }
 
     // Pull of Death (Grave Domain, Circle of Mortality): +1d4 necrotic (1d6 at Cleric 11) once per turn, attack or
@@ -156,7 +157,8 @@ export function addSpellBonuses(ctx, out) {
                 (doc.actor?.appliedEffects ?? []).some(e => /^(?:outlined|faerie fire)\b/i.test(e.name ?? "")
                     && (!e.origin || e.origin.includes(actor.id))));
         }
-        if (listed || outlined) {
+        // An attack against a creature that doesn't look outlined is offered unticked
+        if (listed || isAttack) {
             out.push({
                 id: "guidedPrecision",
                 spellName: "Guided Precision",
@@ -170,6 +172,7 @@ export function addSpellBonuses(ctx, out) {
                 flavor: "Guided Precision",
                 labelKey: "ND5T.ConditionalDamage.GuidedPrecision.Label",
                 defaultLabel: `Guided Precision (+${intMod})`,
+                blocked: [!listed && !outlined && "NotOutlined"],
                 defaultActive: !used("guidedPrecision")
             });
         }
@@ -254,7 +257,7 @@ export function addSpellBonuses(ctx, out) {
     // Power Surge (Arcane Overload): + Proficiency Bonus to one damage roll of an Evocation spell, once per Long Rest
     const overload = (isSpell && isDamage && (school === "evo")) ? findFeature(actor, ["arcane-overload"], /^arcane overload$/i) : null;
     const overloadRes = resource(overload);
-    if (overloadRes?.available) {
+    if (overloadRes) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         out.push({
             id: "powerSurge",
@@ -271,6 +274,7 @@ export function addSpellBonuses(ctx, out) {
             flavor: "Power Surge",
             labelKey: "ND5T.ConditionalDamage.PowerSurge.Label",
             defaultLabel: `Power Surge (+${pb}, ${usesText({ usesLeft: overloadRes.usesLeft, usesTracked: overloadRes.tracked })})`,
+            blocked: [!overloadRes.available && "NoUses"],
             defaultActive: false
         });
     }
@@ -297,11 +301,11 @@ export function addSpellBonuses(ctx, out) {
     const targets = attackOrSpell ? resolveTargetDocs(actor, { config, dialog, message, activity }) : [];
 
     // Fury of the Small (Goblin): + Proficiency Bonus against a larger creature, once per turn, PB uses per Long Rest
-    const fury = attackOrSpell && !used("furyOfTheSmall") ? findFeature(actor, ["fury-of-the-small"], /^fury of the small$/i) : null;
+    const fury = attackOrSpell ? findFeature(actor, ["fury-of-the-small"], /^fury of the small$/i) : null;
     const furyRes = resource(fury);
     const ownSize = sizeRank(actor);
     const larger = targets.some(doc => (ownSize !== null) && ((sizeRank(doc.actor) ?? -1) > ownSize));
-    if (furyRes?.available && larger) {
+    if (furyRes) {
         const pb = Number(actor.system?.attributes?.prof ?? 2);
         out.push({
             id: "furyOfTheSmall",
@@ -319,6 +323,7 @@ export function addSpellBonuses(ctx, out) {
             flavor: "Fury of the Small",
             labelKey: "ND5T.ConditionalDamage.FuryOfTheSmall.Label",
             defaultLabel: `Fury of the Small (+${pb}, ${usesText({ usesLeft: furyRes.usesLeft, usesTracked: furyRes.tracked })})`,
+            blocked: [!furyRes.available && "NoUses", !larger && "NotLarger"],
             defaultActive: false
         });
     }
@@ -326,7 +331,7 @@ export function addSpellBonuses(ctx, out) {
     // Touch of the Grave (Forsaken): + (Proficiency Bonus)d4 necrotic when you deal damage, once per Long Rest
     const grave = attackOrSpell ? findFeature(actor, ["touch-of-the-grave"], /^touch of the grave$/i) : null;
     const graveRes = resource(grave);
-    if (graveRes?.available) {
+    if (graveRes) {
         const dice = `${Number(actor.system?.attributes?.prof ?? 2)}d4`;
         out.push({
             id: "touchOfTheGrave",
@@ -341,13 +346,14 @@ export function addSpellBonuses(ctx, out) {
             flavor: "Touch of the Grave",
             labelKey: "ND5T.ConditionalDamage.TouchOfTheGrave.Label",
             defaultLabel: `Touch of the Grave (+${dice}, ${usesText({ usesLeft: graveRes.usesLeft, usesTracked: graveRes.tracked })})`,
+            blocked: [!graveRes.available && "NoUses"],
             defaultActive: false
         });
     }
 
     // Entropic Embrace (Void Elf), Touch of the Void: once on each of your turns, +1d4 necrotic on damage or +1d4 on
     // healing (1d4 more per slot level above 1st), while the spell lasts (marker effect created when it's cast)
-    const embrace = (attackOrSpell || (isHealing && isSpell)) && isMyTurn
+    const embrace = (attackOrSpell || (isHealing && isSpell))
         ? (actor.appliedEffects ?? []).find(e => !e.disabled && e.getFlag?.(MODULE_ID, "entropicEmbrace"))
         : null;
     if (embrace) {
@@ -364,6 +370,7 @@ export function addSpellBonuses(ctx, out) {
             flavor: "Touch of the Void",
             labelKey: "ND5T.ConditionalDamage.TouchOfTheVoid.Label",
             defaultLabel: `Touch of the Void (+${dice})`,
+            blocked: [!isMyTurn && "NotYourTurn"],
             defaultActive: !used("touchOfTheVoid")
         });
     }
@@ -376,7 +383,8 @@ export function addSpellBonuses(ctx, out) {
             return (identifierOf(item) === "rain-of-fire") && (item?.actor === actor || item?.actor?.uuid === actor.uuid);
         });
         const inside = rains.length && targets.some(doc => rains.some(r => doc.regions?.has?.(r) || doc.testInsideRegion?.(r)));
-        if (inside) {
+        // Offered while you have a Rain of Fire on the scene; unticked when the target isn't inside it
+        if (rains.length) {
             out.push({
                 id: "rainOfFire",
                 spellName: "Rain of Fire",
@@ -386,6 +394,7 @@ export function addSpellBonuses(ctx, out) {
                 flavor: "Rain of Fire",
                 labelKey: "ND5T.ConditionalDamage.RainOfFire.Label",
                 defaultLabel: "Rain of Fire (+1d6)",
+                blocked: [!inside && "NotInRain"],
                 defaultActive: true
             });
         }

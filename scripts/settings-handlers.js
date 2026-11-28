@@ -3,7 +3,7 @@
  * (`settings-registration.js`), by setting key. Settings without an entry need no handler (features read them when
  * they run) or reload the page (`requiresReload` in the schema).
  *
- * @introduced v14.121.0 (moved out of main.js)
+ * @introduced v14.120.1 (moved out of main.js)
  */
 import { isFeatureOnForUser } from "./utils/personal-override.js";
 import { refreshSpellSlotSheets } from "./features/ui-visuals/spell-slots-left-to-right.js";

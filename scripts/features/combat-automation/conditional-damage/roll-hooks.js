@@ -73,6 +73,7 @@ export function onPreRollDamage(config, dialog = {}, message = {}) {
             || def.id === "savageAttacker"
             || def.id === "geniesWrath"
             || Boolean(def.oneOff)
+            || Boolean(def.blocked?.length)
             || (def.id === "sneakAttack" && (def.turnKey || def.eligibility?.state !== "unknown"));
         const lastChoice = isOneOffOrTurnTracked
             ? def.defaultActive

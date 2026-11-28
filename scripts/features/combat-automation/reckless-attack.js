@@ -15,6 +15,9 @@
  * @updated v14.111.0 (a companion sharing its summoner's turn counts as acting on its own turn)
  * @updated v14.113.0 (extension points for Brutal Strike: a dialog field, a third prompt answer, a prompt on later attacks)
  * @updated v14.114.1 (combat-end cleanup leaves combatants to dnd5e; deletions tolerate effects removed meanwhile)
+ * @updated v14.121.0 (the checkbox stays in the dialog after the first attack, off the attacker's turn and for attacks
+ *   that don't qualify: unticked, with the reason as its hint, so a missed first choice can be corrected; combats on
+ *   other scenes count)
  */
 import { MODULE_ID, debug, getSetting, isFeatureActive } from "../../context.js";
 import { getMidiWorkflow } from "../../utils/module-compat.js";
@@ -22,6 +25,7 @@ import { patchMethod } from "../../utils/patch-helper.js";
 import { deleteEffects } from "../../utils/effect-deletion.js";
 import { attackerToken, singleAttackTarget, addRollModes } from "../../utils/attack-context.js";
 import { isSharedTurn } from "./summon-initiative.js";
+import { getActiveCombat } from "../../utils/combat-lookup.js";
 
 /**
  * How it works
@@ -29,11 +33,13 @@ import { isSharedTurn } from "./summon-initiative.js";
  * The feature (`identifier` "reckless-attack") is found on the actor; its own source rules (2014 / 2024) pick the
  * rules, falling back to the world's rules version.
  *
- * Offering the choice: the attacker has the feature, isn't Reckless yet, the personal setting is on and, in
- * combat, it is the attacker's own turn and its first attack roll this turn (attack rolls are counted on this
- * client in dnd5e.rollAttack). Out of combat there are no turns: the dialog offers the choice whenever the
- * creature isn't Reckless yet, but skipped dialogs don't prompt (a "No" would be asked again on every attack).
- *  - The attack must use Strength (2014: also be a melee weapon attack, so thrown counts as ranged).
+ * Offering the choice: the attacker has the feature, isn't Reckless yet and the personal setting is on. The rules
+ * expect the choice on the attacker's own turn and its first attack roll this turn (attack rolls are counted on this
+ * client in dnd5e.rollAttack), with an attack that uses Strength (2014: also a melee weapon attack, so thrown counts
+ * as ranged). The dialog shows the checkbox anyway when that isn't the case, unticked and with the reason as its
+ * hint, so a player who forgot to tick it on the first attack (or whose attack Foundry misjudges) can still choose
+ * it. Skipped dialogs only prompt when the rules expect the choice, and never out of combat (a "No" would be asked
+ * again on every attack).
  *  - Dialog: dnd5e.preRollAttack sets `config.nd5tRecklessOffer`; `AttackRollConfigurationDialog
  *    #_prepareConfigurationContext` is wrapped to add a checkbox to its configuration fields. Every rebuild runs
  *    dnd5e.postBuildAttackRollConfig, which disables the checkbox when the ability / attack mode doesn't
@@ -165,9 +171,7 @@ function _qualifies(rules, ability, actionType) {
  * @returns {Combat|null}
  */
 function _combatOf(actor) {
-    const combat = game.combat;
-    if (!combat?.started || !actor) return null;
-    return combat.getCombatantsByActor?.(actor)?.length ? combat : null;
+    return actor ? getActiveCombat(actor) : null;
 }
 
 /**
@@ -233,30 +237,75 @@ export function isActorReckless(actor) {
  * @returns {boolean}
  */
 function _startedThisTurn(effect) {
-    const combat = game.combat;
+    const combat = _combatOf(effect.actor);
     const start = effect.start;
     const startCombat = start?.combat?.id ?? start?.combat ?? null;
     // Made out of combat and still out of combat: there are no turns, so it lasts as long as the effect
-    if (!startCombat) return !_combatOf(effect.actor);
-    if (!combat?.started) return false;
+    if (!startCombat) return !combat;
+    if (!combat) return false;
     return (startCombat === combat.id) && (start.round === combat.round) && (start.turn === combat.turn);
 }
 
 /**
- * Whether the actor may decide to attack recklessly now (ignoring the attack's ability and type).
+ * Whether the actor may decide to attack recklessly (ignoring the attack's ability and type): it has the feature and
+ * isn't Reckless yet. `reason` says why the rules don't expect the choice now ("NotYourTurn", "NotFirstAttack"); the
+ * dialog still offers it then, unticked.
  * @param {Actor5e} actor
- * @returns {{feature: Item5e, rules: "2014"|"2024", combat: Combat|null}|null}
+ * @returns {{feature: Item5e, rules: "2014"|"2024", combat: Combat|null, reason: string|null}|null}
  */
 function _offer(actor) {
     if (!_offerActive()) return null;
     const feature = _feature(actor);
     if (!feature || _recklessState(actor)) return null;
     const combat = _combatOf(actor);
+    let reason = null;
     if (combat) {
-        if (!_isOwnTurn(combat, actor)) return null;
-        if (_lastAttackTurn.get(actor.uuid) === _turnKey(combat)) return null;
+        if (!_isOwnTurn(combat, actor)) reason = "NotYourTurn";
+        else if (_lastAttackTurn.get(actor.uuid) === _turnKey(combat)) reason = "NotFirstAttack";
     }
-    return { feature, rules: _itemRules(feature), combat };
+    return { feature, rules: _itemRules(feature), combat, reason };
+}
+
+/**
+ * Set the hint of a field in a roll configuration dialog, or remove it (no text).
+ * @param {RollConfigurationDialog} app
+ * @param {string} name  The field's input name.
+ * @param {string} text
+ */
+export function setDialogFieldHint(app, name, text) {
+    const group = app?.form?.querySelector(`input[name="${name}"]`)?.closest(".form-group");
+    if (!group) return;
+    let hint = group.querySelector(":scope > .hint");
+    if (!text) {
+        hint?.remove();
+        return;
+    }
+    if (!hint) {
+        hint = document.createElement("p");
+        hint.className = "hint";
+        group.append(hint);
+    }
+    hint.textContent = text;
+}
+
+/**
+ * Why the rules don't expect Reckless Attack on this roll, as hint text, or "".
+ * @param {object} process  The dialog's roll process configuration.
+ * @param {string} ability
+ * @param {string} attackMode
+ * @returns {string}
+ */
+function _recklessHint(process, ability, attackMode) {
+    const activity = process?.subject;
+    const feature = _feature(activity?.actor);
+    if (!feature) return "";
+    const rules = _itemRules(feature);
+    const reasons = [];
+    if (process.nd5tRecklessReason) reasons.push(game.i18n.localize(`ND5T.RecklessAttack.Reason.${process.nd5tRecklessReason}`));
+    if (!_qualifies(rules, ability, activity.getActionType?.(attackMode))) {
+        reasons.push(game.i18n.localize(`ND5T.RecklessAttack.Reason.NotQualifying${rules}`));
+    }
+    return reasons.join(" ");
 }
 
 // ── Attack rolls ──────────────────────────────────────────────────────
@@ -291,8 +340,12 @@ function _onPreRollAttack(config) {
                     advantage = true;
                     debug(`Reckless Attack | ${actor.name} is Reckless: Advantage`);
                 }
-            } else if (_offer(actor)) {
-                config.nd5tRecklessOffer = true;
+            } else {
+                const offer = _offer(actor);
+                if (offer) {
+                    config.nd5tRecklessOffer = true;
+                    if (offer.reason) config.nd5tRecklessReason = offer.reason;
+                }
             }
         }
 
@@ -345,9 +398,11 @@ function _addRecklessField(app, context) {
     const feature = _feature(app.config.subject?.actor);
     const label = feature?.name || game.i18n.localize("ND5T.RecklessAttack.Label");
     const checked = app.form?.querySelector(`input[name="${FIELD}"]`)?.checked ?? false;
+    const roll = app.config.rolls?.[0];
+    const hint = _recklessHint(app.config, roll?.options?.ability ?? app.config.ability, roll?.options?.attackMode ?? app.config.attackMode);
     context.fields ??= [];
     context.fields.push({
-        field: new foundry.data.fields.BooleanField({ label }),
+        field: new foundry.data.fields.BooleanField({ label, hint }),
         name: FIELD,
         value: checked
     });
@@ -370,7 +425,9 @@ function _advantageMode(process, rollConfig, reckless) {
 }
 
 /**
- * dnd5e.postBuildAttackRollConfig: follow the checkbox when the dialog (re)builds a roll.
+ * dnd5e.postBuildAttackRollConfig: follow the checkbox when the dialog (re)builds a roll. The checkbox is never
+ * disabled: when the rules don't expect the choice (later attack, off-turn, an attack that doesn't qualify) its hint
+ * says why, and a tick is taken as the player's correction.
  * @param {object} process  The dialog's roll process configuration.
  * @param {object} config   The roll configuration being built.
  * @param {number} index
@@ -386,14 +443,8 @@ function _onPostBuildAttackRollConfig(process, config, index, { app, formData } 
         if (!feature) return;
         const ability = config.options?.ability ?? process.ability;
         const attackMode = config.options?.attackMode ?? process.attackMode;
-        const eligible = _qualifies(_itemRules(feature), ability, activity.getActionType?.(attackMode));
-
-        const input = app.form?.querySelector(`input[name="${FIELD}"]`);
-        if (input) {
-            input.disabled = !eligible;
-            input.closest(".form-group")?.classList.toggle("disabled", !eligible);
-        }
-        const checked = eligible && (formData?.object?.[FIELD] === true);
+        if (index === 0) setDialogFieldHint(app, FIELD, _recklessHint(process, ability, attackMode));
+        const checked = formData?.object?.[FIELD] === true;
         config.options ??= {};
         if (checked) config.options[FIELD] = true;
         else delete config.options[FIELD];
@@ -488,8 +539,9 @@ async function _wrapRollAttack(wrapped, config = {}, dialog = {}, message = {}) 
         // Nothing to ask (no Reckless offer, no extension for this actor): skip the keybinding probe
         if (actor && (offer || _extensions.some(e => e.appliesTo?.(actor) ?? true)) && !config.midiOptions?.isDummy && dialogSkipped(config, dialog)) {
             const choices = attackChoices(this, config);
-            // Out of combat there is no first attack of a turn, so no prompt there
-            if (offer?.combat && _qualifies(offer.rules, choices.ability, this.getActionType?.(choices.attackMode))) {
+            // Out of combat there is no first attack of a turn, so no prompt there; later attacks of the turn and
+            // attacks off the attacker's turn don't prompt either (the dialog still offers the choice)
+            if (offer?.combat && !offer.reason && _qualifies(offer.rules, choices.ability, this.getActionType?.(choices.attackMode))) {
                 const extra = [];
                 for (const extension of _extensions) {
                     const choice = extension.promptChoice?.(actor, this, choices);
