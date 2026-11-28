@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.120.1] - 2026-11-28
+### Changed
+- **Settings**: Behind the scenes, every setting is now defined in one place instead of two. Nothing should change for you: your settings keep their values and work as before. If a setting looks reset or stops reacting right away when you change it, please report it.
+
 ## [14.120.0] - 2026-11-28
 ### Changed
 - **Area Spell Automation** (formerly Damage Emanation Automation): Renamed, since it also handles areas that aren't emanations (*Moonbeam*, *Web*, walls) and spells that deal no damage (*Grease*, *Stinking Cloud*). The spell list is now called **Area Spells** and the region behavior **Area Spell Trigger**. Your settings and areas already on the map keep working.

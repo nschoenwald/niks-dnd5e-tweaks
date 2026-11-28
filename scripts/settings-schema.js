@@ -250,7 +250,7 @@ export function getSettingsSchema() {
                             hint: "Hide incoming player damage prompt whispers in chat for yourself.",
                             type: "Boolean",
                             default: false,
-                            scope: "client"
+                            scope: "user"
                         },
                         {
                             key: "clientEnableAggregateShortRestRolls",
